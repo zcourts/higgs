@@ -9,6 +9,7 @@ import org.jboss.netty.handler.codec.compression.{ZlibDecoder, ZlibWrapper, Zlib
  */
 
 class ClientPipelineFactory extends ChannelPipelineFactory {
+
   override def getPipeline: ChannelPipeline = {
     lazy val pipeline: ChannelPipeline = pipeline
     pipeline.addLast("deflater", new ZlibEncoder(ZlibWrapper.GZIP))

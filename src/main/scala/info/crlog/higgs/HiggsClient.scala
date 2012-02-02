@@ -14,8 +14,9 @@ import protocol.{MessageListener, ClientPipelineFactory}
  */
 
 class HiggsClient(host: String, port: Int) {
+  val channelFactory=new NioClientSocketChannelFactory(Executors.newCachedThreadPool(), Executors.newCachedThreadPool())
   // Configure the client.
-  val bootstrap = new ClientBootstrap(new NioClientSocketChannelFactory(Executors.newCachedThreadPool(), Executors.newCachedThreadPool()));
+  val bootstrap = new ClientBootstrap(channelFactory);
 
   // Set up the event pipeline factory.
   bootstrap.setPipelineFactory(new ClientPipelineFactory);
