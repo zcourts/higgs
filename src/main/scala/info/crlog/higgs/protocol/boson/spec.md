@@ -30,7 +30,9 @@ The Boson protocol is fairly simple.
 
 As demonstrated below, multi part messages are sent as separate messages. The first (and all following messages except the last) part of the message
 specifies the size,m flag and the data. The end of the multi-part message sends the same structure but setting the m flag to 0.
+
 If __no data is left__ then the last frame can also specify a size of 0,the flag 0 and no topic or data parts, as in __0|0__
+
 __NOTE__ Multi part messages __are buffered__ and on the receiving end until the end message is received then __ALL__ the contents of the buffer is passed to the receiver as __ONE MESSAGE__!
 If you need multi-part messages delivered as separate messages just as they are received then see __Split multi message__
 
