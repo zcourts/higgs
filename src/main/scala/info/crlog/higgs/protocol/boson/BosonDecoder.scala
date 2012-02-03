@@ -1,16 +1,15 @@
 package info.crlog.higgs.protocol.boson
 
-import org.jboss.netty.handler.codec.frame.{CorruptedFrameException, FrameDecoder}
-import java.math.BigInteger
 import org.jboss.netty.buffer.ChannelBuffer
 import org.jboss.netty.channel.{ChannelHandlerContext, Channel}
+import info.crlog.higgs.protocol.HiggsDecoder
 
 
 /**
  * @author Courtney Robinson <courtney@crlog.info> @ 31/01/12
  */
 
-class BosonDecoder extends FrameDecoder {
+class BosonDecoder extends HiggsDecoder {
   override protected def decode(ctx: ChannelHandlerContext, channel: Channel, buffer: ChannelBuffer): AnyRef = {
     // Wait until the length prefix is available.
     if (buffer.readableBytes < 5) {

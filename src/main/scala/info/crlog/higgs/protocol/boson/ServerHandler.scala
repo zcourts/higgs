@@ -1,12 +1,13 @@
 package info.crlog.higgs.protocol.boson
 
 import org.jboss.netty.channel._
+import info.crlog.higgs.protocol.HiggsServerHandler
 
 /**
  * @author Courtney Robinson <courtney@crlog.info> @ 31/01/12
  */
 
-class ServerHandler extends SimpleChannelUpstreamHandler {
+class ServerHandler extends HiggsServerHandler {
 
   override def handleUpstream(ctx: ChannelHandlerContext, e: ChannelEvent): Unit = {
     super.handleUpstream(ctx, e)

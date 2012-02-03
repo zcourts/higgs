@@ -1,15 +1,14 @@
 package info.crlog.higgs.protocol.boson
 
 import org.jboss.netty.channel._
-import com.codahale.logula.Logging
 import collection.mutable.ListBuffer
-import info.crlog.higgs.protocol.{Message, MessageListener}
+import info.crlog.higgs.protocol.{HiggsClientHandler, Message, MessageListener}
 
 /**
  * @author Courtney Robinson <courtney@crlog.info> @ 31/01/12
  */
 
-class ClientHandler extends SimpleChannelUpstreamHandler with Logging {
+class ClientHandler extends HiggsClientHandler {
   private val listeners = new ListBuffer[MessageListener]
 
   override def handleUpstream(ctx: ChannelHandlerContext, e: ChannelEvent): Unit = {

@@ -1,56 +1,45 @@
 package info.crlog.higgs
 
+import protocol._
 import protocol.boson._
-import protocol.Message
 import reflect.BeanProperty
-import org.jboss.netty.handler.codec.frame.FrameDecoder
-import org.jboss.netty.handler.codec.oneone.OneToOneEncoder
-import org.jboss.netty.channel.SimpleChannelUpstreamHandler
 import collection.mutable.{ListBuffer, HashMap}
 
 /**
  * @author Courtney Robinson <courtney@crlog.info> @ 31/01/12
  */
 
-class Higgs[T](var socketType: HiggsConstants.Value) {
+class Higgs(var socketType: HiggsConstants.Value) {
   /**
    * The decoder Higgs uses to decode messages
    */
-  @BeanProperty
-  var decoder: Option[FrameDecoder] = None
-  //default protocol encoder
-  @BeanProperty
-  var encoder: Option[OneToOneEncoder] = None
-  //default client request handler
-  @BeanProperty
-  var clientHandler: Option[SimpleChannelUpstreamHandler] = None
-  //default server request handler
-  @BeanProperty
-  var serverHandler: Option[SimpleChannelUpstreamHandler] = None
+  @BeanProperty //default protocol decoder
+  var decoder: Class[_ <: HiggsDecoder] = classOf[BosonDecoder]
+  @BeanProperty //default protocol encoder
+  var encoder: Class[_ <: HiggsEncoder] = classOf[BosonEncoder]
+  @BeanProperty //default client request handler
+  var clientHandler: Class[_ <: HiggsClientHandler] = classOf[ClientHandler]
+  @BeanProperty //default server request handler
+  var serverHandler: Class[_ <: HiggsServerHandler] = classOf[ServerHandler]
   //avoid matching socketType multiple times to determine if we're a client, server or other...
   private var isClient = false
-  //
-  //private val listeners = new ListBuffer[Function1]
-  //
   private var client: Option[HiggsClient] = None
   private var server: Option[HiggsServer] = None
   /**
-   * may look overly complex but is quite simple...
-   * topic =>{SUBSCRIBRS=>[(id,function),(id,function)]}
-   * i.e. the key for the outter hashmap is the topic.
-   * The list buffer for each topic contains a set of functions and their IDs...
+   * may look overly complex but is quite simple... topic =>{SUBSCRIBRS=>[(id,function),(id,function)]}
+   * i.e. the key for the outter hashmap is the topic. The list buffer for each topic contains a set of functions and their IDs...
    */
   private val listeners = new HashMap[String, ListBuffer[Tuple2[Int, Function1[Message, Unit]]]]()
+  @BeanProperty
+  var host = "127.0.0.1"
+  @BeanProperty
+  var port = 2012
 
   socketType match {
     case HiggsConstants.SOCKET_CLIENT => {
-      initBosonEncoderAndDecoder
-      clientHandler = Some(new ClientHandler)
       isClient = true
     }
     case HiggsConstants.SOCKET_SERVER => {
-      initBosonEncoderAndDecoder
-      serverHandler = Some(new ServerHandler)
     }
     case HiggsConstants.SOCKET_OTHER => {}
     case _ => {
@@ -61,38 +50,31 @@ class Higgs[T](var socketType: HiggsConstants.Value) {
     }
   }
 
-
   /**
-   * Binds to localhost on port 2012
-   * @throws UnsupportedOperationException if socketType is CLIENT
+   * Creates an instance which will bind or connect to the given host & port
    */
-  def bind() {
-    bind("localhost", 2012)
+  def this(h: String, p: Int) = {
+    this ()
+    host = h
+    port = p
   }
 
   /**
    * Binds to the given host and port
    * @throws UnsupportedOperationException if   socketType IS CLIENT
    */
-  def bind(host: String, port: Int) = {
+  def bind() = {
     if (isClient) {
       throw new UnsupportedOperationException("A Higgs instance of type CLIENT cannot be bound, use <code>connect</code> instead")
     }
-  }
-
-  /**
-   * Connects a client to localhost,2012
-   * @throws UnsupportedOperationException if socketType is not CLIENT
-   */
-  def connect() {
-    connect("localhost", 2012)
+    server = Some(new HiggsServer(host, port))
   }
 
   /**
    * Binds to the given host and port
    * @throws UnsupportedOperationException if socketType is not CLIENT
    */
-  def connect(host: String, port: Int) = {
+  def connect() = {
     if (!isClient) {
       throw new UnsupportedOperationException("A Higgs instance of type " + socketType + " cannot connect, use <code>bind</code> instead")
     }
@@ -144,11 +126,4 @@ class Higgs[T](var socketType: HiggsConstants.Value) {
    */
   def subscribersOf(topic: String) = listeners.get(topic).get
 
-  /**
-   * initialize the encoder and decoder for Boson
-   */
-  private def initBosonEncoderAndDecoder {
-    decoder = Some(new BosonDecoder)
-    encoder = Some(new BosonEncoder)
-  }
 }
