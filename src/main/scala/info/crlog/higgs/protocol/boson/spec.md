@@ -25,14 +25,38 @@ The Boson protocol is fairly simple.
 
 * Here, no topic is associated with the message but the prefix and suffix | are still included
 
+
+# Multi part messages (m)
+
+As demonstrated below, multi part messages are sent as separate messages. The first (and all following messages except the last) part of the message
+specifies the size,m flag and the data. The end of the multi-part message sends the same structure but setting the m flag to 0.
+If __no data is left__ then the last frame can also specify a size of 0,the flag 0 and no topic or data parts, as in __0|0__
+__NOTE__ Multi part messages __are buffered__ and on the receiving end until the end message is received then __ALL__ the contents of the buffer is passed to the receiver as __ONE MESSAGE__!
+If you need multi-part messages delivered as separate messages just as they are received then see __Split multi message__
+
 # Example
 
 __a__ 1024|m|topic|bytes_here
-__b__ 600|m|topic|bytes_here
-__c__ 50|0|topic|bytes_here
+__b__ 600|m||bytes_here
+__c__ 50|0||bytes_here
 
 * In __a__ and __b__, we've specified the m flag which means there is more to come
-*
+* In __c__ however, we've set the flag to 0 indicating that this is the end of the multi part message.
+
+# Split multi message (mm)
+
+With a multi-part message, messages are buffered and delivered as a single message. This is not always desirable and it may be the case
+that you want multi part messages delivered as separate messages, in the order they are received, once all parts are received.
+To accomplish this, simple change your first frame to use the flag __'mm'__ instead of just 'm'
+
+# Example
+
+__a__ 1024|mm|topic|bytes_here
+__b__ 600|mm||bytes_here
+__c__ 50|0||bytes_here
+
+__mm__ flag causes messages to be delivered separately but still in the same order they were received.
+
 # Requests
 
 *
