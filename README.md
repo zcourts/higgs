@@ -34,5 +34,6 @@ Higgs is a fairly flexible library. One of the things it allows you to do is pro
 Once you create a Higgs instance, you can supply classes to encode,decode data as well as a client and server handler which handles the logic of your protocol.
 
 There are two requirements to be able to do this:
+
 * Encoders,Decoders,ClientHandlers and ServerHandlers must inherit from the respective Higgs traits
 * Each of the aformentioned must provide a default no arg constructor.
