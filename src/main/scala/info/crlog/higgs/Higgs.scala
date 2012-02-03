@@ -21,6 +21,7 @@ class Higgs(var socketType: HiggsConstants.Value) {
   var clientHandler: Class[_ <: HiggsClientHandler] = classOf[ClientHandler]
   @BeanProperty //default server request handler
   var serverHandler: Class[_ <: HiggsServerHandler] = classOf[ServerHandler]
+  var message: Class[_ <: Message] = classOf[BosonMessage]
   //avoid matching socketType multiple times to determine if we're a client, server or other...
   private var isClient = false
   private var client: Option[HiggsClient] = None
@@ -79,7 +80,7 @@ class Higgs(var socketType: HiggsConstants.Value) {
     if (!isClient) {
       throw new UnsupportedOperationException("A Higgs instance of type " + socketType + " cannot connect, use <code>bind</code> instead")
     }
-    client = Some(new HiggsClient(host, port,decoder,encoder,clientHandler))
+    client = Some(new HiggsClient(host, port, decoder, encoder, clientHandler))
   }
 
   /**
@@ -105,8 +106,32 @@ class Higgs(var socketType: HiggsConstants.Value) {
   /**
    * Subscribe to all messages, regardless of the topic
    */
-  def receive(fn: Function1[Message, Unit]) = {
+  def receive(fn: Function1[_ <: Message, Unit]) = {
     subscribe(HiggsConstants.TOPIC_ALL.toString)(fn)
+  }
+
+  /**
+   * Attempts to send a message.
+   * @return true if written successfully, false otherwise
+   */
+  def send(msg: String): Boolean = {
+    val m = message.newInstance()
+    m.setContents(msg.getBytes)
+    send(msg)
+  }
+
+  /**
+   * Attempts to send a message.
+   * @return true if written successfully, false otherwise
+   */
+  def send(msg: Message): Boolean = {
+    val channelObj = client.get.channel
+    if (channelObj.isWritable) {
+      channelObj.write(msg.asBytes())
+      true
+    } else {
+      false
+    }
   }
 
   /**

@@ -11,7 +11,7 @@ import com.codahale.jerkson.JsonSnakeCase
 @JsonSnakeCase
 abstract class Message {
   @BeanProperty
-  protected var contents: Array[Byte] = null
+  var contents: Array[Byte] = null
   /**
    * An alias for <code>asString</code> which returns the contents of this message using the default charset for decoding  the message
    */

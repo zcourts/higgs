@@ -1,7 +1,6 @@
 package info.crlog.higgs.protocol
 
-import boson.{ClientHandler, BosonEncoder, BosonDecoder}
-import org.jboss.netty.channel.{ChannelPipeline, ChannelPipelineFactory}
+import org.jboss.netty.channel.{ChannelPipeline, ChannelPipelineFactory,Channels}
 import org.jboss.netty.handler.codec.compression.{ZlibDecoder, ZlibWrapper, ZlibEncoder}
 
 /**
@@ -15,7 +14,7 @@ class ClientPipelineFactory(
                              ) extends ChannelPipelineFactory {
 
   override def getPipeline: ChannelPipeline = {
-    lazy val pipeline: ChannelPipeline = pipeline
+    val pipeline: ChannelPipeline = Channels.pipeline()
     pipeline.addLast("deflater", new ZlibEncoder(ZlibWrapper.GZIP))
     pipeline.addLast("inflater", new ZlibDecoder(ZlibWrapper.GZIP))
     pipeline.addLast("decoder", decoder.newInstance())
