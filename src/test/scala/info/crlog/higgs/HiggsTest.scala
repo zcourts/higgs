@@ -9,6 +9,21 @@ import org.junit.Assert._
 
 class HiggsTest {
   @Test
+  def subscribeAll(){
+    val client = new Higgs(HiggsConstants.SOCKET_CLIENT)
+    client.receive{
+      case message=>println()
+    }
+    assertEquals(1, client.topicsTotal)
+    client.receive{
+      case message=>println()
+    }
+    assertEquals(1, client.topicsTotal)
+    //the recieve method subscribes you to an empty string meaning everything so
+    //we should have 1 topic (everything) and 2 subscribers
+    assertEquals(2, client.subscribersOf(HiggsConstants.TOPIC_ALL.toString).size)
+  }
+  @Test
   def subscribeTest() {
     val client = new Higgs(HiggsConstants.SOCKET_CLIENT)
     client.subscribe("stop") {

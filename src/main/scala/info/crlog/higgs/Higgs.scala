@@ -53,8 +53,8 @@ class Higgs(var socketType: HiggsConstants.Value) {
   /**
    * Creates an instance which will bind or connect to the given host & port
    */
-  def this(h: String, p: Int) = {
-    this ()
+  def this(socketType: HiggsConstants.Value, h: String, p: Int) = {
+    this (socketType)
     host = h
     port = p
   }
@@ -106,7 +106,7 @@ class Higgs(var socketType: HiggsConstants.Value) {
    * Subscribe to all messages, regardless of the topic
    */
   def receive(fn: Function1[Message, Unit]) = {
-    subscribe("")(fn)
+    subscribe(HiggsConstants.TOPIC_ALL.toString)(fn)
   }
 
   /**
