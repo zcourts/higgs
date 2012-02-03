@@ -38,6 +38,7 @@ class Higgs(var socketType: HiggsConstants.Value) {
   socketType match {
     case HiggsConstants.SOCKET_CLIENT => {
       isClient = true
+
     }
     case HiggsConstants.SOCKET_SERVER => {
     }
@@ -78,8 +79,7 @@ class Higgs(var socketType: HiggsConstants.Value) {
     if (!isClient) {
       throw new UnsupportedOperationException("A Higgs instance of type " + socketType + " cannot connect, use <code>bind</code> instead")
     }
-    client = Some(new HiggsClient(host, port))
-    //client.get.
+    client = Some(new HiggsClient(host, port,decoder,encoder,clientHandler))
   }
 
   /**
