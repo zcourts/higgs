@@ -7,6 +7,7 @@ import _root_.java.net.InetSocketAddress
 import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory
 import org.jboss.netty.bootstrap.ClientBootstrap
 import protocol._
+import boson.ClientHandler
 
 /**
  * A simple client interface to encapsulate the Netty NIO connection for a client request
@@ -37,8 +38,8 @@ class HiggsClient(host: String, port: Int,
   // Wait until the connection is made successfully.
   val channel = connectFuture.awaitUninterruptibly().getChannel();
 
-  //  // Get the handler instance
-  //  val handler = channel.getPipeline.getLast.asInstanceOf[ClientHandler]
+  //Get the handler instance
+  val handler = channel.getPipeline.getLast.asInstanceOf[ClientHandler]
   //  /**
   //   * Adds a message listener that will be notified when messages are received
   //   */

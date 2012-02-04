@@ -11,6 +11,9 @@ import java.nio.charset.Charset
 @JsonSnakeCase
 abstract class Message {
   @BeanProperty
+  var topic: String
+
+  @BeanProperty
   var contents: Array[Byte] = null
   /**
    * An alias for <code>asString</code> which returns the contents of this message using the default charset for decoding  the message

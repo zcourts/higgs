@@ -26,11 +26,12 @@ class Higgs(var socketType: HiggsConstants.Value) {
   private var isClient = false
   private var client: Option[HiggsClient] = None
   private var server: Option[HiggsServer] = None
+  type ListenersList = ListBuffer[Function1[_ <: Message, Unit]]
   /**
    * may look overly complex but is quite simple... topic =>{SUBSCRIBRS=>[(id,function),(id,function)]}
    * i.e. the key for the outter hashmap is the topic. The list buffer for each topic contains a set of functions and their IDs...
    */
-  private val listeners = new HashMap[String, ListBuffer[Tuple2[Int, Function1[_ <: Message, Unit]]]]()
+  private val listeners = new HashMap[String, ListenersList]()
   @BeanProperty
   var host = "127.0.0.1"
   @BeanProperty
@@ -39,10 +40,8 @@ class Higgs(var socketType: HiggsConstants.Value) {
   socketType match {
     case HiggsConstants.SOCKET_CLIENT => {
       isClient = true
-
     }
-    case HiggsConstants.SOCKET_SERVER => {
-    }
+    case HiggsConstants.SOCKET_SERVER => {}
     case HiggsConstants.SOCKET_OTHER => {}
     case _ => {
       throw IllegalSocketTypeException("A Higgs instance can be of socket type " +
@@ -80,7 +79,13 @@ class Higgs(var socketType: HiggsConstants.Value) {
     if (!isClient) {
       throw new UnsupportedOperationException("A Higgs instance of type " + socketType + " cannot connect, use <code>bind</code> instead")
     }
+    //wire everything together
     client = Some(new HiggsClient(host, port, decoder, encoder, clientHandler))
+    client.get.handler.addListener(new MessageListener() {
+      def onMessage(m: Message) = {
+        publish(m)
+      }
+    })
   }
 
   /**
@@ -99,15 +104,15 @@ class Higgs(var socketType: HiggsConstants.Value) {
    * @param fn The function to call for each message that matches the subscribed topic
    */
   def subscribe(topic: String)(fn: Function1[_ <: Message, Unit]) = {
-    val subscriberz = listeners.getOrElseUpdate(topic, new ListBuffer[Tuple2[Int, Function1[_ <: Message, Unit]]]())
-    subscriberz.append((subscriberz.size, fn))
+    val subscriberz = listeners.getOrElseUpdate(topic, new ListenersList())
+    subscriberz.append(fn)
   }
 
   /**
    * Subscribe to all messages, regardless of the topic
    */
   def receive(fn: Function1[_ <: Message, Unit]) = {
-    subscribe(HiggsConstants.TOPIC_ALL.toString)(fn)
+    subscribe(HiggsConstants.TOPIC_ALL)(fn)
   }
 
   /**
@@ -131,6 +136,37 @@ class Higgs(var socketType: HiggsConstants.Value) {
       true
     } else {
       false
+    }
+  }
+
+  private def publish(m: Message) = {
+    //get all subscribers who want to receive all messsages
+    listeners.get(HiggsConstants.TOPIC_ALL) match {
+      case functions: ListenersList => {}
+      case _ => //do nothing  in all other cases, we simply don't have anyone listening to everything
+    }
+    //get subscribers of the message's topic and send them the message
+    listeners.get(m.topic) match {
+      case functions: ListenersList => {}
+      case _ => //no subscribers to this topic so discard the message
+    }
+  }
+
+  /**
+   * Unsubscribed a function from receiving messages about a topic.
+   * @param topic the topic the function was subscribed to
+   * @param id the position at which the function was subscribed. For e.g. if you have to functions
+   * subscribed to two topics or even to the same topic. The ID of the first function is 0, the ID of the
+   * second function is 1 and so on and so fourth
+   * @return true if the function was found and removed, false otherwise
+   */
+  def unsubscribe(topic: String, id: Int): Boolean = {
+    listeners.get(topic) match {
+      case functions: ListenersList => {
+        functions.remove(id)
+        true
+      }
+      case _ => false //no subscribers to this topic so nothing was un subscribed
     }
   }
 

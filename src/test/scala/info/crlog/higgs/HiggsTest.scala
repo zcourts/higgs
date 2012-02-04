@@ -22,7 +22,7 @@ class HiggsTest {
     assertEquals(1, client.topicsTotal)
     //the recieve method subscribes you to an empty string meaning everything so
     //we should have 1 topic (everything) and 2 subscribers
-    assertEquals(2, client.subscribersOf(HiggsConstants.TOPIC_ALL.toString).size)
+    assertEquals(2, client.subscribersOf(HiggsConstants.TOPIC_ALL).size)
   }
 
   @Test
@@ -80,5 +80,10 @@ class HiggsTest {
     }
     assertEquals(2, client.topicsTotal)
     assertEquals(3, client.subscribersOf("b").size)
+  }
+
+  @Test(expected = classOf[IllegalSocketTypeException])
+  def illegalSocketTypeTest(){
+      val client = new Higgs(HiggsConstants.TOPIC_ALL)
   }
 }

@@ -24,4 +24,6 @@ object HiggsConstants extends Enumeration {
    * When used as the topic for a message listener then that listener will receive all messages
    */
   val TOPIC_ALL = Value("")
+  //auto to string on all constants when used in place that expects string
+  implicit def constantToString(v:Value):String={v.toString}
 }
