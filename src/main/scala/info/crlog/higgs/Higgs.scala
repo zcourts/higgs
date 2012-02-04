@@ -140,19 +140,28 @@ class Higgs(var socketType: HiggsConstants.Value) {
     }
   }
 
+  /**
+   * invoke a set of functions subscribed to the given message, passing the message as a parameter
+   */
+  private def sendMsg(functions: Option[Higgs.this.type#ListenersList], m: Higgs.this.type#MessageType) {
+    functions.get foreach {
+      function => function(m.get.asInstanceOf[MessageType])
+    }
+  }
+
   private def publish(m: MessageType) = {
     //get all subscribers who want to receive all messsages
     listeners.get(HiggsConstants.TOPIC_ALL) match {
-      case functions: Option[ListenersList] => {}
+      case functions: Option[ListenersList] => {
+        sendMsg(functions, m)
+      }
       case _ => //do nothing  in all other cases, we simply don't have anyone listening to everything
     }
 
     //get subscribers of the message's topic and send them the message
     listeners.get(m.get.topic) match {
       case functions: Option[ListenersList] => {
-        functions.get foreach {
-          function => function(m.get.asInstanceOf[MessageType])
-        }
+        sendMsg(functions, m)
       }
       case _ => //no subscribers to this topic so discard the message
     }
