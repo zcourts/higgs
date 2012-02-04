@@ -10,6 +10,8 @@ import collection.mutable.{ListBuffer, HashMap}
  */
 
 class Higgs(var socketType: HiggsConstants.Value) {
+  type MessageType = Option[_ <: Message]
+  type ListenersList = ListBuffer[Function1[MessageType, Unit]]
   /**
    * The decoder Higgs uses to decode messages
    */
@@ -26,7 +28,6 @@ class Higgs(var socketType: HiggsConstants.Value) {
   private var isClient = false
   private var client: Option[HiggsClient] = None
   private var server: Option[HiggsServer] = None
-  type ListenersList = ListBuffer[Function1[_ <: Message, Unit]]
   /**
    * may look overly complex but is quite simple... topic =>{SUBSCRIBRS=>[(id,function),(id,function)]}
    * i.e. the key for the outter hashmap is the topic. The list buffer for each topic contains a set of functions and their IDs...
@@ -83,7 +84,7 @@ class Higgs(var socketType: HiggsConstants.Value) {
     client = Some(new HiggsClient(host, port, decoder, encoder, clientHandler))
     client.get.handler.addListener(new MessageListener() {
       def onMessage(m: Message) = {
-        publish(m)
+        publish(Some(m))
       }
     })
   }
@@ -103,7 +104,7 @@ class Higgs(var socketType: HiggsConstants.Value) {
    * @param topic The topic to subscribe tp
    * @param fn The function to call for each message that matches the subscribed topic
    */
-  def subscribe(topic: String)(fn: Function1[_ <: Message, Unit]) = {
+  def subscribe(topic: String)(fn: Function1[MessageType, Unit]) = {
     val subscriberz = listeners.getOrElseUpdate(topic, new ListenersList())
     subscriberz.append(fn)
   }
@@ -111,7 +112,7 @@ class Higgs(var socketType: HiggsConstants.Value) {
   /**
    * Subscribe to all messages, regardless of the topic
    */
-  def receive(fn: Function1[_ <: Message, Unit]) = {
+  def receive(fn: Function1[MessageType, Unit]) = {
     subscribe(HiggsConstants.TOPIC_ALL)(fn)
   }
 
@@ -139,15 +140,20 @@ class Higgs(var socketType: HiggsConstants.Value) {
     }
   }
 
-  private def publish(m: Message) = {
+  private def publish(m: MessageType) = {
     //get all subscribers who want to receive all messsages
     listeners.get(HiggsConstants.TOPIC_ALL) match {
-      case functions: ListenersList => {}
+      case functions: Option[ListenersList] => {}
       case _ => //do nothing  in all other cases, we simply don't have anyone listening to everything
     }
+
     //get subscribers of the message's topic and send them the message
-    listeners.get(m.topic) match {
-      case functions: ListenersList => {}
+    listeners.get(m.get.topic) match {
+      case functions: Option[ListenersList] => {
+        functions.get foreach {
+          function => function(m.get.asInstanceOf[MessageType])
+        }
+      }
       case _ => //no subscribers to this topic so discard the message
     }
   }
@@ -162,8 +168,8 @@ class Higgs(var socketType: HiggsConstants.Value) {
    */
   def unsubscribe(topic: String, id: Int): Boolean = {
     listeners.get(topic) match {
-      case functions: ListenersList => {
-        functions.remove(id)
+      case functions: Option[ListenersList] => {
+        functions.get.remove(id)
         true
       }
       case _ => false //no subscribers to this topic so nothing was un subscribed
