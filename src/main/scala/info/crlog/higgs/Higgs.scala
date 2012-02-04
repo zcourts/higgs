@@ -30,7 +30,7 @@ class Higgs(var socketType: HiggsConstants.Value) {
    * may look overly complex but is quite simple... topic =>{SUBSCRIBRS=>[(id,function),(id,function)]}
    * i.e. the key for the outter hashmap is the topic. The list buffer for each topic contains a set of functions and their IDs...
    */
-  private val listeners = new HashMap[String, ListBuffer[Tuple2[Int, Function1[Message, Unit]]]]()
+  private val listeners = new HashMap[String, ListBuffer[Tuple2[Int, Function1[_ <: Message, Unit]]]]()
   @BeanProperty
   var host = "127.0.0.1"
   @BeanProperty
@@ -98,8 +98,8 @@ class Higgs(var socketType: HiggsConstants.Value) {
    * @param topic The topic to subscribe tp
    * @param fn The function to call for each message that matches the subscribed topic
    */
-  def subscribe(topic: String)(fn: Function1[Message, Unit]) = {
-    val subscriberz = listeners.getOrElseUpdate(topic, new ListBuffer[Tuple2[Int, Function1[Message, Unit]]]())
+  def subscribe(topic: String)(fn: Function1[_ <: Message, Unit]) = {
+    val subscriberz = listeners.getOrElseUpdate(topic, new ListBuffer[Tuple2[Int, Function1[_ <: Message, Unit]]]())
     subscriberz.append((subscriberz.size, fn))
   }
 

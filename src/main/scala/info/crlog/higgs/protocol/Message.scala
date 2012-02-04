@@ -2,8 +2,8 @@ package info.crlog.higgs.protocol
 
 import reflect.BeanProperty
 import java.nio.charset.Charset
-import com.codahale.jerkson.Json._
-import com.codahale.jerkson.JsonSnakeCase
+  import com.codahale.jerkson.Json._
+  import com.codahale.jerkson.JsonSnakeCase
 
 /**
  * @author Courtney Robinson <courtney@crlog.info> @ 01/02/12

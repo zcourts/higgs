@@ -2,6 +2,7 @@ package info.crlog.higgs
 
 import org.junit.Test
 import org.junit.Assert._
+import protocol.boson.BosonMessage
 
 /**
  * @author Courtney Robinson <courtney@crlog.info> @ 02/02/12
@@ -9,31 +10,32 @@ import org.junit.Assert._
 
 class HiggsTest {
   @Test
-  def subscribeAll(){
+  def subscribeAll() {
     val client = new Higgs(HiggsConstants.SOCKET_CLIENT)
-    client.receive{
-      case message=>println()
+    client.receive {
+      message: BosonMessage => println()
     }
     assertEquals(1, client.topicsTotal)
-    client.receive{
-      case message=>println()
+    client.receive {
+      message: BosonMessage => println()
     }
     assertEquals(1, client.topicsTotal)
     //the recieve method subscribes you to an empty string meaning everything so
     //we should have 1 topic (everything) and 2 subscribers
     assertEquals(2, client.subscribersOf(HiggsConstants.TOPIC_ALL.toString).size)
   }
+
   @Test
   def subscribeTest() {
     val client = new Higgs(HiggsConstants.SOCKET_CLIENT)
     client.subscribe("stop") {
-      message => println(message)
+      message: BosonMessage => println(message)
     }
     client.subscribe("stop") {
-      message => println(message)
+      message: BosonMessage => println(message)
     }
     client.subscribe("stop") {
-      message => println(message)
+      message: BosonMessage => println(message)
     }
     assertEquals(1, client.topicsTotal)
   }
@@ -42,17 +44,17 @@ class HiggsTest {
   def subscribe3TopicsTest() {
     val client = new Higgs(HiggsConstants.SOCKET_CLIENT)
     client.subscribe("a") {
-      message => println(message)
+      message: BosonMessage => println(message)
     }
     client.subscribe("b") {
-      message => println(message)
+      message: BosonMessage => println(message)
     }
     client.subscribe("c") {
-      message => println(message)
+      message: BosonMessage => println(message)
     }
     assertEquals(3, client.topicsTotal)
     client.subscribe("b") {
-      message => println(message)
+      message: BosonMessage => println(message)
     }
     //should still be three since c is the same topic with an extra function
     assertEquals(3, client.topicsTotal)
@@ -65,16 +67,16 @@ class HiggsTest {
   def multipleSubscribersTest() {
     val client = new Higgs(HiggsConstants.SOCKET_CLIENT)
     client.subscribe("a") {
-      message => println(message)
+      message: BosonMessage => println(message)
     }
     client.subscribe("b") {
-      message => println(message)
+      message: BosonMessage => println(message)
     }
     client.subscribe("b") {
-      message => println(message)
+      message: BosonMessage => println(message)
     }
     client.subscribe("b") {
-      message => println(message)
+      message: BosonMessage => println(message)
     }
     assertEquals(2, client.topicsTotal)
     assertEquals(3, client.subscribersOf("b").size)

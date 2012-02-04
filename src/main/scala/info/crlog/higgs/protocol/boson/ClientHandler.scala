@@ -1,6 +1,7 @@
 package info.crlog.higgs.protocol.boson
 
 import org.jboss.netty.channel._
+import com.codahale.logula.Logging
 import collection.mutable.ListBuffer
 import info.crlog.higgs.protocol.{HiggsClientHandler, Message, MessageListener}
 
