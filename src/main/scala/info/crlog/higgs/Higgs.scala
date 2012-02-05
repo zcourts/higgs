@@ -20,9 +20,9 @@ class Higgs(var socketType: HiggsConstants.Value) {
   var encoder: Class[_ <: HiggsEncoder] = classOf[BosonEncoder]
   @BeanProperty //default client request handler
   var clientHandler: Class[_ <: HiggsPublisher] = classOf[Publisher]
+  var message: Class[_ <: Message] = classOf[BosonMessage]
   @BeanProperty //default server request handler
   var serverHandler: Class[_ <: HiggsSubscriber] = classOf[Subscriber]
-  var message: Class[_ <: Message] = classOf[BosonMessage]
   private var publisher: Option[HiggsClient] = None
   private var subscriber: Option[HiggsServer] = None
   /**
@@ -64,12 +64,20 @@ class Higgs(var socketType: HiggsConstants.Value) {
     if (socketType.equals(HiggsConstants.HIGGS_PUBLISHER)) {
       throw new UnsupportedOperationException("A Higgs instance of type PUBLISHER cannot be bound, use <code>connect</code> instead")
     }
-    subscriber = Some(new HiggsServer(host, port, decoder, encoder, serverHandler))
-    //    server.get.handler.addListener(new MessageListener() {
-    //      def onMessage(m: Message) = {
-    //        publish(m)
-    //      }
-    //    })
+    subscriber = Some(new HiggsServer(host, port, decoder, encoder, serverHandler, new MessageListener() {
+      def onMessage(m: Message) = {
+        publish(m)
+      }
+    }))
+  }
+
+  def stop() = {
+    if (socketType.equals(HiggsConstants.HIGGS_PUBLISHER)) {
+      publisher.get.shutdown()
+    } else {
+      subscriber.get.channel.unbind()
+      subscriber.get.shutdown()
+    }
   }
 
   /**
@@ -82,11 +90,6 @@ class Higgs(var socketType: HiggsConstants.Value) {
     }
     //wire everything together
     publisher = Some(new HiggsClient(host, port, decoder, encoder, clientHandler))
-    publisher.get.handler.addListener(new MessageListener() {
-      def onMessage(m: Message) = {
-        publish(m)
-      }
-    })
   }
 
   /**

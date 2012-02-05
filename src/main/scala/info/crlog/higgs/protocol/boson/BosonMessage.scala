@@ -10,7 +10,7 @@ import reflect.BeanProperty
 
 class BosonMessage extends Message {
   def this(message: String) = {
-    this ()
+    this()
     contents = message.getBytes
   }
 
@@ -20,13 +20,13 @@ class BosonMessage extends Message {
    * @param c the contents of the message
    */
   def this(t: String, c: String) = {
-    this ()
+    this()
     topic = t
     contents = c.getBytes
   }
 
   def this(bytes: Array[Byte]) = {
-    this ()
+    this()
     contents = bytes
   }
 
@@ -34,10 +34,14 @@ class BosonMessage extends Message {
    * Simple,naive constructor which simply calls toString on the provided object
    * i.e. your object must override toString and return the string form you wish to be sent
    */
-    def this(obj: AnyRef) = {
-      this ()
+  def this(obj: AnyRef) = {
+    this()
+    if (obj.isInstanceOf[Array[Byte]]) {
+      contents = obj.asInstanceOf[Array[Byte]]
+    } else {
       contents = obj.toString.getBytes
     }
+  }
 
   @BeanProperty
   val id = UUID.randomUUID
