@@ -10,7 +10,7 @@ import org.jboss.netty.handler.codec.compression.{ZlibDecoder, ZlibWrapper, Zlib
 class ClientPipelineFactory(
                              decoder: Class[_ <: HiggsDecoder],
                              encoder: Class[_ <: HiggsEncoder],
-                             clientHandler: Class[_ <: HiggsClientHandler]
+                             clientHandler: Class[_ <: HiggsPublisher]
                              ) extends ChannelPipelineFactory {
 
   override def getPipeline: ChannelPipeline = {

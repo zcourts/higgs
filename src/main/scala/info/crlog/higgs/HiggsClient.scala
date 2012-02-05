@@ -7,7 +7,7 @@ import _root_.java.net.InetSocketAddress
 import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory
 import org.jboss.netty.bootstrap.ClientBootstrap
 import protocol._
-import boson.ClientHandler
+import boson.Publisher
 
 /**
  * A simple client interface to encapsulate the Netty NIO connection for a client request
@@ -22,7 +22,7 @@ import boson.ClientHandler
 class HiggsClient(host: String, port: Int,
                   decoder: Class[_ <: HiggsDecoder],
                   encoder: Class[_ <: HiggsEncoder],
-                  clientHandler: Class[_ <: HiggsClientHandler]
+                  clientHandler: Class[_ <: HiggsPublisher]
                    ) {
 
   val channelFactory = new NioClientSocketChannelFactory(Executors.newCachedThreadPool(), Executors.newCachedThreadPool())
@@ -39,7 +39,7 @@ class HiggsClient(host: String, port: Int,
   val channel = connectFuture.awaitUninterruptibly().getChannel();
 
   //Get the handler instance
-  val handler = channel.getPipeline.getLast.asInstanceOf[ClientHandler]
+  val handler = channel.getPipeline.getLast.asInstanceOf[HiggsPublisher]
   //  /**
   //   * Adds a message listener that will be notified when messages are received
   //   */

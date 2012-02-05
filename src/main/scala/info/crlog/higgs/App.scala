@@ -1,25 +1,30 @@
-package com.scriptandscroll.movies
+package info.crlog.higgs
 
-import info.crlog.higgs.{Higgs, HiggsConstants}
 import info.crlog.higgs.protocol.boson.BosonMessage
 import info.crlog.higgs.protocol.Message
 
 
 object App {
   def main(args: Array[String]) = {
-    val client = new Higgs(HiggsConstants.SOCKET_CLIENT)
-    client.port = 9090
+    val subscriber = new Higgs(HiggsConstants.HIGGS_SUBSCRIBER)
+    subscriber.port = 9090
     //get all messages regardless of topic
-    client.receive {
+    subscriber.receive {
       message => println(message)
     }
     //sub scribe to the topic 'a'
-    client.subscribe("a") {
+    subscriber.subscribe("a") {
       case message: BosonMessage => println(message)
       case message: Message => println(message)
     }
-    client connect
-    //val server = new Higgs(HiggsConstants.SOCKET_SERVER)
+    subscriber.bind()
 
+    val publisher= new Higgs(HiggsConstants.HIGGS_PUBLISHER)
+    publisher.port = 9090
+    publisher.connect()
+
+    for (i <- 0 to 1000000000){
+        publisher send  "Message"+i
+    }
   }
 }

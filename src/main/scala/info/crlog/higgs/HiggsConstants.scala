@@ -10,11 +10,11 @@ object HiggsConstants extends Enumeration {
   /**
    * Sets a Higgs instance to being a server, i.e. Receives messages and responds
    */
-  val SOCKET_SERVER = Value("SERVER")
+  val HIGGS_PUBLISHER = Value("PUBLISHER")
   /**
    * Sets a Higgs instance to being a client, i.e. Send messages
    */
-  val SOCKET_CLIENT = Value("CLIENT")
+  val HIGGS_SUBSCRIBER = Value("SUBSCRIBER")
   /**
    * Sets a Higgs instance to being a custom socket type which allows a user to
    * supply a custom protocol
@@ -25,5 +25,7 @@ object HiggsConstants extends Enumeration {
    */
   val TOPIC_ALL = Value("")
   //auto to string on all constants when used in place that expects string
-  implicit def constantToString(v:Value):String={v.toString}
+  implicit def constantToString(v: Value): String = {
+    v.toString
+  }
 }

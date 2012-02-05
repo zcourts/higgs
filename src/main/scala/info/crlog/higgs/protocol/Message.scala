@@ -50,7 +50,7 @@ abstract class Message {
    * Serialize this message to a series of bytes that can be de-serialized on the other end
    */
   def serialize(): Array[Byte] = {
-    generate(this).getBytes
+    contents
   }
 
   implicit def msgToString(m: Message): String = {

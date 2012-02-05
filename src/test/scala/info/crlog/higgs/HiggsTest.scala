@@ -13,7 +13,7 @@ import protocol.Message
 class HiggsTest {
   @Test
   def differentMessageTypes() {
-    var client = new Higgs(HiggsConstants.SOCKET_CLIENT)
+    var client = new Higgs(HiggsConstants.HIGGS_SUBSCRIBER)
     var boson = 0
     var m = 0
     client.receive {
@@ -28,7 +28,7 @@ class HiggsTest {
 
   @Test
   def messageMultiPublishing() {
-    val client = new Higgs(HiggsConstants.SOCKET_CLIENT)
+    val client = new Higgs(HiggsConstants.HIGGS_SUBSCRIBER)
     var received = 0
     var subscribed = 0
     client receive {
@@ -66,7 +66,7 @@ class HiggsTest {
   //test receive all and topic subscription
   @Test
   def messagePublishing() {
-    val client = new Higgs(HiggsConstants.SOCKET_CLIENT)
+    val client = new Higgs(HiggsConstants.HIGGS_SUBSCRIBER)
     var received = 0
     var subscribed = 0
     client receive {
@@ -93,7 +93,7 @@ class HiggsTest {
 
   @Test
   def subscribeAll() {
-    val client = new Higgs(HiggsConstants.SOCKET_CLIENT)
+    val client = new Higgs(HiggsConstants.HIGGS_SUBSCRIBER)
     client.receive {
       message => println()
     }
@@ -109,7 +109,7 @@ class HiggsTest {
 
   @Test
   def subscribeTest() {
-    val client = new Higgs(HiggsConstants.SOCKET_CLIENT)
+    val client = new Higgs(HiggsConstants.HIGGS_SUBSCRIBER)
     client.subscribe("stop") {
       message => println(message)
     }
@@ -124,7 +124,7 @@ class HiggsTest {
 
   @Test
   def subscribe3TopicsTest() {
-    val client = new Higgs(HiggsConstants.SOCKET_CLIENT)
+    val client = new Higgs(HiggsConstants.HIGGS_SUBSCRIBER)
     client.subscribe("a") {
       message => println(message)
     }
@@ -147,7 +147,7 @@ class HiggsTest {
    */
   @Test
   def multipleSubscribersTest() {
-    val client = new Higgs(HiggsConstants.SOCKET_CLIENT)
+    val client = new Higgs(HiggsConstants.HIGGS_SUBSCRIBER)
     client.subscribe("a") {
       message => println(message)
     }
