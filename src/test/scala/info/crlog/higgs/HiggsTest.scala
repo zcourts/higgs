@@ -17,15 +17,13 @@ class HiggsTest {
     var boson = 0
     var m = 0
     client.receive {
-      //boson 'is a' message, i.e. subclass of Message so should match both cases but obviously
-      // doesn't go past the first case because its always true
-      case message: BosonMessage => boson += 1
+     case message: BosonMessage => boson += 1
       case message: Message => m += 1
     }
     client.publish(new Message() {})
     client.publish(new BosonMessage(""))
-    assertEquals(2, boson)
-    assertEquals(0, m)
+    assertEquals(1, boson)
+    assertEquals(1, m)
   }
 
   @Test
