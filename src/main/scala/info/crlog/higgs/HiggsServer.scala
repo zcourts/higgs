@@ -19,7 +19,7 @@ class HiggsServer(host: String, port: Int,
   val bootstrap = new ServerBootstrap(channelFactory)
 
   // Set up the event pipeline factory.
-  bootstrap.setPipelineFactory(new ServerPipelineFactory(decoder, encoder, serverHandler))
+  bootstrap.setPipelineFactory(new SubscriberPipelineFactory(decoder, encoder, serverHandler))
 
   // Bind and start to accept incoming connections.
   val channel = bootstrap.bind(new InetSocketAddress(host, port))

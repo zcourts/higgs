@@ -30,7 +30,7 @@ class HiggsClient(host: String, port: Int,
   val bootstrap = new ClientBootstrap(channelFactory);
 
   // Set up the event pipeline factory.
-  bootstrap.setPipelineFactory(new ClientPipelineFactory(decoder, encoder, clientHandler));
+  bootstrap.setPipelineFactory(new PublisherPipelineFactory(decoder, encoder, clientHandler));
 
   // Make a new connection.
   val connectFuture = bootstrap.connect(new InetSocketAddress(host, port));
