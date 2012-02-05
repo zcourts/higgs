@@ -10,8 +10,7 @@ import collection.mutable.{ListBuffer, HashMap}
  */
 
 class Higgs(var socketType: HiggsConstants.Value) {
-  type MessageType = Option[_ <: Message]
-  type ListenersList = ListBuffer[Function1[MessageType, Unit]]
+  type ListenersList = ListBuffer[Function1[Message, Unit]]
   /**
    * The decoder Higgs uses to decode messages
    */
@@ -84,7 +83,7 @@ class Higgs(var socketType: HiggsConstants.Value) {
     client = Some(new HiggsClient(host, port, decoder, encoder, clientHandler))
     client.get.handler.addListener(new MessageListener() {
       def onMessage(m: Message) = {
-        publish(Some(m))
+        publish(m)
       }
     })
   }
@@ -104,7 +103,7 @@ class Higgs(var socketType: HiggsConstants.Value) {
    * @param topic The topic to subscribe tp
    * @param fn The function to call for each message that matches the subscribed topic
    */
-  def subscribe(topic: String)(fn: Function1[MessageType, Unit]) = {
+  def subscribe(topic: String)(fn: Function1[Message, Unit]) = {
     val subscriberz = listeners.getOrElseUpdate(topic, new ListenersList())
     subscriberz.append(fn)
   }
@@ -112,7 +111,7 @@ class Higgs(var socketType: HiggsConstants.Value) {
   /**
    * Subscribe to all messages, regardless of the topic
    */
-  def receive(fn: Function1[MessageType, Unit]) = {
+  def receive(fn: Function1[Message, Unit]) = {
     subscribe(HiggsConstants.TOPIC_ALL)(fn)
   }
 
@@ -141,29 +140,29 @@ class Higgs(var socketType: HiggsConstants.Value) {
   }
 
   /**
-   * invoke a set of functions subscribed to the given message, passing the message as a parameter
+   * Used by higgs internally to send a message to all subscribed topics.
+   * Exposed to allow the possibility of sending messages to local subscribers of the message's topic
    */
-  private def sendMsg(functions: Option[Higgs.this.type#ListenersList], m: Higgs.this.type#MessageType) {
-    functions.get foreach {
-      function => function(m.get.asInstanceOf[MessageType])
-    }
-  }
-
-  private def publish(m: MessageType) = {
+  def publish(m: Message) = {
     //get all subscribers who want to receive all messsages
     listeners.get(HiggsConstants.TOPIC_ALL) match {
       case functions: Option[ListenersList] => {
-        sendMsg(functions, m)
+        functions.getOrElse(List()) foreach {
+          function => function(m)
+        }
       }
-      case _ => //do nothing  in all other cases, we simply don't have anyone listening to everything
     }
-
-    //get subscribers of the message's topic and send them the message
-    listeners.get(m.get.topic) match {
-      case functions: Option[ListenersList] => {
-        sendMsg(functions, m)
+    //if the topic of the message is not set then it would have been
+    //sent above, don't resend it
+    if (!m.topic.equals(HiggsConstants.TOPIC_ALL.toString)) { //explicitly call toString comprison will fail otherwise
+      //get subscribers of the message's topic and send them the message
+      listeners.get(m.topic) match {
+        case functions: Option[ListenersList] => {
+          functions.getOrElse(List()).foreach {
+            function => function(m)
+          }
+        }
       }
-      case _ => //no subscribers to this topic so discard the message
     }
   }
 

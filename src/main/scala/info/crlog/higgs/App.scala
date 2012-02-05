@@ -2,6 +2,7 @@ package com.scriptandscroll.movies
 
 import info.crlog.higgs.{Higgs, HiggsConstants}
 import info.crlog.higgs.protocol.boson.BosonMessage
+import info.crlog.higgs.protocol.Message
 
 
 object App {
@@ -10,11 +11,12 @@ object App {
     client.port = 9090
     //get all messages regardless of topic
     client.receive {
-       message: BosonMessage => println(message)
+      message => println(message)
     }
     //sub scribe to the topic 'a'
     client.subscribe("a") {
-       message: BosonMessage => println(message)
+      case message: BosonMessage => println(message)
+      case message: Message => println(message)
     }
     client connect
     //val server = new Higgs(HiggsConstants.SOCKET_SERVER)

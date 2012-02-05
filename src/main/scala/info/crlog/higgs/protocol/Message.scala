@@ -4,6 +4,7 @@ import reflect.BeanProperty
 import java.nio.charset.Charset
 import com.codahale.jerkson.Json._
 import com.codahale.jerkson.JsonSnakeCase
+import info.crlog.higgs.HiggsConstants
 
 /**
  * @author Courtney Robinson <courtney@crlog.info> @ 01/02/12
@@ -11,10 +12,11 @@ import com.codahale.jerkson.JsonSnakeCase
 @JsonSnakeCase
 abstract class Message {
   @BeanProperty
-  var topic: String = ""
+  var topic: String = HiggsConstants.TOPIC_ALL
 
   @BeanProperty
-  var contents: Array[Byte] = null
+  var contents: Array[Byte] = "".getBytes
+
   /**
    * An alias for <code>asString</code> which returns the contents of this message using the default charset for decoding  the message
    */
@@ -49,5 +51,13 @@ abstract class Message {
    */
   def serialize(): Array[Byte] = {
     generate(this).getBytes
+  }
+
+  implicit def msgToString(m: Message): String = {
+    m.toString
+  }
+
+  implicit def msgToBytes(m: Message): Array[Byte] = {
+    m.asBytes
   }
 }
