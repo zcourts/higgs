@@ -1,8 +1,5 @@
 package info.crlog.higgs
 
-import info.crlog.higgs.protocol.boson.BosonMessage
-import info.crlog.higgs.protocol.Message
-
 
 object App {
   def main(args: Array[String]) = {
@@ -10,21 +7,28 @@ object App {
     subscriber.port = 9090
     //get all messages regardless of topic
     subscriber.receive {
-      message => println("App: "+message)
+      message => println("App: " + message)
     }
     //sub scribe to the topic 'a'
-//    subscriber.subscribe("a") {
-//      case message: BosonMessage => println(message)
-//      case message: Message => println(message)
-//    }
+    //    subscriber.subscribe("a") {
+    //      case message: BosonMessage => println(message)
+    //      case message: Message => println(message)
+    //    }
     subscriber.bind()
 
-    val publisher= new Higgs(HiggsConstants.HIGGS_PUBLISHER)
+    val publisher = new Higgs(HiggsConstants.HIGGS_PUBLISHER)
     publisher.port = 9090
     publisher.connect()
-
-    for (i <- 0 to 10){
-        publisher send  "Message "+i
+    val then = System.currentTimeMillis()
+    for (i <- 0 to 1000) {
+      publisher send "Message " + i
     }
+    val now = System.currentTimeMillis()
+    Thread.sleep(1000)
+    println("Stopping")
+    println("Been :" + (now - then) + " mili secs")
+    subscriber.stop
+    publisher.stop
+    System.exit(0)
   }
 }
