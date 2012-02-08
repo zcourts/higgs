@@ -16,12 +16,12 @@ Currently  only 0x0,0x1 and 0x2 is in use which specifies a no more content, mul
 
 # Flags
 
-* __0x0__ Full message with no more content
-* __0x1__ Multi-part message which is delivered as a single message on the receiving end, a 'single' message here means
+* __0x0__(__NO_MORE_CONTENT__) Full message with no more content
+* __0x1__(__MULTI_PART_MESSAGE__) Multi-part message which is delivered as a single message on the receiving end, a 'single' message here means
 a single Message object containing all the contents of the multiple message parts received.
-* __0x2__ Split Multi-part message which delivers each part of a multi part message separately on
+* __0x2__(__SPLIT_MULTI_PART_MESSAGE__) Split Multi-part message which delivers each part of a multi part message separately on
 the receiving end __once all parts of the message has been received__.
-* __0x3__ The same as split multi-part message with the exception of when messages are delivered.
+* __0x3__(__NO_MESSAGE_BUFFER__) The same as split multi-part message with the exception of when messages are delivered.
 Instead of buffering, the parts of a split multi-part message are delivered as soon as they are received
 
 __NOTE__ Split messages cannot have multiple topics. Only the topic of the first part received is considered. This means that
@@ -44,7 +44,7 @@ __topic__ is obviously the topic of the message, if 'topic' is not set then noth
 
 __message_here__ would be the 1024 bytes of the message.
 
-__ ________________________________to be edited to reflect current implementation______________________________________ __
+__________________________________to be edited to reflect current implementation________________________________________
 
 # Multi part messages (m)
 
