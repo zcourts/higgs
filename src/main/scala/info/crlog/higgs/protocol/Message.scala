@@ -1,10 +1,9 @@
 package info.crlog.higgs.protocol
 
 import reflect.BeanProperty
-import java.nio.charset.Charset
-import com.codahale.jerkson.Json._
 import com.codahale.jerkson.JsonSnakeCase
 import info.crlog.higgs.HiggsConstants
+import info.crlog.higgs.util.StringUtil
 
 /**
  * @author Courtney Robinson <courtney@crlog.info> @ 01/02/12
@@ -25,17 +24,10 @@ abstract class Message {
   }
 
   /**
-   *  Gets the contents of this message as a string using the default system charset  to decode the message contents
+   *  Gets the contents of this message as a string using the default Higgs charset  to decode the message contents
    */
   def asString(): String = {
-    asString(Charset.defaultCharset())
-  }
-
-  /**
-   * Gets the contents of this message as a string using the specified charset to decode the message's contents
-   */
-  def asString(charset: Charset): String = {
-    new String(contents, charset)
+    StringUtil.getString(contents)
   }
 
   /**

@@ -134,6 +134,17 @@ class Higgs(var socketType: HiggsConstants.Value) {
   }
 
   /**
+   * Attempts to send a message with the given topic.
+   * @return true if written successfully, false otherwise
+   */
+  def send(topic: String, msg: String): Boolean = {
+    val m = message.newInstance()
+    m.setContents(msg.getBytes)
+    m.topic = topic
+    send(m)
+  }
+
+  /**
    * Attempts to send a message.
    * @return true if written successfully, false otherwise
    */
@@ -143,7 +154,7 @@ class Higgs(var socketType: HiggsConstants.Value) {
     }
     val channelObj = publisher.get.channel
     if (channelObj.isWritable) {
-      channelObj.write(msg.asBytes())
+      channelObj.write(msg)
       true
     } else {
       false
