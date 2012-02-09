@@ -129,7 +129,7 @@ class Higgs(var socketType: HiggsConstants.Value) {
    */
   def send(msg: String): Boolean = {
     val m = message.newInstance()
-    m.setContents(msg.getBytes)
+    m.setContents(msg)
     send(m)
   }
 
@@ -139,7 +139,7 @@ class Higgs(var socketType: HiggsConstants.Value) {
    */
   def send(topic: String, msg: String): Boolean = {
     val m = message.newInstance()
-    m.setContents(msg.getBytes)
+    m.setContents(msg)
     m.topic = topic
     send(m)
   }

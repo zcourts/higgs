@@ -17,8 +17,8 @@ Currently  only 0x0,0x1 and 0x2 is in use which specifies a no more content, mul
 # Flags
 
 * __0x0__(__NO_MORE_CONTENT__) Full message with no more content
-* __0x1__(__MULTI_PART_MESSAGE__) Multi-part message which is delivered as a single message on the receiving end, a 'single' message here means
-a single Message object containing all the contents of the multiple message parts received.
+* __0x1__(__MULTI_PART_MESSAGE__) Multi-part message which is delivered as a single message on the receiving end,
+a 'single' message here means a single Message object containing all the contents of the multiple message parts received.
 * __0x2__(__SPLIT_MULTI_PART_MESSAGE__) Split Multi-part message which delivers each part of a multi part message separately on
 the receiving end __once all parts of the message has been received__.
 * __0x3__(__NO_MESSAGE_BUFFER__) The same as split multi-part message with the exception of when messages are delivered.
@@ -44,17 +44,18 @@ __topic__ is obviously the topic of the message, if 'topic' is not set then noth
 
 __message_here__ would be the 1024 bytes of the message.
 
-__________________________________to be edited to reflect current implementation________________________________________
 
 # Multi part messages (m)
 
-As demonstrated below, multi part messages are sent as separate messages. The first (and all following messages except the last) part of the message
-specifies the size,m flag and the data. The end of the multi-part message sends the same structure but setting the m flag to 0.
+As demonstrated below, multi part messages are sent as separate messages. The first (and all following messages except the last)
+part of the message specifies the size,m flag and the data. The end of the multi-part message sends the same structure but
+setting the m flag to 0.
 
 If __no data is left__ then the last frame can also specify a size of 0,the flag 0 and no topic or data parts, as in __0|0__
 
-__NOTE__ Multi part messages __are buffered__ and on the receiving end until the end message is received then __ALL__ the contents of the buffer is passed to the receiver as __ONE MESSAGE__!
-If you need multi-part messages delivered as separate messages just as they are received then see __Split multi message__
+__NOTE__ Multi part messages __are buffered__ and on the receiving end until the end message is received then __ALL__
+the contents of the buffer is passed to the receiver as __ONE MESSAGE__! If you need multi-part messages delivered as
+separate messages just as they are received then see __Split multi message__
 
 # Example
 

@@ -15,7 +15,7 @@ object App {
   }
 
   def main(args: Array[String]) = {
-    val stop = 10
+    val stop = 1000000
     val pub = new Thread(new Runnable() {
       def run() {
         val publisher = new Higgs(HiggsConstants.HIGGS_PUBLISHER)

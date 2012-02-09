@@ -34,7 +34,7 @@ class BosonMessage extends Message {
 
   def this(message: String) = {
     this()
-    contents = message.getBytes
+    contents.append(message.getBytes)
   }
 
   /**
@@ -45,12 +45,12 @@ class BosonMessage extends Message {
   def this(t: String, c: String) = {
     this()
     topic = t
-    contents = c.getBytes
+    contents.append(c.getBytes)
   }
 
   def this(bytes: Array[Byte]) = {
     this()
-    contents = bytes
+    contents.append(StringUtil.getString(bytes))
   }
 
   /**
@@ -63,7 +63,7 @@ class BosonMessage extends Message {
     this()
     flag = f
     this.topic = StringUtil.getString(topic)
-    contents = content
+    contents.append(StringUtil.getString(content))
   }
 
   /**
@@ -73,9 +73,9 @@ class BosonMessage extends Message {
   def this(obj: AnyRef) = {
     this()
     if (obj.isInstanceOf[Array[Byte]]) {
-      contents = obj.asInstanceOf[Array[Byte]]
+      contents.append(StringUtil.getString(obj.asInstanceOf[Array[Byte]]))
     } else {
-      contents = obj.toString.getBytes
+      contents.append(obj.toString.getBytes)
     }
   }
 

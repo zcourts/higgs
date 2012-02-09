@@ -13,8 +13,7 @@ abstract class Message {
   @BeanProperty
   var topic: String = HiggsConstants.TOPIC_ALL
 
-  @BeanProperty
-  var contents: Array[Byte] = "".getBytes
+  var contents = new StringBuffer()
 
   /**
    * An alias for <code>asString</code> which returns the contents of this message using the default charset for decoding  the message
@@ -27,7 +26,7 @@ abstract class Message {
    *  Gets the contents of this message as a string using the default Higgs charset  to decode the message contents
    */
   def asString(): String = {
-    StringUtil.getString(contents)
+    contents.toString
   }
 
   /**
@@ -42,7 +41,11 @@ abstract class Message {
    * Serialize this message to a series of bytes that can be de-serialized on the other end
    */
   def serialize(): Array[Byte] = {
-    contents
+    StringUtil.getBytes(contents.toString)
+  }
+
+  def setContents(m: String) = {
+    contents.append(m)
   }
 
   implicit def msgToString(m: Message): String = {
