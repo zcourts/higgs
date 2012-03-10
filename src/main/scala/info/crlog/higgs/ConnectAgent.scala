@@ -13,7 +13,7 @@ class ConnectAgent extends HiggsAgent {
    * Binds to the given host and port
    * @throws UnsupportedOperationException if socketType is not PUBLISHER
    */
-  def connect() = {
+  def connect() {
     if (socketType.equals(HiggsConstants.HIGGS_SUBSCRIBER)) {
       throw new UnsupportedOperationException("A Higgs instance of type SUBSCRIBER cannot connect, use <code>bind</code> instead")
     }

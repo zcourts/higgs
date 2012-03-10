@@ -8,7 +8,7 @@ import org.jboss.netty.channel.{ChannelStateEvent, ChannelHandlerContext}
 
 trait MessageListener {
   def onMessage(msg: Message)
-  def onConnected(ctx: ChannelHandlerContext, e: ChannelStateEvent): Unit ={
+  def onConnected(ctx: ChannelHandlerContext, e: ChannelStateEvent) {
 
   }
 }

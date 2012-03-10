@@ -18,7 +18,7 @@ abstract class Message {
   /**
    * An alias for <code>asString</code> which returns the contents of this message using the default charset for decoding  the message
    */
-  override def toString(): String = {
+  override def toString: String = {
     asString()
   }
 
@@ -34,7 +34,7 @@ abstract class Message {
    * Serialize this message to a series of bytes that can be de-serialized on the other end
    */
   def asBytes(): Array[Byte] = {
-    serialize
+    serialize()
   }
 
   /**
@@ -49,10 +49,10 @@ abstract class Message {
   }
 
   implicit def msgToString(m: Message): String = {
-    m.toString
+    m.toString()
   }
 
   implicit def msgToBytes(m: Message): Array[Byte] = {
-    m.asBytes
+    m.asBytes()
   }
 }

@@ -19,7 +19,7 @@ class BosonEncoder extends HiggsEncoder {
       message = new BosonMessage(msg)
     }
     // Convert the message to byte array.
-    val data: Array[Byte] = message asBytes
+    val data: Array[Byte] = message.asBytes()
     val topic: Array[Byte] = message.topic.getBytes
     val dataLength: Int = data.length
     // Construct a message.
