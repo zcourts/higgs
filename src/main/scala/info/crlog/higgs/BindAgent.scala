@@ -1,96 +1,17 @@
 package info.crlog.higgs
 
-import protocol._
-import protocol.boson._
-import reflect.BeanProperty
-import collection.mutable.{ListBuffer, HashMap}
+import api.{HiggsServer, HiggsConstants}
+import protocol.{MessageListener, Message}
+import collection.mutable.HashMap
 
-/**
- * @author Courtney Robinson <courtney@crlog.info> @ 31/01/12
- */
+class BindAgent extends HiggsAgent {
+  socketType = HiggsConstants.HIGGS_SUBSCRIBER
 
-class Higgs(var socketType: HiggsConstants.Value) {
-  type ListenersList = ListBuffer[Function1[Message, Unit]]
-  /**
-   * The decoder Higgs uses to decode messages
-   */
-  @BeanProperty //default protocol decoder
-  var decoder: Class[_ <: HiggsDecoder] = classOf[BosonDecoder]
-  @BeanProperty //default protocol encoder
-  var encoder: Class[_ <: HiggsEncoder] = classOf[BosonEncoder]
-  @BeanProperty //default client request handler
-  var clientHandler: Class[_ <: HiggsPublisher] = classOf[Publisher]
-  var message: Class[_ <: Message] = classOf[BosonMessage]
-  @BeanProperty //default server request handler
-  var serverHandler: Class[_ <: HiggsSubscriber] = classOf[Subscriber]
-  private var publisher: Option[HiggsClient] = None
-  private var subscriber: Option[HiggsServer] = None
   /**
    * may look overly complex but is quite simple... topic =>{SUBSCRIBRS=>[(id,function),(id,function)]}
    * i.e. the key for the outter hashmap is the topic. The list buffer for each topic contains a set of functions and their IDs...
    */
-  private val listeners = new HashMap[String, ListenersList]()
-  @BeanProperty
-  var host = "127.0.0.1"
-  @BeanProperty
-  var port = 2012
-
-  socketType match {
-    case HiggsConstants.HIGGS_SUBSCRIBER => {}
-    case HiggsConstants.HIGGS_PUBLISHER => {}
-    case HiggsConstants.SOCKET_OTHER => {}
-    case _ => {
-      throw IllegalSocketTypeException("A Higgs instance can be of socket type " +
-        "HiggsConstants.SOCKET_(CLIENT|SERVER|OTHER). If you need a custom type specify " +
-        "socketType as being HiggsConstants.SOCKET_OTHER and set your custom encoder,decoder,client" +
-        " handler and server handler")
-    }
-  }
-
-  /**
-   * Creates an instance which will bind or connect to the given host & port
-   */
-  def this(socketType: HiggsConstants.Value, h: String, p: Int) = {
-    this(socketType)
-    host = h
-    port = p
-  }
-
-  /**
-   * Binds to the given host and port
-   * @throws UnsupportedOperationException if   socketType IS CLIENT
-   */
-  def bind() = {
-    if (socketType.equals(HiggsConstants.HIGGS_PUBLISHER)) {
-      throw new UnsupportedOperationException("A Higgs instance of type PUBLISHER cannot be bound, use <code>connect</code> instead")
-    }
-    subscriber = Some(new HiggsServer(host, port, decoder, encoder, serverHandler, new MessageListener() {
-      def onMessage(m: Message) = {
-        publish(m)
-      }
-    }))
-  }
-
-  def stop() = {
-    if (socketType.equals(HiggsConstants.HIGGS_PUBLISHER)) {
-      publisher.get.shutdown()
-    } else {
-      subscriber.get.channel.unbind()
-      subscriber.get.shutdown()
-    }
-  }
-
-  /**
-   * Binds to the given host and port
-   * @throws UnsupportedOperationException if socketType is not PUBLISHER
-   */
-  def connect() = {
-    if (socketType.equals(HiggsConstants.HIGGS_SUBSCRIBER)) {
-      throw new UnsupportedOperationException("A Higgs instance of type SUBSCRIBER cannot connect, use <code>bind</code> instead")
-    }
-    //wire everything together
-    publisher = Some(new HiggsClient(host, port, decoder, encoder, clientHandler))
-  }
+  protected val listeners = new HashMap[String, ListenersList]()
 
   /**
    * Subscribes to a given topic, passing each message to the function provided
@@ -124,30 +45,18 @@ class Higgs(var socketType: HiggsConstants.Value) {
   }
 
   /**
-   * Attempts to send a message.
-   * @return true if written successfully, false otherwise
+   * Binds to the given host and port
+   * @throws UnsupportedOperationException if   socketType IS CLIENT
    */
-  def send(msg: String): Boolean = {
-    val m = message.newInstance()
-    m.setContents(msg.getBytes)
-    send(m)
-  }
-
-  /**
-   * Attempts to send a message.
-   * @return true if written successfully, false otherwise
-   */
-  def send(msg: Message): Boolean = {
-    if (socketType.equals(HiggsConstants.HIGGS_SUBSCRIBER)) {
-      throw new UnsupportedOperationException("Higgs instances of type SUBSCRIBER cannot be used to send messages")
+  def bind() = {
+    if (socketType.equals(HiggsConstants.HIGGS_PUBLISHER)) {
+      throw new UnsupportedOperationException("A Higgs instance of type PUBLISHER cannot be bound, use <code>connect</code> instead")
     }
-    val channelObj = publisher.get.channel
-    if (channelObj.isWritable) {
-      channelObj.write(msg.asBytes())
-      true
-    } else {
-      false
-    }
+    subscriber = Some(new HiggsServer(host, port, decoder, encoder, serverHandler, new MessageListener() {
+      def onMessage(m: Message) = {
+        publish(m)
+      }
+    }))
   }
 
   /**

@@ -1,4 +1,4 @@
-package info.crlog.higgs
+package info.crlog.higgs.api
 
 /**
  * A set of constants used through out the Higss library for  Type safety and consistency
@@ -24,6 +24,17 @@ object HiggsConstants extends Enumeration {
    * When used as the topic for a message listener then that listener will receive all messages
    */
   val TOPIC_ALL = Value("")
+
+  val PROTOCOL_ENCODING = Value("UTF-8")
+
+  //--------------------------
+  val MIN_READ_BUFFER_SIZE = 64
+  val INITIAL_READ_BUFFER_SIZE = 16384
+  val MAX_READ_BUFFER_SIZE = 65536
+  val THREAD_POOL_SIZE = 16
+  val CHANNEL_MEMORY_LIMIT = MAX_READ_BUFFER_SIZE * 2
+  val GLOBAL_MEMORY_LIMIT: Long = Runtime.getRuntime().maxMemory() / 3
+
   //auto to string on all constants when used in place that expects string
   implicit def constantToString(v: Value): String = {
     v.toString
