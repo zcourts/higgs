@@ -1,10 +1,9 @@
 package info.crlog.higgs.protocol
 
 import reflect.BeanProperty
-import java.nio.charset.Charset
-import com.codahale.jerkson.Json._
 import com.codahale.jerkson.JsonSnakeCase
-import info.crlog.higgs.HiggsConstants
+import info.crlog.higgs.api.HiggsConstants
+import info.crlog.higgs.util.StringUtil
 
 /**
  * @author Courtney Robinson <courtney@crlog.info> @ 01/02/12
@@ -14,8 +13,7 @@ abstract class Message {
   @BeanProperty
   var topic: String = HiggsConstants.TOPIC_ALL
 
-  @BeanProperty
-  var contents: Array[Byte] = "".getBytes
+  var contents = new StringBuffer()
 
   /**
    * An alias for <code>asString</code> which returns the contents of this message using the default charset for decoding  the message
@@ -25,17 +23,10 @@ abstract class Message {
   }
 
   /**
-   *  Gets the contents of this message as a string using the default system charset  to decode the message contents
+   *  Gets the contents of this message as a string using the default Higgs charset  to decode the message contents
    */
   def asString(): String = {
-    asString(Charset.defaultCharset())
-  }
-
-  /**
-   * Gets the contents of this message as a string using the specified charset to decode the message's contents
-   */
-  def asString(charset: Charset): String = {
-    new String(contents, charset)
+    contents.toString
   }
 
   /**
@@ -50,7 +41,11 @@ abstract class Message {
    * Serialize this message to a series of bytes that can be de-serialized on the other end
    */
   def serialize(): Array[Byte] = {
-    contents
+    StringUtil.getBytes(contents.toString)
+  }
+
+  def setContents(m: String) = {
+    contents.append(m)
   }
 
   implicit def msgToString(m: Message): String = {

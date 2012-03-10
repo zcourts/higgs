@@ -1,4 +1,4 @@
-package info.crlog.higgs
+package info.crlog.higgs.api
 
 //use _root_. to make package resolution absolute, otherwise scala prepends info.crlog.higgs
 
@@ -6,8 +6,8 @@ import _root_.java.util.concurrent.Executors
 import _root_.java.net.InetSocketAddress
 import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory
 import org.jboss.netty.bootstrap.ClientBootstrap
-import protocol._
-import boson.Publisher
+import org.jboss.netty.channel.AdaptiveReceiveBufferSizePredictorFactory
+import info.crlog.higgs.protocol.{PublisherPipelineFactory, HiggsPublisher, HiggsEncoder, HiggsDecoder}
 
 /**
  * A simple client interface to encapsulate the Netty NIO connection for a client request
@@ -28,6 +28,13 @@ class HiggsClient(host: String, port: Int,
   val channelFactory = new NioClientSocketChannelFactory(Executors.newCachedThreadPool(), Executors.newCachedThreadPool())
   // Configure the client.
   val bootstrap = new ClientBootstrap(channelFactory);
+  bootstrap.setOption("tcpNoDelay", true);
+  bootstrap.setOption(
+    "child.receiveBufferSizePredictorFactory",
+    new AdaptiveReceiveBufferSizePredictorFactory(
+      HiggsConstants.MIN_READ_BUFFER_SIZE,
+      HiggsConstants.INITIAL_READ_BUFFER_SIZE,
+      HiggsConstants.MAX_READ_BUFFER_SIZE));
 
   // Set up the event pipeline factory.
   bootstrap.setPipelineFactory(new PublisherPipelineFactory(decoder, encoder, clientHandler));

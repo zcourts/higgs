@@ -1,5 +1,6 @@
 package info.crlog.higgs
 
+import api.{Higgs, HiggsConstants, IllegalSocketTypeException}
 import org.junit.Test
 import org.junit.Assert._
 import protocol.boson.BosonMessage
