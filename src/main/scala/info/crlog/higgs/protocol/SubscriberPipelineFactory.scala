@@ -34,6 +34,6 @@ class SubscriberPipelineFactory(
     //and later get the rest
     pipeline.addLast("handler", serverHandler.getConstructor(classOf[MessageListener]).newInstance(listener))
     //listener: MessageListener
-    return pipeline
+    pipeline
   }
 }

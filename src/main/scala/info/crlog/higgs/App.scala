@@ -15,10 +15,10 @@ object App {
     topics(randomNum)
   }
 
-  def main(args: Array[String]) = {
+  def main(args: Array[String]) {
     val host = "192.168.0.17"
     val stop = 1000000
-    def pub() = {
+    def pub() {
       val publisher = new Higgs(HiggsConstants.HIGGS_PUBLISHER)
       publisher.host = host
       publisher.port = 9090

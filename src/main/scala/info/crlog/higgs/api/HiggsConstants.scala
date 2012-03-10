@@ -33,7 +33,7 @@ object HiggsConstants extends Enumeration {
   val MAX_READ_BUFFER_SIZE = 65536
   val THREAD_POOL_SIZE = 16
   val CHANNEL_MEMORY_LIMIT = MAX_READ_BUFFER_SIZE * 2
-  val GLOBAL_MEMORY_LIMIT: Long = Runtime.getRuntime().maxMemory() / 3
+  val GLOBAL_MEMORY_LIMIT: Long = Runtime.getRuntime.maxMemory() / 3
 
   //auto to string on all constants when used in place that expects string
   implicit def constantToString(v: Value): String = {

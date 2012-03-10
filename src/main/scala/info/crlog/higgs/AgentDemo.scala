@@ -18,17 +18,17 @@ object AgentDemo {
         var end = new Date
         subscriber.receive {
           msg => {
-            if (msg.toString.toInt == 0) {
+            if (msg.toString().toInt == 0) {
               start = new Date
             }
-            if (msg.toString.toInt == 1000000) {
+            if (msg.toString().toInt == 1000000) {
               end = new Date
-              println("Took " + ((end.getTime - start.getTime) ) + " milli seconds to receive 1M messages")
+              println("Took " + ((end.getTime - start.getTime)) + " milli seconds to receive 1M messages")
             }
           }
         }
       }
-    }).start
+    }).start()
     Thread.sleep(10000)
     val publisher = new ConnectAgent
     publisher.host = host

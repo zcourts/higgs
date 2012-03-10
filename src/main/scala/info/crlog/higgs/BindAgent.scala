@@ -28,7 +28,7 @@ class BindAgent extends HiggsAgent {
    * @param topic The topic to subscribe tp
    * @param fn The function to call for each message that matches the subscribed topic
    */
-  def subscribe(topic: String)(fn: Function1[Message, Unit]) = {
+  def subscribe(topic: String)(fn: (Message) => Unit) {
     if (socketType.equals(HiggsConstants.HIGGS_SUBSCRIBER)) {
       val subscriberz = listeners.getOrElseUpdate(topic, new ListenersList())
       subscriberz.append(fn)
@@ -40,7 +40,7 @@ class BindAgent extends HiggsAgent {
   /**
    * Subscribe to all messages, regardless of the topic
    */
-  def receive(fn: Function1[Message, Unit]) = {
+  def receive(fn: (Message) => Unit) {
     subscribe(HiggsConstants.TOPIC_ALL)(fn)
   }
 
@@ -48,12 +48,12 @@ class BindAgent extends HiggsAgent {
    * Binds to the given host and port
    * @throws UnsupportedOperationException if   socketType IS CLIENT
    */
-  def bind() = {
+  def bind() {
     if (socketType.equals(HiggsConstants.HIGGS_PUBLISHER)) {
       throw new UnsupportedOperationException("A Higgs instance of type PUBLISHER cannot be bound, use <code>connect</code> instead")
     }
     subscriber = Some(new HiggsServer(host, port, decoder, encoder, serverHandler, new MessageListener() {
-      def onMessage(m: Message) = {
+      def onMessage(m: Message) {
         publish(m)
       }
     }))
@@ -63,7 +63,7 @@ class BindAgent extends HiggsAgent {
    * Used by higgs internally to send a message to all subscribed topics.
    * Exposed to allow the possibility of sending messages to local subscribers of the message's topic
    */
-  def publish(m: Message) = {
+  def publish(m: Message) {
     //get all subscribers who want to receive all messsages
     listeners.get(HiggsConstants.TOPIC_ALL) match {
       case functions: Option[ListenersList] => {

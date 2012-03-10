@@ -16,13 +16,13 @@ class BosonDecoder extends HiggsDecoder {
       return null
     }
     //set reader index to 0
-    buffer.markReaderIndex
+    buffer.markReaderIndex()
     val dataLength: Int = buffer.readInt //get the data size, i.e. first 4 bytes
     val flag: Byte = buffer.readByte //get the flag, i.e. 5th byte
     val topicLength: Short = buffer.readShort //get the length of the topic from the current read index
     //wait until we get the entire topic
     if (buffer.readableBytes < topicLength) {
-      buffer.resetReaderIndex
+      buffer.resetReaderIndex()
       return null
     }
     val topicContents: Array[Byte] = new Array[Byte](topicLength)
@@ -30,13 +30,13 @@ class BosonDecoder extends HiggsDecoder {
 
     // Wait until all the full message is available
     if (buffer.readableBytes < dataLength) {
-      buffer.resetReaderIndex
+      buffer.resetReaderIndex()
       return null
     }
     // Convert the received data into a new BosonMessage.
     val messageContents: Array[Byte] = new Array[Byte](dataLength)
     buffer.readBytes(messageContents)
 
-    return new BosonMessage(flag,topicContents, messageContents)
+    new BosonMessage(flag,topicContents, messageContents)
   }
 }
