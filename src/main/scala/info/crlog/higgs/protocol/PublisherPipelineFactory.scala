@@ -20,6 +20,6 @@ class PublisherPipelineFactory(
     pipeline.addLast("decoder", decoder.newInstance())
     pipeline.addLast("encoder", encoder.newInstance())
     pipeline.addLast("handler", clientHandler.newInstance())
-    return pipeline
+    pipeline
   }
 }

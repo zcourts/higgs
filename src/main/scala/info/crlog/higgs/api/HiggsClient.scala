@@ -43,7 +43,7 @@ class HiggsClient(host: String, port: Int,
   val connectFuture = bootstrap.connect(new InetSocketAddress(host, port));
 
   // Wait until the connection is made successfully.
-  val channel = connectFuture.awaitUninterruptibly().getChannel();
+  val channel = connectFuture.awaitUninterruptibly().getChannel;
 
   //Get the handler instance
   val handler = channel.getPipeline.getLast.asInstanceOf[HiggsPublisher]
@@ -54,7 +54,7 @@ class HiggsClient(host: String, port: Int,
   //    handler.addListener(listener)
   //  }
 
-  def shutdown() = {
+  def shutdown() {
     // Shut down all thread pools to exit.
     bootstrap.releaseExternalResources();
   }

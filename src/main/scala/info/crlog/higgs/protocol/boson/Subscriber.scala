@@ -12,7 +12,7 @@ class Subscriber(listener: MessageListener) extends HiggsSubscriber(listener) {
   private val msgBuffer: Option[ListBuffer[BosonMessage]] = None
   private var buffering = false
 
-  override def messageReceived(ctx: ChannelHandlerContext, e: MessageEvent): Unit = {
+  override def messageReceived(ctx: ChannelHandlerContext, e: MessageEvent) {
     var msg: Option[BosonMessage] = None
     if (e.getMessage.isInstanceOf[BosonMessage]) {
       msg = Some(e.getMessage.asInstanceOf[BosonMessage])
@@ -33,11 +33,11 @@ class Subscriber(listener: MessageListener) extends HiggsSubscriber(listener) {
     }
   }
 
-  def publish(m: BosonMessage) = {
+  def publish(m: BosonMessage) {
     listener.onMessage(m)
   }
 
-  override def exceptionCaught(ctx: ChannelHandlerContext, e: ExceptionEvent): Unit = {
+  override def exceptionCaught(ctx: ChannelHandlerContext, e: ExceptionEvent) {
     e.getChannel.close
   }
 }

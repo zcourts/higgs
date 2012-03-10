@@ -98,11 +98,11 @@ class HiggsTest {
     client.receive {
       message => println()
     }
-    assertEquals(1, client.topicsTotal)
+    assertEquals(1, client.topicsTotal())
     client.receive {
       message => println()
     }
-    assertEquals(1, client.topicsTotal)
+    assertEquals(1, client.topicsTotal())
     //the recieve method subscribes you to an empty string meaning everything so
     //we should have 1 topic (everything) and 2 subscribers
     assertEquals(2, client.subscribersOf(HiggsConstants.TOPIC_ALL).size)
@@ -120,7 +120,7 @@ class HiggsTest {
     client.subscribe("stop") {
       message => println(message)
     }
-    assertEquals(1, client.topicsTotal)
+    assertEquals(1, client.topicsTotal())
   }
 
   @Test
@@ -135,12 +135,12 @@ class HiggsTest {
     client.subscribe("c") {
       message => println(message)
     }
-    assertEquals(3, client.topicsTotal)
+    assertEquals(3, client.topicsTotal())
     client.subscribe("b") {
       message => println(message)
     }
     //should still be three since c is the same topic with an extra function
-    assertEquals(3, client.topicsTotal)
+    assertEquals(3, client.topicsTotal())
   }
 
   /**
@@ -161,7 +161,7 @@ class HiggsTest {
     client.subscribe("b") {
       message => println(message)
     }
-    assertEquals(2, client.topicsTotal)
+    assertEquals(2, client.topicsTotal())
     assertEquals(3, client.subscribersOf("b").size)
   }
 

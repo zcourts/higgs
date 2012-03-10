@@ -12,7 +12,7 @@ import collection.mutable.ListBuffer
 
 class HiggsAgent {
   var socketType: HiggsConstants.Value = HiggsConstants.HIGGS_PUBLISHER
-  type ListenersList = ListBuffer[Function1[Message, Unit]]
+  type ListenersList = ListBuffer[(Message) => Unit]
   /**
    * The decoder Higgs uses to decode messages
    */
@@ -33,7 +33,7 @@ class HiggsAgent {
   @BeanProperty
   var port = 2012
 
-  def stop() = {
+  def stop() {
     if (socketType.equals(HiggsConstants.HIGGS_PUBLISHER)) {
       publisher.get.shutdown()
     } else {

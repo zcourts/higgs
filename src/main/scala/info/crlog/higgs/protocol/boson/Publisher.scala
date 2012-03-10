@@ -10,20 +10,20 @@ import info.crlog.higgs.protocol.{HiggsPublisher, Message}
 
 class Publisher extends HiggsPublisher {
 
-  override def handleUpstream(ctx: ChannelHandlerContext, e: ChannelEvent): Unit = {
+  override def handleUpstream(ctx: ChannelHandlerContext, e: ChannelEvent) {
     super.handleUpstream(ctx, e)
   }
 
-  override def channelConnected(ctx: ChannelHandlerContext, e: ChannelStateEvent): Unit = {
+  override def channelConnected(ctx: ChannelHandlerContext, e: ChannelStateEvent) {
   }
 
-  override def channelInterestChanged(ctx: ChannelHandlerContext, e: ChannelStateEvent): Unit = {
+  override def channelInterestChanged(ctx: ChannelHandlerContext, e: ChannelStateEvent) {
   }
 
-  override def messageReceived(ctx: ChannelHandlerContext, e: MessageEvent): Unit = {
+  override def messageReceived(ctx: ChannelHandlerContext, e: MessageEvent) {
   }
 
-  override def exceptionCaught(ctx: ChannelHandlerContext, e: ExceptionEvent): Unit = {
+  override def exceptionCaught(ctx: ChannelHandlerContext, e: ExceptionEvent) {
     e.getChannel.close
   }
 }
