@@ -4,7 +4,7 @@ import org.jboss.netty.handler.codec.compression.{ZlibDecoder, ZlibWrapper, Zlib
 import org.jboss.netty.channel.{Channels, ChannelPipeline, ChannelPipelineFactory}
 import java.util.concurrent.TimeUnit
 import org.jboss.netty.handler.execution.{OrderedMemoryAwareThreadPoolExecutor, ExecutionHandler}
-import info.crlog.higgs.HiggsConstants
+import info.crlog.higgs.api.HiggsConstants
 
 /**
  * @author Courtney Robinson <courtney@crlog.info> @ 31/01/12

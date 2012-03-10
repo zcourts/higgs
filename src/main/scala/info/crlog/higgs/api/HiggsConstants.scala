@@ -1,4 +1,4 @@
-package info.crlog.higgs
+package info.crlog.higgs.api
 
 /**
  * A set of constants used through out the Higss library for  Type safety and consistency

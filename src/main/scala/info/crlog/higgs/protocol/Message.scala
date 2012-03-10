@@ -2,7 +2,7 @@ package info.crlog.higgs.protocol
 
 import reflect.BeanProperty
 import com.codahale.jerkson.JsonSnakeCase
-import info.crlog.higgs.HiggsConstants
+import info.crlog.higgs.api.HiggsConstants
 import info.crlog.higgs.util.StringUtil
 
 /**

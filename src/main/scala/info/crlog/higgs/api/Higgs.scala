@@ -1,14 +1,15 @@
-package info.crlog.higgs
+package info.crlog.higgs.api
 
-import protocol._
-import protocol.boson._
 import reflect.BeanProperty
 import collection.mutable.{ListBuffer, HashMap}
+import info.crlog.higgs.protocol._
+import boson._
 
 /**
+ * Deprecated, not thread safe! Deadlock often occurs preventing messages being sent or received
  * @author Courtney Robinson <courtney@crlog.info> @ 31/01/12
  */
-
+@Deprecated
 class Higgs(var socketType: HiggsConstants.Value) {
   type ListenersList = ListBuffer[Function1[Message, Unit]]
   /**
@@ -23,13 +24,13 @@ class Higgs(var socketType: HiggsConstants.Value) {
   var message: Class[_ <: Message] = classOf[BosonMessage]
   @BeanProperty //default server request handler
   var serverHandler: Class[_ <: HiggsSubscriber] = classOf[Subscriber]
-  private var publisher: Option[HiggsClient] = None
-  private var subscriber: Option[HiggsServer] = None
+  protected var publisher: Option[HiggsClient] = None
+  protected var subscriber: Option[HiggsServer] = None
   /**
    * may look overly complex but is quite simple... topic =>{SUBSCRIBRS=>[(id,function),(id,function)]}
    * i.e. the key for the outter hashmap is the topic. The list buffer for each topic contains a set of functions and their IDs...
    */
-  private val listeners = new HashMap[String, ListenersList]()
+  protected val listeners = new HashMap[String, ListenersList]()
   @BeanProperty
   var host = "127.0.0.1"
   @BeanProperty

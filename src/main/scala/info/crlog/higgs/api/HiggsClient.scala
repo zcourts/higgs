@@ -1,4 +1,4 @@
-package info.crlog.higgs
+package info.crlog.higgs.api
 
 //use _root_. to make package resolution absolute, otherwise scala prepends info.crlog.higgs
 
@@ -6,8 +6,8 @@ import _root_.java.util.concurrent.Executors
 import _root_.java.net.InetSocketAddress
 import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory
 import org.jboss.netty.bootstrap.ClientBootstrap
-import protocol._
 import org.jboss.netty.channel.AdaptiveReceiveBufferSizePredictorFactory
+import info.crlog.higgs.protocol.{PublisherPipelineFactory, HiggsPublisher, HiggsEncoder, HiggsDecoder}
 
 /**
  * A simple client interface to encapsulate the Netty NIO connection for a client request

@@ -1,7 +1,7 @@
 package info.crlog.higgs.util
 
 import java.nio.charset.{Charset, CharsetDecoder, CharsetEncoder}
-import info.crlog.higgs.HiggsConstants
+import info.crlog.higgs.api.HiggsConstants
 import java.nio.{CharBuffer, ByteBuffer}
 
 
