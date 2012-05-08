@@ -4,14 +4,19 @@
                              http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <groupId>info.crlog</groupId>
-    <artifactId>scala-maven-template</artifactId>
+    <artifactId>higgs</artifactId>
     <packaging>jar</packaging>
     <version>0.1-SNAPSHOT</version>
-    <name>Project name</name>
+    <name>Higgs IO</name>
     <properties>
         <scalaVersion>2.9.1</scalaVersion>
     </properties>
     <dependencies>
+        <dependency>
+            <groupId>io.netty</groupId>
+            <artifactId>netty</artifactId>
+            <version>4.0.0.Alpha1-SNAPSHOT</version>
+        </dependency>
         <dependency>
             <groupId>org.scala-lang</groupId>
             <artifactId>scala-library</artifactId>
