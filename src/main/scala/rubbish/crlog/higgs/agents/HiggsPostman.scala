@@ -1,4 +1,4 @@
-package info.crlog.higgs.agents
+package rubbish.crlog.higgs.agents
 
 /**
  * A post man agent so-called because of its similarity with real world post men;
@@ -6,7 +6,7 @@ package info.crlog.higgs.agents
  * specified listeners. If the post man is unable to deliver a message it optionally buffers messages, once the buffer is
  * full it throws an exception (MessageDeliveryException). If buffering is disabled then the postman throws an exception
  * as soon as it is unable to deliver the first message.
- * Courtney Robinson <courtney@crlog.info>
+ * Courtney Robinson <courtney@crlog.rubbish>
  */
 class HiggsPostman {
 }

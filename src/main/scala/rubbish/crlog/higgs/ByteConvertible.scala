@@ -1,4 +1,4 @@
-package info.crlog.higgs
+package rubbish.crlog.higgs
 
 /**
  * To be a message property or the key for that property an object must be byte convertible.

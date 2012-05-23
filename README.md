@@ -3,7 +3,7 @@
 The name shamelessly stolen from the almost mystical Higgs Boson http://en.wikipedia.org/wiki/Higgs_boson .
 
 * __Higgs__ - the name of the library
-* __Boson__ - the name of the protocol, the [protocol specification is here](https://github.com/zcourts/higgs/blob/master/src/main/scala/info/crlog/higgs/protocol/boson/spec.md)
+* __Boson__ - the name of the protocol, the [protocol specification is here](https://github.com/zcourts/higgs/blob/master/src/main/scala/rubbish/crlog/higgs/protocol/boson/spec.md)
 
 Together with __Netty__ forms a pure JVM (NIO based) high performance, message oriented networking library.
 The project was formed out of the frustration of the issues I ran into while using ZMQ in Java & Scala. 

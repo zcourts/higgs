@@ -1,4 +1,4 @@
-package info.crlog.higgs
+package rubbish.crlog.higgs
 
 import util.StringUtilities
 

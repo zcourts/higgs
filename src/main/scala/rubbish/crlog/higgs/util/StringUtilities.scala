@@ -1,4 +1,4 @@
-package info.crlog.higgs.util
+package rubbish.crlog.higgs.util
 
 import java.nio.ByteBuffer
 import java.nio.CharBuffer
