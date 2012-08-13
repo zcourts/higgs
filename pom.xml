@@ -13,19 +13,19 @@
     </properties>
     <dependencies>
         <!--<dependency>-->
-        <!--<groupId>org.apache.opennlp</groupId>-->
-        <!--<artifactId>opennlp-maxent</artifactId>-->
-        <!--<version>3.0.1-incubating</version>-->
+            <!--<groupId>org.apache.opennlp</groupId>-->
+            <!--<artifactId>opennlp-maxent</artifactId>-->
+            <!--<version>3.0.1-incubating</version>-->
         <!--</dependency>-->
         <!--<dependency>-->
-        <!--<groupId>org.apache.opennlp</groupId>-->
-        <!--<artifactId>opennlp-uima</artifactId>-->
-        <!--<version>1.5.3-incubating-SNAPSHOT</version>-->
+            <!--<groupId>org.apache.opennlp</groupId>-->
+            <!--<artifactId>opennlp-uima</artifactId>-->
+            <!--<version>1.5.3-incubating-SNAPSHOT</version>-->
         <!--</dependency>-->
         <!--<dependency>-->
-        <!--<groupId>org.apache.opennlp</groupId>-->
-        <!--<artifactId>opennlp-tools</artifactId>-->
-        <!--<version>1.5.1-incubating</version>-->
+            <!--<groupId>org.apache.opennlp</groupId>-->
+            <!--<artifactId>opennlp-tools</artifactId>-->
+            <!--<version>1.5.1-incubating</version>-->
         <!--</dependency>-->
         <dependency>
             <groupId>org.msgpack</groupId>
@@ -64,6 +64,9 @@
                     <execution>
                         <id>attach-sources</id>
                         <phase>verify</phase>
+                        <goals>
+                            <goal>jar-no-fork</goal>
+                        </goals>
                     </execution>
                 </executions>
             </plugin>
