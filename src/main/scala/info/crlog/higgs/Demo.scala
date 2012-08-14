@@ -3,7 +3,6 @@ package info.crlog.higgs
 import agents.http.{HttpClient, HTTPEventListener}
 import java.net.URL
 import io.netty.channel.Channel
-import scala.collection.mutable.Map
 
 /**
  * Courtney Robinson <courtney@crlog.info>

@@ -2,7 +2,7 @@ package info.crlog.higgs.agents.http
 
 import info.crlog.higgs.{Request, FutureResponse, Client}
 import io.netty.channel.socket.SocketChannel
-import io.netty.channel.{ChannelHandlerContext, ChannelPipeline}
+import io.netty.channel.{Channel, ChannelHandlerContext, ChannelPipeline}
 import io.netty.handler.codec.http._
 import java.net.{URLEncoder, URL}
 import scala.collection.JavaConversions.asJavaIterable
@@ -12,7 +12,6 @@ import javax.net.ssl.SSLEngine
 import info.crlog.higgs.ssl.com.fillta.https.{SSLConfiguration, SSLContextFactory}
 import io.netty.handler.stream.ChunkedWriteHandler
 import management.ManagementFactory
-import scala.collection.mutable.Map
 import java.util.concurrent.Callable
 import io.netty.channel.socket.nio.NioEventLoop
 
@@ -53,6 +52,12 @@ class HttpClient(var USER_AGENT: String = "Mozilla/5.0 (compatible; HiggsBoson/0
       future.get()
     }
     listener.response
+  }
+
+  def POST(url: URL,data: Map[String, Any]):FutureHTTPResponse={
+     POST(url,new HTTPEventListener {
+       def onMessage(channel: Channel, msg: String) {}
+     },data)
   }
 
   def POST(url: URL, listener: HTTPEventListener,
