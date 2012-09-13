@@ -32,7 +32,7 @@ class HttpClientHandler(override val future: FutureHTTPResponse) extends ClientH
           }
         }
       }
-      if (response.isChunked) {
+      if (response.getTransferEncoding.isMultiple) {
         //if response is chunked, don't use this code path next time
         readingChunks = true
         future.isChunked = true

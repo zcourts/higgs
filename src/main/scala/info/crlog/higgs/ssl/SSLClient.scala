@@ -6,8 +6,7 @@ import io.netty.bootstrap.Bootstrap
 import io.netty.channel.Channel
 import io.netty.channel.ChannelInitializer
 import io.netty.channel.ChannelPipeline
-import io.netty.channel.socket.nio.NioEventLoop
-import io.netty.channel.socket.nio.NioSocketChannel
+import io.netty.channel.socket.nio.{NioEventLoopGroup, NioEventLoop, NioSocketChannel}
 import io.netty.handler.codec.http._
 import io.netty.handler.ssl.SslHandler
 import io.netty.handler.stream.ChunkedWriteHandler
@@ -21,11 +20,11 @@ object SSLClient {
   def main(args: Array[String]) {
     val sslClient: SSLClient = new SSLClient
     val sslConfiguration: SSLConfiguration = new SSLConfiguration
-    sslConfiguration.setTrustStorePath("B:\\Courtney\\Desktop\\NettyHTTPS\\src\\main\\java\\keystores\\truststore.ks")
-    sslConfiguration.setTrustStorePassword("zcourts")
-    sslConfiguration.setKeyStorePath("B:\\Courtney\\Desktop\\NettyHTTPS\\src\\main\\java\\keystores\\keystore.ks")
-    sslConfiguration.setKeyStorePassword("zcourts")
-    sslConfiguration.setKeyPassword("zcourts")
+//    sslConfiguration.setTrustStorePath("B:\\Courtney\\Desktop\\NettyHTTPS\\src\\main\\java\\keystores\\truststore.ks")
+//    sslConfiguration.setTrustStorePassword("zcourts")
+//    sslConfiguration.setKeyStorePath("B:\\Courtney\\Desktop\\NettyHTTPS\\src\\main\\java\\keystores\\keystore.ks")
+//    sslConfiguration.setKeyStorePassword("zcourts")
+//    sslConfiguration.setKeyPassword("zcourts")
     sslClient.setUrl("https://graph.facebook.com/me/feed?access_token=AAAC9iVp3fpoBAGuVHs63PfduHzKrZAMC88CavXOjTGKXFfIDZB76hXVWLlu48IZBZAVZAkELNdNQARBTv4w3hRs2sswWX5AV6maiCgzVC8QZDZD")
     sslClient.setSslConfiguration(sslConfiguration)
     try {
@@ -126,7 +125,7 @@ class SSLClient {
     val ssl: Boolean = scheme.equalsIgnoreCase("https")
     val b: Bootstrap = new Bootstrap
     try {
-      b.eventLoop(new NioEventLoop).channel(new NioSocketChannel).remoteAddress(host, port).handler(new ChannelInitializer[SocketChannel] {
+      b.group(new NioEventLoopGroup).channel(new NioSocketChannel).remoteAddress(host, port).handler(new ChannelInitializer[SocketChannel] {
         def initChannel(ch: SocketChannel) {
           val pipeline: ChannelPipeline = ch.pipeline
           val engine: SSLEngine = SSLContextFactory.getSSLSocket(sslConfiguration).createSSLEngine

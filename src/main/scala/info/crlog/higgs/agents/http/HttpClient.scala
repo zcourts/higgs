@@ -13,14 +13,14 @@ import info.crlog.higgs.ssl.com.fillta.https.{SSLConfiguration, SSLContextFactor
 import io.netty.handler.stream.ChunkedWriteHandler
 import management.ManagementFactory
 import java.util.concurrent.Callable
-import io.netty.channel.socket.nio.NioEventLoop
+import io.netty.channel.socket.nio.NioEventLoopGroup
 
 /**
  * Courtney Robinson <courtney@crlog.info>
  */
 
 class HttpClient(var USER_AGENT: String = "Mozilla/5.0 (compatible; HiggsBoson/0.0.1; +https://github.com/zcourts/higgs)")
-  extends Client("localhost", 80) {
+  extends Client[AnyRef]("localhost", 80) {
 
   def DELETE(url: URL, listener: HTTPEventListener,
              cookies: Map[String, String] = Map.empty[String, String],
@@ -54,10 +54,10 @@ class HttpClient(var USER_AGENT: String = "Mozilla/5.0 (compatible; HiggsBoson/0
     listener.response
   }
 
-  def POST(url: URL,data: Map[String, Any]):FutureHTTPResponse={
-     POST(url,new HTTPEventListener {
-       def onMessage(channel: Channel, msg: String) {}
-     },data)
+  def POST(url: URL, data: Map[String, Any]): FutureHTTPResponse = {
+    POST(url, new HTTPEventListener {
+      def onMessage(channel: Channel, msg: String) {}
+    }, data)
   }
 
   def POST(url: URL, listener: HTTPEventListener,
@@ -124,8 +124,8 @@ class HttpClient(var USER_AGENT: String = "Mozilla/5.0 (compatible; HiggsBoson/0
                   gzip: Boolean = false
                    ) = {
     //use different event loop for every request
-    val eventLoop: NioEventLoop = new NioEventLoop()
-    eventLoop.unsafe.nextChild.submit(new Callable[Request[AnyRef]] {
+    val eventGroup: NioEventLoopGroup = new NioEventLoopGroup()
+    eventGroup.next().submit(new Callable[Request[AnyRef]] {
       def call() = {
         var ssl = false
         host = url.getHost
@@ -185,7 +185,7 @@ class HttpClient(var USER_AGENT: String = "Mozilla/5.0 (compatible; HiggsBoson/0
             ClientCookieEncoder.encode(cookieList))
         }
         val handler = new HttpClientHandler(response)
-        val req = connect(Some(handler), ssl, gzip, eventLoop) //try to connect
+        val req = connect(Some(handler), ssl, gzip, eventGroup) //try to connect
 
         //before the request has been made but after the request instance has been created
         if (shutdown) {

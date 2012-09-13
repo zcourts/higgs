@@ -3,9 +3,9 @@ package info.crlog.higgs
 import io.netty.bootstrap.Bootstrap
 import io.netty.channel.ChannelInitializer
 import io.netty.channel.socket.SocketChannel
-import io.netty.channel.socket.nio.{NioEventLoop, NioSocketChannel}
+import io.netty.channel.socket.nio.{NioEventLoopGroup, NioSocketChannel}
 
-abstract class Client(var host: String, var port: Int) {
+abstract class Client[T](var host: String, var port: Int) {
 
   /**
    * Don't initalize stuff in the constructor that depends on properties
@@ -25,12 +25,12 @@ abstract class Client(var host: String, var port: Int) {
    */
   def setupPipeline(ch: SocketChannel, ssl: Boolean, gzip: Boolean)
 
-  protected def connect[T](): Request[T] = connect(None)
+  protected def connect(): Request[T] = connect(None)
 
-  protected def connect[T](handler: Option[ClientHandler[T]], ssl: Boolean = false, gzip: Boolean = false,
-                           eventLoop: NioEventLoop = new NioEventLoop(),
-                           socketChannel: NioSocketChannel = new NioSocketChannel()
-                            ): Request[T] = {
+  protected def connect(handler: Option[ClientHandler[T]], ssl: Boolean = false, gzip: Boolean = false,
+                        eventGroup: NioEventLoopGroup = new NioEventLoopGroup,
+                        socketChannel: NioSocketChannel = new NioSocketChannel()
+                         ): Request[T] = {
     val bootstrap: Bootstrap = new Bootstrap
     var response: FutureResponse = null
     val initializer = new ChannelInitializer[SocketChannel]() {
@@ -58,7 +58,7 @@ abstract class Client(var host: String, var port: Int) {
       }
     }
     initialize()
-    bootstrap.eventLoop(eventLoop).
+    bootstrap.group(eventGroup).
       channel(socketChannel).
       remoteAddress(host, port).
       handler(initializer)

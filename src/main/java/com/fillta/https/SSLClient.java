@@ -4,7 +4,8 @@ import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
-import io.netty.channel.socket.nio.NioEventLoop;
+import io.netty.channel.socket.SocketChannel;
+import io.netty.channel.socket.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.codec.http.*;
 import io.netty.handler.ssl.SslHandler;
@@ -13,8 +14,6 @@ import io.netty.handler.stream.ChunkedWriteHandler;
 import javax.net.ssl.SSLEngine;
 import java.net.URI;
 import java.net.URISyntaxException;
-
-import io.netty.channel.socket.SocketChannel;
 
 /**
  * Created by IntelliJ IDEA.
@@ -95,7 +94,7 @@ public class SSLClient {
         Bootstrap b = new Bootstrap();
 
         try {
-            b.eventLoop(new NioEventLoop())
+            b.group(new  NioEventLoopGroup())
                     .channel(new NioSocketChannel())
                     .remoteAddress(host, port)
                     .handler(new ChannelInitializer<SocketChannel>() {

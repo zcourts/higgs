@@ -2,10 +2,8 @@ package info.crlog.higgs
 
 import io.netty.bootstrap.ServerBootstrap
 import io.netty.channel.{ChannelInboundMessageHandlerAdapter, ChannelInitializer, Channel}
-import io.netty.channel.socket.nio.NioEventLoop
-import io.netty.channel.socket.nio.NioServerSocketChannel
+import io.netty.channel.socket.nio.{NioEventLoopGroup, NioServerSocketChannel}
 import io.netty.channel.socket.SocketChannel
-import scala.Some
 
 
 abstract class Server(host: String, port: Int) {
@@ -39,8 +37,6 @@ abstract class Server(host: String, port: Int) {
    */
   def initialize() {}
 
-  init()
-
   def init() {
     initializer = new ChannelInitializer[SocketChannel]() {
       def initChannel(ch: SocketChannel) {
@@ -51,7 +47,7 @@ abstract class Server(host: String, port: Int) {
       }
     }
     initialize()
-    bootstrap.eventLoop(new NioEventLoop, new NioEventLoop).
+    bootstrap.group(new NioEventLoopGroup, new NioEventLoopGroup).
       channel(new NioServerSocketChannel).
       localAddress(port).
       childHandler(initializer)
@@ -60,8 +56,10 @@ abstract class Server(host: String, port: Int) {
   /**
    * Bind this server and get the channel it is bound to
    */
-  def bind() {
+  def bind(): Server = {
+    init()
     channel = Some(bootstrap.bind.sync.channel)
+    this
   }
 }
 
