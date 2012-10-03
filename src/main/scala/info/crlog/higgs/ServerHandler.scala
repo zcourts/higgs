@@ -1,22 +1,9 @@
 package info.crlog.higgs
 
-import io.netty.channel.ChannelHandlerContext
 import io.netty.channel.ChannelInboundMessageHandlerAdapter
-import io.netty.logging.InternalLogger
-import io.netty.logging.InternalLoggerFactory
+import io.netty.channel.ChannelHandler.Sharable
 
-
-class ServerHandler[T]() extends ChannelInboundMessageHandlerAdapter[T] {
-  val logger: InternalLogger = InternalLoggerFactory.getInstance(getClass)
-
-  def messageReceived(ctx: ChannelHandlerContext, msg: T) {
-
-  }
-
-  override def exceptionCaught(ctx: ChannelHandlerContext, cause: Throwable) {
-    cause.printStackTrace
-    ctx.close
-  }
-}
-
-
+@Sharable //only one instance of handler is required and will be shared across pipelines
+case class ServerHandler[Topic, Msg, SerializedMsg](events: EventProcessor[Topic, Msg, SerializedMsg])
+  extends ChannelInboundMessageHandlerAdapter[SerializedMsg]
+  with HiggsHandler[Topic, Msg, SerializedMsg]

@@ -1,47 +1,22 @@
 package info.crlog.higgs
 
-import io.netty.channel.{ChannelHandlerContext, Channel}
+import io.netty.channel.{Channel, ChannelHandlerContext}
 import collection.mutable.ListBuffer
 import collection.mutable
 
-object EventProcessor {
-  /**
-   * Any event which this handler provides notifications for
-   */
-  type Event = String
-  val CHANNEL_ACTIVE = new Event("channel_active")
-  val CHANNEL_INACTIVE = new Event("channel_inactive")
-  val CHANNEL_REGISTERED = new Event("channel_registered")
-  val CHANNEL_UNREGISTERED = new Event("channel_unregistered")
-  val EXCEPTION_CAUGHT = new Event("exception_caught")
-}
 
 /**
  * Courtney Robinson <courtney@crlog.info>
  */
 
-abstract class EventProcessor {
-  var channel: Option[Channel] = None
-  val q = new mutable.Queue[(EventProcessor.Event, ChannelHandlerContext, Option[Throwable])]()
-  val msgQ = new mutable.Queue[(ChannelHandlerContext, AnyRef)]()
-
-  val msgListeners = ListBuffer.empty[(Channel, Any) => Unit]
+trait EventProcessor[T, M, SerializedMsg] {
+  val q = new mutable.Queue[(Event.Value, ChannelHandlerContext, Option[Throwable])]()
   val notificationListeners = ListBuffer.empty[
-    (EventProcessor.Event,
+    (Event.Value,
       ChannelHandlerContext,
       Option[Throwable]) => Unit]
-
-  /**
-   * Add a function to be invoked when a message is received
-   * @param fn
-   */
-  def ++(fn: (Channel, Any) => Unit) {
-    msgListeners += fn
-    while (!msgQ.isEmpty) {
-      val msg = msgQ.dequeue()
-      fn(msg._1.channel(), msg._2)
-    }
-  }
+  val subscribers = mutable.Map.empty[T, ListBuffer[(Channel, M) => Unit]]
+  val serializer: Serializer[M, SerializedMsg]
 
   /**
    * Add a function to be invoked when a supported event has occurred.
@@ -51,12 +26,12 @@ abstract class EventProcessor {
    * The third parameter is an optional exception which is the cause of the notification
    * @param fn
    */
-  def ++(fn: (EventProcessor.Event,
+  def ++(fn: (Event.Value,
     ChannelHandlerContext,
     Option[Throwable]) => Unit) {
     notificationListeners += fn
     //if this listener has been added after an event has already been triggered
-    //and the event hasn't been sent to anyone then notify the listener
+    //and the event hasn't been sent to anyone then emit the listener
     if (!notificationListeners.isEmpty) {
       while (!q.isEmpty) {
         val e = q.dequeue()
@@ -65,33 +40,14 @@ abstract class EventProcessor {
     }
   }
 
-  /**
-   * Adds an event listener to be notifed on events and messages
-   * NOTE: This just proxies the functional implementations of
-   * {@code EventProcessor#++} and wrap the event listener object.
-   * It makes working with the response object easier/cleaner from Java
-   * @param eventListener
-   */
-  def ++[T](eventListener: EventListener[T]) {
-    //delegate both on event and message
-
-    ++((e: EventProcessor.Event,
-        ctx: ChannelHandlerContext,
-        ex: Option[Throwable]) => {
-      eventListener.onEvent(e, ctx, ex)
-    })
-    ++((ch: Channel, msg: Any) => {
-      eventListener.onMessage(ch, msg.asInstanceOf[T])
-    })
-  }
 
   /**
-   * Notify any notification listeners attached to this future
+   * Notify any notification listeners attached to this event processor
    * @param event the event this notification is for
    * @param context the handler context supplied by Netty for this event
    * @param cause if available, the cause of this notification
    */
-  def notify(event: EventProcessor.Event, context: ChannelHandlerContext, cause: Option[Throwable]) {
+  def emit(event: Event.Value, context: ChannelHandlerContext, cause: Option[Throwable]) {
     cause match {
       case None =>
       case Some(s) => {
@@ -112,14 +68,82 @@ abstract class EventProcessor {
    * @param context the handler context provided by Netty
    * @param value the message that has been received
    */
-  def onMessage[T](context: ChannelHandlerContext, value: T) {
-    if (msgListeners.isEmpty) {
-      msgQ.enqueue((context, value.asInstanceOf[AnyRef]))
-    } else {
-      msgListeners map {
-        case fn => fn(context.channel(), value)
+  def message(context: ChannelHandlerContext, value: SerializedMsg)
+
+  /**
+   * The topic used to represent "all topics" for example if T was a String then
+   * this method could return an empty string ("") and any function that subscribes to
+   * all topics would be placed under this topic. In the case of T being Class[T]
+   * then Class[AnyRef] could be used to represent all topics.
+   * @return The most generic form of topics supported
+   */
+  def allTopicsKey(): T
+
+  /**
+   * Notify all subscribed functions to the given topic
+   * @param channel the Channel on which the event occurred. This is used to "respond" if supported
+   * @param topic
+   * @param message
+   */
+  def notifySubscribers(channel: Channel, topic: T, message: M) {
+    val listeners = ListBuffer.empty[(Channel, M) => Unit]
+    //get subscribers of "All" messages, i.e. subscribers to an empty string
+    if (topic != allTopicsKey()) {
+      //if topic is not already an empty string
+      subscribers get (allTopicsKey()) match {
+        case None =>
+        case Some(list) => listeners ++= list
       }
+    }
+    //get actual subscribers to this specific topic
+    subscribers get (topic) match {
+      case None =>
+      case Some(list) => listeners ++= list
+    }
+    //invoke each function
+    listeners foreach {
+      case fn => fn(channel, message)
     }
   }
 
+  /**
+   * @see EventProcessor#listen((Channel,M))
+   * @param fn
+   */
+  def ++(fn: (Channel, M) => Unit) = listen(fn)
+
+  /**
+   * Subscribe a function to receive ALL messages this event processor receives
+   * @param fn
+   */
+  def listen(fn: (Channel, M) => Unit) {
+    listen(allTopicsKey(), fn)
+  }
+
+  /**
+   * Listen for messages of the given topic
+   * @param topic
+   * @param fn  your callback to be invoked when a message with the topic is received
+   */
+  def listen(topic: T, fn: (Channel, M) => Unit) {
+    subscribers
+      .getOrElseUpdate(topic, ListBuffer.empty) += fn
+  }
+
+  /**
+   * Given a message this method appropriately serializes and sends another message
+   * back to the channel it was received from.
+   * @param c
+   * @param obj
+   */
+  def respond(c: Channel, obj: M) {
+    c.write(serializer.serialize(obj))
+  }
+
+  /**
+   * Convert a message to its serialized form. This uses serializer.serialize
+   * @param obj
+   * @return
+   */
+  def serialize(obj: M) = serializer.serialize(obj)
 }
