@@ -6,16 +6,23 @@
     <groupId>info.crlog</groupId>
     <artifactId>higgs</artifactId>
     <packaging>jar</packaging>
-    <version>0.0.1-SNAPSHOT</version>
+    <version>0.0.2-SNAPSHOT</version>
     <name>Higgs IO</name>
     <properties>
         <scala.version>2.9.1</scala.version>
+        <jackson.version>1.9.9</jackson.version>
     </properties>
     <dependencies>
+        <!-- Logging -->
         <dependency>
-            <groupId>ch.qos.logback</groupId>
-            <artifactId>logback-classic</artifactId>
-            <version>1.0.7</version>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+            <version>1.6.6</version>
+        </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-log4j12</artifactId>
+            <version>1.6.4</version>
         </dependency>
         <!--<dependency>-->
         <!--<groupId>org.apache.opennlp</groupId>-->
@@ -40,7 +47,12 @@
         <dependency>
             <groupId>io.netty</groupId>
             <artifactId>netty</artifactId>
-            <version>4.0.0.Alpha4-SNAPSHOT</version>
+            <version>4.0.0.Alpha6-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>com.codahale</groupId>
+            <artifactId>jerkson_2.9.1</artifactId>
+            <version>0.5.0</version>
         </dependency>
         <dependency>
             <groupId>org.scala-lang</groupId>
@@ -52,6 +64,7 @@
             <artifactId>maven-scala-plugin</artifactId>
             <version>2.10.1</version>
         </dependency>
+        <!--testing-->
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
@@ -115,6 +128,18 @@
         <!--<name>MsgPack</name>-->
         <!--<id>msgPack</id>-->
         <!--<url>http://repo1.maven.org/maven2/org/msgpack/msgpack/</url>-->
+        <!--</repository>-->
+        <repository>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+            <id>central</id>
+            <name>releases</name>
+            <url>http://repo.typesafe.com/typesafe/releases</url>
+        </repository>
+        <!--<repository>-->
+        <!--<id>repo.codahale.com</id>-->
+        <!--<url>http://repo.codahale.com</url>-->
         <!--</repository>-->
     </repositories>
 </project>

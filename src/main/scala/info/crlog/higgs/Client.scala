@@ -3,7 +3,7 @@ package info.crlog.higgs
 import io.netty.bootstrap.Bootstrap
 import io.netty.channel.ChannelInitializer
 import io.netty.channel.socket.SocketChannel
-import io.netty.channel.socket.nio.{NioEventLoopGroup, NioSocketChannel}
+import io.netty.channel.socket.nio.{NioServerSocketChannel, NioEventLoopGroup, NioSocketChannel}
 
 abstract class Client[T](var host: String, var port: Int) {
 
@@ -28,8 +28,7 @@ abstract class Client[T](var host: String, var port: Int) {
   protected def connect(): Request[T] = connect(None)
 
   protected def connect(handler: Option[ClientHandler[T]], ssl: Boolean = false, gzip: Boolean = false,
-                        eventGroup: NioEventLoopGroup = new NioEventLoopGroup,
-                        socketChannel: NioSocketChannel = new NioSocketChannel()
+                        eventGroup: NioEventLoopGroup = new NioEventLoopGroup
                          ): Request[T] = {
     val bootstrap: Bootstrap = new Bootstrap
     var response: FutureResponse = null
@@ -59,7 +58,7 @@ abstract class Client[T](var host: String, var port: Int) {
     }
     initialize()
     bootstrap.group(eventGroup).
-      channel(socketChannel).
+      channel(classOf[NioServerSocketChannel]).
       remoteAddress(host, port).
       handler(initializer)
     val channel = bootstrap.connect.sync.channel //connect.sync doesn't wait?????

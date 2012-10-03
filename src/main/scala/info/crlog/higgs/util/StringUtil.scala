@@ -12,7 +12,7 @@ import java.nio.charset.CharsetEncoder
  * @see
  * <link>http://www.exampledepot.com/egs/java.nio.charset/ConvertChar.html</link>
  */
-class StringUtil {
+object StringUtil {
   /**
    * Encode a string to a byte array using
    *

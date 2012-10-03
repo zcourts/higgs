@@ -48,7 +48,7 @@ abstract class Server(host: String, port: Int) {
     }
     initialize()
     bootstrap.group(new NioEventLoopGroup, new NioEventLoopGroup).
-      channel(new NioServerSocketChannel).
+      channel(classOf[NioServerSocketChannel]).
       localAddress(port).
       childHandler(initializer)
   }
@@ -58,7 +58,7 @@ abstract class Server(host: String, port: Int) {
    */
   def bind(): Server = {
     init()
-    channel = Some(bootstrap.bind.sync.channel)
+    channel = Some(bootstrap.bind().sync.channel)
     this
   }
 }
