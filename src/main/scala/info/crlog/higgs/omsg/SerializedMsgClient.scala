@@ -10,12 +10,12 @@ import collection.mutable.ListBuffer
 /**
  * @author Courtney Robinson <courtney@crlog.info>
  */
-class SerializableMsgClient(host: String, port: Int)
+class SerializedMsgClient(host: String, port: Int)
   extends OMsgClient[OMsg[AnyRef]](host, port) {
   //store a set of pending request IDs
-  val callbacks = mutable.Map.empty[UUID, ListBuffer[(AnyRef, (Channel, AnyRef) => Unit)]]
+  val callbacks = mutable.Map.empty[UUID, ListBuffer[(Class[AnyRef], (Channel, AnyRef) => Unit)]]
 
-  case class PreparedRequest(id: UUID, req: OMsg[Serializable], me: SerializableMsgClient) {
+  case class PreparedRequest(id: UUID, req: OMsg[Serializable], me: SerializedMsgClient) {
     def send() {
       me.send(req)
     }
@@ -34,7 +34,7 @@ class SerializableMsgClient(host: String, port: Int)
    * @param instance an instance of the expected response
    * @tparam M
    */
-  def prepare[M](msg: AnyRef, fn: (Channel, M) => Unit, instance: M = new AnyRef()) = {
+  def prepare[M](msg: AnyRef, fn: (Channel, M) => Unit, instance: Class[M]) = {
     val req = new OMsg(msg.asInstanceOf[Serializable]) //generate new request
     //listen for SMCRequests
     super.listen(classOf[OMsg[AnyRef]], (c: Channel, s: Serializable) => {
@@ -42,7 +42,7 @@ class SerializableMsgClient(host: String, port: Int)
       callbacks(req.id) foreach {
         case callback => {
           //make sure types match
-          if (callback._1.getClass.isAssignableFrom(s.asInstanceOf[OMsg[AnyRef]].msg.getClass)) {
+          if (callback._1.isAssignableFrom(s.asInstanceOf[OMsg[AnyRef]].msg.getClass)) {
             callback._2(c, s.asInstanceOf[OMsg[AnyRef]].msg) //if the do invoke
           } //else the callback isn't invoked
         }
@@ -84,11 +84,12 @@ class SerializableMsgClient(host: String, port: Int)
    *                 are compatible
    * @param fn
    */
-  def subscribe[M](req: PreparedRequest, fn: (Channel, M) => Unit, instance: M) {
+  def subscribe[M](req: PreparedRequest, fn: (Channel, M) => Unit, instance: Class[M]) {
     callbacks.
       //add to list of request ID callbacks
       getOrElseUpdate(req.id, ListBuffer.empty) += (
-      (instance.asInstanceOf[AnyRef], fn.asInstanceOf[(Channel, AnyRef) => Unit])
+      (instance.asInstanceOf[Class[AnyRef]], fn.asInstanceOf[(Channel, AnyRef) => Unit])
       )
   }
+
 }

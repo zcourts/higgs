@@ -9,7 +9,7 @@ import info.crlog.higgs.messages.JsonMessage
 object OMsgDemo {
   def main(args: Array[String]) {
     val server = new SerializedMsgServer("localhost", 1010)
-    val client = new SerializableMsgClient("localhost", 1010)
+    val client = new SerializedMsgClient("localhost", 1010)
     server.listen((c: Channel, msg: AnyRef) => {
       println("Server all", msg)
     })
@@ -41,12 +41,12 @@ object OMsgDemo {
       client.connect(() => {
         server.broadcast("raw string")
         client.send(JsonMessage("b", Map("huh" -> 12345, "b" -> "bang")))
-       val req= client.prepare("boom", (c: Channel, m: Int) => {
+        val req = client.prepare("boom", (c: Channel, m: Integer) => {
           println("response:", m)
-        },0)
-        client.subscribe(req,(c:Channel,m:String)=>{
-          println("response(string)",m)
-        },"")
+        }, classOf[Integer])
+        client.subscribe(req, (c: Channel, m: String) => {
+          println("response(string)", m)
+        }, classOf[String])
         req.send()
       })
     })
