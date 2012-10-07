@@ -1,8 +1,12 @@
 package info.crlog.higgs
 
-import io.netty.channel.{Channel, ChannelHandlerContext}
+import io.netty.channel.{ChannelPipeline, Channel, ChannelHandlerContext}
 import collection.mutable.ListBuffer
 import collection.mutable
+import management.ManagementFactory
+import javax.net.ssl.SSLEngine
+import io.netty.handler.ssl.SslHandler
+import ssl.{SSLConfiguration, SSLContextFactory}
 
 
 /**
@@ -10,13 +14,16 @@ import collection.mutable
  */
 
 trait EventProcessor[T, M, SerializedMsg] {
-  val q = new mutable.Queue[(Event.Value, ChannelHandlerContext, Option[Throwable])]()
-  val notificationListeners = ListBuffer.empty[
-    (Event.Value,
-      ChannelHandlerContext,
-      Option[Throwable]) => Unit]
-  val subscribers = mutable.Map.empty[T, ListBuffer[(Channel, M) => Unit]]
+  val notificationListeners = mutable.Map.empty[Event.Value, ListBuffer[
+    (ChannelHandlerContext,
+      Option[Throwable]) => Unit]]
+  /**
+   * A list of subscribed functions and a "validation" callback which determines on a per
+   * message basis of the given callback "wants" the given message
+   */
+  val subscribers = mutable.Map.empty[T, ListBuffer[((T, M) => Boolean, (Channel, M) => Unit)]]
   val serializer: Serializer[M, SerializedMsg]
+  val SSLclientMode: Boolean
 
   /**
    * Add a function to be invoked when a supported event has occurred.
@@ -26,18 +33,8 @@ trait EventProcessor[T, M, SerializedMsg] {
    * The third parameter is an optional exception which is the cause of the notification
    * @param fn
    */
-  def ++(fn: (Event.Value,
-    ChannelHandlerContext,
-    Option[Throwable]) => Unit) {
-    notificationListeners += fn
-    //if this listener has been added after an event has already been triggered
-    //and the event hasn't been sent to anyone then emit the listener
-    if (!notificationListeners.isEmpty) {
-      while (!q.isEmpty) {
-        val e = q.dequeue()
-        fn(e._1, e._2, e._3)
-      }
-    }
+  def ++(e: Event.Value, fn: (ChannelHandlerContext, Option[Throwable]) => Unit) {
+    notificationListeners.getOrElseUpdate(e, ListBuffer.empty) += fn
   }
 
 
@@ -54,11 +51,10 @@ trait EventProcessor[T, M, SerializedMsg] {
         s.printStackTrace()
       }
     }
-    if (notificationListeners.isEmpty) {
-      q.enqueue((event, context, cause))
-    } else {
-      notificationListeners map {
-        case fn => fn(event, context, cause)
+    notificationListeners.get(event) match {
+      case None => //TODO log event but no listeners
+      case Some(fnList) => fnList foreach {
+        case fn => fn(context, cause)
       }
     }
   }
@@ -86,7 +82,7 @@ trait EventProcessor[T, M, SerializedMsg] {
    * @param message
    */
   def notifySubscribers(channel: Channel, topic: T, message: M) {
-    val listeners = ListBuffer.empty[(Channel, M) => Unit]
+    val listeners = ListBuffer.empty[((T, M) => Boolean, (Channel, M) => Unit)]
     //get subscribers of "All" messages, i.e. subscribers to an empty string
     if (topic != allTopicsKey()) {
       //if topic is not already an empty string
@@ -102,7 +98,12 @@ trait EventProcessor[T, M, SerializedMsg] {
     }
     //invoke each function
     listeners foreach {
-      case fn => fn(channel, message)
+      case tuple => {
+        val wants = tuple._1(topic, message) //does this callback want to be invoked for this message?
+        if (wants) {
+          tuple._2(channel, message)
+        }
+      }
     }
   }
 
@@ -126,8 +127,14 @@ trait EventProcessor[T, M, SerializedMsg] {
    * @param fn  your callback to be invoked when a message with the topic is received
    */
   def listen(topic: T, fn: (Channel, M) => Unit) {
+    listen(topic, fn, (t: T, m: M) => {
+      true //want all messages by default, regardless of the message
+    })
+  }
+
+  def listen(topic: T, fn: (Channel, M) => Unit, wants: (T, M) => Boolean) {
     subscribers
-      .getOrElseUpdate(topic, ListBuffer.empty) += fn
+      .getOrElseUpdate(topic, ListBuffer.empty) += ((wants, fn))
   }
 
   /**
@@ -146,4 +153,44 @@ trait EventProcessor[T, M, SerializedMsg] {
    * @return
    */
   def serialize(obj: M) = serializer.serialize(obj)
+
+  /**
+   * Adds an SSL Handler to the channel pipeline
+   * @param pipeline
+   */
+  def ssl(pipeline: ChannelPipeline) {
+    val sslConfiguration: SSLConfiguration = new SSLConfiguration
+
+    import scala.collection.JavaConversions._
+    val arg = (for (arg <- ManagementFactory.getRuntimeMXBean().getInputArguments) yield {
+      val parts = arg.split('=')
+      if (parts.length >= 2)
+        parts(0).substring(2) -> parts(1)
+      else
+        "" -> ""
+    }).toMap
+    arg.get("javax.net.ssl.keyStore") match {
+      case None =>
+      case Some(ksPath) => sslConfiguration.setKeyStorePath(ksPath)
+    }
+    arg.get("javax.net.ssl.keyStorePassword") match {
+      case None =>
+      case Some(ksPass) => sslConfiguration.setKeyStorePassword(ksPass)
+    }
+    arg.get("javax.net.ssl.trustStrore") match {
+      case None =>
+      case Some(tsPath) => sslConfiguration.setTrustStorePath(tsPath)
+    }
+    arg.get("javax.net.ssl.trustStorePassword") match {
+      case None =>
+      case Some(tsPass) => sslConfiguration.setTrustStorePassword(tsPass)
+    }
+    arg.get("javax.net.ssl.keyPassword") match {
+      case None =>
+      case Some(tsPass) => sslConfiguration.setKeyPassword(tsPass)
+    }
+    val engine: SSLEngine = SSLContextFactory.getSSLSocket(sslConfiguration).createSSLEngine
+    engine.setUseClientMode(SSLclientMode)
+    pipeline.addLast("ssl", new SslHandler(engine))
+  }
 }

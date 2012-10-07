@@ -3,17 +3,13 @@ package info.crlog.higgs.omsg
 import io.netty.channel.Channel
 import info.crlog.higgs.messages.JsonMessage
 
-class Test(m: String) extends NullPointerException(m)
-
-//with Serializable
-
 /**
  * @author Courtney Robinson <courtney@crlog.info>
  */
 object OMsgDemo {
   def main(args: Array[String]) {
-    val server = new OMsgServer("localhost", 1010)
-    val client = new OMsgClient("localhost", 1010)
+    val server = new SerializedMsgServer("localhost", 1010)
+    val client = new SerializableMsgClient("localhost", 1010)
     server.listen((c: Channel, msg: AnyRef) => {
       println("Server all", msg)
     })
@@ -30,14 +26,38 @@ object OMsgDemo {
     server.listen(classOf[String], (c: Channel, msg: String) => {
       println("Server topic String", msg)
     })
+
+
+
+    server.listen((msg: OMsg[String]) => {
+      println("server:", msg)
+      msg.respond(1)
+      msg.respond("server string response")
+    })
+    client.listen(classOf[String], (c: Channel, s: String) => {
+      println("string:", s)
+    })
     server.bind(() => {
-      //when server is bound connect client
       client.connect(() => {
-        //when client connected send message
+        server.broadcast("raw string")
         client.send(JsonMessage("b", Map("huh" -> 12345, "b" -> "bang")))
-        client.send(new String("Omsg Test exception"))
-        server.broadcast(JsonMessage("client"))
+       val req= client.prepare("boom", (c: Channel, m: Int) => {
+          println("response:", m)
+        },0)
+        client.subscribe(req,(c:Channel,m:String)=>{
+          println("response(string)",m)
+        },"")
+        req.send()
       })
     })
+    //    server.bind(() => {
+    //      //when server is bound connect client
+    //      client.connect(() => {
+    //        //when client connected send message
+    //        client.send(JsonMessage("b", Map("huh" -> 12345, "b" -> "bang")))
+    //        client.send(new String("Omsg Test exception"))
+    //        server.broadcast(JsonMessage("client"))
+    //      })
+    //    })
   }
 }

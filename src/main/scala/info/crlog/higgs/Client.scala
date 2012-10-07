@@ -18,6 +18,10 @@ abstract case class Client[Topic, Msg, SerializedMsg](var host: String,
   var future: ChannelFuture = null
   var channel: Channel = null
   val clientHandler = new ClientHandler[Topic, Msg, SerializedMsg](this)
+  var usingCodec = false
+  var usingSSL = false
+  val SSLclientMode = true
+  var connected = false
 
   def connect(fn: () => Unit) {
     bootstrap
@@ -27,14 +31,20 @@ abstract case class Client[Topic, Msg, SerializedMsg](var host: String,
       .handler(new ChannelInitializer[SocketChannel]() {
       def initChannel(ch: SocketChannel) {
         val pipeline = ch.pipeline()
+        if (usingSSL) {
+          //add SSL first if enabled
+          ssl(pipeline)
+        }
         if (compress) {
           // Enable stream compression
           pipeline.addLast("deflater", ZlibCodecFactory.newZlibEncoder(ZlibWrapper.GZIP))
           pipeline.addLast("inflater", ZlibCodecFactory.newZlibDecoder(ZlibWrapper.GZIP))
         }
-        // Add the encoder/decoder
-        pipeline.addLast("decoder", decoder())
-        pipeline.addLast("encoder", encoder())
+        if (!usingCodec) {
+          // Add the encoder/decoder
+          pipeline.addLast("decoder", decoder())
+          pipeline.addLast("encoder", encoder())
+        }
         //messaging logic
         handler(ch)
       }
@@ -45,6 +55,7 @@ abstract case class Client[Topic, Msg, SerializedMsg](var host: String,
       .addListener(new ChannelFutureListener {
       def operationComplete(f: ChannelFuture) {
         future = f
+        connected = true
         fn() //run user on connect callback
       }
     }).channel()
@@ -61,6 +72,9 @@ abstract case class Client[Topic, Msg, SerializedMsg](var host: String,
   def encoder(): MessageToByteEncoder[SerializedMsg]
 
   def send[M <: Msg](obj: M) {
+    if (!connected) {
+      throw new IllegalStateException("Client needs to be connected before it can send messages!")
+    }
     channel.write(serialize(obj))
   }
 

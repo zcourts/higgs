@@ -8,7 +8,6 @@ import io.netty.handler.codec.compression.{ZlibWrapper, ZlibCodecFactory}
 import io.netty.handler.codec.{MessageToByteEncoder, ByteToMessageDecoder}
 import info.crlog.higgs.Event._
 import collection.mutable
-import collection.mutable.ListBuffer
 
 
 abstract class Server[T, M, SM](host: String, port: Int, var compress: Boolean = true)
@@ -17,6 +16,10 @@ abstract class Server[T, M, SM](host: String, port: Int, var compress: Boolean =
   var future: ChannelFuture = null
   val handler = new ServerHandler[T, M, SM](this)
   val channels = mutable.Map.empty[Int, Channel]
+  var usingSSL = false
+  var usingCodec = false
+  val SSLclientMode = false
+  var bound=false
 
   /**
    * Bind this server and get the channel it is bound to
@@ -28,14 +31,20 @@ abstract class Server[T, M, SM](host: String, port: Int, var compress: Boolean =
       .childHandler(new ChannelInitializer[SocketChannel]() {
       def initChannel(ch: SocketChannel) {
         val pipeline: ChannelPipeline = ch.pipeline
+        if (usingSSL) {
+          //add SSL first if enabled
+          ssl(pipeline)
+        }
         if (compress) {
           // Enable stream compression
           pipeline.addLast("deflater", ZlibCodecFactory.newZlibEncoder(ZlibWrapper.GZIP))
           pipeline.addLast("inflater", ZlibCodecFactory.newZlibDecoder(ZlibWrapper.GZIP))
         }
-        // Add the encoder/decoder
-        pipeline.addLast("decoder", decoder())
-        pipeline.addLast("encoder", encoder())
+        if (!usingCodec) {
+          // Add the encoder/decoder
+          pipeline.addLast("decoder", decoder())
+          pipeline.addLast("encoder", encoder())
+        }
         //messaging logic
         handler(ch)
       }
@@ -46,6 +55,7 @@ abstract class Server[T, M, SM](host: String, port: Int, var compress: Boolean =
       .addListener(new ChannelFutureListener {
       def operationComplete(f: ChannelFuture) {
         future = f
+        bound=true
         fn() //run user on connect callback
       }
     })
@@ -97,17 +107,11 @@ abstract class Server[T, M, SM](host: String, port: Int, var compress: Boolean =
 
 
   //capture channel contexts when active  and remove them when inactive
-  ++((event: Event, ctx: ChannelHandlerContext, c: Option[Throwable]) => {
-    event match {
-      case CHANNEL_ACTIVE => {
-        channels += ctx.channel().id().toInt -> ctx.channel()
-      }
-      case CHANNEL_INACTIVE => {
-        channels -= ctx.channel().id().toInt
-      }
-      case _ =>
-    }
+  ++(CHANNEL_ACTIVE, (ctx: ChannelHandlerContext, c: Option[Throwable]) => {
+    channels += ctx.channel().id().toInt -> ctx.channel()
   })
-
+  ++(CHANNEL_INACTIVE, (ctx: ChannelHandlerContext, c: Option[Throwable]) => {
+    channels -= ctx.channel().id().toInt
+  })
 }
 
