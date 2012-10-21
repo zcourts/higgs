@@ -1,4 +1,4 @@
-package info.crlog.higgs.omsg
+package info.crlog.higgs.protocols.omsg
 
 import io.netty.channel.{Channel, ChannelHandlerContext}
 import java.io.Serializable
@@ -8,10 +8,17 @@ import java.io.Serializable
  */
 class SerializedMsgServer(host: String, port: Int)
   extends OMsgServer[OMsg[AnyRef]](host, port) {
-
-  def listen[M <: Serializable](fn: (OMsg[M]) => Unit) {
+  /**
+   *
+   * @param klass  classOf the message type OMsg encapsulates
+   * @param fn
+   * @tparam M
+   */
+  def listen[M <: Serializable](klass: Class[M], fn: (OMsg[M]) => Unit) {
     super.listen(classOf[OMsg[AnyRef]], (c: Channel, s: Serializable) => {
-      fn(s.asInstanceOf[OMsg[M]])
+      val msg = s.asInstanceOf[OMsg[M]]
+      if (msg.obj.isAssignableFrom(klass))
+        fn(s.asInstanceOf[OMsg[M]])
     })
   }
 

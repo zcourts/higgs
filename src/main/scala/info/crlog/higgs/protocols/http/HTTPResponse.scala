@@ -1,4 +1,4 @@
-package info.crlog.higgs.http
+package info.crlog.higgs.protocols.http
 
 import collection.mutable
 import collection.mutable.ListBuffer

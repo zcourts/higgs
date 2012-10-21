@@ -1,4 +1,4 @@
-package info.crlog.higgs.http
+package info.crlog.higgs.protocols.http
 
 import info.crlog.higgs.{Event, Serializer, Client}
 import java.net.{URLEncoder, URL}
@@ -8,12 +8,14 @@ import io.netty.handler.codec.http._
 import io.netty.buffer.{Unpooled, ByteBuf}
 import io.netty.util.CharsetUtil
 import collection.mutable.ListBuffer
+import io.netty.handler.stream.ChunkedWriteHandler
 
 /**
  * @author Courtney Robinson <courtney@crlog.info>
  */
 case class HttpRequest(var url: URL,
                        var method: HttpMethod,
+                       var headers: Map[String, String] = Map.empty[String, String],
                        var cookies: Map[String, String] = Map.empty[String, String],
                        var block: Boolean = false,
                        var httpVersion: HttpVersion = HttpVersion.HTTP_1_1,
@@ -87,35 +89,32 @@ case class HttpRequest(var url: URL,
       request.setHeader(HttpHeaders.Names.COOKIE,
         ClientCookieEncoder.encode(cookieList))
     }
+    for ((name, value) <- headers) request.setHeader(name, value)
     if (shutdown) {
       ++(Event.CHANNEL_UNREGISTERED, (ctx: ChannelHandlerContext, cause: Option[Throwable]) => {
         bootstrap.shutdown() //listen for channel unregistered event and shutdown
       })
     }
+    blockingConnect = block
     //finally...connect
     connect(() => {
       //connected now make request
       channel.write(request)
-      if (block) {
-        // waits if necessary
-        future.get()
-      }
     })
   }
 
   override def handler(ch: SocketChannel) {
     // Create a default pipeline implementation.
-    val p = ch.pipeline
-    // Uncomment the following line if you don't want to handle HttpChunks.
-    //pipeline.addLast("aggregator", new HttpChunkAggregator(1048576));
+    val pipeline = ch.pipeline
     if (compressionEnabled) {
       // Compress
-      p.addLast("deflater", new HttpContentCompressor(1))
+      pipeline.addLast("deflater", new HttpContentCompressor(1))
       // Remove the following line if you don't want automatic content decompression.
-      p.addLast("inflater", new HttpContentDecompressor)
+      pipeline.addLast("inflater", new HttpContentDecompressor)
     }
-    p.addLast("codec", new HttpClientCodec)
-    p.addLast("handler", clientHandler)
+    pipeline.addLast("codec", new HttpClientCodec)
+    pipeline.addLast("chunked", new ChunkedWriteHandler)
+    pipeline.addLast("handler", clientHandler)
   }
 
   val response = new HTTPResponse()
@@ -159,6 +158,9 @@ case class HttpRequest(var url: URL,
         //save chunk
         response.data append chunk.getContent.toString(CharsetUtil.UTF_8)
       }
+    }
+    if (blockingConnect) {
+      blockingQ.add("") //make something available so the call can unblock n finish
     }
   }
 

@@ -101,4 +101,3 @@ class SSLConfiguration {
     this.securityProtocol = securityProtocol
   }
 }
-

@@ -1,9 +1,8 @@
 package info.crlog.higgs.messages
 
 import org.codehaus.jackson.annotate.JsonProperty
-import scala.Predef._
-import scala.Some
 import com.codahale.jerkson.Json._
+import java.io.Serializable
 
 /**
  * @author Courtney Robinson <courtney@crlog.info>

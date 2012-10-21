@@ -1,15 +1,15 @@
-package info.crlog.higgs.websocket
+package info.crlog.higgs.protocols.websocket
 
 import io.netty.handler.codec.http.{HttpResponse, HttpRequestEncoder, HttpResponseDecoder}
 import io.netty.channel.socket.SocketChannel
 import info.crlog.higgs.messages.JsonMessage
-import info.crlog.higgs.serializers.JsonSerializer
 import io.netty.channel.{ChannelHandlerContext, ChannelFuture, ChannelFutureListener, Channel}
 import io.netty.handler.codec.http.websocketx._
 import java.net.URL
 import java.util
 import io.netty.util.CharsetUtil
 import info.crlog.higgs.Client
+import info.crlog.higgs.protocols.serializers.JsonSerializer
 
 /**
  * @author Courtney Robinson <courtney@crlog.info>

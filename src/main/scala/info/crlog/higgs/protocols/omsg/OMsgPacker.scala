@@ -1,4 +1,4 @@
-package info.crlog.higgs.omsg
+package info.crlog.higgs.protocols.omsg
 
 import java.io._
 

@@ -1,4 +1,4 @@
-package info.crlog.higgs.omsg
+package info.crlog.higgs.protocols.omsg
 
 import java.io.Serializable
 import io.netty.channel.Channel
@@ -32,19 +32,28 @@ class SerializedMsgClient(host: String, port: Int)
    * @param msg the message to send in the request
    * @param fn  the function to be invoked when a response is received
    * @param instance an instance of the expected response
+   * @param un_subscribe If true then the given callback is only invoked ONCE and
+   *                     any future responses the server sends to this request will not be received by this callback
    * @tparam M
    */
-  def prepare[M](msg: AnyRef, fn: (Channel, M) => Unit, instance: Class[M]) = {
+  def prepare[M](msg: AnyRef, fn: (Channel, M) => Unit, instance: Class[M]
+                 , un_subscribe: Boolean = true) = {
     val req = new OMsg(msg.asInstanceOf[Serializable]) //generate new request
+    val pr = new PreparedRequest(req.id, req, this)
     //listen for SMCRequests
     super.listen(classOf[OMsg[AnyRef]], (c: Channel, s: Serializable) => {
-      //we know the request ID exists, its checked below before this is invoked so:
-      callbacks(req.id) foreach {
-        case callback => {
-          //make sure types match
-          if (callback._1.isAssignableFrom(s.asInstanceOf[OMsg[AnyRef]].msg.getClass)) {
-            callback._2(c, s.asInstanceOf[OMsg[AnyRef]].msg) //if the do invoke
-          } //else the callback isn't invoked
+      if (s.isInstanceOf[OMsg[AnyRef]]) {
+        val msg = s.asInstanceOf[OMsg[AnyRef]]
+        callbacks(msg.id) foreach {
+          case callback => {
+            //make sure types match
+            if (callback._1.isAssignableFrom(msg.msg.getClass)) {
+              callback._2(c, msg.msg) //if the do invoke
+              if (un_subscribe) {
+                unsubscribe(msg.id)
+              }
+            } //else the callback isn't invoked
+          }
         }
       }
     },
@@ -62,7 +71,6 @@ class SerializedMsgClient(host: String, port: Int)
           false
         }
       })
-    val pr = new PreparedRequest(req.id, req, this)
     subscribe(pr, fn.asInstanceOf[(Channel, Any) => Unit], instance)
     pr
   }

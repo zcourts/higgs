@@ -1,9 +1,9 @@
-package info.crlog.higgs.omsg
+package info.crlog.higgs.protocols.omsg
 
 import info.crlog.higgs.Client
-import info.crlog.higgs.serializers.OMsgSerializer
 import io.netty.channel.{Channel, ChannelHandlerContext}
 import java.io.Serializable
+import info.crlog.higgs.protocols.serializers.OMsgSerializer
 
 /**
  * @author Courtney Robinson <courtney@crlog.info>

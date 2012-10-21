@@ -1,4 +1,4 @@
-package info.crlog.higgs.omsg
+package info.crlog.higgs.protocols.omsg
 
 import io.netty.handler.codec.ByteToMessageDecoder
 import io.netty.buffer.ByteBuf

@@ -1,10 +1,9 @@
-package info.crlog.higgs.websocket
+package info.crlog.higgs.protocols.websocket
 
 import info.crlog.higgs.Server
 import io.netty.handler.codec.http._
 import io.netty.channel.socket.SocketChannel
 import io.netty.channel.{ChannelFutureListener, ChannelFuture, ChannelHandlerContext}
-import info.crlog.higgs.serializers.JsonSerializer
 import info.crlog.higgs.messages.JsonMessage
 import websocketx._
 import io.netty.handler.codec.http.HttpVersion._
@@ -13,6 +12,7 @@ import io.netty.handler.codec.http.HttpMethod._
 import io.netty.buffer.Unpooled
 import io.netty.handler.codec.http.HttpHeaders._
 import io.netty.util.CharsetUtil
+import info.crlog.higgs.protocols.serializers.JsonSerializer
 
 /**
  * @author Courtney Robinson <courtney@crlog.info>

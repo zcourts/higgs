@@ -1,4 +1,4 @@
-package info.crlog.higgs.omsg
+package info.crlog.higgs.protocols.omsg
 
 import io.netty.buffer.ByteBuf
 import io.netty.channel.ChannelHandlerContext

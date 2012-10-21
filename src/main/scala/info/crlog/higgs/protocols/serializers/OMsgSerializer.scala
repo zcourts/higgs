@@ -1,8 +1,7 @@
-package info.crlog.higgs.serializers
+package info.crlog.higgs.protocols.serializers
 
 import info.crlog.higgs.Serializer
-import info.crlog.higgs.omsg.OMsgPacker
-import java.io.Serializable
+import info.crlog.higgs.protocols.omsg.OMsgPacker
 
 /**
  * @author Courtney Robinson <courtney@crlog.info>

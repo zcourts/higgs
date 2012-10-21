@@ -7,6 +7,7 @@ import management.ManagementFactory
 import javax.net.ssl.SSLEngine
 import io.netty.handler.ssl.SslHandler
 import ssl.{SSLConfiguration, SSLContextFactory}
+import io.netty.logging.{InternalLoggerFactory, InternalLogger}
 
 
 /**
@@ -14,9 +15,11 @@ import ssl.{SSLConfiguration, SSLContextFactory}
  */
 
 trait EventProcessor[T, M, SerializedMsg] {
+  val log: InternalLogger = InternalLoggerFactory.getInstance(getClass)
+  var logAllExceptions = false
   val notificationListeners = mutable.Map.empty[Event.Value, ListBuffer[
     (ChannelHandlerContext,
-      Option[Throwable]) => Unit]]
+      Option[Throwable]) => Boolean]]
   /**
    * A list of subscribed functions and a "validation" callback which determines on a per
    * message basis of the given callback "wants" the given message
@@ -27,6 +30,7 @@ trait EventProcessor[T, M, SerializedMsg] {
 
   /**
    * Add a function to be invoked when a supported event has occurred.
+   * By default this function does not consume the event
    * The first parameter to the function, Event is the handler event type for e.g.
    * channel active/inactive or exception caught...
    * The second parameter is the handler context provided by Netty
@@ -34,9 +38,22 @@ trait EventProcessor[T, M, SerializedMsg] {
    * @param fn
    */
   def ++(e: Event.Value, fn: (ChannelHandlerContext, Option[Throwable]) => Unit) {
-    notificationListeners.getOrElseUpdate(e, ListBuffer.empty) += fn
+    notificationListeners.getOrElseUpdate(e, ListBuffer.empty) += ((ctx: ChannelHandlerContext, c: Option[Throwable]) => {
+      fn(ctx, c)
+      false
+    })
   }
 
+  /**
+   * Adds a function to be notified when the given event happens.
+   * If the function returns tru it is assumed the function wants to consume the event
+   * and prevent other subscribers (not already notified) of the same event receiving it.
+   * @param e
+   * @param fn
+   */
+  def on(e: Event.Value, fn: (ChannelHandlerContext, Option[Throwable]) => Boolean) {
+    notificationListeners.getOrElseUpdate(e, ListBuffer.empty) += fn
+  }
 
   /**
    * Notify any notification listeners attached to this event processor
@@ -48,13 +65,23 @@ trait EventProcessor[T, M, SerializedMsg] {
     cause match {
       case None =>
       case Some(s) => {
-        s.printStackTrace()
+        if (logAllExceptions)
+          log.error(s.getMessage, s)
       }
     }
     notificationListeners.get(event) match {
-      case None => //TODO log event but no listeners
-      case Some(fnList) => fnList foreach {
-        case fn => fn(context, cause)
+      case None =>
+      //      case Some(fnList) => fnList foreach {
+      //        case fn => fn(context, cause)
+      //      }
+      case Some(fnList) => {
+        var consumed = false
+        for (listener <- fnList) {
+          if (!consumed)
+            if (listener(context, cause)) {
+              consumed = true
+            }
+        }
       }
     }
   }
