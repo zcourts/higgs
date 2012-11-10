@@ -1,7 +1,7 @@
 package info.crlog.higgs.protocols
 
 /**
- * jrpc, short for JSON RPC is a simple protocol which uses
+ * jrpc, short for JSON RPCResponse is a simple protocol which uses
  * annotations to identify listeners who are then subscribed to a topic
  * of either a given name or if no name is given the method name becomes the topic.
  * Methods are analyzed on start up and their parameter types are all matched when a message

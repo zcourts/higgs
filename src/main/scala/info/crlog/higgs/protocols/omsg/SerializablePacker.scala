@@ -3,6 +3,7 @@ package info.crlog.higgs.protocols.omsg
 import java.io._
 
 /**
+ * (De)Serializes any serializable Java object
  * @author Courtney Robinson <courtney@crlog.info>
  */
 class SerializablePacker {

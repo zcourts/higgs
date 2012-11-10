@@ -1,7 +1,6 @@
 package info.crlog.higgs.protocols.omsg
 
 import info.crlog.higgs.Serializer
-import info.crlog.higgs.protocols.omsg.SerializablePacker
 
 /**
  * @author Courtney Robinson <courtney@crlog.info>

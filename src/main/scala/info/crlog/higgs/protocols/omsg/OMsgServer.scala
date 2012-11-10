@@ -3,7 +3,6 @@ package info.crlog.higgs.protocols.omsg
 import info.crlog.higgs.Server
 import io.netty.channel.{Channel, ChannelHandlerContext}
 import java.io.Serializable
-import info.crlog.higgs.protocols.serializers.OMsgSerializer
 
 /**
  * @author Courtney Robinson <courtney@crlog.info>
@@ -19,7 +18,7 @@ class OMsgServer[Topic <: Serializable](host: String, port: Int)
   //doesn't override just provides a similar method
   def listen[M <: Serializable, T <: Class[M]](topic: T, fn: (Channel, M) => Unit) {
     //Class is invariant - you may have a Class[T] but it is not a Class[U] unless T=U, no matter any other relationship
-    //but since we've constrained the params properly just cast to the expected types
+    //but since we've constrained the arguments properly just cast to the expected types
     super.listen(topic.asInstanceOf[Class[Topic]], fn.asInstanceOf[(Channel, Serializable) => Unit])
   }
 

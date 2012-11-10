@@ -3,7 +3,6 @@ package info.crlog.higgs.protocols.omsg
 import java.util.UUID
 import io.netty.channel.Channel
 import java.io.Serializable
-import info.crlog.higgs.protocols.serializers.OMsgSerializer
 
 /**
  * @author Courtney Robinson <courtney@crlog.info>

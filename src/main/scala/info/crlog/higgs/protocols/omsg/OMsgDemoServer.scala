@@ -1,8 +1,8 @@
 package info.crlog.higgs.protocols.omsg
 
 import io.netty.channel.{ChannelHandlerContext, Channel}
-import info.crlog.higgs.messages.JsonMessage
 import info.crlog.higgs.Event
+import info.crlog.higgs.protocols.websocket.JsonMessage
 
 /**
  * @author Courtney Robinson <courtney@crlog.info>
