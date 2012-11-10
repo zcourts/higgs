@@ -1,7 +1,6 @@
 package info.crlog.higgs.protocols.websocket
 
 import io.netty.channel.Channel
-import info.crlog.higgs.messages.JsonMessage
 
 /**
  * @author Courtney Robinson <courtney@crlog.info>

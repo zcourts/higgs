@@ -5,7 +5,6 @@ import io.netty.handler.codec.http.websocketx.TextWebSocketFrame
 import io.netty.logging.{InternalLoggerFactory, InternalLogger}
 import com.fasterxml.jackson.databind.{DeserializationFeature, ObjectMapper}
 import com.fasterxml.jackson.module.scala.DefaultScalaModule
-import info.crlog.higgs.protocols.websocket.JsonMessage
 
 /**
  * @author Courtney Robinson <courtney@crlog.info>
