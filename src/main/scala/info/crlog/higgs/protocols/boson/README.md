@@ -1,3 +1,5 @@
+# Boson Protocol version 1
+
 Basic data types
 --
 
@@ -22,7 +24,7 @@ In addition, the following data structures can be handled
 + __list__ - An un-ordered set of items, the items can be any valid Boson data type
 + __map__ - A set of key value pairs, both keys and values can be any valid Boson data type, including map itself
 
-Serialization
+Encoding/Decoding
 --
 
 ### Protocol version
@@ -105,7 +107,7 @@ A map contains a __unordered__ set of tuples (key value pairs). Both keys and va
 
 Both key and value can be empty. If either are empty then a type is still required followed by a size of 0. If the type is set to null then no size is required.
 
-RPC
+RPC Serialization
 ---
 
 To allow for other data types to be added and be continuous both request and responses will use types starting from -127 in increasing order.
@@ -155,3 +157,16 @@ If the client callback only accept a single parameter (the response) then the cl
 2. Write the value of the type
 
 The order the method name, parameters and callback are sent in does not matter.
+
+Streaming (Protocol version 2)
+---------
+
+An optional component of the protocol is to support streaming. Since Boson is a binary protocol as such, there are
+going to be times when a 2GB size limit is not enough.
+
+For now, this section will not be rigidly specified but as a vague idea:
+Streaming can be supported by, in all cases where a size would have otherwise been specified, it is omitted.
+So a value is only type followed by the type's payload. All data following the type is assumed to be part of the
+type's content until an end of type token is received.
+
+Once the end of type token is received, the type of the next value must follow, and so on...
