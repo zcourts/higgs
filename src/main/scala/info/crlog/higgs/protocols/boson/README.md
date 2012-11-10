@@ -13,13 +13,13 @@ See [Java datatypes](http://docs.oracle.com/javase/tutorial/java/nutsandbolts/da
 + __long__ - 64 bit signed two's compliment integer
 + __float__ - single-precision 32-bit IEEE 754 floating point
 + __double__ - double-precision 64-bit IEEE 754 floating point
-+ __boolean__ - 1 or 0 where 1 === true and 0 === false
++ __boolean__ - 1 byte 1 or 0 where 1 === true and 0 === false where 1 = 0x1 and 0 = 0x0
 + __char__ - 16-bit Unicode character. minimum value of '\u0000' (or 0) and a maximum value of '\uffff' (or 65,535 inclusive)
 
 In addition, the following data structures can be handled
 
 + __null__ - Indicates a nullable value, if sent in place of a numeric field that field will be set to 0
-+ __string__ - A sequence of characters
++ __string__ - A sequence of characters, any valid UTF-8 string
 + __array__ - An ordered set of items, the items can be any valid Boson data type
 + __list__ - An un-ordered set of items, the items can be any valid Boson data type
 + __map__ - A set of key value pairs, both keys and values can be any valid Boson data type, including map itself
@@ -31,7 +31,7 @@ Encoding/Decoding
 
 In all cases the first thing to send is the protocol version the message is encoded with.
 
-+ the protocol version is __1 byte__ so -128 to 127
++ the protocol version is __1 byte__ so -128 to 127 e.g. __0x1__ = protocol version 1
 
 ### Size
 
@@ -39,6 +39,7 @@ Once the protocol version is written it must be immediately followed by the size
 
 + The size is __4 bytes__ of the message, i.e. a __32 bit signed int__ from the second to the 5th byte
 + A side effect of this is that a message is limited to about 2GB
++ Size excludes the first 5 bytes (protocol version and message size) - i.e. the size is the total bytes of the payloadF
 
 ### Payload
 
@@ -129,7 +130,8 @@ A request has 3 components to it.
 ### Serialization
 
 1. Write the type
-2. Write the value of the type
+2. Write the length of the method name   (32 bit int, 4 bytes - total bytes, not number of characters)
+3. Write the value of the type
 
 The order the method name, parameters and callback are sent in does not matter.
 
@@ -154,7 +156,8 @@ If the client callback only accept a single parameter (the response) then the cl
 ### Serialization
 
 1. Write the type
-2. Write the value of the type
+2. Write the length (32 bit int, 4 bytes)
+3. Write the value of the type
 
 The order the method name, parameters and callback are sent in does not matter.
 
