@@ -21,7 +21,8 @@ object Algorithms {
     return new BigInteger(1, m.digest).toString(16)
   }
 
-  def sha1(str: String): String = {
+  def sha1(any: Any): String = {
+    val str=any.toString
     var m: MessageDigest = null
     try {
       m = MessageDigest.getInstance("SHA-1")
