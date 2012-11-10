@@ -4,7 +4,6 @@ import info.crlog.higgs.Server
 import io.netty.handler.codec.http._
 import io.netty.channel.socket.SocketChannel
 import io.netty.channel.{ChannelFutureListener, ChannelFuture, ChannelHandlerContext}
-import info.crlog.higgs.messages.JsonMessage
 import websocketx._
 import io.netty.handler.codec.http.HttpVersion._
 import io.netty.handler.codec.http.HttpResponseStatus._
@@ -12,7 +11,6 @@ import io.netty.handler.codec.http.HttpMethod._
 import io.netty.buffer.Unpooled
 import io.netty.handler.codec.http.HttpHeaders._
 import io.netty.util.CharsetUtil
-import info.crlog.higgs.protocols.serializers.JsonSerializer
 
 /**
  * @author Courtney Robinson <courtney@crlog.info>
@@ -63,7 +61,7 @@ class WebSocketServer(host: String, port: Int) extends Server[String, JsonMessag
     val wsFactory = new WebSocketServerHandshakerFactory(getWebSocketLocation(req), null, false)
     handshaker = wsFactory.newHandshaker(req)
     if (handshaker == null) {
-      wsFactory.sendUnsupportedWebSocketVersionResponse(ctx.channel)
+      WebSocketServerHandshakerFactory.sendUnsupportedWebSocketVersionResponse(ctx.channel)
     } else {
       handshaker.handshake(ctx.channel, req)
     }
