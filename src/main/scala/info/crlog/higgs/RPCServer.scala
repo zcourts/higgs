@@ -1,9 +1,8 @@
 package info.crlog.higgs
 
-import info.crlog.higgs.Server
 import java.io.Serializable
 import io.netty.channel.Channel
-import reflect.PackageScanner
+import protocols.jrpc.reflect.PackageScanner
 import java.lang.reflect.Method
 
 /**
@@ -16,7 +15,7 @@ abstract class RPCServer[M](host: String, port: Int, compress: Boolean)(implicit
 
   /**
    * Register a package. All classes found in the package will be checked
-   * If any class/method has the RPCListener annotation it'll be inspected
+   * If any class/method has the method annotation it'll be inspected
    * and registered depending on its settings.
    * Note that the classes must have an accessible no argument constructor or they won't be
    * registered
@@ -63,19 +62,19 @@ abstract class RPCServer[M](host: String, port: Int, compress: Boolean)(implicit
     val klass = obj.asInstanceOf[AnyRef].getClass
     log.info("Registering methods of %s" format (klass.getName))
     //is the annotation applied to the whole class or not?
-    val registerAllMethods = klass.isAnnotationPresent(classOf[RPCListener])
+    val registerAllMethods = klass.isAnnotationPresent(classOf[method])
     val methods = klass.getMethods //get the class' methods
     for (method <- methods) {
       if (registerAllMethods) {
-        val hasListener = method.isAnnotationPresent(classOf[RPCListener])
+        val hasListener = method.isAnnotationPresent(classOf[method])
         //opt out if the annotation is present and optout is set to true
-        val optout = if (hasListener && method.getAnnotation(classOf[RPCListener]).optout()) true else false
+        val optout = if (hasListener && method.getAnnotation(classOf[method]).optout()) true else false
         if (!optout) {
           //register all methods is true, the method hasn't been opted out
           doRegister(klass, obj, method)
         }
-      } else if (method.isAnnotationPresent(classOf[RPCListener])
-        && !method.getAnnotation(classOf[RPCListener]).optout()) {
+      } else if (method.isAnnotationPresent(classOf[method])
+        && !method.getAnnotation(classOf[method]).optout()) {
         //if we're not registering all methods,
         //AND this method has the annotation
         //AND optout is not set to true
@@ -87,7 +86,7 @@ abstract class RPCServer[M](host: String, port: Int, compress: Boolean)(implicit
   /**
    * Figures out the method name to be used for the given method and
    * make a subscription for that method under that inferred name.
-   * Method names (topics) are determined by the methodName of the RPCListener's methodName
+   * Method names (topics) are determined by the methodName of the method's methodName
    * which, if not set defaults to the fully qualified name of the class the method
    * belongs to plus the method name e.g. com.domain.prodct.className.method
    * @param klass
@@ -95,10 +94,10 @@ abstract class RPCServer[M](host: String, port: Int, compress: Boolean)(implicit
    * @param method
    */
   def doRegister(klass: Class[_ <: AnyRef], instance: Any, method: Method) {
-    val methodName = if (method.isAnnotationPresent(classOf[RPCListener])
-      && !method.getAnnotation(classOf[RPCListener]).value().isEmpty) {
+    val methodName = if (method.isAnnotationPresent(classOf[method])
+      && !method.getAnnotation(classOf[method]).value().isEmpty) {
       //if a method name is provided then use it
-      method.getAnnotation(classOf[RPCListener]).value()
+      method.getAnnotation(classOf[method]).value()
     } else {
       //if no method name is provided, use the fully qualified class and method name
       klass.getName + "." + method.getName
@@ -129,7 +128,7 @@ abstract class RPCServer[M](host: String, port: Int, compress: Boolean)(implicit
       //so if no error occurred the return type should be Unit
       var returns: Option[Serializable] = None
       var error: Option[Throwable] = None
-      var args: Seq[AnyRef] = getArguments(params)
+      var args: Array[AnyRef] = getArguments(params)
       try {
         val argTypes = method.getParameterTypes()
         val channelIndex = argTypes.indexOf(classOf[Channel])
@@ -168,7 +167,7 @@ abstract class RPCServer[M](host: String, port: Int, compress: Boolean)(implicit
    * @param param
    * @return
    */
-  def getArguments(param: M): Seq[AnyRef]
+  def getArguments(param: M): Array[AnyRef]
 
   /**
    * From the message M extract and return the name of the client's callback
