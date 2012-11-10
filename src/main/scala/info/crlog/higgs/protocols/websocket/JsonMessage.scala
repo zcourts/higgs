@@ -1,13 +1,18 @@
-package info.crlog.higgs.messages
+package info.crlog.higgs.protocols.websocket
 
-import org.codehaus.jackson.annotate.JsonProperty
-import com.codahale.jerkson.Json._
 import java.io.Serializable
+import com.fasterxml.jackson.annotation.JsonProperty
+import com.fasterxml.jackson.databind.{DeserializationFeature, ObjectMapper}
+import com.fasterxml.jackson.module.scala.DefaultScalaModule
 
 /**
  * @author Courtney Robinson <courtney@crlog.info>
  */
 class JsonMessage extends Serializable {
+  val mapper = new ObjectMapper()
+  mapper.registerModule(DefaultScalaModule)
+  //uncomment while testing to ensure all expected fields are covered
+  mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
   @JsonProperty
   var topic: String = ""
   @JsonProperty
@@ -29,7 +34,7 @@ class JsonMessage extends Serializable {
     }
   }
 
-  override def toString = generate(this)
+  override def toString = mapper.writeValueAsString(this)
 }
 
 object JsonMessage {

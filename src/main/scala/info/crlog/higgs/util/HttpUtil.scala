@@ -33,7 +33,7 @@ object HttpUtil {
             params.put(key, v)
             v
         }
-        values add value // NB: The value may be an empty string.
+        values add value // NB: The methodName may be an empty string.
     }
     params
   }

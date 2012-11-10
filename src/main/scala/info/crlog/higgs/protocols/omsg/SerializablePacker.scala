@@ -5,7 +5,7 @@ import java.io._
 /**
  * @author Courtney Robinson <courtney@crlog.info>
  */
-class OMsgPacker {
+class SerializablePacker {
   def get(data: Array[Byte]) = {
     val in: ObjectInputStream = new ObjectInputStream(new ByteArrayInputStream(data))
     val obj: Any = in.readObject
@@ -24,5 +24,5 @@ class OMsgPacker {
   }
 }
 
-object OMsgPacker extends OMsgPacker {
+object SerializablePacker extends SerializablePacker {
 }
