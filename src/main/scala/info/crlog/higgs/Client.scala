@@ -52,7 +52,7 @@ abstract case class Client[Topic, Msg, SerializedMsg](var host: String,
    * @param fn function to be called on connected or reconnected
    *           you should never call prepare or listen in the
    */
-  def connect(fn: () => Unit) {
+  def connect(fn: () => Unit = () => {}) {
     bootstrap = new Bootstrap()
     addReconnectListener(fn)
     bootstrap
@@ -133,6 +133,7 @@ abstract case class Client[Topic, Msg, SerializedMsg](var host: String,
   def send[T <: Msg](msg: T): Client[Topic, Msg, SerializedMsg] = {
     if (connected && unsentMessages.isEmpty) {
       channel.write(serialize(msg))
+      channel.flush()
     } else {
       if (enableAutoReconnect) {
         enqueueMessage(msg)
