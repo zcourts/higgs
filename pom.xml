@@ -10,9 +10,19 @@
     <name>Higgs IO</name>
     <properties>
         <scala.version>2.9.1</scala.version>
-        <jackson.version>1.9.9</jackson.version>
+        <jackson.version>2.0.2</jackson.version>
     </properties>
     <dependencies>
+        <dependency>
+            <groupId>org.scala-lang</groupId>
+            <artifactId>scala-library</artifactId>
+            <version>${scala.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.scala-tools</groupId>
+            <artifactId>maven-scala-plugin</artifactId>
+            <version>2.10.1</version>
+        </dependency>
         <!-- Logging -->
         <dependency>
             <groupId>org.slf4j</groupId>
@@ -39,31 +49,42 @@
         <!--<artifactId>opennlp-tools</artifactId>-->
         <!--<version>1.5.1-incubating</version>-->
         <!--</dependency>-->
-        <dependency>
-            <groupId>org.msgpack</groupId>
-            <artifactId>msgpack</artifactId>
-            <version>0.6.6</version>
-        </dependency>
+        <!--<dependency>-->
+        <!--<groupId>org.msgpack</groupId>-->
+        <!--<artifactId>msgpack</artifactId>-->
+        <!--<version>0.6.6</version>-->
+        <!--</dependency>-->
+        <!--json support-->
+            <dependency>
+                <groupId>com.codahale</groupId>
+                <artifactId>jerkson_${scala.version}</artifactId>
+                <version>0.5.0</version>
+            </dependency>
+        <!--<dependency>-->
+            <!--<groupId>com.fasterxml.jackson.core</groupId>-->
+            <!--<artifactId>jackson-core</artifactId>-->
+            <!--<version>${jackson.version}</version>-->
+        <!--</dependency>-->
+        <!--<dependency>-->
+            <!--<groupId>com.fasterxml.jackson.core</groupId>-->
+            <!--<artifactId>jackson-databind</artifactId>-->
+            <!--<version>${jackson.version}</version>-->
+        <!--</dependency>-->
+        <!--<dependency>-->
+            <!--<groupId>com.fasterxml.jackson.module</groupId>-->
+            <!--<artifactId>jackson-module-scala</artifactId>-->
+            <!--<version>${jackson.version}</version>-->
+        <!--</dependency>-->
         <dependency>
             <groupId>io.netty</groupId>
             <artifactId>netty</artifactId>
-            <version>4.0.0.Alpha6-SNAPSHOT</version>
+            <version>4.0.0.Alpha8-SNAPSHOT</version>
         </dependency>
-        <dependency>
-            <groupId>com.codahale</groupId>
-            <artifactId>jerkson_2.9.1</artifactId>
-            <version>0.5.0</version>
-        </dependency>
-        <dependency>
-            <groupId>org.scala-lang</groupId>
-            <artifactId>scala-library</artifactId>
-            <version>${scala.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.scala-tools</groupId>
-            <artifactId>maven-scala-plugin</artifactId>
-            <version>2.10.1</version>
-        </dependency>
+        <!--<dependency>-->
+        <!--<groupId>com.codahale</groupId>-->
+        <!--<artifactId>jerkson_2.9.1</artifactId>-->
+        <!--<version>0.5.0</version>-->
+        <!--</dependency>-->
         <!--testing-->
         <dependency>
             <groupId>junit</groupId>
@@ -73,6 +94,18 @@
     </dependencies>
     <build>
         <plugins>
+            <plugin>
+                <artifactId>maven-jar-plugin</artifactId>
+                <version>2.3.1</version>
+                <configuration>
+                    <archive>
+                        <manifest>
+                            <mainClass>info.crlog.higgs.protocols.jrpc.demo.Server</mainClass>
+                            <addClasspath>true</addClasspath>
+                        </manifest>
+                    </archive>
+                </configuration>
+            </plugin>
             <!--attach sourced before install, i.e. during verify stage-->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
