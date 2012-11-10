@@ -108,7 +108,7 @@ trait EventProcessor[T, M, SerializedMsg] {
    * @param topic
    * @param message
    */
-  def notifySubscribers(channel: Channel, topic: T, message: M) {
+  def notifySubscribers(channel: Channel, topic: T, message: M): Int = {
     val listeners = ListBuffer.empty[((T, M) => Boolean, (Channel, M) => Unit)]
     //get subscribers of "All" messages, i.e. subscribers to an empty string
     if (topic != allTopicsKey()) {
@@ -132,6 +132,7 @@ trait EventProcessor[T, M, SerializedMsg] {
         }
       }
     }
+    listeners.size
   }
 
   /**
@@ -163,6 +164,17 @@ trait EventProcessor[T, M, SerializedMsg] {
     subscribers
       .getOrElseUpdate(topic, ListBuffer.empty) += ((wants, fn))
   }
+
+  def unsubscribe(topic: T) {
+    subscribers -= topic
+  }
+
+  /**
+   * Checks if there is a subscription to the given topic already
+   * @param topic
+   * @return    true if there is, false otherwise
+   */
+  def listening(topic: T) = subscribers.contains(topic)
 
   /**
    * Given a message this method appropriately serializes and sends another message
