@@ -87,7 +87,7 @@ class BosonClient(serviceName: String, port: Int, host: String = "localhost", co
           val param = m.arguments(0)
           val klass = param.asInstanceOf[AnyRef].getClass()
           //if param is the same as or is a super class of the expected type, we can cast to it
-          if (klass.isAssignableFrom(mf.erasure)) {
+          if (mf.erasure.isAssignableFrom(klass)) {
             callback(Some(param.asInstanceOf[T]), None)
           } else {
             val logmsg = "Remote method %s invoked, callback %s, " +
