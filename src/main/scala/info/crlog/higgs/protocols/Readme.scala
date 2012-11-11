@@ -1,50 +1,3 @@
-# Higgs Boson
-
-The name shamelessly stolen from the almost mystical Higgs Boson http://en.wikipedia.org/wiki/Higgs_boson .
-
-* __Higgs__ - the name of the library
-* __Boson__ - the name of the protocol, the protocol specification is in the "info.crlog.higgs.protocols.boson" package
-
-Together with __Netty__ forms a pure JVM (NIO based) high performance, message oriented networking library.
-The project was started to remove the need I had for ZeroMQ (too many issues with native dependency in jzmq)
-
-It has since grown to be more robust that originally intended.
-
-# Supported protocols
-
-1. HTTP/HTTPS (Client) - Server to be added
-2. WebSocket  (Client and Server) - Compatible with Socket.io or any other WebSocket client
-3. OMSG - A JVM based, topic protocol for sending arbitrary objects over the network
-4. JRPC - A custom RPC mechanism for JVM languages (Uses object serialization)
-5. Boson - A language independent, topic oriented protocol for sending/receiving arbitrary data over the network and
-            performing remote method invocation (RMI/RPC).
-
-# Features
-
-* Simplicity and Abstraction from the underlying NIO operations & socket handling.
-* Extensible - Allowing user supplied protocols, encoders,decoders,client server handlers
-* Performant
-* Easily extensible to add custom protocols, binary or otherwise. OMSG and JRPC are intended as a demonstration of how
-	easy it is to do custom protocols.
-* Built on top of [Netty](http://netty.io)
-
-# Getting started
-
-Each protocol comes with a simple client/server demo.
-
-### TODO - Put some short examples in read me
-
-# Advanced
-
-Higgs is a fairly flexible library.
-
-Here's a quick protocol implementation  creates a server and client.
-When the client is connected to the server it sends the number 12345,
-When the server receives this it responds with 67890
-
-```scala
-
-//See this example in the package below
 package info.crlog.higgs.protocols
 
 import info.crlog.higgs.{Serializer, Server, Client}
@@ -133,5 +86,3 @@ class MyClient(serviceName: String, port: Int, host: String = "localhost", compr
     System.exit(0)
   }
 }
-
-```
