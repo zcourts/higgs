@@ -15,8 +15,9 @@ import java.util.concurrent.{LinkedBlockingDeque, Executors, ExecutorService}
 /**
  * @author Courtney Robinson <courtney@crlog.info>
  */
-abstract case class Client[Topic, Msg, SerializedMsg](var host: String,
+abstract case class Client[Topic, Msg, SerializedMsg](serviceName: String,
                                                       var port: Int,
+                                                      var host: String = "localhost",
                                                       var compress: Boolean = true
                                                        ) extends EventProcessor[Topic, Msg, SerializedMsg] {
   var bootstrap = new Bootstrap()
@@ -138,8 +139,8 @@ abstract case class Client[Topic, Msg, SerializedMsg](var host: String,
       if (enableAutoReconnect) {
         enqueueMessage(msg)
       } else {
-        throw new IllegalStateException("Client is not connected to a server and Auto reconnect is disabled." +
-          "The message will not be queued as this could lead to out of memory errors due to the unset message backlog")
+        throw new IllegalStateException("Client is not connected to a server %s and Auto reconnect is disabled." +
+          "The message will not be queued as this could lead to out of memory errors due to the unset message backlog" format (serviceName))
       }
     }
     this
@@ -181,11 +182,11 @@ abstract case class Client[Topic, Msg, SerializedMsg](var host: String,
             cause match {
               case t: ConnectException => {
                 Thread.sleep(reconnectTimeout)
-                log.warn("Failed to connect to %s:%s, attempting to retry".format(host, port))
+                log.warn("Failed to connect to %s on %s:%s, attempting to retry".format(serviceName, host, port))
                 connect(fn)
               }
               case cce: ClosedChannelException => {
-                log.warn("Client connection socket closed")
+                log.warn("Client connection to %s on %s:%s socket closed".format(serviceName, host, port))
               }
               case ce: ChannelException => {
                 //if connect exception cause the channel exception then don't consume
@@ -199,7 +200,7 @@ abstract case class Client[Topic, Msg, SerializedMsg](var host: String,
                 //parsing exeception string is unreliable!
                 if (future != null) {
                   Thread.sleep(reconnectTimeout)
-                  log.warn("Connection to to %s:%s, was forcibly closed, the server may be unavailable, attempting to reconnect".format(host, port))
+                  log.warn("Connection to %s on %s:%s, was forcibly closed, the server may be unavailable, attempting to reconnect".format(serviceName, host, port))
                   connect(fn)
                 } else {
                   //if channel future is null then connection not attempted could be another cause to this io ex

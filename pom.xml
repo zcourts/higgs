@@ -55,26 +55,26 @@
         <!--<version>0.6.6</version>-->
         <!--</dependency>-->
         <!--json support-->
-            <dependency>
-                <groupId>com.codahale</groupId>
-                <artifactId>jerkson_${scala.version}</artifactId>
-                <version>0.5.0</version>
-            </dependency>
-        <!--<dependency>-->
-            <!--<groupId>com.fasterxml.jackson.core</groupId>-->
-            <!--<artifactId>jackson-core</artifactId>-->
-            <!--<version>${jackson.version}</version>-->
-        <!--</dependency>-->
-        <!--<dependency>-->
-            <!--<groupId>com.fasterxml.jackson.core</groupId>-->
-            <!--<artifactId>jackson-databind</artifactId>-->
-            <!--<version>${jackson.version}</version>-->
-        <!--</dependency>-->
-        <!--<dependency>-->
-            <!--<groupId>com.fasterxml.jackson.module</groupId>-->
-            <!--<artifactId>jackson-module-scala</artifactId>-->
-            <!--<version>${jackson.version}</version>-->
-        <!--</dependency>-->
+        <dependency>
+            <groupId>com.codahale</groupId>
+            <artifactId>jerkson_${scala.version}</artifactId>
+            <version>0.5.0</version>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-core</artifactId>
+            <version>${jackson.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+            <version>${jackson.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.module</groupId>
+            <artifactId>jackson-module-scala</artifactId>
+            <version>${jackson.version}</version>
+        </dependency>
         <dependency>
             <groupId>io.netty</groupId>
             <artifactId>netty</artifactId>
@@ -87,9 +87,10 @@
         <!--</dependency>-->
         <!--testing-->
         <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-            <version>4.8.2</version>
+            <groupId>org.specs2</groupId>
+            <artifactId>specs2_2.9.2</artifactId>
+            <version>1.12.2</version>
+            <scope>test</scope>
         </dependency>
     </dependencies>
     <build>

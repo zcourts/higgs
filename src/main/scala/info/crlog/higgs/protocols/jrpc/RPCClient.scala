@@ -9,8 +9,8 @@ import java.util.concurrent.LinkedBlockingQueue
 /**
  * @author Courtney Robinson <courtney@crlog.info>
  */
-class RPCClient(host: String, port: Int, compress: Boolean = false)
-  extends Client[String, RPC, Array[Byte]](host, port, compress) {
+class RPCClient(serviceName: String,port: Int, host: String="localhost",  compress: Boolean = false)
+  extends Client[String, RPC, Array[Byte]](serviceName, port, host, compress) {
   val serializer = new RPCSerializer()
 
   /**
@@ -72,14 +72,14 @@ class RPCClient(host: String, port: Int, compress: Boolean = false)
         callback(None, Some(new IllegalResponseException(req.response)))
       }
     })
-    super.send(new RPC(remoteMethodName, id, params))
+    super.send(new RPC(remoteMethodName, id, params.toArray))
     this
   }
 
-  override def send[T <: Serializable](msg: T) = {
+  def send[T <: Serializable](msg: T)(implicit mf: Manifest[T]) = {
     //remote_method_name:callback_id...remote_params
     //in this case there is no call back not expecting a response and no remote method name
-    super.send(new RPC("", "", Seq(msg).asInstanceOf[Seq[Serializable]]))
+    super.send(new RPC("", "", Array(msg).asInstanceOf[Array[Serializable]]))
     this
   }
 

@@ -1,22 +1,22 @@
-package info.crlog.higgs.protocols.boson
+package info.crlog.higgs.protocols.boson.v1
 
-import info.crlog.higgs.Serializer
+import info.crlog.higgs.protocols.boson.{UnsupportedBosonTypeException, BosonType, Message}
 import io.netty.buffer.{ByteBuf, HeapByteBuf}
-import java.{util, lang}
 import info.crlog.higgs.util.StringUtil
+import java.{util, lang}
 
 /**
  * @author Courtney Robinson <courtney@crlog.info>
  */
-class BosonSerializer extends Serializer[Message, Array[Byte]] {
+class BosonWriter(obj: Message) {
 
-  def serialize(obj: Message): Array[Byte] = {
+  def get(): Array[Byte] = {
     //using Int.MaxValue as max buffer size since messages are limited to that size...
     val buffer = new HeapByteBuf(0, Int.MaxValue)
     val msg = if (obj.callback.isEmpty) {
-      serializeResponse(obj)
+      serializeResponse()
     } else {
-      serializeRequest(obj)
+      serializeRequest()
     }
     //first thing to write is the protocol version
     buffer.writeByte(obj.protocolVersion)
@@ -25,39 +25,43 @@ class BosonSerializer extends Serializer[Message, Array[Byte]] {
     //then write the message itself
     buffer.writeBytes(msg)
     buffer.resetReaderIndex()
-    buffer.readSlice(buffer.writerIndex()).array()
+    val ser = new Array[Byte](buffer.writerIndex())
+    //read the BYTES WRITTEN into an array and return it
+    buffer.getBytes(0, ser, 0, ser.length)
+    ser
   }
 
-  def serializeResponse(message: Message): Array[Byte] = {
+  def serializeResponse(): Array[Byte] = {
     val buffer = new HeapByteBuf(0, Int.MaxValue)
     //write the method name
     buffer.writeByte(BosonType.RESPONSE_METHOD_NAME) //write type/flag - 1 byte
-    val method = StringUtil.getBytes(message.method)
-    buffer.writeInt(method.length) //the length of the method name
-    buffer.writeBytes(method) //write type's payload
+    writeString(buffer,obj.method)
     //write the parameters
-    writeParameters(buffer, message.arguments) //write the parameter payload
-    buffer.resetReaderIndex()
-    buffer.readSlice(buffer.writerIndex()).array()
-  }
-
-  def serializeRequest(message: Message): Array[Byte] = {
-    null
-  }
-
-  def deserialize(obj: Array[Byte]): Message = {
-    null
-  }
-
-  /**
-   * Write an array of any supported boson types to the given buffer.
-   * If the buffer contains any unsupported type, this will fail by throwing an UnsupportedBosonTypeException
-   * @param buffer
-   * @param value
-   */
-  def writeParameters(buffer: ByteBuf, value: Array[Any]) {
     buffer.writeByte(BosonType.RESPONSE_PARAMETERS) //write type/flag - int = 4 bytes
-    writeArray(value, buffer)
+    writeArray(obj.arguments, buffer) //write the size/length and payload
+    buffer.resetReaderIndex()
+    val ser = new Array[Byte](buffer.writerIndex())
+    //read the BYTES WRITTEN into an array and return it
+    buffer.getBytes(0, ser, 0, ser.length)
+    ser
+  }
+
+  def serializeRequest(): Array[Byte] = {
+    val buffer = new HeapByteBuf(0, Int.MaxValue)
+    //write the method name
+    buffer.writeByte(BosonType.REQUEST_METHOD_NAME) //write type/flag - 1 byte
+    writeString(buffer,obj.method)
+    //write the parameters
+    buffer.writeByte(BosonType.REQUEST_PARAMETERS) //write type/flag - int = 4 bytes
+    writeArray(obj.arguments, buffer) //write the size/length and payload
+    //write the callback name
+    buffer.writeByte(BosonType.REQUEST_CALLBACK) //write type/flag - 1 byte
+    writeString(buffer,obj.callback)
+    buffer.resetReaderIndex()
+    val ser = new Array[Byte](buffer.writerIndex())
+    //read the BYTES WRITTEN into an array and return it
+    buffer.getBytes(0, ser, 0, ser.length)
+    ser
   }
 
   def writeByte(buffer: ByteBuf, b: Byte) {
@@ -76,7 +80,7 @@ class BosonSerializer extends Serializer[Message, Array[Byte]] {
 
   def writeInt(buffer: ByteBuf, i: Int) {
     buffer.writeByte(BosonType.INT)
-    buffer.writeByte(i)
+    buffer.writeInt(i)
   }
 
   def writeLong(buffer: ByteBuf, l: Long) {
@@ -105,49 +109,55 @@ class BosonSerializer extends Serializer[Message, Array[Byte]] {
   }
 
   def writeString(buffer: ByteBuf, s: String) {
-    buffer.writeByte(BosonType.STRING)
+    buffer.writeByte(BosonType.STRING) //type
     val str = StringUtil.getBytes(s)
-    buffer.writeInt(str.length)
-    buffer.writeBytes(str)
+    buffer.writeInt(str.length) //size
+    buffer.writeBytes(str) //payload
   }
 
   def writeList(value: List[Any], buffer: ByteBuf) {
-    buffer.writeByte(BosonType.LIST)
-    buffer.writeInt(value.size)
+    buffer.writeByte(BosonType.LIST) //type
+    buffer.writeInt(value.size) //size
     for (param <- value) {
       if (param == null) {
         writeNull(buffer)
       } else {
-        validateAndWriteType(param, buffer)
+        validateAndWriteType(param, buffer) //payload
       }
     }
   }
 
+  /**
+   * Write an array of any supported boson type to the given buffer.
+   * If the buffer contains any unsupported type, this will fail by throwing an UnsupportedBosonTypeException
+   * @param buffer
+   * @param value
+   */
   def writeArray(value: Array[Any], buffer: ByteBuf) {
-    buffer.writeByte(BosonType.ARRAY)
-    buffer.writeInt(value.length)
+    buffer.writeByte(BosonType.ARRAY) //type
+    buffer.writeInt(value.length) //size
     for (param <- value) {
       if (param == null) {
         writeNull(buffer)
       } else {
-        validateAndWriteType(param, buffer)
+        validateAndWriteType(param, buffer) //payload
       }
     }
   }
 
   def writeMap(value: Map[Any, Any], buffer: ByteBuf) {
-    buffer.writeByte(BosonType.MAP)
-    buffer.writeInt(value.size)
+    buffer.writeByte(BosonType.MAP) //type
+    buffer.writeInt(value.size) //size
     for ((key, value) <- value) {
       if (key == null) {
         writeNull(buffer)
       } else {
-        validateAndWriteType(key, buffer)
+        validateAndWriteType(key, buffer) //key payload
       }
       if (value == null) {
         writeNull(buffer)
       } else {
-        validateAndWriteType(value, buffer)
+        validateAndWriteType(value, buffer) //value payload
       }
     }
   }
@@ -176,7 +186,7 @@ class BosonSerializer extends Serializer[Message, Array[Byte]] {
       writeArray(param.asInstanceOf[Array[Any]], buffer)
     } else if (obj.isAssignableFrom(classOf[List[Any]]) || obj.isAssignableFrom(classOf[util.List[Any]])) {
       writeList(param.asInstanceOf[List[Any]], buffer)
-    } else if (obj.isAssignableFrom(classOf[Map[Any, Any]]) || obj.isAssignableFrom(classOf[util.Map[Any, Any]])) {
+    } else if (obj.isAssignableFrom(classOf[collection.Map[Any, Any]]) || obj.isAssignableFrom(classOf[util.Map[Any, Any]])) {
       writeMap(param.asInstanceOf[Map[Any, Any]], buffer)
     } else {
       throw new UnsupportedBosonTypeException("%s is not a supported type, see BosonType for a list of supported types" format (obj.getName()), null)

@@ -15,7 +15,7 @@ import java.io.Serializable
  */
 case class RPC(remoteMethodName: String,
                clientCallbackID: String,
-               arguments: Seq[Serializable],
+               arguments: Array[Serializable],
                response: Option[Serializable]=None,
                error: Option[Throwable] = None) extends Serializable {
   /**
@@ -24,7 +24,7 @@ case class RPC(remoteMethodName: String,
    * @param rpc
    * @param args
    */
-  def this(rpc: RPC, args: Seq[Serializable]) = {
+  def this(rpc: RPC, args: Array[Serializable]) = {
     this(rpc.remoteMethodName, rpc.clientCallbackID, args)
   }
 }

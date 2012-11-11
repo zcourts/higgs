@@ -7,7 +7,7 @@ import info.crlog.higgs.protocols.jrpc.RPCClient
  */
 object Client {
   def main(args: Array[String]) {
-    val client = new RPCClient("localhost", 12000)
+    val client = new RPCClient("RPC Server Demo", 12000)
     client.connect(() => {
       client.invoke("test_response", (o: Option[Any], e: Option[Throwable]) => {
         println(o)

@@ -1,29 +1,67 @@
 package info.crlog.higgs.protocols.boson
 
-import info.crlog.higgs.{Serializer, RPCServer}
+import info.crlog.higgs.RPCServer
 import io.netty.channel.ChannelHandlerContext
-import io.netty.handler.codec.{ByteToMessageDecoder, MessageToByteEncoder}
 import java.io.Serializable
+import v1.BosonSerializer
 
 /**
  * @author Courtney Robinson <courtney@crlog.info>
  */
-class BosonServer(port:Int,host:String="localhost",compress:Boolean=false)
-extends RPCServer[Message](host,port,compress){
-  val serializer: Serializer[Message, Array[Byte]] = _
+class BosonServer(port: Int, host: String = "localhost", compress: Boolean = false)
+  extends RPCServer[Message](host, port, compress) {
+  val serializer = new BosonSerializer()
 
-  def getArguments(param: Message): Seq[AnyRef] = param.arguments
+  def getArguments(param: Message) = param.arguments.asInstanceOf[Array[AnyRef]]
 
-  def clientCallback(param: Message): String = null
+  def clientCallback(param: Message): String = param.callback
 
-  def newResponse(remoteMethodName: String, clientCallbackID: String, response: Option[Serializable], error: Option[Throwable]): Message = null
+  def decoder() = new BosonDecoder()
 
-  def decoder(): ByteToMessageDecoder[Array[Byte]] = null
+  def encoder() = new BosonEncoder()
 
-  def encoder(): MessageToByteEncoder[Array[Byte]] = null
+  def allTopicsKey(): String = ""
+
+  def newResponse(remoteMethodName: String, clientCallbackID: String,
+                  response: Option[Serializable], error: Option[Throwable]): Message = {
+    val argResponse: Array[Any] = response match {
+      case None => Array.empty[Any]
+      case Some(arg) => Array(arg)
+    }
+    val argError: Array[Any] = error match {
+      case None => Array.empty[Any]
+      case Some(err) => Array(Map("error" -> err.getMessage()))
+    }
+    val args = argResponse ++ argError
+    new Message(clientCallbackID, args)
+  }
+
+  def message(context: ChannelHandlerContext, value: Array[Byte]) {
+    try {
+      val data = serializer.deserialize(value)
+      val size = notifySubscribers(context.channel(),
+        data.method,
+        data
+      )
+      if (size == 0) {
+        respond(context.channel(),
+          //first param in array is always a response, since we have no response set to null
+          new Message(data.callback, Array(null, Map(
+            "msg" -> "Method %s not found".format(data.method),
+            "error" -> "not_found"
+          )))
+        )
+      }
+    } catch {
+      case e => {
+        log.warn("Unable to deserialize message ", e)
+        respond(context.channel(),
+          new Message("deserialize_error", Array(Map("msg" -> "Incomplete or Invalid Boson message received")))
+        )
+      }
+    }
+  }
 
   def broadcast(obj: Message) {}
 
-  def allTopicsKey(): String = ""
-  def message(context: ChannelHandlerContext, value: Array[Byte]) {}
 }

@@ -27,7 +27,7 @@ case class HttpRequest(var url: URL,
                        var USER_AGENT: String = "Mozilla/5.0 (compatible; HiggsBoson/0.0.1; +https://github.com/zcourts/higgs)"
                         )
 //host:port ignored
-  extends Client[URL, HTTPResponse, AnyRef]("localhost", 80, false) {
+  extends Client[URL, HTTPResponse, AnyRef](url.toExternalForm, 80,"localhost", false) {
   usingCodec = true
   var readingChunks = false
 

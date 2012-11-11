@@ -135,14 +135,14 @@ abstract class RPCServer[M](host: String, port: Int, compress: Boolean)(implicit
         val rpcIndex = argTypes.indexOf(mf.erasure)
         //Channel MUST be first parameter and RPC must be second parameter if method wants
         //to accept both, if only one is require it must be the first parameter
-        if (channelIndex != -1 && channelIndex == 0) args = List(c) ++ args
+        if (channelIndex != -1 && channelIndex == 0) args = Array(c) ++ args
         if (rpcIndex != -1) {
           args = if (channelIndex == 0) {
             //if method wants channel index then original message becomes param 2
             //in this case args(0) is already set to the channel
-            Seq(args(0), params.asInstanceOf[AnyRef]) ++ args.slice(1, args.length)
+            Array(args(0), params.asInstanceOf[AnyRef]) ++ args.slice(1, args.length)
           } else {
-            Seq(params.asInstanceOf[AnyRef]) ++ args
+            Array(params.asInstanceOf[AnyRef]) ++ args
           }
         }
         //Seq to var args syntax :_* - http://www.scala-lang.org/node/5209

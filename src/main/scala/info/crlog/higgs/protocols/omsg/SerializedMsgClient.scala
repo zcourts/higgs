@@ -10,8 +10,8 @@ import collection.mutable.ListBuffer
 /**
  * @author Courtney Robinson <courtney@crlog.info>
  */
-class SerializedMsgClient(host: String, port: Int)
-  extends OMsgClient[OMsg[AnyRef]](host, port) {
+class SerializedMsgClient(serviceName: String, port: Int, host: String="localhost")
+  extends OMsgClient[OMsg[AnyRef]](serviceName, port, host) {
   //store a set of pending request IDs
   val callbacks = mutable.Map.empty[UUID, ListBuffer[(Class[AnyRef], (Channel, AnyRef) => Unit)]]
 

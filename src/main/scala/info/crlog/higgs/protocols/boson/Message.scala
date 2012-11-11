@@ -9,6 +9,11 @@ package info.crlog.higgs.protocols.boson
  * @param protocolVersion A 16 bit int
  * @author Courtney Robinson <courtney@crlog.info>
  */
-case class Message(method: String, arguments: Array[Any] = Array(), callback: String = "", protocolVersion: Short = 0x1) {
-  def this() = this("", Seq()) //required for instantiation via reflection
+case class Message(
+                    var method: String,
+                    var arguments: Array[Any] = Array(),
+                    var callback: String = "",
+                    var protocolVersion: Short = 0x1
+                    ) {
+  def this() = this("", Array.empty[Any]) //required for instantiation via reflection
 }

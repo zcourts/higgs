@@ -37,7 +37,7 @@ class JRPCServer(host: String, port: Int, compress: Boolean = false)
     }
     val rpc = if (obj.isInstanceOf[RPC]) obj.asInstanceOf[RPC]
     else {
-      new RPC("broadcast", "listen", Seq(obj))
+      new RPC("broadcast", "listen", Array(obj))
     }
     val serializedMessage = serializer.serialize(rpc)
     channels foreach {
@@ -52,19 +52,19 @@ class JRPCServer(host: String, port: Int, compress: Boolean = false)
       data //all other arguments are args to be pass to the method
     )
     if (size == 0) {
-      respond(context.channel(), new RPC(data, Seq(None,
+      respond(context.channel(), new RPC(data, Array(None,
         new RemoteMethodNotFoundException("Method %s not found" format (data.remoteMethodName)))))
     }
   }
 
 
-  def getArguments(param: RPC): Seq[AnyRef] = param.arguments
+  def getArguments(param: RPC) = param.arguments.asInstanceOf[Array[AnyRef]]
 
   def clientCallback(param: RPC): String = param.clientCallbackID
 
   def newResponse(remoteMethodName: String, clientCallbackID: String,
                   response: Option[Serializable], error: Option[Throwable]): RPC = {
-    new RPC(remoteMethodName, clientCallbackID, Seq(), response, error)
+    new RPC(remoteMethodName, clientCallbackID, Array.empty[Serializable], response, error)
   }
 
   def decoder() = new RPCDecoder()

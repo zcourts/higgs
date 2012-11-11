@@ -9,7 +9,7 @@ import io.netty.buffer.ByteBuf
  */
 class BosonEncoder extends MessageToByteEncoder[Array[Byte]] {
   def encode(ctx: ChannelHandlerContext, msg: Array[Byte], out: ByteBuf) {
-    out.writeInt(msg.length) // data length, i.e first 4 bytes ( an Int's 32 bits)
-    out.writeBytes(msg) //now write the packed message's bytes
+    //protocol version, message size and message are already in the byte array so just write it out
+    out.writeBytes(msg)
   }
 }

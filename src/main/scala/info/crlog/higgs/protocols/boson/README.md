@@ -129,9 +129,8 @@ A request has 3 components to it.
 
 ### Serialization
 
-1. Write the type
-2. Write the length of the method name   (32 bit int, 4 bytes - total bytes, not number of characters)
-3. Write the value of the type
+1. Write the request type (-127,-126 or -125)
+2. Write the contents of the request type using the rules for that content's type ( e.g if its an int write int flag then the int)
 
 The order the method name, parameters and callback are sent in does not matter.
 
@@ -155,9 +154,8 @@ If the client callback only accept a single parameter (the response) then the cl
 
 ### Serialization
 
-1. Write the type
-2. Write the length (32 bit int, 4 bytes)
-3. Write the value of the type
+1. Write the response type (-127,-126 or -125)
+2. Write the contents of the response type using the rules for that content's type ( e.g if its an int write int flag then the int)
 
 The order the method name, parameters and callback are sent in does not matter.
 

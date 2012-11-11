@@ -7,8 +7,8 @@ import java.io.Serializable
 /**
  * @author Courtney Robinson <courtney@crlog.info>
  */
-abstract class OMsgClient[Topic <: Serializable](host: String, port: Int)
-  extends Client[Class[Topic], Serializable, Array[Byte]](host, port, true) {
+abstract class OMsgClient[Topic <: Serializable](serviceName: String, port: Int, host: String="localhost")
+  extends Client[Class[Topic], Serializable, Array[Byte]](serviceName, port, host, true) {
   val serializer = new OMsgSerializer[Serializable]()
 
   def decoder() = new OMsgDecoder()

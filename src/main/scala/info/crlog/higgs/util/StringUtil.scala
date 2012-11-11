@@ -1,7 +1,6 @@
 package info.crlog.higgs.util
 
 import java.nio.ByteBuffer
-import java.nio.CharBuffer
 import java.nio.charset.Charset
 import java.nio.charset.CharsetDecoder
 import java.nio.charset.CharsetEncoder
@@ -13,6 +12,11 @@ import java.nio.charset.CharsetEncoder
  * <link>http://www.exampledepot.com/egs/java.nio.charset/ConvertChar.html</link>
  */
 object StringUtil {
+  private val encoding: String = "UTF-8"
+  private var charset: Charset = Charset.forName(encoding)
+  private val decoder: CharsetDecoder = charset.newDecoder
+  private val encoder: CharsetEncoder = charset.newEncoder
+
   /**
    * Encode a string to a byte array using
    *
@@ -21,15 +25,7 @@ object StringUtil {
    *         current charset OR null if an exception is raised;
    */
   def getBytes(value: String): Array[Byte] = {
-    try {
-      val bbuf: ByteBuffer = encoder.encode(CharBuffer.wrap(value))
-      return bbuf.array
-    }
-    catch {
-      case e: Exception => {
-        return "".getBytes
-      }
-    }
+    value.getBytes(charset)
   }
 
   /**
@@ -39,14 +35,7 @@ object StringUtil {
    * @return A string representation of the input byte array OR null on error
    */
   def getString(data: Array[Byte]): String = {
-    try {
-      return decoder.decode(ByteBuffer.wrap(data)).toString
-    }
-    catch {
-      case e: Exception => {
-        return ""
-      }
-    }
+    decoder.decode(ByteBuffer.wrap(data)).toString
   }
 
   def setCharset(c: String) {
@@ -56,10 +45,5 @@ object StringUtil {
   def setCharset(c: Charset) {
     charset = c
   }
-
-  private var encoding: String = "UTF-8"
-  private var charset: Charset = Charset.forName(encoding)
-  private var decoder: CharsetDecoder = charset.newDecoder
-  private var encoder: CharsetEncoder = charset.newEncoder
 }
 

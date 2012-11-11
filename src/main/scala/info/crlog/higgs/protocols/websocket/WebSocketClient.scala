@@ -12,8 +12,8 @@ import info.crlog.higgs.Client
 /**
  * @author Courtney Robinson <courtney@crlog.info>
  */
-class WebSocketClient(host: String, port: Int)
-  extends Client[String, JsonMessage, AnyRef](host, port, false) {
+class WebSocketClient(serviceName:String, port: Int,host: String="localhost")
+  extends Client[String, JsonMessage, AnyRef](serviceName, port, host, false) {
   val serializer = new JsonSerializer()
   val handshaker = new WebSocketClientHandshakerFactory()
     .newHandshaker(new URL("http://" + host + ":" + port + "/").toURI, WebSocketVersion.V13, null,

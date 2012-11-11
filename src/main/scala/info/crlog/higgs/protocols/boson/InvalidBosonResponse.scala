@@ -1,4 +1,4 @@
-package info.crlog.higgs.protocols.boson.json
+package info.crlog.higgs.protocols.boson
 
 /**
  * @author Courtney Robinson <courtney@crlog.info>

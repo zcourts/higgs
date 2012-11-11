@@ -7,7 +7,7 @@ import io.netty.channel.Channel
  */
 object OMsgDemoClient {
   def main(args: Array[String]) {
-    val client = new SerializedMsgClient("localhost", 1010)
+    val client = new SerializedMsgClient("OMSG Server Demo",1010)
     //    client.listen(classOf[JsonMessage], (c: Channel, msg: JsonMessage) => {
     //      println("Client JsonMessage", msg)
     //      msg.data += "response" -> "client"

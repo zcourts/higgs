@@ -8,7 +8,7 @@ import io.netty.channel.Channel
 object WSDemo {
   def main(args: Array[String]) {
     val server = new WebSocketServer("localhost", 1011)
-    val client = new WebSocketClient("localhost", 1011)
+    val client = new WebSocketClient("WebSocket Server demo", 1011)
     server.listen((c: Channel, msg: JsonMessage) => {
       println("Server all", msg)
     })
