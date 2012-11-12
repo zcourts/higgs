@@ -15,7 +15,7 @@ case class POLOContainer(fields: Map[String, Any]) {
     as(klass, ignoreUnknownFields)
   }
 
-  def as[T](klass: Class[T], ignoreUnknownFields: Boolean = true): T = {
+  def as[T](klass: Class[T], ignoreUnknownFields: Boolean): T = {
     val instance: T = klass.newInstance()
     //get public fields of the object and all its super classes
     val publicFields = klass.getFields
