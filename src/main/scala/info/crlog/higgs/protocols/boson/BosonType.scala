@@ -21,6 +21,7 @@ object BosonType {
   val ARRAY = 11
   val LIST = 12
   val MAP = 13
+  val POLO = 14
 
   //request response flags
   val REQUEST_METHOD_NAME = -127
