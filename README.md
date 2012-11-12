@@ -19,6 +19,11 @@ It has since grown to be more robust that originally intended.
 5. Boson - A language independent, topic oriented protocol for sending/receiving arbitrary data over the network and
             performing remote method invocation (RMI/RPC).
 
+NOTE: JRPC and OMSG protocols are highly experimental and not intended for general use (They were more for demonstration).
+		+ __Boson__ is the actively used/developed protocol and is the only custom protocol that is recommended for use.
+		+ A __Node JS__ implementation of the Boson protocol can be found here [https://github.com/zcourts/higgs-node](https://github.com/zcourts/higgs)
+		+ The Boson protocol is actively used between Node JS and Scala at [Fillta](http://fillta.com)
+
 # Features
 
 * Simplicity and Abstraction from the underlying NIO operations & socket handling.
