@@ -2,11 +2,23 @@ package info.crlog.higgs.protocols.boson
 
 import java.nio.ByteBuffer
 import info.crlog.higgs.util.StringUtil
+import io.netty.buffer.Unpooled
 
 /**
  * @author Courtney Robinson <courtney@crlog.info>
  */
 class ByteConverter {
+  def byteToBytes(s: Int): Array[Byte] = {
+    val buf = ByteBuffer.allocate(1).put(s.toByte)
+    val arr = new Array[Byte](buf.limit())
+    buf.get(arr, 0, buf.limit())
+    arr
+  }
+
+  def byteFromBytes(s: Array[Byte]): Int = {
+    Unpooled.copiedBuffer(s).readByte()
+  }
+
   def shortToBytes(s: Short): Array[Byte] = {
     //short is 16 bits - 2 bytes
     ByteBuffer.allocate(2).putShort(s).array()
@@ -24,7 +36,7 @@ class ByteConverter {
 
   def intFromBytes(i: Array[Byte]): Int = {
     //int is 32 bits - 4 bytes
-    ByteBuffer.wrap(i).getInt
+    Unpooled.copiedBuffer(i).readInt()
   }
 
   def longToBytes(l: Long): Array[Byte] = {
