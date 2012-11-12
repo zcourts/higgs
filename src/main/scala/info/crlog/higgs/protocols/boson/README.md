@@ -126,6 +126,9 @@ In languages that are not type safe this is the same as a boson map.
 3. Next, write each field name according to the rules for its type
 4. Immediately after each field name write the value for the field according to the rules for its type.
 
+This is __almost__ the same procedure for writing a map since the POLO is really just broken down into
+a set of key value pairs.
+
 Values can be empty but not names. If a field name is empty, skip and do not serialize.
 If a value is empty then a type is still required followed by a size of 0. If the type is set to null then no size is required.
 
