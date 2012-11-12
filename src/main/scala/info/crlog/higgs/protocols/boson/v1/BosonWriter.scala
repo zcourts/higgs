@@ -110,7 +110,7 @@ class BosonWriter(obj: Message) {
 
   def writeString(buffer: ByteBuf, s: String) {
     buffer.writeByte(BosonType.STRING) //type
-    val str = StringUtil.getBytes(s)
+    val str = new StringUtil().getBytes(s)
     buffer.writeInt(str.length) //size
     buffer.writeBytes(str) //payload
   }
@@ -184,8 +184,8 @@ class BosonWriter(obj: Message) {
       writeString(buffer, param.asInstanceOf[String])
     } else if (obj.isArray ||
       classOf[Array[Any]].isAssignableFrom(obj)
-      //TODO add support for treating a Scala Seq as an array since it is ordered
-      //|| classOf[Seq[Any]].isAssignableFrom(obj)
+    //TODO add support for treating a Scala Seq as an array since it is ordered
+    //|| classOf[Seq[Any]].isAssignableFrom(obj)
     ) {
       writeArray(param.asInstanceOf[Array[Any]], buffer)
     } else if (classOf[List[Any]].isAssignableFrom(obj)

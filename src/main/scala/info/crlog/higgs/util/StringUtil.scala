@@ -11,7 +11,7 @@ import java.nio.charset.CharsetEncoder
  * @see
  * <link>http://www.exampledepot.com/egs/java.nio.charset/ConvertChar.html</link>
  */
-object StringUtil {
+class StringUtil {
   private val encoding: String = "UTF-8"
   private var charset: Charset = Charset.forName(encoding)
   private val decoder: CharsetDecoder = charset.newDecoder
@@ -47,3 +47,6 @@ object StringUtil {
   }
 }
 
+object StringUtil extends StringUtil {
+
+}

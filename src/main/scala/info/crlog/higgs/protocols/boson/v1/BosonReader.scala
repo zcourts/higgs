@@ -75,7 +75,7 @@ case class BosonReader(obj: Array[Byte]) {
       //read size of type - how many bytes are in the string
       val size = data.readInt()
       //read type's payload and de-serialize
-      StringUtil.getString(data.readBytes(size).array())
+      new StringUtil().getString(data.readBytes(size).array())
     } else {
       throw new UnsupportedBosonTypeException("Type %s is not a Boson STRING" format (Type), null)
     }

@@ -90,11 +90,11 @@ class ByteConverter {
   }
 
   def stringToBytes(s: String): Array[Byte] = {
-    StringUtil.getBytes(s)
+    new StringUtil().getBytes(s)
   }
 
   def stringFromBytes(s: Array[Byte]): String = {
-    StringUtil.getString(s)
+   new StringUtil().getString(s)
   }
 
 }
