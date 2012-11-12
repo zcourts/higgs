@@ -146,7 +146,8 @@ abstract class RPCServer[M](host: String, port: Int, compress: Boolean)(implicit
           }
         }
         //Seq to var args syntax :_* - http://www.scala-lang.org/node/5209
-        val res = method.invoke(instance, args: _*)
+        val invoke = verifyArgumentType(args, argTypes)
+        val res = if (invoke) method.invoke(instance, args: _*) else null
         returns = if (res != null) Some(res.asInstanceOf[Serializable]) else None
       } catch {
         case e => {
@@ -188,4 +189,29 @@ abstract class RPCServer[M](host: String, port: Int, compress: Boolean)(implicit
    */
   def newResponse(remoteMethodName: String, clientCallbackID: String,
                   response: Option[Serializable], error: Option[Throwable]): M
+
+  /**
+   * Compare the arguments received from the client to the arguments the server method
+   * accepts. Make sure the types are compatible and in the same order
+   * @param parameters the parameters the client sent
+   * @param methodArguments the paramter types the server method accepts
+   * @return  true if they are of the same/compatible types (take into account subclass relationships)
+   */
+  def verifyArgumentType(parameters: Array[AnyRef], methodArguments: Array[Class[_]]): Boolean = {
+    if (parameters.length != methodArguments.length) {
+      return false //don't invoke
+    }
+    var ok = true
+    for (i <- 0 until parameters.length) {
+      val param = parameters(i)
+      val methodParam = methodArguments(i)
+      //if the param accepted by the server method is NOT the same as or a super class of
+      if (!methodParam.isAssignableFrom(param.getClass)) {
+        ok = false
+      }
+    }
+    ok
+  }
+
+  //def verifyArgumentType(parameters: Array[AnyRef], methodArguments: Array[Class[_]]): Boolean
 }
