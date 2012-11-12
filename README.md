@@ -1,6 +1,6 @@
 # Higgs Boson
 
-The name shamelessly stolen from the almost mystical Higgs Boson http://en.wikipedia.org/wiki/Higgs_boson .
+The name shamelessly stolen from the almost mythical Higgs Boson http://en.wikipedia.org/wiki/Higgs_boson .
 
 * __Higgs__ - the name of the library
 * __Boson__ - the name of the protocol, the protocol specification is in the "info.crlog.higgs.protocols.boson" package
@@ -19,10 +19,12 @@ It has since grown to be more robust that originally intended.
 5. Boson - A language independent, topic oriented protocol for sending/receiving arbitrary data over the network and
             performing remote method invocation (RMI/RPC).
 
-NOTE: JRPC and OMSG protocols are highly experimental and not intended for general use (They were more for demonstration).
-		+ __Boson__ is the actively used/developed protocol and is the only custom protocol that is recommended for use.
-		+ A __Node JS__ implementation of the Boson protocol can be found here [https://github.com/zcourts/higgs-node](https://github.com/zcourts/higgs)
-		+ The Boson protocol is actively used between Node JS and Scala at [Fillta](http://fillta.com)
+### NOTE
+JRPC and OMSG protocols are highly experimental and not intended for general use (They were more for demonstration).
+
++ __Boson__ is the actively used/developed protocol and is the only custom protocol that is recommended for use.
++ A __Node JS__ implementation of the Boson protocol can be found here [https://github.com/zcourts/higgs-node](https://github.com/zcourts/higgs)
++ The Boson protocol is actively used between Node JS and Scala at [Fillta](http://fillta.com)
 
 # Features
 
