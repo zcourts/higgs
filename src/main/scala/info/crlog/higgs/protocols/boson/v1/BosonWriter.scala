@@ -4,6 +4,8 @@ import info.crlog.higgs.protocols.boson.{UnsupportedBosonTypeException, BosonTyp
 import io.netty.buffer.{ByteBuf, HeapByteBuf}
 import info.crlog.higgs.util.StringUtil
 import java.{util, lang}
+import collection.mutable
+import lang.reflect.Field
 
 /**
  * @author Courtney Robinson <courtney@crlog.info>
@@ -162,6 +164,53 @@ class BosonWriter(obj: Message) {
     }
   }
 
+  def writePolo(value: Any, buffer: ByteBuf): Boolean = {
+    val obj = value.asInstanceOf[AnyRef]
+    val klass = obj.getClass()
+    val data = mutable.Map.empty[String, Any]
+    //get public fields of the object and all its super classes
+    val publicFields = klass.getFields
+    //get ALL (public,private,protect,package) fields declared in the class - excludes inherited fields
+    val classFields = klass.getDeclaredFields
+    //create a set of fields removing duplicates
+    val fields: Set[Field] = Set[Field]() ++ classFields ++ publicFields
+    for (field <- fields) {
+      //add if annotated with BosonProperty
+      if (field.isAnnotationPresent(classOf[BosonProperty])) {
+        field.setAccessible(true)
+        val ann = field.getAnnotation(classOf[BosonProperty])
+        val name = if (ann.value().isEmpty()) field.getName() else ann.value()
+        data += name -> field.get(value)
+      }
+    }
+    //if at least one field is annotated
+    if (data.size > 0) {
+      buffer.writeByte(BosonType.POLO) //type
+      buffer.writeInt(data.size) //size
+      for ((key, value) <- data) {
+        var writeValue = true
+        if (key == null) {
+          //POLO keys cannot be null
+          writeValue = false
+        } else {
+          //key must be a string!
+          validateAndWriteType(key, buffer) //key payload
+        }
+        if (writeValue) {
+          //keys can't be null, if they are ignore
+          if (value == null) {
+            writeNull(buffer)
+          } else {
+            validateAndWriteType(value, buffer) //value payload
+          }
+        }
+      }
+    }
+    //if no fields found that can be serialized then the arguments array
+    //length will be more than it should be.
+    return data.size > 0
+  }
+
   def validateAndWriteType(param: Any, buffer: ByteBuf) {
     val obj = param.asInstanceOf[AnyRef].getClass
     if (obj == classOf[Byte] || obj == classOf[lang.Byte]) {
@@ -195,7 +244,9 @@ class BosonWriter(obj: Message) {
       || classOf[util.Map[Any, Any]].isAssignableFrom(obj)) {
       writeMap(param.asInstanceOf[Map[Any, Any]], buffer)
     } else {
-      throw new UnsupportedBosonTypeException("%s is not a supported type, see BosonType for a list of supported types" format (obj.getName()), null)
+      if (!writePolo(param, buffer)) {
+        throw new UnsupportedBosonTypeException("%s is not a supported type, see BosonType for a list of supported types" format (obj.getName()), null)
+      }
     }
   }
 }

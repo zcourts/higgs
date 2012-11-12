@@ -1,11 +1,14 @@
 package info.crlog.higgs.protocols.boson.v1
 
-import info.crlog.higgs.protocols.boson.{InvalidDataException, UnsupportedBosonTypeException, InvalidRequestResponseTypeException, Message}
+import info.crlog.higgs.protocols.boson._
 import io.netty.buffer.HeapByteBuf
 import info.crlog.higgs.protocols.boson.BosonType._
 import info.crlog.higgs.util.StringUtil
 import collection.mutable
 import collection.mutable.ListBuffer
+import info.crlog.higgs.protocols.boson.Message
+import info.crlog.higgs.protocols.boson.UnsupportedBosonTypeException
+import info.crlog.higgs.protocols.boson.InvalidRequestResponseTypeException
 
 /**
  * @author Courtney Robinson <courtney@crlog.info>
@@ -295,6 +298,24 @@ case class BosonReader(obj: Array[Byte]) {
     }
   }
 
+  def readPolo(verified: Boolean, verifiedType: Int): POLOContainer = {
+    val Type: Int = if (verified) verifiedType else data.readByte()
+    if (POLO == Type) {
+      val size = data.readInt()
+      val kv = mutable.Map.empty[String, Any]
+      for (i <- 0 until size) {
+        verifyReadable()
+        val key = readString(false, 0)
+        verifyReadable()
+        val value = readType(data.readByte())
+        kv += key -> value
+      }
+      new POLOContainer(kv.toMap) //return polo container
+    } else {
+      throw new UnsupportedBosonTypeException("Type %s is not a Boson POLO" format (Type), null)
+    }
+  }
+
   /**
    * Read the next type from the buffer.
    * The type param must match one of Boson's supported types otherwise an exception is thrown
@@ -316,6 +337,7 @@ case class BosonReader(obj: Array[Byte]) {
       case ARRAY => readArray(true, Type)
       case LIST => readList(true, Type)
       case MAP => readMap(true, Type)
+      case POLO => readPolo(true, Type)
       case _ => throw new UnsupportedBosonTypeException("Type %s is not a valid boson type" format (Type), null)
     }
   }
