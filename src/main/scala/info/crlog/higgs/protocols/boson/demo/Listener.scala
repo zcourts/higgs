@@ -9,7 +9,8 @@ import java.lang.Double
 class Listener {
   @method("test")
   def test(a: Double, polo: PoloExample) = {
-    //println(a, polo.i)
-    a
+    println(a, polo.i)
+    polo.i = 8655556
+    polo
   }
 }
