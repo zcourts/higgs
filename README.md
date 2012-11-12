@@ -61,7 +61,7 @@ Twitter
  {"errors":[{"message":"Bad Authentication data","code":215}]}
 
 ```
-### Boson
+### Boson  [Protocol Specification](https://github.com/zcourts/higgs/tree/master/src/main/scala/info/crlog/higgs/protocols/boson)
 
 ```scala
 
