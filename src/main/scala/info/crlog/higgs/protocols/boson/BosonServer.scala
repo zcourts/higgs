@@ -3,7 +3,7 @@ package info.crlog.higgs.protocols.boson
 import info.crlog.higgs.RPCServer
 import io.netty.channel.ChannelHandlerContext
 import java.io.Serializable
-import v1.BosonSerializer
+import v1.{POLOContainer, BosonSerializer}
 
 /**
  * @author Courtney Robinson <courtney@crlog.info>
@@ -64,4 +64,32 @@ class BosonServer(port: Int, host: String = "localhost", compress: Boolean = fal
 
   def broadcast(obj: Message) {}
 
+ override def verifyArgumentType(parameters: Array[AnyRef], methodArguments: Array[Class[_]]): Boolean = {
+    if (parameters.length != methodArguments.length) {
+      return false //don't invoke
+    }
+    var ok = true
+    for (i <- 0 until parameters.length) {
+      val param: AnyRef = {
+        val p = parameters(i)
+        //if its a polo
+        if (p.isInstanceOf[POLOContainer]) {
+          val polo = p.asInstanceOf[POLOContainer]
+          val tmp = polo.as(methodArguments(i), true)
+          val ar = tmp.asInstanceOf[AnyRef]
+          //update the args with the polo
+          parameters(i) = ar
+          ar
+        } else {
+          p
+        }
+      }
+      val methodParam = methodArguments(i)
+      //if the param accepted by the server method is NOT the same as or a super class of
+      if (!methodParam.isAssignableFrom(param.getClass)) {
+        ok = false
+      }
+    }
+    ok
+  }
 }
