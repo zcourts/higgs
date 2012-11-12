@@ -19,12 +19,12 @@ abstract class Server[T, M, SM](host: String, port: Int, var compress: Boolean =
   var usingSSL = false
   var usingCodec = false
   val SSLclientMode = false
-  var bound=false
+  var bound = false
 
   /**
    * Bind this server and get the channel it is bound to
    */
-  def bind(fn: () => Unit): Server[T, M, SM] = {
+  def bind[U](fn: () => U = () => {}): Server[T, M, SM] = {
     bootstrap.group(new NioEventLoopGroup, new NioEventLoopGroup)
       .channel(classOf[NioServerSocketChannel])
       .localAddress(host, port)
@@ -55,7 +55,7 @@ abstract class Server[T, M, SM](host: String, port: Int, var compress: Boolean =
       .addListener(new ChannelFutureListener {
       def operationComplete(f: ChannelFuture) {
         future = f
-        bound=true
+        bound = true
         fn() //run user on connect callback
       }
     })
