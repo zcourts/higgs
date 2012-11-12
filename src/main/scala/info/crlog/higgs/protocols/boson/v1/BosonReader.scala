@@ -5,11 +5,12 @@ import io.netty.buffer.HeapByteBuf
 import info.crlog.higgs.protocols.boson.BosonType._
 import info.crlog.higgs.util.StringUtil
 import collection.mutable
+import collection.mutable.ListBuffer
 
 /**
  * @author Courtney Robinson <courtney@crlog.info>
  */
-class BosonReader(obj: Array[Byte]) {
+case class BosonReader(obj: Array[Byte]) {
   val msg = new Message()
   //initialize a heap buffer setting the reader index to 0 and the writer index and capacity to array.length
   val data = new HeapByteBuf(obj, obj.length)
@@ -76,7 +77,7 @@ class BosonReader(obj: Array[Byte]) {
       //read type's payload and de-serialize
       StringUtil.getString(data.readBytes(size).array())
     } else {
-      throw new UnsupportedBosonTypeException("Type %s is not a Boson STRING", null)
+      throw new UnsupportedBosonTypeException("Type %s is not a Boson STRING" format (Type), null)
     }
   }
 
@@ -93,7 +94,7 @@ class BosonReader(obj: Array[Byte]) {
       verifyReadable()
       data.readByte()
     } else {
-      throw new UnsupportedBosonTypeException("Type %s is not a Boson BYTE", null)
+      throw new UnsupportedBosonTypeException("Type %s is not a Boson BYTE" format (Type), null)
     }
   }
 
@@ -110,7 +111,7 @@ class BosonReader(obj: Array[Byte]) {
       verifyReadable()
       data.readShort()
     } else {
-      throw new UnsupportedBosonTypeException("Type %s is not a Boson SHORT", null)
+      throw new UnsupportedBosonTypeException("Type %s is not a Boson SHORT" format (Type), null)
     }
   }
 
@@ -127,7 +128,7 @@ class BosonReader(obj: Array[Byte]) {
       verifyReadable()
       data.readInt()
     } else {
-      throw new UnsupportedBosonTypeException("Type %s is not a Boson INT", null)
+      throw new UnsupportedBosonTypeException("Type %s is not a Boson INT" format (Type), null)
     }
   }
 
@@ -144,7 +145,7 @@ class BosonReader(obj: Array[Byte]) {
       verifyReadable()
       data.readLong()
     } else {
-      throw new UnsupportedBosonTypeException("Type %s is not a Boson LONG", null)
+      throw new UnsupportedBosonTypeException("Type %s is not a Boson LONG" format (Type), null)
     }
   }
 
@@ -161,7 +162,7 @@ class BosonReader(obj: Array[Byte]) {
       verifyReadable()
       data.readFloat()
     } else {
-      throw new UnsupportedBosonTypeException("Type %s is not a Boson FLOAT", null)
+      throw new UnsupportedBosonTypeException("Type %s is not a Boson FLOAT" format (Type), null)
     }
   }
 
@@ -178,7 +179,7 @@ class BosonReader(obj: Array[Byte]) {
       verifyReadable()
       data.readDouble()
     } else {
-      throw new UnsupportedBosonTypeException("Type %s is not a Boson DOUBLE", null)
+      throw new UnsupportedBosonTypeException("Type %s is not a Boson DOUBLE" format (Type), null)
     }
   }
 
@@ -195,7 +196,7 @@ class BosonReader(obj: Array[Byte]) {
       verifyReadable()
       if (data.readByte() == 1) true else false
     } else {
-      throw new UnsupportedBosonTypeException("Type %s is not a Boson BOOLEAN", null)
+      throw new UnsupportedBosonTypeException("Type %s is not a Boson BOOLEAN" format (Type), null)
     }
   }
 
@@ -212,7 +213,7 @@ class BosonReader(obj: Array[Byte]) {
       verifyReadable()
       data.readChar()
     } else {
-      throw new UnsupportedBosonTypeException("Type %s is not a Boson CHAR", null)
+      throw new UnsupportedBosonTypeException("Type %s is not a Boson CHAR" format (Type), null)
     }
   }
 
@@ -238,7 +239,33 @@ class BosonReader(obj: Array[Byte]) {
       }
       arr
     } else {
-      throw new UnsupportedBosonTypeException("Type %s is not a Boson ARRAY", null)
+      throw new UnsupportedBosonTypeException("Type %s is not a Boson ARRAY" format (Type), null)
+    }
+  }
+
+  /**
+   * Read a List from the buffer
+   * @param verified  if true then the verifiedType param is used to match the Type, if false then
+   *                  a single byte is read from the buffer to determine the type
+   * @param verifiedType the data type to be de-serialized
+   * @return
+   */
+  def readList(verified: Boolean, verifiedType: Int): List[Any] = {
+    val Type: Int = if (verified) verifiedType else data.readByte()
+    if (LIST == Type) {
+      //read number of elements in the array
+      val size = data.readInt()
+      val arr = ListBuffer.empty[Any]
+      for (i <- 0 until size) {
+        verifyReadable()
+        //get type of this element in the array
+        val Type: Int = data.readByte()
+        //at this stage only basic data types are allowed
+        arr += readType(Type)
+      }
+      arr.toList
+    } else {
+      throw new UnsupportedBosonTypeException("Type %s is not a Boson LIST" format (Type), null)
     }
   }
 
@@ -264,7 +291,7 @@ class BosonReader(obj: Array[Byte]) {
       }
       kv.toMap //return immutable Map
     } else {
-      throw new UnsupportedBosonTypeException("Type %s is not a Boson MAP", null)
+      throw new UnsupportedBosonTypeException("Type %s is not a Boson MAP" format (Type), null)
     }
   }
 
@@ -287,7 +314,7 @@ class BosonReader(obj: Array[Byte]) {
       case NULL => null
       case STRING => readString(true, Type)
       case ARRAY => readArray(true, Type)
-      case LIST => readArray(true, Type).toList
+      case LIST => readList(true, Type)
       case MAP => readMap(true, Type)
       case _ => throw new UnsupportedBosonTypeException("Type %s is not a valid boson type" format (Type), null)
     }
