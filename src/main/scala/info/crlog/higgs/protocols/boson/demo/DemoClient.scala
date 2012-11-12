@@ -8,11 +8,11 @@ import java.lang.Double
  */
 object DemoClient {
   def main(args: Array[String]) {
-    val client = new BosonClient("BosonTest",12001)
+    val client = new BosonClient("BosonTest", 12001)
     client.connect()
-    for (i <- 1 to 1) {
+    for (i <- 1 to 100000) {
       client.invoke("test", Array(math.random * i, "random"), (m: Double) => {
-        println("received:", m)
+        println(m)
       }, false)
     }
   }

@@ -32,8 +32,8 @@ object WSDemo {
       client.connect(() => {
         //when client connected send message
         client.send(JsonMessage("b", Map("huh" -> 12345, "b" -> "bang")))
-        client.send(JsonMessage("a"))
-        server.broadcast(JsonMessage("client"))
+//        client.send(JsonMessage("a"))
+//        server.broadcast(JsonMessage("client"))
       })
     })
   }

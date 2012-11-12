@@ -8,7 +8,7 @@ import info.crlog.higgs.method
 class Listener {
   @method("test")
   def test(a: Double, str: String) = {
-    println(a, str)
-    a * math.random
+    //println(a, str)
+    a
   }
 }

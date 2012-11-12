@@ -8,14 +8,6 @@ import java.net.URL
 object HttpDemo {
   def main(args: Array[String]) {
     val client = new HttpClient()
-    //    val req = new HttpRequest(new URL("http://crlog.info"), HttpMethod.GET)
-    //    req.send((res: HTTPResponse) => {
-    //      println(res)
-    //    })
-//    client.GET(new URL("https://graph.facebook.com/me/feed?access_token=asw"), (res: HTTPResponse) => {
-//      println("Facebook")
-//      println(res)
-//    })
     client.GET(new URL("https://api.twitter.com/1.1/statuses/home_timeline.json"), (res: HTTPResponse) => {
       println("Twitter")
       println(res)
