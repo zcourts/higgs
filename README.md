@@ -25,6 +25,8 @@ JRPC and OMSG protocols are highly experimental and not intended for general use
 + __Boson__ is the actively used/developed protocol and is the only custom protocol that is recommended for use.
 + A __Node JS__ implementation of the Boson protocol can be found here [https://github.com/zcourts/higgs-node](https://github.com/zcourts/higgs)
 + The Boson protocol is actively used between Node JS and Scala at [Fillta](http://fillta.com)
++ The library uses the latest version 4 Netty API. Since the netty project had a major refactor between v3 and v4
+it is not compatible with previous versions and Netty needs to be built and installed in your local maven REPO using the [master branch](https://github.com/netty/netty)
 
 # Features
 
