@@ -8,7 +8,7 @@ import info.crlog.higgs.protocols.boson.BosonServer
  */
 object DemoServer {
   def main(args: Array[String]) {
-    val server = new BosonServer(12001)
+    val server = new BosonServer(12001,"192.168.0.4")
     server.register(new Listener)
     server.bind(() => {})
   }
