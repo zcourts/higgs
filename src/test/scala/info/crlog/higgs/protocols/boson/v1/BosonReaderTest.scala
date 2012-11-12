@@ -9,7 +9,7 @@ import info.crlog.higgs.protocols.boson.UnsupportedBosonTypeException
  */
 class BosonReaderTest extends Specification {
   "BosonReader" should {
-    val str = StringUtil.getBytes("Test string some arbitrary string...sort of....")
+    val str = new StringUtil().getBytes("Test string some arbitrary string...sort of....")
     val reader = new BosonReader(str)
     "Initialize obj" in {
       reader.obj must equalTo(str)
