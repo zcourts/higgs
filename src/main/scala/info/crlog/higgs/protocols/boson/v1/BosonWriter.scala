@@ -35,7 +35,7 @@ class BosonWriter(obj: Message) {
     val buffer = new HeapByteBuf(0, Int.MaxValue)
     //write the method name
     buffer.writeByte(BosonType.RESPONSE_METHOD_NAME) //write type/flag - 1 byte
-    writeString(buffer,obj.method)
+    writeString(buffer, obj.method)
     //write the parameters
     buffer.writeByte(BosonType.RESPONSE_PARAMETERS) //write type/flag - int = 4 bytes
     writeArray(obj.arguments, buffer) //write the size/length and payload
@@ -50,13 +50,13 @@ class BosonWriter(obj: Message) {
     val buffer = new HeapByteBuf(0, Int.MaxValue)
     //write the method name
     buffer.writeByte(BosonType.REQUEST_METHOD_NAME) //write type/flag - 1 byte
-    writeString(buffer,obj.method)
+    writeString(buffer, obj.method)
     //write the parameters
     buffer.writeByte(BosonType.REQUEST_PARAMETERS) //write type/flag - int = 4 bytes
     writeArray(obj.arguments, buffer) //write the size/length and payload
     //write the callback name
     buffer.writeByte(BosonType.REQUEST_CALLBACK) //write type/flag - 1 byte
-    writeString(buffer,obj.callback)
+    writeString(buffer, obj.callback)
     buffer.resetReaderIndex()
     val ser = new Array[Byte](buffer.writerIndex())
     //read the BYTES WRITTEN into an array and return it
@@ -182,11 +182,17 @@ class BosonWriter(obj: Message) {
       writeChar(buffer, param.asInstanceOf[Char])
     } else if (obj == classOf[String] || obj == classOf[lang.String]) {
       writeString(buffer, param.asInstanceOf[String])
-    } else if (obj.isArray || obj.isAssignableFrom(classOf[Array[Any]]) || obj.isAssignableFrom(classOf[Seq[Any]])) {
+    } else if (obj.isArray ||
+      classOf[Array[Any]].isAssignableFrom(obj)
+      //TODO add support for treating a Scala Seq as an array since it is ordered
+      //|| classOf[Seq[Any]].isAssignableFrom(obj)
+    ) {
       writeArray(param.asInstanceOf[Array[Any]], buffer)
-    } else if (obj.isAssignableFrom(classOf[List[Any]]) || obj.isAssignableFrom(classOf[util.List[Any]])) {
+    } else if (classOf[List[Any]].isAssignableFrom(obj)
+      || classOf[util.List[Any]].isAssignableFrom(obj)) {
       writeList(param.asInstanceOf[List[Any]], buffer)
-    } else if (obj.isAssignableFrom(classOf[collection.Map[Any, Any]]) || obj.isAssignableFrom(classOf[util.Map[Any, Any]])) {
+    } else if (classOf[collection.Map[Any, Any]].isAssignableFrom(obj)
+      || classOf[util.Map[Any, Any]].isAssignableFrom(obj)) {
       writeMap(param.asInstanceOf[Map[Any, Any]], buffer)
     } else {
       throw new UnsupportedBosonTypeException("%s is not a supported type, see BosonType for a list of supported types" format (obj.getName()), null)
