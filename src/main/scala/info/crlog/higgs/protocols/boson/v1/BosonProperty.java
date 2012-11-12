@@ -17,19 +17,10 @@ import java.lang.annotation.Target;
 @Target({ElementType.METHOD, ElementType.TYPE})
 public @interface BosonProperty {
     /**
-     * Optionally provide a name for the "topic" to which a method is subscribed.
-     * If no name is provided, by default and preferably, the fully qualified name of the
-     * method is used i.e. com.domain.class.method
+     * Optionally provide a name for this field.
+     * If no name is provided, by default the variable name is used
      *
      * @return
      */
     public String value() default "";
-
-    /**
-     * If provided the method this is applied to will NOT be registered to receive messages.
-     * NOTE: Applying this at class level is meaningless and is ignored. Only applies to methods
-     *
-     * @return
-     */
-    public boolean optout() default false;
 }
