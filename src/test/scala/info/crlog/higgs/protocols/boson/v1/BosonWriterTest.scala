@@ -9,13 +9,15 @@ import io.netty.buffer.Unpooled
  * @author Courtney Robinson <courtney@crlog.info>
  */
 class BosonWriterTest extends Specification {
+//  sequential
 //  "BosonWriter" should {
 //    val reqmsg = new Message("test", Array(1, 2L, 3D, "abc"), "request")
 //    val reqwriter = new BosonWriter(reqmsg)
 //    val reqSerialized = reqwriter.get()
-//    val reqBuf = Unpooled.copiedBuffer(reqSerialized)
+//    val reqBuf = Unpooled.wrappedBuffer(reqSerialized)
 //    "Version is 1" in {
-//      reqBuf.readByte() must beEqualTo(0x1)
+//     val version= reqBuf.readByte() << 0
+//      version must beEqualTo(1)
 //    }
 //    "Message size should be more than 0 " in {
 //      reqBuf.readInt() must beGreaterThan(0)
@@ -28,4 +30,6 @@ class BosonWriterTest extends Specification {
 //      )
 //    }
 //  }
+  //    new PoloExample(12345)
+
 }
