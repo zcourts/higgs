@@ -32,7 +32,76 @@ It has since grown to be more robust that originally intended.
 
 Each protocol comes with a simple client/server demo.
 
-### TODO - Put some short examples in read me
+## Examples
+
+### HTTP
+
+```scala
+
+object HttpDemo {
+  def main(args: Array[String]) {
+    val client = new HttpClient()
+    client.GET(new URL("https://api.twitter.com/1.1/statuses/home_timeline.json"), (res: HTTPResponse) => {
+      println("Twitter")
+      println(res)
+    })
+  }
+}
+
+```
+Output:
+
+```javascript
+
+Twitter
+400 Bad Request
+ SINGLE
+ HTTP/1.1
+ Map(Server -> ListBuffer(tfe), Date -> ListBuffer(Mon, 12 Nov 2012 00:09:06 UTC), Content-Type -> ListBuffer(application/json; charset=utf-8), Content-Length -> ListBuffer(61))
+ {"errors":[{"message":"Bad Authentication data","code":215}]}
+
+```
+### Boson
+
+```scala
+
+class Listener {
+  @method("test")
+  def test(a: Double, str: String) = {
+    println(a, str)
+    a * math.random
+  }
+}
+
+object DemoClient {
+  def main(args: Array[String]) {
+    val server = new BosonServer(12001)
+    server.register(new Listener)
+    server.bind()
+    val client = new BosonClient("BosonTest", 12001)
+    client.connect()
+    for (i <- 1 to 10) {
+      client.invoke("test", Array(math.random * i, "random"), (m: Double) => {
+        println("received:", m)
+      }, false)
+    }
+  }
+}
+
+```
+Output
+
+```javascript
+
+(0.6504514338228282,random)
+(received:,0.13370158985585276)
+(0.5559087056550658,random)
+(2.264004979117151,random)
+(received:,0.13683075122251703)
+(1.0331329639981006,random)
+...
+
+```
 
 # Advanced
 
