@@ -179,7 +179,7 @@ If the client callback only accept a single parameter (the response) then the cl
 
 ### Serialization
 
-1. Write the response type (-127,-126 or -125)
+1. Write the response type (-124,-123)
 2. Write the contents of the response type using the rules for that content's type ( e.g if its an int write int flag then the int)
 
 The order the method name and parameters are sent in __must be (method,parameters)__.

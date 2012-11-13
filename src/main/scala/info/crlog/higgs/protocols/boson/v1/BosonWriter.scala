@@ -53,12 +53,12 @@ class BosonWriter(obj: Message) {
     //write the method name
     buffer.writeByte(BosonType.REQUEST_METHOD_NAME) //write type/flag - 1 byte
     writeString(buffer, obj.method)
-    //write the parameters
-    buffer.writeByte(BosonType.REQUEST_PARAMETERS) //write type/flag - int = 4 bytes
-    writeArray(obj.arguments, buffer) //write the size/length and payload
     //write the callback name
     buffer.writeByte(BosonType.REQUEST_CALLBACK) //write type/flag - 1 byte
     writeString(buffer, obj.callback)
+    //write the parameters
+    buffer.writeByte(BosonType.REQUEST_PARAMETERS) //write type/flag - int = 4 bytes
+    writeArray(obj.arguments, buffer) //write the size/length and payload
     buffer.resetReaderIndex()
     val ser = new Array[Byte](buffer.writerIndex())
     //read the BYTES WRITTEN into an array and return it
