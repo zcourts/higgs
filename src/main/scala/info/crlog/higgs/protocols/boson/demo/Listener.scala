@@ -1,7 +1,6 @@
 package info.crlog.higgs.protocols.boson.demo
 
 import info.crlog.higgs.method
-import java.lang.Double
 
 /**
  * @author Courtney Robinson <courtney@crlog.info>
@@ -13,4 +12,21 @@ class Listener {
     polo.i = 8655556
     polo
   }
+
+  @method("nodejs")
+  def nodejs(
+              a: Float, b: Int, nullObj: Object,
+              m: Map[String, Int],
+              arr: Array[AnyRef],
+              bool: Boolean, str: String
+              ) = {
+    println(
+      a, b, nullObj,
+      m,
+      arr.mkString("[", ",", "]"),
+      bool, str
+    )
+    "Test"
+  }
+
 }
