@@ -86,16 +86,22 @@ class BosonClient(serviceName: String, port: Int, host: String = "localhost", co
         if (m.arguments.length > 0) {
           try {
             val param = new POLOContainerToType(m.arguments(0), mf.erasure)
-            //param.parameter is either the object m.arguments(0) OR a POLOContainer converted to a type of ms.erasure
-            val klass = param.parameter.getClass()
-            //if param is the same as or is a super class of the expected type, we can cast to it
-            if (mf.erasure.isAssignableFrom(klass)) {
-              callback(Some(param.parameter.asInstanceOf[T]), None)
+            //Boson supports null so its possible param.parameter is null
+            if (param.parameter != null) {
+              //param.parameter is either the object m.arguments(0) OR a POLOContainer converted to a type of ms.erasure
+              val klass = param.parameter.getClass()
+              //if param is the same as or is a super class of the expected type, we can cast to it
+              if (mf.erasure.isAssignableFrom(klass)) {
+                callback(Some(param.parameter.asInstanceOf[T]), None)
+              } else {
+                val logmsg = "Remote method %s invoked, callback %s, " +
+                  "%s cannot be cast to %s" format(method, id, klass.getName(), mf.erasure.getName())
+                log.warn(logmsg)
+                callback(None, Some(new InvalidBosonResponse(logmsg, m, null)))
+              }
             } else {
-              val logmsg = "Remote method %s invoked, callback %s, " +
-                "%s cannot be cast to %s" format(method, id, klass.getName(), mf.erasure.getName())
-              log.warn(logmsg)
-              callback(None, Some(new InvalidBosonResponse(logmsg, m, null)))
+              //server returned null and no exception occurred so pass null,null
+              callback(null, null)
             }
           } catch {
             case e: IllegalBosonArgumentException => {
