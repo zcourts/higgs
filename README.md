@@ -8,7 +8,7 @@ The name shamelessly stolen from the almost mythical Higgs Boson http://en.wikip
 Together with __Netty__ forms a pure JVM (NIO based) high performance, message oriented networking library.
 The project was started to remove the need I had for ZeroMQ (too many issues with native dependency in jzmq)
 
-It has since grown to be more robust that originally intended.
+It has since grown to be more robust than originally intended.
 
 # Supported protocols
 
@@ -18,6 +18,12 @@ It has since grown to be more robust that originally intended.
 4. JRPC - A custom RPC mechanism for JVM languages (Uses object serialization)
 5. Boson - A language independent, topic oriented protocol for sending/receiving arbitrary data over the network and
             performing remote method invocation (RMI/RPC).
+
+# Custom Protocols
++ One of the biggest wins with Higgs is it provides a simple infrastructure for you to do your own protocol.
+            The [advanced](#advanced) section below shows how trivial it is to do so.
+            However, as it stands, Higgs will continue to add support for "standard" protocols. On the to do list are
+            ftp,ssh, sctp, telnet etc.
 
 ### NOTE
 JRPC and OMSG protocols are highly experimental and not intended for general use (They were more for demonstration).
