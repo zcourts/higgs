@@ -93,10 +93,11 @@ case class POLOContainer(fields: Map[String, Any]) {
  * @param param
  * @param methodArgument
  */
-class POLOContainerToType(param: Any, methodArgument: Class[_]) {
+class POLOContainerToType(var param: Any, methodArgument: Class[_]) {
+  verifyScalaJavaPrimitive()
   var isPOLO = false
   //if its a polo
-  val parameter: AnyRef =
+  var parameter: AnyRef =
     if (param.isInstanceOf[POLOContainer]) {
       val polo = param.asInstanceOf[POLOContainer]
       //make sure the method argument is not a boson primitive
@@ -112,4 +113,99 @@ class POLOContainerToType(param: Any, methodArgument: Class[_]) {
     } else {
       param.asInstanceOf[AnyRef]
     }
+
+  /**
+   * Boxed Java and Scala primitives are not exactly compatible at Runtime
+   * since the Scala Int* etc classes do not extend java.lang.Integer*
+   * This method checks if the given param is a primitive and if the
+   * given class is either a Scala or Java equivalent of that primitive.
+   * If it is, it converts the param to the expected method argument be
+   * it a Java or Scala Boxing class.
+   */
+  def verifyScalaJavaPrimitive() {
+    if (param != null) {
+      val value = param.asInstanceOf[AnyRef]
+      val paramClass = value.getClass
+      //if param is scala.Byte and methodArgument is java.lang.Byte
+      if (paramClass == classOf[scala.Byte] && methodArgument == classOf[java.lang.Byte]) {
+        param = scala.Byte.box(value.asInstanceOf[Byte])
+        return
+      }
+      //if param is java.lang.Byte and methodArgument is scala.Byte
+      if (paramClass == classOf[java.lang.Byte] && methodArgument == classOf[scala.Byte]) {
+        param = scala.Byte.unbox(value)
+        return
+      }
+      //if param is scala.Short and methodArgument is java.lang.Short
+      if (paramClass == classOf[scala.Short] && methodArgument == classOf[java.lang.Short]) {
+        param = scala.Short.box(value.asInstanceOf[Short])
+        return
+      }
+      //if param is java.lang.Short and methodArgument is scala.Short
+      if (paramClass == classOf[java.lang.Short] && methodArgument == classOf[scala.Short]) {
+        param = scala.Short.unbox(value)
+        return
+      }
+      //if param is scala.Int and methodArgument is java.lang.Integer
+      if (paramClass == classOf[scala.Int] && methodArgument == classOf[java.lang.Integer]) {
+        param = scala.Int.box(value.asInstanceOf[Int])
+        return
+      }
+      //if param is java.lang.Integer and methodArgument is scala.Int
+      if (paramClass == classOf[java.lang.Integer] && methodArgument == classOf[scala.Int]) {
+        param = scala.Int.unbox(value)
+        return
+      }
+      //if param is scala.Long and methodArgument is java.lang.Long
+      if (paramClass == classOf[scala.Long] && methodArgument == classOf[java.lang.Long]) {
+        param = scala.Long.box(value.asInstanceOf[Long])
+        return
+      }
+      //if param is java.lang.Long and methodArgument is scala.Long
+      if (paramClass == classOf[java.lang.Long] && methodArgument == classOf[scala.Long]) {
+        param = scala.Byte.unbox(value)
+        return
+      }
+      //if param is scala.Float and methodArgument is java.lang.Float
+      if (paramClass == classOf[scala.Float] && methodArgument == classOf[java.lang.Float]) {
+        param = scala.Float.box(value.asInstanceOf[Float])
+        return
+      }
+      //if param is java.lang.Float and methodArgument is scala.Float
+      if (paramClass == classOf[java.lang.Float] && methodArgument == classOf[scala.Float]) {
+        param = scala.Float.unbox(value)
+        return
+      }
+      //if param is scala.Double and methodArgument is java.lang.Double
+      if (paramClass == classOf[scala.Double] && methodArgument == classOf[java.lang.Double]) {
+        param = scala.Double.box(value.asInstanceOf[Double])
+        return
+      }
+      //if param is java.lang.Double and methodArgument is scala.Douvle
+      if (paramClass == classOf[java.lang.Double] && methodArgument == classOf[scala.Double]) {
+        param = scala.Double.unbox(value)
+        return
+      }
+      //if param is scala.Boolean and methodArgument is java.lang.Boolean
+      if (paramClass == classOf[scala.Boolean] && methodArgument == classOf[java.lang.Boolean]) {
+        param = scala.Boolean.box(value.asInstanceOf[Boolean])
+        return
+      }
+      //if param is java.lang.Boolean and methodArgument is scala.Boolean
+      if (paramClass == classOf[java.lang.Boolean] && methodArgument == classOf[scala.Boolean]) {
+        param = scala.Boolean.unbox(value)
+        return
+      }
+      //if param is scala.Char and methodArgument is java.lang.Character
+      if (paramClass == classOf[scala.Char] && methodArgument == classOf[java.lang.Character]) {
+        param = scala.Char.box(value.asInstanceOf[Char])
+        return
+      }
+      //if param is java.lang.Character and methodArgument is scala.Char
+      if (paramClass == classOf[java.lang.Character] && methodArgument == classOf[scala.Char]) {
+        param = scala.Char.unbox(value)
+        return
+      }
+    }
+  }
 }
