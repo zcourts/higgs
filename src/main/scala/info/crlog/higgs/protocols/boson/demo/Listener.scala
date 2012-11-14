@@ -26,7 +26,7 @@ class Listener {
       arr.mkString("[", ",", "]"),
       bool, str
     )
-    "Test"
+    Array(a, b, nullObj, m, arr, bool,str)
   }
 
 }
