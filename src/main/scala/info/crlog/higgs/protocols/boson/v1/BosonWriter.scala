@@ -147,7 +147,7 @@ class BosonWriter(obj: Message) {
     }
   }
 
-  def writeMap(value: Map[Any, Any], buffer: ByteBuf) {
+  def writeMap(value: collection.Map[Any, Any], buffer: ByteBuf) {
     buffer.writeByte(BosonType.MAP) //type
     buffer.writeInt(value.size) //size
     for ((key, value) <- value) {
@@ -242,7 +242,7 @@ class BosonWriter(obj: Message) {
       writeList(param.asInstanceOf[List[Any]], buffer)
     } else if (classOf[collection.Map[Any, Any]].isAssignableFrom(obj)
       || classOf[util.Map[Any, Any]].isAssignableFrom(obj)) {
-      writeMap(param.asInstanceOf[Map[Any, Any]], buffer)
+      writeMap(param.asInstanceOf[collection.Map[Any, Any]], buffer)
     } else {
       if (!writePolo(param, buffer)) {
         throw new UnsupportedBosonTypeException("%s is not a supported type, see BosonType for a list of supported types" format (obj.getName()), null)
