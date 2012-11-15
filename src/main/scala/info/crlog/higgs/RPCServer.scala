@@ -129,8 +129,8 @@ abstract class RPCServer[M](host: String, port: Int, compress: Boolean)(implicit
       var returns: Option[Serializable] = None
       var error: Option[Throwable] = None
       var args: Array[AnyRef] = getArguments(params)
+      val argTypes = method.getParameterTypes()
       try {
-        val argTypes = method.getParameterTypes()
         val channelIndex = argTypes.indexOf(classOf[Channel])
         val rpcIndex = argTypes.indexOf(mf.erasure)
         //Channel MUST be first parameter and RPC must be second parameter if method wants
@@ -152,8 +152,17 @@ abstract class RPCServer[M](host: String, port: Int, compress: Boolean)(implicit
       } catch {
         case e => {
           error = Some(e)
-          log.warn("Error invoking method %s with arguments %s : Path to method %s"
-            format(methodName, args, method.getDeclaringClass.getName + "." + method.getName), e)
+          val expected = (for (arg <- argTypes) yield {
+            arg.getName
+          }).mkString("[", ",", "]")
+          val actual = (for (arg <- args) yield {
+            arg.getClass.getName
+          }).mkString("[", ",", "]")
+          log.warn("Error invoking method %s with arguments %s : Path to method %s The method \n" +
+            "expected: %s \n" +
+            "received: %s"
+            format(methodName, args.mkString("[", ",", "]"), method.getDeclaringClass.getName + "." + method.getName,
+            expected, actual), e)
         }
       }
       respond(c,
