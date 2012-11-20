@@ -151,16 +151,8 @@ class BosonWriter(obj: Message) {
     buffer.writeByte(BosonType.MAP) //type
     buffer.writeInt(value.size) //size
     for ((key, value) <- value) {
-      if (key == null) {
-        writeNull(buffer)
-      } else {
-        validateAndWriteType(key, buffer) //key payload
-      }
-      if (value == null) {
-        writeNull(buffer)
-      } else {
-        validateAndWriteType(value, buffer) //value payload
-      }
+      validateAndWriteType(key, buffer, true) //key payload
+      validateAndWriteType(value, buffer, true) //value payload
     }
   }
 
@@ -230,52 +222,59 @@ class BosonWriter(obj: Message) {
     return data.size > 0
   }
 
-  def validateAndWriteType(param: Any, buffer: ByteBuf) {
-    val obj = param.asInstanceOf[AnyRef].getClass
-    if (obj == classOf[Byte] || obj == classOf[lang.Byte]) {
-      writeByte(buffer, param.asInstanceOf[Byte])
-    } else if (obj == classOf[Short] || obj == classOf[lang.Short]) {
-      writeShort(buffer, param.asInstanceOf[Short])
-    } else if (obj == classOf[Int] || obj == classOf[lang.Integer]) {
-      writeInt(buffer, param.asInstanceOf[Int])
-    } else if (obj == classOf[Long] || obj == classOf[lang.Long]) {
-      writeLong(buffer, param.asInstanceOf[Long])
-    } else if (obj == classOf[Float] || obj == classOf[lang.Float]) {
-      writeFloat(buffer, param.asInstanceOf[Float])
-    } else if (obj == classOf[Double] || obj == classOf[lang.Double]) {
-      writeDouble(buffer, param.asInstanceOf[Double])
-    } else if (obj == classOf[Boolean] || obj == classOf[lang.Boolean]) {
-      writeBoolean(buffer, param.asInstanceOf[Boolean])
-    } else if (obj == classOf[Char] || obj == classOf[lang.Character]) {
-      writeChar(buffer, param.asInstanceOf[Char])
-    } else if (obj == classOf[String] || obj == classOf[lang.String]) {
-      writeString(buffer, param.asInstanceOf[String])
-    } else if (obj.isArray ||
-      classOf[Array[Any]].isAssignableFrom(obj)
-      || classOf[Seq[Any]].isAssignableFrom(obj)
-    ) {
-      if (classOf[Seq[Any]].isAssignableFrom(obj)) {
-        writeArray(param.asInstanceOf[Seq[Any]].toArray, buffer)
-      } else {
-        writeArray(param.asInstanceOf[Array[Any]], buffer)
-      }
-    } else if (classOf[List[Any]].isAssignableFrom(obj)
-      || classOf[ListBuffer[Any]].isAssignableFrom(obj)
-      || classOf[util.List[Any]].isAssignableFrom(obj)) {
-      if (classOf[ListBuffer[Any]].isAssignableFrom(obj)) {
-        writeList(param.asInstanceOf[ListBuffer[Any]].toList, buffer)
-      } else if (classOf[List[Any]].isAssignableFrom(obj)) {
-        writeList(param.asInstanceOf[List[Any]], buffer)
-      } else {
-        import collection.JavaConversions._
-        writeList(param.asInstanceOf[util.List[Any]].toList, buffer)
-      }
-    } else if (classOf[collection.Map[Any, Any]].isAssignableFrom(obj)
-      || classOf[util.Map[Any, Any]].isAssignableFrom(obj)) {
-      writeMap(param.asInstanceOf[collection.Map[Any, Any]], buffer)
+  def validateAndWriteType(param: Any, buffer: ByteBuf, writeClassName: Boolean = false) {
+    if (param == null) {
+      writeNull(buffer)
     } else {
-      if (!writePolo(param, buffer)) {
-        throw new UnsupportedBosonTypeException("%s is not a supported type, see BosonType for a list of supported types" format (obj.getName()), null)
+      val obj = param.asInstanceOf[AnyRef].getClass
+      if (writeClassName) {
+        writeString(buffer, obj.getName())
+      }
+      if (obj == classOf[Byte] || obj == classOf[lang.Byte]) {
+        writeByte(buffer, param.asInstanceOf[Byte])
+      } else if (obj == classOf[Short] || obj == classOf[lang.Short]) {
+        writeShort(buffer, param.asInstanceOf[Short])
+      } else if (obj == classOf[Int] || obj == classOf[lang.Integer]) {
+        writeInt(buffer, param.asInstanceOf[Int])
+      } else if (obj == classOf[Long] || obj == classOf[lang.Long]) {
+        writeLong(buffer, param.asInstanceOf[Long])
+      } else if (obj == classOf[Float] || obj == classOf[lang.Float]) {
+        writeFloat(buffer, param.asInstanceOf[Float])
+      } else if (obj == classOf[Double] || obj == classOf[lang.Double]) {
+        writeDouble(buffer, param.asInstanceOf[Double])
+      } else if (obj == classOf[Boolean] || obj == classOf[lang.Boolean]) {
+        writeBoolean(buffer, param.asInstanceOf[Boolean])
+      } else if (obj == classOf[Char] || obj == classOf[lang.Character]) {
+        writeChar(buffer, param.asInstanceOf[Char])
+      } else if (obj == classOf[String] || obj == classOf[lang.String]) {
+        writeString(buffer, param.asInstanceOf[String])
+      } else if (obj.isArray ||
+        classOf[Array[Any]].isAssignableFrom(obj)
+        || classOf[Seq[Any]].isAssignableFrom(obj)
+      ) {
+        if (classOf[Seq[Any]].isAssignableFrom(obj)) {
+          writeArray(param.asInstanceOf[Seq[Any]].toArray, buffer)
+        } else {
+          writeArray(param.asInstanceOf[Array[Any]], buffer)
+        }
+      } else if (classOf[List[Any]].isAssignableFrom(obj)
+        || classOf[ListBuffer[Any]].isAssignableFrom(obj)
+        || classOf[util.List[Any]].isAssignableFrom(obj)) {
+        if (classOf[ListBuffer[Any]].isAssignableFrom(obj)) {
+          writeList(param.asInstanceOf[ListBuffer[Any]].toList, buffer)
+        } else if (classOf[List[Any]].isAssignableFrom(obj)) {
+          writeList(param.asInstanceOf[List[Any]], buffer)
+        } else {
+          import collection.JavaConversions._
+          writeList(param.asInstanceOf[util.List[Any]].toList, buffer)
+        }
+      } else if (classOf[collection.Map[Any, Any]].isAssignableFrom(obj)
+        || classOf[util.Map[Any, Any]].isAssignableFrom(obj)) {
+        writeMap(param.asInstanceOf[collection.Map[Any, Any]], buffer)
+      } else {
+        if (!writePolo(param, buffer)) {
+          throw new UnsupportedBosonTypeException("%s is not a supported type, see BosonType for a list of supported types" format (obj.getName()), null)
+        }
       }
     }
   }

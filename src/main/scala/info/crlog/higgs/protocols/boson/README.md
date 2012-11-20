@@ -111,8 +111,14 @@ A map contains a __unordered__ set of tuples (key value pairs). Both keys and va
 
 1. To write a map, first write the type
 2. followed by the total number of elements in the map.
-3. Next, write the key according to the rules for its type
-4. then write the value according to the rules for its type.
+3. Next write the fully qualified class name of the key (com.domain.MyClass) as a string using the rules for writing a string
+4. Next, write the key according to the rules for its type
+5. Next write the fully qualified class name of the value (com.domain.MyValueClass) as a string using the rules for writing a string
+6. then write the value according to the rules for its type.
+
+At 3. and 5. if the serializer is in a language that doesn't support classes then the boson type, null should be
+written instead of the fully qualified class name. In this case the keys and values should be represented
+in a data structure appropriate for the language de-serializing.
 
 Both key and value can be empty. If either are empty then a type is still required followed by a size of 0. If the type is set to null then no size is required.
 

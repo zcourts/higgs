@@ -78,9 +78,9 @@ case class BosonReader(obj: Array[Byte]) {
       //read size of type - how many bytes are in the string
       val size = data.readInt()
       //read type's payload and de-serialize
-      val buf =data.readBytes(size)
+      val buf = data.readBytes(size)
       val arr = new Array[Byte](buf.writerIndex())
-      buf.getBytes(0,arr)
+      buf.getBytes(0, arr)
       new StringUtil().getString(arr)
     } else {
       throw new UnsupportedBosonTypeException("Type %s is not a Boson STRING" format (Type), null)
@@ -290,15 +290,51 @@ case class BosonReader(obj: Array[Byte]) {
       for (i <- 0 until size) {
         //get type of with readByte() and use readType(Int) to extract/de-serialize
         verifyReadable()
-        val key = readType(data.readByte())
+        val classNameType = data.readByte()
+        val keyClassName = extractMapType(classNameType)
+        var key = readType(data.readByte())
+        //make sure thread's context class loader is used as opposed to getClass.getclassloader
+        if (!keyClassName.isEmpty) {
+          val klass = Thread.currentThread().getContextClassLoader().loadClass(keyClassName)
+          //if the key was de-serialized as a POLO
+          if (classOf[POLOContainer].isAssignableFrom(key.asInstanceOf[AnyRef].getClass)) {
+            key = key.asInstanceOf[POLOContainer].as(klass, true)
+          }
+        }
         verifyReadable()
-        val value = readType(data.readByte())
+        val valueClassNameType = data.readByte()
+        val valueClassName = extractMapType(valueClassNameType)
+        var value = readType(data.readByte())
+        if (!valueClassName.isEmpty) {
+          val klass = Thread.currentThread().getContextClassLoader().loadClass(valueClassName)
+          //if the value was de-serialized as a POLO
+          if (classOf[POLOContainer].isAssignableFrom(value.asInstanceOf[AnyRef].getClass)) {
+            value = value.asInstanceOf[POLOContainer].as(klass, true)
+          }
+        }
         kv += key -> value
       }
       kv.toMap //return immutable Map
     } else {
       throw new UnsupportedBosonTypeException("Type %s is not a Boson MAP" format (Type), null)
     }
+  }
+
+
+  private def extractMapType(classNameType: Byte): String = {
+    var className: String = ""
+    //if type is string we have a fully qualified class name
+    //otherwise it MUST be null, if its not we need to throw an exception
+    // or de-serialization will lead to corrupted data
+    if (classNameType == STRING) {
+      className = readType(classNameType).toString()
+    } else if (classNameType == NULL) {
+      //do nothing, we just don't have a class name, de-serialize as a "POLOContainer"
+    } else {
+      throw new UnsupportedBosonTypeException("De-serializing Map encountered type " +
+        "%s only %s (string) and %s (null) supported here" format(classNameType, STRING, NULL), null)
+    }
+    className
   }
 
   def readPolo(verified: Boolean, verifiedType: Int): POLOContainer = {

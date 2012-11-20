@@ -7,9 +7,8 @@ import info.crlog.higgs.method
  */
 class Listener {
   @method("test")
-  def test(a: Double, polo: PoloExample) = {
-    println(a, polo.ignored, polo.i, polo.name)
-    polo.i = 8655556
+  def test(a: Double, polo: Map[AnyRef, AnyRef]) = {
+    println(a, polo.head._2.isInstanceOf[PoloExample])
     polo
   }
 
