@@ -5,7 +5,7 @@ import io.netty.buffer.{ByteBuf, HeapByteBuf}
 import info.crlog.higgs.util.StringUtil
 import java.{util, lang}
 import collection.mutable
-import lang.reflect.Field
+import collection.mutable.ListBuffer
 
 /**
  * @author Courtney Robinson <courtney@crlog.info>
@@ -172,9 +172,8 @@ class BosonWriter(obj: Message) {
     val publicFields = klass.getFields
     //get ALL (public,private,protect,package) fields declared in the class - excludes inherited fields
     val classFields = klass.getDeclaredFields
-    //create a set of fields removing duplicates
-    val fields: Set[Field] = Set[Field]() ++ classFields ++ publicFields
-    for (field <- fields) {
+    //process inherited fields first, INHERITED FIELDS MUST BE ANNOTATED or they'll be ignored!
+    for (field <- publicFields) {
       //add if annotated with BosonProperty
       if (field.isAnnotationPresent(classOf[BosonProperty])) {
         field.setAccessible(true)
@@ -183,7 +182,27 @@ class BosonWriter(obj: Message) {
         data += name -> field.get(value)
       }
     }
-    //if at least one field is annotated
+    //process fields declared in the class itself
+    for (field <- classFields) {
+      field.setAccessible(true)
+      var add = true
+      var name = field.getName()
+      //add if annotated with BosonProperty and not marked as ignored
+      if (field.isAnnotationPresent(classOf[BosonProperty])) {
+        val ann = field.getAnnotation(classOf[BosonProperty])
+        if (ann.ignore()) {
+          add = false
+        }
+        if (!ann.value().isEmpty()) {
+          name = ann.value() //use name given in annotation if not empty
+        }
+      }
+      if (add) {
+        //overwriting even if previously set when public fields were processed
+        data += name -> field.get(value)
+      }
+    }
+    //if at least one field is allowed to be serialized
     if (data.size > 0) {
       buffer.writeByte(BosonType.POLO) //type
       buffer.writeInt(data.size) //size
@@ -238,8 +257,16 @@ class BosonWriter(obj: Message) {
     ) {
       writeArray(param.asInstanceOf[Array[Any]], buffer)
     } else if (classOf[List[Any]].isAssignableFrom(obj)
+      || classOf[ListBuffer[Any]].isAssignableFrom(obj)
       || classOf[util.List[Any]].isAssignableFrom(obj)) {
-      writeList(param.asInstanceOf[List[Any]], buffer)
+      if (classOf[ListBuffer[Any]].isAssignableFrom(obj)) {
+        writeList(param.asInstanceOf[ListBuffer[Any]].toList, buffer)
+      } else if (classOf[List[Any]].isAssignableFrom(obj)) {
+        writeList(param.asInstanceOf[List[Any]], buffer)
+      } else {
+        import collection.JavaConversions._
+        writeList(param.asInstanceOf[util.List[Any]].toList, buffer)
+      }
     } else if (classOf[collection.Map[Any, Any]].isAssignableFrom(obj)
       || classOf[util.Map[Any, Any]].isAssignableFrom(obj)) {
       writeMap(param.asInstanceOf[collection.Map[Any, Any]], buffer)

@@ -6,15 +6,12 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Registers a class or method to receive messages
- * If applied to a class then all methods within that class are registered as listeners
- * unless a method specificly applies the annotation setting "optout=true"
- * In which case the method will be opted out of receiving messages.
+ * Explicitly register an object's field to be serialized or ignored
  *
  * @author Courtney Robinson <courtney@crlog.info>
  */
 @Retention(RetentionPolicy.RUNTIME)
-@Target({ElementType.METHOD, ElementType.TYPE})
+@Target({ElementType.FIELD})
 public @interface BosonProperty {
     /**
      * Optionally provide a name for this field.
@@ -23,4 +20,11 @@ public @interface BosonProperty {
      * @return
      */
     public String value() default "";
+
+    /**
+     * Mark this field ignored, doing this causes the field not to be serialized
+     *
+     * @return
+     */
+    public boolean ignore() default false;
 }

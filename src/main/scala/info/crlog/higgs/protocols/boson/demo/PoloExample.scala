@@ -10,4 +10,8 @@ case class PoloExample() {
 
   @BosonProperty
   var i = 0
+  var name = "Test non-annotated field"
+  private var str = "Test private non-annotated field"
+  @BosonProperty(ignore = true)
+  var ignored: String = null
 }

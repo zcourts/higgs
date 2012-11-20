@@ -8,7 +8,7 @@ import info.crlog.higgs.method
 class Listener {
   @method("test")
   def test(a: Double, polo: PoloExample) = {
-    println(a, polo.i)
+    println(a, polo.ignored, polo.i, polo.name)
     polo.i = 8655556
     polo
   }
@@ -26,7 +26,7 @@ class Listener {
       arr.mkString("[", ",", "]"),
       bool, str
     )
-    Array(a, b, nullObj, m, arr, bool,str)
+    Array(a, b, nullObj, m, arr, bool, str)
   }
 
 }
