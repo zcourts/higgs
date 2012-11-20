@@ -252,10 +252,13 @@ class BosonWriter(obj: Message) {
       writeString(buffer, param.asInstanceOf[String])
     } else if (obj.isArray ||
       classOf[Array[Any]].isAssignableFrom(obj)
-    //TODO add support for treating a Scala Seq as an array since it is ordered
-    //|| classOf[Seq[Any]].isAssignableFrom(obj)
+      || classOf[Seq[Any]].isAssignableFrom(obj)
     ) {
-      writeArray(param.asInstanceOf[Array[Any]], buffer)
+      if (classOf[Seq[Any]].isAssignableFrom(obj)) {
+        writeArray(param.asInstanceOf[Seq[Any]].toArray, buffer)
+      } else {
+        writeArray(param.asInstanceOf[Array[Any]], buffer)
+      }
     } else if (classOf[List[Any]].isAssignableFrom(obj)
       || classOf[ListBuffer[Any]].isAssignableFrom(obj)
       || classOf[util.List[Any]].isAssignableFrom(obj)) {
