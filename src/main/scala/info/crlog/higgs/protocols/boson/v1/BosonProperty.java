@@ -11,7 +11,7 @@ import java.lang.annotation.Target;
  * @author Courtney Robinson <courtney@crlog.info>
  */
 @Retention(RetentionPolicy.RUNTIME)
-@Target({ElementType.FIELD})
+@Target({ElementType.FIELD,ElementType.TYPE})
 public @interface BosonProperty {
     /**
      * Optionally provide a name for this field.
@@ -27,4 +27,6 @@ public @interface BosonProperty {
      * @return
      */
     public boolean ignore() default false;
+
+    public boolean ignoreInheritedFields() default false;
 }
