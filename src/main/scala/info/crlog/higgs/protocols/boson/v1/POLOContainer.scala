@@ -3,6 +3,7 @@ package info.crlog.higgs.protocols.boson.v1
 import java.lang.reflect.Field
 import java.{util, lang}
 import info.crlog.higgs.protocols.boson.IllegalBosonArgumentException
+import org.slf4j.LoggerFactory
 
 /**
  * POLOs are deserialized into a map.
@@ -12,6 +13,7 @@ import info.crlog.higgs.protocols.boson.IllegalBosonArgumentException
  * @author Courtney Robinson <courtney@crlog.info>
  */
 case class POLOContainer(fields: Map[String, Any]) {
+  val log = LoggerFactory.getLogger(getClass())
   def as[T](ignoreUnknownFields: Boolean = true)(implicit mf: Manifest[T]): T = {
     val klass = mf.erasure.asInstanceOf[Class[T]]
     as(klass, ignoreUnknownFields)
@@ -19,8 +21,9 @@ case class POLOContainer(fields: Map[String, Any]) {
 
   def as[T](klass: Class[T], ignoreUnknownFields: Boolean): T = {
     val instance: T = klass.newInstance()
-    //get public fields of the object and all its super classes
-    val publicFields = klass.getFields
+    //superclass's fields
+    val sf = klass.getSuperclass()
+    val publicFields = if (sf == null) Array.empty[Field] else sf.getDeclaredFields()
     //get ALL (public,private,protect,package) fields declared in the class - excludes inherited fields
     val classFields = klass.getDeclaredFields
     //create a set of fields removing duplicates
@@ -36,7 +39,29 @@ case class POLOContainer(fields: Map[String, Any]) {
         }
         case Some(value) => {
           field.setAccessible(true)
-          field.set(instance, value)
+          var valueInstance = value
+          if (value != null) {
+            val poloclass = classOf[POLOContainer]
+            val fieldclass = field.getType()
+            val valueclass = value.asInstanceOf[AnyRef].getClass()
+            //if we're trying to set a field that's not a POLOContainer and the value object is
+            //try to convert it to the expected type...
+            if (!poloclass.isAssignableFrom(fieldclass) &&
+              poloclass.isAssignableFrom(valueclass)) {
+              valueInstance = value.asInstanceOf[POLOContainer]
+                .as(fieldclass, ignoreUnknownFields)
+            }
+          }
+          //make sure type is assignable
+          if (valueInstance != null
+            && field.getType().isAssignableFrom(valueInstance.asInstanceOf[AnyRef].getClass())) {
+            field.set(instance, valueInstance)
+          } else{
+            val vclass=if(valueInstance==null) null else valueInstance.asInstanceOf[AnyRef].getClass
+            log.warn("Cannot assign %s of type %s to field %s of type %s in class %s".format(
+            valueInstance,vclass,field.getName(),field.getType().getName(),instance.asInstanceOf[AnyRef].getClass().getName()
+            ))
+          }
         }
       }
     }
@@ -94,7 +119,7 @@ case class POLOContainer(fields: Map[String, Any]) {
  * @param methodArgument
  */
 class POLOContainerToType(var param: Any, methodArgument: Class[_]) {
-  verifyScalaJavaPrimitive()
+  //verifyScalaJavaPrimitive()
   var isPOLO = false
   //if its a polo
   var parameter: AnyRef =
