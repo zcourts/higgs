@@ -16,9 +16,12 @@ object DemoClient {
     val client = new BosonClient("BosonTest", 12001, "localhost")
     client.connect()
     for (i <- 1 to 1) {
-      client.invoke("test", Array(math.random * i, Map("test" -> new PoloExample(100))), (m: Map[String, AnyRef]) => {
-        println(m)
-      }, false)
+      client.invoke("all",
+        Array(1.2F, 140, null, Map("a" -> 120), Array(1, 2, 356), false, "a string",
+          List("Some List"), new PoloExample(100)),
+        (m: Array[AnyRef]) => {
+          println(m)
+        }, false)
     }
   }
 }

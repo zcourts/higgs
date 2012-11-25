@@ -12,6 +12,29 @@ class Listener {
     polo
   }
 
+  @method("list")
+  def list(a: List[PoloExample]) = {
+    println(a)
+  }
+
+  @method("all")
+  def all(
+           a: Float, b: Int, nullObj: Object,
+           m: Map[String, Int],
+           arr: Array[Int],
+           bool: Boolean, str: String,
+           list: List[String],
+           polo: PoloExample
+           ) = {
+    println(
+      a, b, nullObj,
+      m,
+      arr.mkString("[", ",", "]"),
+      bool, str, list, polo.i
+    )
+    Array(a, b, nullObj, m, arr, bool, str, list, polo)
+  }
+
   @method("nodejs")
   def nodejs(
               a: Float, b: Int, nullObj: Object,
@@ -25,7 +48,11 @@ class Listener {
       arr.mkString("[", ",", "]"),
       bool, str
     )
-    Array(a, b, nullObj, m, arr, bool, str)
+    //send back everything node js sent and also send all other types it doesn't support
+    //it needs to de-serialize them properly regardless (of the fact it can't serialize them).
+    List(Array(a, b, nullObj, m, arr, bool, str),
+      Array(1.2F, 140, null, Map("a" -> 120), Array(1, 2, 356), false, "a string",
+        List("Some List"), new PoloExample(100)))
   }
 
 }
