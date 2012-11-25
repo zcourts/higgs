@@ -156,7 +156,11 @@ abstract class RPCServer[M](host: String, port: Int, compress: Boolean)(implicit
             arg.getName
           }).mkString("[", ",", "]")
           val actual = (for (arg <- args) yield {
-            arg.getClass.getName
+            if (arg != null) {
+              arg.getClass.getName
+            } else {
+              "null"
+            }
           }).mkString("[", ",", "]")
           log.warn("Error invoking method %s with arguments %s : Path to method %s The method \n" +
             "expected: %s \n" +
