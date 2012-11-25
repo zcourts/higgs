@@ -77,27 +77,13 @@ class BosonServer(port: Int, host: String = "localhost", compress: Boolean = fal
         if (!methodParam.isArray()) {
           return false //param received is an array but method isn't expecting one
         }
-        try {
-          val arr = param.parameter.asInstanceOf[Array[Any]]
-          //note use of get component. seeing as we're interested in creating an array of the same type
-          val arrParam = reflect.Array.newInstance(methodParam.getComponentType(), arr.length)
-          System.arraycopy(arr, 0, arrParam, 0, arr.length)
-          param.parameter = arrParam
-        } catch {
-          //type mismatch will cause this to be thrown from System.arraycopy
-          case e: ArrayStoreException => {
-            log.info("Expecting array and array received but the array component types " +
-              "do not match", e)
-            return false
-          }
-        }
       }
       //update the args with the polo
       if (param.isPOLO) {
         //parameter is not null - since boson supports null, its possible
         if (param.parameter != null) {
           //if the param accepted by the server method is NOT the same as or a super class of
-          if (!param.parameter.getClass.isArray() && !methodParam.isAssignableFrom(param.parameter.getClass)) {
+          if (!methodParam.isAssignableFrom(param.parameter.getClass)) {
             return false
           }
         }
