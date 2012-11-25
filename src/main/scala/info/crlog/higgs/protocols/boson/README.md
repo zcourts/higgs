@@ -100,11 +100,12 @@ of the message.
  An array contains several items, each of which can be any supported Boson data type.
 
 1. To write an array first write the type
-2. followed by the total number of elements in the array.
-3. Next, write each element according to the rules for each type, __in order__.
+2. Then write the component type of the array (or null if types not supported or is unavailable),e.g. an array of type Array[String], the component type is String, you would write java.lang.String - For languages that don't do types just ignore it
+3. followed by the total number of elements in the array.
+4. Next, write each element according to the rules for each type, __in order__.
 
 ####  list
-The rules for a list are the same as an array, __EXCEPT__ the order of elements does not matter
+The rules for a list are the same as an array , __EXCEPT__ Do not write component types and the order of elements does not matter
 
 ####  map
 A map contains a __unordered__ set of tuples (key value pairs). Both keys and values can be any valid Boson data type.
@@ -120,7 +121,7 @@ At 3. and 5. if the serializer is in a language that doesn't support classes the
 written instead of the fully qualified class name. In this case the keys and values should be represented
 in a data structure appropriate for the language de-serializing.
 
-Both key and value can be empty. If either are empty then a type is still required followed by a size of 0. If the type is set to null then no size is required.
+Both key and value can be empty. If either are empty then a the boson type null, should be written.
 
 #### POLO
 A POLO contains a __unordered__ set of fields. These fields have a name and a value.
@@ -129,14 +130,25 @@ In languages that are not type safe this is the same as a boson map.
 
 1. To write a POLO, first write the type
 2. followed by the total number of elements in the POLO.
-3. Next, write each field name according to the rules for its type
-4. Immediately after each field name write the value for the field according to the rules for its type.
-
-This is __almost__ the same procedure for writing a map since the POLO is really just broken down into
-a set of key value pairs.
-
-Values can be empty but not names. If a field name is empty, skip and do not serialize.
-If a value is empty then a type is still required followed by a size of 0. If the type is set to null then no size is required.
+3. Next, write each field name according to the rules for a __string__
+4. If the __value is not null__, Immediately after each field name write the type of the value.  E.g. com.domain.MyClass - as a __string__,
+__If the value is null__ then write a boson null flag and __do not write anything else, i.e. ignore 5 below if the value is null__.
+If the value is __an array__, write __null__ followed by the array.
+See above, but basically an array will write its component's type (if available) so there's no need to do it here.
+This creates an ambiguity, if a value is null or the value is an array then null is written. To differentiate between the two situations.
+Check, if the
+__current byte == boson null__
+and the
+__next byte == boson array__
+then the value of the POLO's field __is an array__.
+Conversely, if the
+__current byte == boson null__
+and the
+__next byte != boson array__
+the value of the field __is not an array and should be set to null__
+5. Finally write the value for the field according to the rules for its type.
+__Values can be empty but not names__. If a field name is empty, skip and do not serialize.
+If a value is empty then a type is still required.
 
 RPC Serialization
 ---
