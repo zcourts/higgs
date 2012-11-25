@@ -1,11 +1,14 @@
 package info.crlog.higgs.protocols.boson.v1
 
-import info.crlog.higgs.protocols.boson.{UnsupportedBosonTypeException, BosonType, Message}
+import info.crlog.higgs.protocols.boson.BosonType
 import io.netty.buffer.{ByteBuf, HeapByteBuf}
 import info.crlog.higgs.util.StringUtil
 import java.{util, lang}
 import collection.mutable
 import collection.mutable.ListBuffer
+import info.crlog.higgs.protocols.boson.Message
+import info.crlog.higgs.protocols.boson.UnsupportedBosonTypeException
+import lang.reflect.Field
 
 /**
  * @author Courtney Robinson <courtney@crlog.info>
@@ -135,8 +138,15 @@ class BosonWriter(obj: Message) {
    * @param buffer
    * @param value
    */
-  def writeArray(value: Array[Any], buffer: ByteBuf) {
+  def writeArray(value: Array[_], buffer: ByteBuf) {
     buffer.writeByte(BosonType.ARRAY) //type
+    //we write the component type of the array or null if its not an array
+    val component = getArrayComponentClass(value.getClass())
+    if (component == null) {
+      writeNull(buffer)
+    } else {
+      writeString(buffer, component)
+    }
     buffer.writeInt(value.length) //size
     for (param <- value) {
       if (param == null) {
@@ -157,20 +167,36 @@ class BosonWriter(obj: Message) {
   }
 
   def writePolo(value: Any, buffer: ByteBuf): Boolean = {
+    if (value == null) {
+      validateAndWriteType(value, buffer)
+      return false
+    }
     val obj = value.asInstanceOf[AnyRef]
     val klass = obj.getClass()
     val data = mutable.Map.empty[String, Any]
-    //get public fields of the object and all its super classes
-    val publicFields = klass.getFields
+    //get super class's public fields
+    val sc = klass.getSuperclass()
+    val publicFields = if (sc == null) Array.empty[Field] else sc.getDeclaredFields()
     //get ALL (public,private,protect,package) fields declared in the class - excludes inherited fields
     val classFields = klass.getDeclaredFields
-    //process inherited fields first, INHERITED FIELDS MUST BE ANNOTATED or they'll be ignored!
+    var ignoreInheritedFields = false
+    if (klass.isAnnotationPresent(classOf[BosonProperty])) {
+      ignoreInheritedFields = klass.getAnnotation(classOf[BosonProperty]).ignoreInheritedFields()
+    }
+    //process inherited fields first - don't ignore inherited fields by default
     for (field <- publicFields) {
+      val annotated = field.isAnnotationPresent(classOf[BosonProperty])
       //add if annotated with BosonProperty
-      if (field.isAnnotationPresent(classOf[BosonProperty])) {
+      if (annotated
+        || !ignoreInheritedFields) {
         field.setAccessible(true)
-        val ann = field.getAnnotation(classOf[BosonProperty])
-        val name = if (ann.value().isEmpty()) field.getName() else ann.value()
+        var name = field.getName()
+        if (annotated) {
+          val ann = field.getAnnotation(classOf[BosonProperty])
+          if (ann != null && annotated && ann.value().isEmpty()) {
+            name = ann.value()
+          }
+        }
         data += name -> field.get(value)
       }
     }
@@ -199,22 +225,10 @@ class BosonWriter(obj: Message) {
       buffer.writeByte(BosonType.POLO) //type
       buffer.writeInt(data.size) //size
       for ((key, value) <- data) {
-        var writeValue = true
-        if (key == null) {
-          //POLO keys cannot be null
-          writeValue = false
-        } else {
-          //key must be a string!
-          validateAndWriteType(key, buffer) //key payload
-        }
-        if (writeValue) {
-          //keys can't be null, if they are ignore
-          if (value == null) {
-            writeNull(buffer)
-          } else {
-            validateAndWriteType(value, buffer) //value payload
-          }
-        }
+        //key is required to be string so no need to write class name
+        validateAndWriteType(key, buffer, false) //key payload
+        //value written with class name
+        validateAndWriteType(value, buffer, true) //value payload
       }
     }
     //if no fields found that can be serialized then the arguments array
@@ -222,12 +236,83 @@ class BosonWriter(obj: Message) {
     return data.size > 0
   }
 
+  /**
+   * The JVM would return the java keywords int, long etc for all primitive types
+   * on an array using the rules outlined below.
+   * This is of no use when serializing/de-serializing so this method converts
+   * java primitive names to their fully qualified class equivalent, i.e.
+   * their "boxed" types. The rest of this java doc is from Java's Class class
+   * which details how it treats array of primitives.
+   *
+   * <p> If this class object represents a primitive type or void, then the
+   * name returned is a {@code String} equal to the Java language
+   * keyword corresponding to the primitive type or void.
+   *
+   * <p> If this class object represents a class of arrays, then the internal
+   * form of the name consists of the name of the element type preceded by
+   * one or more '{@code [}' characters representing the depth of the array
+   * nesting.  The encoding of element type names is as follows:
+   *
+   * <blockquote><table summary="Element types and encodings">
+   * <tr><th> Element Type <th> &nbsp;&nbsp;&nbsp; <th> Encoding
+   * <tr><td> boolean      <td> &nbsp;&nbsp;&nbsp; <td align=center> Z
+   * <tr><td> byte         <td> &nbsp;&nbsp;&nbsp; <td align=center> B
+   * <tr><td> char         <td> &nbsp;&nbsp;&nbsp; <td align=center> C
+   * <tr><td> class or interface
+   * <td> &nbsp;&nbsp;&nbsp; <td align=center> L<i>classname</i>;
+   * <tr><td> double       <td> &nbsp;&nbsp;&nbsp; <td align=center> D
+   * <tr><td> float        <td> &nbsp;&nbsp;&nbsp; <td align=center> F
+   * <tr><td> int          <td> &nbsp;&nbsp;&nbsp; <td align=center> I
+   * <tr><td> long         <td> &nbsp;&nbsp;&nbsp; <td align=center> J
+   * <tr><td> short        <td> &nbsp;&nbsp;&nbsp; <td align=center> S
+   * </table></blockquote>
+   *
+   * <p> The class or interface name <i>classname</i> is the binary name of
+   * the class specified above.
+   *
+   * <p> Examples:
+   * <blockquote><pre>
+   * String.class.getName()
+   * returns "java.lang.String"
+   * byte.class.getName()
+   * returns "byte"
+   * (new Object[3]).getClass().getName()
+   * returns "[Ljava.lang.Object;"
+   * (new int[3][4][5][6][7][8][9]).getClass().getName()
+   * returns {@code "[[[[[[[ I "}
+   * </pre></blockquote>
+   *
+   * @return the fully qualified class name of a java primitive or null if the class
+   *         is not an array
+   */
+  def getArrayComponentClass(klass: Class[_ <: AnyRef]): String = {
+    val name = if (klass.isArray()) klass.getComponentType().getName() else null
+    name match {
+      case "boolean" => "java.lang.Boolean"
+      case "byte" => "java.lang.Byte"
+      case "char" => "java.lang.Character"
+      case "double" => "java.lang.Double"
+      case "float" => "java.lang.Float"
+      case "int" => "java.lang.Integer"
+      case "long" => "java.lang.Long"
+      case "short" => "java.lang.Short"
+      case _ => {
+        //only write component information if its a primitive! leave the de-serializer to
+        //infer because chances are if its a "mixed" array name will be "java.lang.Object"
+        //the de-serializer will not try to infer anything then it'll just use java.lang.Object
+        null
+      }
+    }
+  }
+
   def validateAndWriteType(param: Any, buffer: ByteBuf, writeClassName: Boolean = false) {
     if (param == null) {
       writeNull(buffer)
     } else {
       val obj = param.asInstanceOf[AnyRef].getClass
-      if (writeClassName) {
+      if (obj.isArray() && writeClassName) {
+        writeNull(buffer)
+      } else if (!obj.isArray() && writeClassName) {
         writeString(buffer, obj.getName())
       }
       if (obj == classOf[Byte] || obj == classOf[lang.Byte]) {
@@ -248,16 +333,9 @@ class BosonWriter(obj: Message) {
         writeChar(buffer, param.asInstanceOf[Char])
       } else if (obj == classOf[String] || obj == classOf[lang.String]) {
         writeString(buffer, param.asInstanceOf[String])
-      } else if (obj.isArray ||
-        classOf[Array[Any]].isAssignableFrom(obj)
-        || classOf[Seq[Any]].isAssignableFrom(obj)
-      ) {
-        if (classOf[Seq[Any]].isAssignableFrom(obj)) {
-          writeArray(param.asInstanceOf[Seq[Any]].toArray, buffer)
-        } else {
-          writeArray(param.asInstanceOf[Array[Any]], buffer)
-        }
-      } else if (classOf[List[Any]].isAssignableFrom(obj)
+      }
+      //put check for list BEFORE check for Seq
+      else if (classOf[List[Any]].isAssignableFrom(obj)
         || classOf[ListBuffer[Any]].isAssignableFrom(obj)
         || classOf[util.List[Any]].isAssignableFrom(obj)) {
         if (classOf[ListBuffer[Any]].isAssignableFrom(obj)) {
@@ -268,9 +346,24 @@ class BosonWriter(obj: Message) {
           import collection.JavaConversions._
           writeList(param.asInstanceOf[util.List[Any]].toList, buffer)
         }
+      } else if (obj.isArray ||
+        classOf[Array[Any]].isAssignableFrom(obj)
+        //it must be a Seq and not a List or ListBuffer (both extends LinearSeq)
+        || (param.isInstanceOf[Seq[Any]] && !param.isInstanceOf[List[Any]] && !param.isInstanceOf[ListBuffer[Any]]) //classOf[Seq[Any]].isAssignableFrom(obj)
+      ) {
+        if (param.isInstanceOf[Seq[Any]]) {
+          writeArray(param.asInstanceOf[Seq[Any]].toArray, buffer)
+        } else {
+          writeArray(param.asInstanceOf[Array[_]], buffer)
+        }
       } else if (classOf[collection.Map[Any, Any]].isAssignableFrom(obj)
         || classOf[util.Map[Any, Any]].isAssignableFrom(obj)) {
-        writeMap(param.asInstanceOf[collection.Map[Any, Any]], buffer)
+        if (classOf[util.Map[Any, Any]].isAssignableFrom(obj)) {
+          import collection.JavaConversions._
+          writeMap(param.asInstanceOf[util.Map[Any, Any]].toMap, buffer)
+        } else {
+          writeMap(param.asInstanceOf[collection.Map[Any, Any]], buffer)
+        }
       } else {
         if (!writePolo(param, buffer)) {
           throw new UnsupportedBosonTypeException("%s is not a supported type, see BosonType for a list of supported types" format (obj.getName()), null)
