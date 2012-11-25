@@ -9,21 +9,25 @@ import collection.mutable.ListBuffer
 import info.crlog.higgs.protocols.boson.Message
 import info.crlog.higgs.protocols.boson.UnsupportedBosonTypeException
 import info.crlog.higgs.protocols.boson.InvalidRequestResponseTypeException
+import org.slf4j.LoggerFactory
+import java.lang.reflect
 
 /**
  * @author Courtney Robinson <courtney@crlog.info>
  */
 case class BosonReader(obj: Array[Byte]) {
+  val loader = new BosonClassLoader(Thread.currentThread().getContextClassLoader())
+  val log = LoggerFactory.getLogger(getClass())
   val msg = new Message()
   //initialize a heap buffer setting the reader index to 0 and the writer index and capacity to array.length
   val data = new HeapByteBuf(obj, obj.length)
-  //protocol version and message size is not a part of the message so read before loop
-  //advance reader index by 1
-  msg.protocolVersion = data.readByte()
-  //move reader index forward by 4
-  val msgSize = data.readInt()
 
   def get(): Message = {
+    //protocol version and message size is not a part of the message so read before loop
+    //advance reader index by 1
+    msg.protocolVersion = data.readByte()
+    //move reader index forward by 4
+    val msgSize = data.readInt()
 
     //so read until the reader index == obj.length
     while (data.readable()) {
@@ -228,25 +232,217 @@ case class BosonReader(obj: Array[Byte]) {
    * @param verified  if true then the verifiedType param is used to match the Type, if false then
    *                  a single byte is read from the buffer to determine the type
    * @param verifiedType the data type to be de-serialized
+   * @param klass If not null and klass.isArray()==true then initialize an array of the
+   *              component type of klass. If any of these premise are false an array[Any]
+   *              is used
    * @return
    */
-  def readArray(verified: Boolean, verifiedType: Int): Array[Any] = {
+  def readArray(verified: Boolean, verifiedType: Int, klass: Class[_] = null) = {
     val Type: Int = if (verified) verifiedType else data.readByte()
     if (ARRAY == Type) {
+      //  read component type
+      val componentType = data.readByte()
+      var componentValue: String = null
+      if (componentType != NULL) {
+        componentValue = readString(true, componentType)
+      }
       //read number of elements in the array
       val size = data.readInt()
-      val arr = new Array[Any](size)
-      for (i <- 0 until size) {
-        verifyReadable()
-        //get type of this element in the array
-        val Type: Int = data.readByte()
-        //at this stage only basic data types are allowed
-        arr(i) = readType(Type)
+      if (klass != null) {
+        //if we have a class read array of its type
+        readObjectArrayFromClass(klass, size)
+      } else if (componentValue != null && !componentValue.isEmpty()) {
+        componentValue match {
+          case "java.lang.Boolean" => readBoolArray(size)
+          case "java.lang.Byte" => readByteArray(size)
+          case "java.lang.Character" => readCharArray(size)
+          case "java.lang.Double" => readDoubleArray(size)
+          case "java.lang.Float" => readFloatArray(size)
+          case "java.lang.Integer" => readIntArray(size)
+          case "java.lang.Long" => readLongArray(size)
+          case "java.lang.Short" => readShortArray(size)
+          case _ => {
+            val clazz = loader.loadClass(componentValue)
+            if (clazz == null) {
+              //we don't have a class or primitive read as object
+              readObjectArray(size)
+            } else {
+              //not a primitive and we were able to load the class of the array's component
+              readObjectArrayFromClass(clazz, size)
+            }
+          }
+        }
+      } else {
+        //read object array without class
+        readObjectArray(size)
       }
-      arr
     } else {
       throw new UnsupportedBosonTypeException("Type %s is not a Boson ARRAY" format (Type), null)
     }
+  }
+
+  def readBoolArray(size: Int) = {
+    val arr = new Array[Boolean](size)
+    for (i <- 0 until arr.length) {
+      verifyReadable()
+      //get type of this element in the array
+      val Type: Int = data.readByte()
+      val value = readType(Type)
+      value match {
+        case b: Boolean => arr(i) = b
+        case _ => throw new UnsupportedBosonTypeException(
+          "Cannot assign %s of type %s to array of type %s" format(value, value.asInstanceOf[AnyRef].getClass,
+            arr.getClass().getComponentType()), null)
+      }
+    }
+    arr
+  }
+
+  def readByteArray(size: Int) = {
+    val arr = new Array[Byte](size)
+    for (i <- 0 until arr.length) {
+      verifyReadable()
+      //get type of this element in the array
+      val Type: Int = data.readByte()
+      val value = readType(Type)
+      value match {
+        case b: Byte => arr(i) = b
+        case _ => throw new UnsupportedBosonTypeException(
+          "Cannot assign %s of type %s to array of type %s" format(value, value.asInstanceOf[AnyRef].getClass,
+            arr.getClass().getComponentType()), null)
+      }
+    }
+    arr
+  }
+
+  def readCharArray(size: Int) = {
+    val arr = new Array[Char](size)
+    for (i <- 0 until arr.length) {
+      verifyReadable()
+      //get type of this element in the array
+      val Type: Int = data.readByte()
+      val value = readType(Type)
+      value match {
+        case b: Char => arr(i) = b
+        case _ => throw new UnsupportedBosonTypeException(
+          "Cannot assign %s of type %s to array of type %s" format(value, value.asInstanceOf[AnyRef].getClass,
+            arr.getClass().getComponentType()), null)
+      }
+    }
+    arr
+  }
+
+  def readShortArray(size: Int) = {
+    val arr = new Array[Short](size)
+    for (i <- 0 until arr.length) {
+      verifyReadable()
+      //get type of this element in the array
+      val Type: Int = data.readByte()
+      val value = readType(Type)
+      value match {
+        case b: Short => arr(i) = b
+        case _ => throw new UnsupportedBosonTypeException(
+          "Cannot assign %s of type %s to array of type %s" format(value, value.asInstanceOf[AnyRef].getClass,
+            arr.getClass().getComponentType()), null)
+      }
+    }
+    arr
+  }
+
+  def readIntArray(size: Int) = {
+    val arr = new Array[Int](size)
+    for (i <- 0 until arr.length) {
+      verifyReadable()
+      //get type of this element in the array
+      val Type: Int = data.readByte()
+      val value = readType(Type)
+      value match {
+        case b: Int => arr(i) = b
+        case _ => throw new UnsupportedBosonTypeException(
+          "Cannot assign %s of type %s to array of type %s" format(value, value.asInstanceOf[AnyRef].getClass,
+            arr.getClass().getComponentType()), null)
+      }
+    }
+    arr
+  }
+
+  def readLongArray(size: Int) = {
+    val arr = new Array[Long](size)
+    for (i <- 0 until arr.length) {
+      verifyReadable()
+      //get type of this element in the array
+      val Type: Int = data.readByte()
+      val value = readType(Type)
+      value match {
+        case b: Long => arr(i) = b
+        case _ => throw new UnsupportedBosonTypeException(
+          "Cannot assign %s of type %s to array of type %s" format(value, value.asInstanceOf[AnyRef].getClass,
+            arr.getClass().getComponentType()), null)
+      }
+    }
+    arr
+  }
+
+  def readFloatArray(size: Int) = {
+    val arr = new Array[Float](size)
+    for (i <- 0 until arr.length) {
+      verifyReadable()
+      //get type of this element in the array
+      val Type: Int = data.readByte()
+      val value = readType(Type)
+      value match {
+        case b: Float => arr(i) = b
+        case _ => throw new UnsupportedBosonTypeException(
+          "Cannot assign %s of type %s to array of type %s" format(value, value.asInstanceOf[AnyRef].getClass,
+            arr.getClass().getComponentType()), null)
+      }
+    }
+    arr
+  }
+
+  def readDoubleArray(size: Int) = {
+    val arr = new Array[Double](size)
+    for (i <- 0 until arr.length) {
+      verifyReadable()
+      //get type of this element in the array
+      val Type: Int = data.readByte()
+      val value = readType(Type)
+      value match {
+        case b: Double => arr(i) = b
+        case _ => throw new UnsupportedBosonTypeException(
+          "Cannot assign %s of type %s to array of type %s" format(value, value.asInstanceOf[AnyRef].getClass,
+            arr.getClass().getComponentType()), null)
+      }
+    }
+    arr
+  }
+
+  def readObjectArray(size: Int): Array[Any] = {
+    val arr = new Array[Any](size)
+    for (i <- 0 until size) {
+      verifyReadable()
+      //get type of this element in the array
+      val Type: Int = data.readByte()
+      val value = readType(Type)
+      arr(i) = value
+    }
+    arr
+  }
+
+  def readObjectArrayFromClass[T](klass: Class[T], size: Int): Array[T] = {
+    val arr = reflect.Array.newInstance(klass, size)
+    for (i <- 0 until size) {
+      verifyReadable()
+      //get type of this element in the array
+      val Type: Int = data.readByte()
+      val value = readType(Type)
+      if (value != null && classOf[POLOContainer].isAssignableFrom(value.asInstanceOf[AnyRef].getClass())) {
+        reflect.Array.set(arr, i, value.asInstanceOf[POLOContainer].as(klass, true))
+      } else {
+        reflect.Array.set(arr, i, value)
+      }
+    }
+    arr.asInstanceOf[Array[T]]
   }
 
   /**
@@ -290,26 +486,52 @@ case class BosonReader(obj: Array[Byte]) {
       for (i <- 0 until size) {
         //get type of with readByte() and use readType(Int) to extract/de-serialize
         verifyReadable()
-        val classNameType = data.readByte()
-        val keyClassName = extractMapType(classNameType)
-        var key = readType(data.readByte())
-        //make sure thread's context class loader is used as opposed to getClass.getclassloader
-        if (!keyClassName.isEmpty) {
-          val klass = Thread.currentThread().getContextClassLoader().loadClass(keyClassName)
-          //if the key was de-serialized as a POLO
-          if (classOf[POLOContainer].isAssignableFrom(key.asInstanceOf[AnyRef].getClass)) {
-            key = key.asInstanceOf[POLOContainer].as(klass, true)
+        //type of the key is written first
+        val keyClassNameType = data.readByte()
+        var keyClassName: String = null
+        if (keyClassNameType == NULL) {
+          keyClassName = null //class type is optional
+        } else {
+          keyClassName = extractMapType(keyClassNameType)
+        }
+        //now get the value of the key
+        val keyType = data.readByte()
+        var key: Any = null
+        if (keyType == NULL) {
+          key = null //keys can be null
+        } else {
+          key = readType(keyType)
+          //if we have the type of the key then load its class
+          if (keyClassName != null && !keyClassName.isEmpty()) {
+            val klass = loader.loadClass(keyClassName)
+            //if the key was de-serialized as a POLO
+            if (classOf[POLOContainer].isAssignableFrom(key.asInstanceOf[AnyRef].getClass)) {
+              key = key.asInstanceOf[POLOContainer].as(klass, true)
+            }
           }
         }
-        verifyReadable()
+        //type of the value is written first
         val valueClassNameType = data.readByte()
-        val valueClassName = extractMapType(valueClassNameType)
-        var value = readType(data.readByte())
-        if (!valueClassName.isEmpty) {
-          val klass = Thread.currentThread().getContextClassLoader().loadClass(valueClassName)
-          //if the value was de-serialized as a POLO
-          if (classOf[POLOContainer].isAssignableFrom(value.asInstanceOf[AnyRef].getClass)) {
-            value = value.asInstanceOf[POLOContainer].as(klass, true)
+        var valueClassName: String = null
+        if (valueClassNameType == NULL) {
+          valueClassName = null //class type is optional
+        } else {
+          valueClassName = extractMapType(valueClassNameType)
+        }
+        //we have the class name or null, now get the value's Boson type
+        val valueType = data.readByte()
+        var value: Any = null
+        if (valueType == NULL) {
+          value = null //values can be null
+        } else {
+          value = readType(valueType)
+          //if we have the type of the value, load its class
+          if (valueClassName != null && !valueClassName.isEmpty) {
+            val klass = loader.loadClass(valueClassName)
+            //if the value was de-serialized as a POLO
+            if (classOf[POLOContainer].isAssignableFrom(value.asInstanceOf[AnyRef].getClass)) {
+              value = value.asInstanceOf[POLOContainer].as(klass, true)
+            }
           }
         }
         kv += key -> value
@@ -327,7 +549,10 @@ case class BosonReader(obj: Array[Byte]) {
     //otherwise it MUST be null, if its not we need to throw an exception
     // or de-serialization will lead to corrupted data
     if (classNameType == STRING) {
-      className = readType(classNameType).toString()
+      val tmp = readType(classNameType)
+      if (tmp != null) {
+        className = tmp.toString()
+      }
     } else if (classNameType == NULL) {
       //do nothing, we just don't have a class name, de-serialize as a "POLOContainer"
     } else {
@@ -344,12 +569,60 @@ case class BosonReader(obj: Array[Byte]) {
       val kv = mutable.Map.empty[String, Any]
       for (i <- 0 until size) {
         verifyReadable()
+        //polo keys are required to be strings
         val key = readString(false, 0)
         verifyReadable()
-        val value = readType(data.readByte())
+        var value: Any = null
+        val valueClassNameType = data.readByte()
+        //If the value is null then write a boson null flag and do not write anything else
+        //If value is not null, write the type of the value. E.g. com.domain.MyClass -as a string
+        //If the value is an array, write null followed by the array
+
+        //check type, if NULL, check next byte,
+        // if next byte is ARRAY value is array otherwise value is null
+        if (valueClassNameType == NULL) {
+          //mark reader index so we can read the next byte and come back to the current position
+          data.markReaderIndex()
+          //get next byte
+          val nextByte = data.readByte()
+          //go back to previous byte as if we hadn't read the next byte
+          data.resetReaderIndex()
+          //current byte is boson null, if next byte is boson array value is an array
+          if (nextByte == ARRAY) {
+            val arrType = data.readByte()
+            value = readType(arrType)
+          } else {
+            //else value is null. It already is but being explicit
+            value = null
+          }
+        } else {
+          //value is not null and is not an array
+          //so next is the fully qualified class name
+          val valueClassName = readString(true, valueClassNameType)
+          var klass: Class[_] = null
+          //try to load the class if available
+          if (valueClassName != null && !valueClassName.isEmpty) {
+            try {
+              klass = loader.loadClass(valueClassName)
+            } catch {
+              case cnfe: ClassNotFoundException => {
+                log.error("Class %s received but not found on classpath, value left as POLOContainer" format (valueClassName), cnfe)
+              }
+            }
+          }
+          //get the value
+          value = readType(data.readByte(), klass)
+          //if we have a class name and object
+          if (valueClassName != null && klass != null
+            && classOf[POLOContainer].isAssignableFrom(value.asInstanceOf[AnyRef].getClass)) {
+            //if the value was de-serialized as a POLOContainer
+            value = value.asInstanceOf[POLOContainer].as(klass, true)
+          }
+        }
         kv += key -> value
       }
-      new POLOContainer(kv.toMap) //return polo container
+      //return polo container with typed values
+      new POLOContainer(kv.toMap)
     } else {
       throw new UnsupportedBosonTypeException("Type %s is not a Boson POLO" format (Type), null)
     }
@@ -358,10 +631,11 @@ case class BosonReader(obj: Array[Byte]) {
   /**
    * Read the next type from the buffer.
    * The type param must match one of Boson's supported types otherwise an exception is thrown
-   * @param Type
+   * @param Type  the 1 byte integer representing a Boson type
+   * @param klass if present and Type is an array this should be the component type of the array, it's passed to readArray
    * @return
    */
-  def readType(Type: Int): Any = {
+  def readType(Type: Int, klass: Class[_] = null): Any = {
     Type match {
       case BYTE => readByte(true, Type)
       case SHORT => readShort(true, Type)
@@ -373,7 +647,7 @@ case class BosonReader(obj: Array[Byte]) {
       case CHAR => readChar(true, Type)
       case NULL => null
       case STRING => readString(true, Type)
-      case ARRAY => readArray(true, Type)
+      case ARRAY => readArray(true, Type, klass)
       case LIST => readList(true, Type)
       case MAP => readMap(true, Type)
       case POLO => readPolo(true, Type)
