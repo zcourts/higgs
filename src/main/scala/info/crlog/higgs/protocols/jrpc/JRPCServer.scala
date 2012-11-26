@@ -14,14 +14,6 @@ class JRPCServer(host: String, port: Int, compress: Boolean = false)
   val serializer = new RPCSerializer()
 
   /**
-   * Proxies to broadcast(Serializable)
-   * @param obj the message to send. This will be passed to serializer.serialize
-   */
-  def broadcast(obj: RPC) {
-    broadcast(obj.asInstanceOf[Serializable])
-  }
-
-  /**
    * Broadcast an object to all connected clients.
    * If the given object is an instance of RPC then it is sent as-is.
    * If the object is not an instance of RPC then it is wrapped in an RPC object
@@ -39,22 +31,15 @@ class JRPCServer(host: String, port: Int, compress: Boolean = false)
     else {
       new RPC("broadcast", "listen", Array(obj))
     }
-    val serializedMessage = serializer.serialize(rpc)
-    channels foreach {
-      case (id, channel) => channel.write(serializedMessage)
-    }
+    super.broadcast(rpc)
   }
 
   def message(context: ChannelHandlerContext, value: Array[Byte]) {
     val data = serializer.deserialize(value)
-    val size = notifySubscribers(context.channel(),
+    notifySubscribers(context.channel(),
       data.remoteMethodName, //first param is always a string which represents the method name
       data //all other arguments are args to be pass to the method
     )
-    if (size == 0) {
-      respond(context.channel(), new RPC(data, Array(None,
-        new RemoteMethodNotFoundException("Method %s not found" format (data.remoteMethodName)))))
-    }
   }
 
 

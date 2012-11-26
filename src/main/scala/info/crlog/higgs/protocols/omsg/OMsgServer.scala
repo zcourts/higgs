@@ -47,21 +47,6 @@ class OMsgServer[Topic <: Serializable](host: String, port: Int)
     )
   }
 
-  /**
-   * Send a message to all* connected clients
-   * @param obj the message to send. This will be passed to serializer.serialize
-   */
-  def broadcast(obj: Serializable) {
-    if (!bound) {
-      throw new IllegalStateException("Server needs to be bound before it can broadcast")
-    }
-    val serializedMessage = serializer.serialize(obj)
-    channels foreach {
-      case (id, channel) => channel.write(serializedMessage)
-    }
-  }
-
-
   def message(context: ChannelHandlerContext, value: Array[Byte]) {
     val msg = serializer.deserialize(value)
     notifySubscribers(context.channel(),

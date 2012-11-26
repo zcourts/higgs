@@ -25,14 +25,6 @@ class WebSocketServer(host: String, port: Int) extends Server[String, JsonMessag
     super.handler(ch) //add handler last
   }
 
-  def broadcast(obj: JsonMessage) = {
-    val serializedMessage = serializer.serialize(obj)
-    channels foreach {
-      case (id, channel) => channel.write(serializedMessage)
-    }
-    this
-  }
-
   override def message(ctx: ChannelHandlerContext, msg: AnyRef) {
     //handle http request and handshakes as necessary
     if (msg.isInstanceOf[HttpRequest]) {

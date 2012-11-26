@@ -7,7 +7,7 @@ import io.netty.channel.socket.SocketChannel
 import io.netty.handler.codec.compression.{ZlibWrapper, ZlibCodecFactory}
 import io.netty.handler.codec.{MessageToByteEncoder, ByteToMessageDecoder}
 import info.crlog.higgs.Event._
-import collection.mutable
+import java.util.concurrent.ConcurrentHashMap
 
 
 abstract class Server[T, M, SM](host: String, port: Int, var compress: Boolean = true)
@@ -15,7 +15,7 @@ abstract class Server[T, M, SM](host: String, port: Int, var compress: Boolean =
   val bootstrap: ServerBootstrap = new ServerBootstrap
   var future: ChannelFuture = null
   val handler = new ServerHandler[T, M, SM](this)
-  val channels = mutable.Map.empty[Int, Channel]
+  val channels = new ConcurrentHashMap[Int, Channel]()
   var usingSSL = false
   var usingCodec = false
   val SSLclientMode = false
@@ -83,7 +83,18 @@ abstract class Server[T, M, SM](host: String, port: Int, var compress: Boolean =
    * @param obj the message to send. This will be passed to serializer.serialize
    * @return  Server
    */
-  def broadcast(obj: M)
+  def broadcast(obj: M) = {
+    val serializedMessage = serializer.serialize(obj)
+    val it = channels.keySet().iterator()
+    while (it.hasNext) {
+      val id = it.next()
+      val channel = channels.get(id)
+      if (channel != null) {
+        channel.write(serializedMessage)
+      }
+    }
+    this
+  }
 
   //  /**
   //   * Add a function to be invoked when a message is received
@@ -108,10 +119,10 @@ abstract class Server[T, M, SM](host: String, port: Int, var compress: Boolean =
 
   //capture channel contexts when active  and remove them when inactive
   ++(CHANNEL_ACTIVE, (ctx: ChannelHandlerContext, c: Option[Throwable]) => {
-    channels += ctx.channel().id().toInt -> ctx.channel()
+    channels.put(ctx.channel().id().toInt, ctx.channel())
   })
   ++(CHANNEL_INACTIVE, (ctx: ChannelHandlerContext, c: Option[Throwable]) => {
-    channels -= ctx.channel().id().toInt
+    channels.remove(ctx.channel().id().toInt)
   })
 }
 
