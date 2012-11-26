@@ -171,12 +171,7 @@ class BosonReaderTest {
     val buf = Unpooled.buffer()
     //array serialized as, boson type -> component type -> array length -> array data
     buf.writeByte(ARRAY)
-    //write component type as string
-    val componentStr = "java.lang.Byte"
-    val component = componentStr.getBytes("utf-8")
-    buf.writeByte(STRING)
-    buf.writeInt(component.length)
-    buf.writeBytes(component)
+    buf.writeByte(BYTE)
     //write array length/size
     buf.writeInt(value.length)
     //now write the values
@@ -198,12 +193,7 @@ class BosonReaderTest {
     val buf = Unpooled.buffer()
     //array serialized as, boson type -> component type -> array length -> array data
     buf.writeByte(ARRAY)
-    //write component type as string
-    val componentStr = "java.lang.Character"
-    val component = componentStr.getBytes("utf-8")
-    buf.writeByte(STRING)
-    buf.writeInt(component.length)
-    buf.writeBytes(component)
+    buf.writeByte(CHAR)
     //write array length/size
     buf.writeInt(value.length)
     //now write the values
@@ -228,12 +218,7 @@ class BosonReaderTest {
     val buf = Unpooled.buffer()
     //array serialized as, boson type -> component type -> array length -> array data
     buf.writeByte(ARRAY)
-    //write component type as string
-    val componentStr = "java.lang.Short"
-    val component = componentStr.getBytes("utf-8")
-    buf.writeByte(STRING)
-    buf.writeInt(component.length)
-    buf.writeBytes(component)
+    buf.writeByte(SHORT)
     //write array length/size
     buf.writeInt(value.length)
     //now write the values
@@ -255,12 +240,7 @@ class BosonReaderTest {
     val buf = Unpooled.buffer()
     //array serialized as, boson type -> component type -> array length -> array data
     buf.writeByte(ARRAY)
-    //write component type as string
-    val componentStr = "java.lang.Integer"
-    val component = componentStr.getBytes("utf-8")
-    buf.writeByte(STRING)
-    buf.writeInt(component.length)
-    buf.writeBytes(component)
+    buf.writeByte(INT)
     //write array length/size
     buf.writeInt(value.length)
     //now write the values
@@ -282,12 +262,7 @@ class BosonReaderTest {
     val buf = Unpooled.buffer()
     //array serialized as, boson type -> component type -> array length -> array data
     buf.writeByte(ARRAY)
-    //write component type as string
-    val componentStr = "java.lang.Long"
-    val component = componentStr.getBytes("utf-8")
-    buf.writeByte(STRING)
-    buf.writeInt(component.length)
-    buf.writeBytes(component)
+    buf.writeByte(LONG)
     //write array length/size
     buf.writeInt(value.length)
     //now write the values
@@ -309,12 +284,7 @@ class BosonReaderTest {
     val buf = Unpooled.buffer()
     //array serialized as, boson type -> component type -> array length -> array data
     buf.writeByte(ARRAY)
-    //write component type as string
-    val componentStr = "java.lang.Float"
-    val component = componentStr.getBytes("utf-8")
-    buf.writeByte(STRING)
-    buf.writeInt(component.length)
-    buf.writeBytes(component)
+    buf.writeByte(FLOAT)
     //write array length/size
     buf.writeInt(value.length)
     //now write the values
@@ -336,12 +306,7 @@ class BosonReaderTest {
     val buf = Unpooled.buffer()
     //array serialized as, boson type -> component type -> array length -> array data
     buf.writeByte(ARRAY)
-    //write component type as string
-    val componentStr = "java.lang.Double"
-    val component = componentStr.getBytes("utf-8")
-    buf.writeByte(STRING)
-    buf.writeInt(component.length)
-    buf.writeBytes(component)
+    buf.writeByte(DOUBLE)
     //write array length/size
     buf.writeInt(value.length)
     //now write the values
@@ -363,12 +328,7 @@ class BosonReaderTest {
     val buf = Unpooled.buffer()
     //array serialized as, boson type -> component type -> array length -> array data
     buf.writeByte(ARRAY)
-    //write component type as string
-    val componentStr = "java.lang.Boolean"
-    val component = componentStr.getBytes("utf-8")
-    buf.writeByte(STRING)
-    buf.writeInt(component.length)
-    buf.writeBytes(component)
+    buf.writeByte(BOOLEAN) //component type
     //write array length/size
     buf.writeInt(value.length)
     //now write the values
