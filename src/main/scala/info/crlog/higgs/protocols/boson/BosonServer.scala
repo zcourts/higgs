@@ -3,8 +3,7 @@ package info.crlog.higgs.protocols.boson
 import info.crlog.higgs.RPCServer
 import io.netty.channel.ChannelHandlerContext
 import java.io.Serializable
-import v1.{POLOContainerToType, BosonSerializer}
-import java.lang.reflect
+import v1.BosonSerializer
 
 /**
  * @author Courtney Robinson <courtney@crlog.info>
@@ -40,19 +39,10 @@ class BosonServer(port: Int, host: String = "localhost", compress: Boolean = fal
   def message(context: ChannelHandlerContext, value: Array[Byte]) {
     try {
       val data = serializer.deserialize(value)
-      val size = notifySubscribers(context.channel(),
+      notifySubscribers(context.channel(),
         data.method,
         data
       )
-      if (size == 0) {
-        respond(context.channel(),
-          //first param in array is always a response, since we have no response set to null
-          new Message(data.callback, Array(null, Map(
-            "msg" -> "Method %s not found".format(data.method),
-            "error" -> "not_found"
-          )))
-        )
-      }
     } catch {
       case e => {
         log.warn("Unable to deserialize message ", e)
@@ -63,31 +53,18 @@ class BosonServer(port: Int, host: String = "localhost", compress: Boolean = fal
     }
   }
 
-  def broadcast(obj: Message) {}
-
   override def verifyArgumentType(parameters: Array[AnyRef], methodArguments: Array[Class[_]]): Boolean = {
     if (parameters.length != methodArguments.length) {
       return false //don't invoke
     }
     for (i <- 0 until parameters.length) {
       val methodParam = methodArguments(i)
-      val param = new POLOContainerToType(parameters(i), methodParam)
+      val param = parameters(i)
       //if its an array its a bit tricky so types need to be validated carefully
-      if (param.parameter != null && param.parameter.getClass.isArray()) {
+      if (param != null && param.getClass.isArray()) {
         if (!methodParam.isArray()) {
           return false //param received is an array but method isn't expecting one
         }
-      }
-      //update the args with the polo
-      if (param.isPOLO) {
-        //parameter is not null - since boson supports null, its possible
-        if (param.parameter != null) {
-          //if the param accepted by the server method is NOT the same as or a super class of
-          if (!methodParam.isAssignableFrom(param.parameter.getClass)) {
-            return false
-          }
-        }
-        parameters(i) = param.parameter
       }
     }
     true

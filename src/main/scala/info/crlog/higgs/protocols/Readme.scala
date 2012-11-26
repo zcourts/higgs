@@ -59,10 +59,6 @@ class MyServer(port: Int, host: String = "localhost", compress: Boolean = true)
 
   def allTopicsKey(): String = ""
 
-  def broadcast(obj: Int) {
-    //TODO
-  }
-
   def message(context: ChannelHandlerContext, value: Array[Byte]) {
     val data = serializer.deserialize(value)
     println("Server received", data)

@@ -1,6 +1,6 @@
 package info.crlog.higgs.protocols.boson
 
-import v1.{POLOContainerToType, BosonSerializer}
+import v1.BosonSerializer
 import info.crlog.higgs.Client
 import io.netty.channel.{Channel, ChannelHandlerContext}
 import info.crlog.higgs.util.Algorithms
@@ -85,14 +85,14 @@ class BosonClient(serviceName: String, port: Int, host: String = "localhost", co
         //if we have in fact received parameters to be passed to the callback
         if (m.arguments.length > 0) {
           try {
-            val param = new POLOContainerToType(m.arguments(0), mf.erasure)
+            val param = m.arguments(0)
             //Boson supports null so its possible param.parameter is null
-            if (param.parameter != null) {
-              //param.parameter is either the object m.arguments(0) OR a POLOContainer converted to a type of ms.erasure
-              val klass = param.parameter.getClass()
-              //if param is the same as or is a super class of the expected type, we can cast to it
+            if (param != null) {
+              //param is either the object m.arguments(0)
+              val klass = param.asInstanceOf[AnyRef].getClass()
+              //if param is the same as or is a sub class of the expected type, we can cast to it
               if (mf.erasure.isAssignableFrom(klass)) {
-                callback(Some(param.parameter.asInstanceOf[T]), None)
+                callback(Some(param.asInstanceOf[T]), None)
               } else {
                 val logmsg = "Remote method %s invoked, callback %s, " +
                   "%s cannot be cast to %s" format(method, id, klass.getName(), mf.erasure.getName())
