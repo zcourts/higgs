@@ -10,7 +10,8 @@ import info.crlog.higgs.protocols.boson.Message
 import info.crlog.higgs.protocols.boson.UnsupportedBosonTypeException
 import info.crlog.higgs.protocols.boson.InvalidRequestResponseTypeException
 import org.slf4j.LoggerFactory
-import java.lang.reflect
+import java.lang.{IllegalArgumentException, reflect}
+import reflect.Field
 
 /**
  * @author Courtney Robinson <courtney@crlog.info>
@@ -237,44 +238,31 @@ case class BosonReader(obj: Array[Byte]) {
    *              is used
    * @return
    */
-  def readArray(verified: Boolean, verifiedType: Int, klass: Class[_] = null) = {
+  def readArray(verified: Boolean, verifiedType: Int, klass: Class[_] = null): Array[_] = {
     val Type: Int = if (verified) verifiedType else data.readByte()
     if (ARRAY == Type) {
       //  read component type
       val componentType = data.readByte()
-      var componentValue: String = null
-      if (componentType != NULL) {
-        componentValue = readString(true, componentType)
-      }
       //read number of elements in the array
       val size = data.readInt()
       if (klass != null) {
         //if we have a class read array of its type
         readObjectArrayFromClass(klass, size)
-      } else if (componentValue != null && !componentValue.isEmpty()) {
-        componentValue match {
-          case "java.lang.Boolean" => readBoolArray(size)
-          case "java.lang.Byte" => readByteArray(size)
-          case "java.lang.Character" => readCharArray(size)
-          case "java.lang.Double" => readDoubleArray(size)
-          case "java.lang.Float" => readFloatArray(size)
-          case "java.lang.Integer" => readIntArray(size)
-          case "java.lang.Long" => readLongArray(size)
-          case "java.lang.Short" => readShortArray(size)
+      } else {
+        val arr = componentType match {
+          case BOOLEAN => readBoolArray(size)
+          case BYTE => readByteArray(size)
+          case CHAR => readCharArray(size)
+          case DOUBLE => readDoubleArray(size)
+          case FLOAT => readFloatArray(size)
+          case INT => readIntArray(size)
+          case LONG => readLongArray(size)
+          case SHORT => readShortArray(size)
           case _ => {
-            val clazz = loader.loadClass(componentValue)
-            if (clazz == null) {
-              //we don't have a class or primitive read as object
-              readObjectArray(size)
-            } else {
-              //not a primitive and we were able to load the class of the array's component
-              readObjectArrayFromClass(clazz, size)
-            }
+            readObjectArray(size)
           }
         }
-      } else {
-        //read object array without class
-        readObjectArray(size)
+        arr
       }
     } else {
       throw new UnsupportedBosonTypeException("Type %s is not a Boson ARRAY" format (Type), null)
@@ -436,11 +424,7 @@ case class BosonReader(obj: Array[Byte]) {
       //get type of this element in the array
       val Type: Int = data.readByte()
       val value = readType(Type)
-      if (value != null && classOf[POLOContainer].isAssignableFrom(value.asInstanceOf[AnyRef].getClass())) {
-        reflect.Array.set(arr, i, value.asInstanceOf[POLOContainer].as(klass, true))
-      } else {
-        reflect.Array.set(arr, i, value)
-      }
+      reflect.Array.set(arr, i, value)
     }
     arr.asInstanceOf[Array[T]]
   }
@@ -484,56 +468,11 @@ case class BosonReader(obj: Array[Byte]) {
       val size = data.readInt()
       val kv = mutable.Map.empty[Any, Any]
       for (i <- 0 until size) {
-        //get type of with readByte() and use readType(Int) to extract/de-serialize
         verifyReadable()
-        //type of the key is written first
-        val keyClassNameType = data.readByte()
-        var keyClassName: String = null
-        if (keyClassNameType == NULL) {
-          keyClassName = null //class type is optional
-        } else {
-          keyClassName = extractMapType(keyClassNameType)
-        }
-        //now get the value of the key
         val keyType = data.readByte()
-        var key: Any = null
-        if (keyType == NULL) {
-          key = null //keys can be null
-        } else {
-          key = readType(keyType)
-          //if we have the type of the key then load its class
-          if (keyClassName != null && !keyClassName.isEmpty()) {
-            val klass = loader.loadClass(keyClassName)
-            //if the key was de-serialized as a POLO
-            if (classOf[POLOContainer].isAssignableFrom(key.asInstanceOf[AnyRef].getClass)) {
-              key = key.asInstanceOf[POLOContainer].as(klass, true)
-            }
-          }
-        }
-        //type of the value is written first
-        val valueClassNameType = data.readByte()
-        var valueClassName: String = null
-        if (valueClassNameType == NULL) {
-          valueClassName = null //class type is optional
-        } else {
-          valueClassName = extractMapType(valueClassNameType)
-        }
-        //we have the class name or null, now get the value's Boson type
+        val key = readType(keyType)
         val valueType = data.readByte()
-        var value: Any = null
-        if (valueType == NULL) {
-          value = null //values can be null
-        } else {
-          value = readType(valueType)
-          //if we have the type of the value, load its class
-          if (valueClassName != null && !valueClassName.isEmpty) {
-            val klass = loader.loadClass(valueClassName)
-            //if the value was de-serialized as a POLO
-            if (classOf[POLOContainer].isAssignableFrom(value.asInstanceOf[AnyRef].getClass)) {
-              value = value.asInstanceOf[POLOContainer].as(klass, true)
-            }
-          }
-        }
+        val value = readType(valueType)
         kv += key -> value
       }
       kv.toMap //return immutable Map
@@ -542,87 +481,97 @@ case class BosonReader(obj: Array[Byte]) {
     }
   }
 
-
-  private def extractMapType(classNameType: Byte): String = {
-    var className: String = ""
-    //if type is string we have a fully qualified class name
-    //otherwise it MUST be null, if its not we need to throw an exception
-    // or de-serialization will lead to corrupted data
-    if (classNameType == STRING) {
-      val tmp = readType(classNameType)
-      if (tmp != null) {
-        className = tmp.toString()
-      }
-    } else if (classNameType == NULL) {
-      //do nothing, we just don't have a class name, de-serialize as a "POLOContainer"
-    } else {
-      throw new UnsupportedBosonTypeException("De-serializing Map encountered type " +
-        "%s only %s (string) and %s (null) supported here" format(classNameType, STRING, NULL), null)
-    }
-    className
-  }
-
-  def readPolo(verified: Boolean, verifiedType: Int): POLOContainer = {
+  def readPolo(verified: Boolean, verifiedType: Int) = {
     val Type: Int = if (verified) verifiedType else data.readByte()
     if (POLO == Type) {
+      verifyReadable()
+      //get class name
+      val poloClassName = readString(false, -1)
+      if (poloClassName == null || poloClassName.isEmpty) {
+        throw new InvalidDataException("Cannot de-serialise a POLO without it's fully qualified class name being provided", null)
+      }
+      //get number of fields serialized
       val size = data.readInt()
-      val kv = mutable.Map.empty[String, Any]
-      for (i <- 0 until size) {
-        verifyReadable()
-        //polo keys are required to be strings
-        val key = readString(false, 0)
-        verifyReadable()
-        var value: Any = null
-        val valueClassNameType = data.readByte()
-        //If the value is null then write a boson null flag and do not write anything else
-        //If value is not null, write the type of the value. E.g. com.domain.MyClass -as a string
-        //If the value is an array, write null followed by the array
+      //try to load the class if available
+      try {
+        val klass = loader.loadClass(poloClassName)
+        val instance = klass.newInstance()
+        //superclass's fields
+        val sf = klass.getSuperclass()
+        val publicFields = if (sf == null) Array.empty[Field] else sf.getDeclaredFields()
+        //get ALL (public,private,protect,package) fields declared in the class - excludes inherited fields
+        val classFields = klass.getDeclaredFields
+        //create a map of fields names -> Field
+        val fieldset = (for (f <- (classFields ++ publicFields)) yield {
+          f.getName() -> f
+        }).toMap
 
-        //check type, if NULL, check next byte,
-        // if next byte is ARRAY value is array otherwise value is null
-        if (valueClassNameType == NULL) {
-          //mark reader index so we can read the next byte and come back to the current position
-          data.markReaderIndex()
-          //get next byte
-          val nextByte = data.readByte()
-          //go back to previous byte as if we hadn't read the next byte
-          data.resetReaderIndex()
-          //current byte is boson null, if next byte is boson array value is an array
-          if (nextByte == ARRAY) {
-            val arrType = data.readByte()
-            value = readType(arrType)
-          } else {
-            //else value is null. It already is but being explicit
-            value = null
-          }
-        } else {
-          //value is not null and is not an array
-          //so next is the fully qualified class name
-          val valueClassName = readString(true, valueClassNameType)
-          var klass: Class[_] = null
-          //try to load the class if available
-          if (valueClassName != null && !valueClassName.isEmpty) {
-            try {
-              klass = loader.loadClass(valueClassName)
-            } catch {
-              case cnfe: ClassNotFoundException => {
-                log.error("Class %s received but not found on classpath, value left as POLOContainer" format (valueClassName), cnfe)
+        for (i <- 0 until size) {
+          verifyReadable()
+          //polo keys are required to be strings
+          val key = readString(false, 0)
+          verifyReadable()
+          val valueType = data.readByte()
+          val value: Any = readType(valueType)
+          fieldset get key match {
+            case Some(field) => {
+              field.setAccessible(true)
+              //if field's type is an array  create an array of it's type
+              val fieldType = field.getType()
+              //TODO add support for Scala's Seq - || fieldType.isAssignableFrom()
+              if (fieldType.isArray()) {
+                if (value == null) {
+                  log.warn("Field \":%s\" of class \"%s\" is an array but null".format(key, klass.getName()))
+                } else if (value.asInstanceOf[AnyRef].getClass().isArray()) {
+                  val length = reflect.Array.getLength(value)
+                  //create an array of the expected type
+                  val arr = reflect.Array.newInstance(fieldType.getComponentType(), length)
+                  for (i <- 0 until length) {
+                    try {
+                      //get current array value
+                      val arrayValue = reflect.Array.get(value, i)
+                      reflect.Array.set(arr, i, arrayValue) //set the value at the current index, i
+                    } catch {
+                      case e: IllegalArgumentException => {
+                        log.warn("Field \":%s\" of class \"%s\" is an array but failed to set value at index \"%s\" - type \"%s\"".format(
+                          key, klass.getName(), i, if (value == null) "null" else value.asInstanceOf[AnyRef].getClass().getName()))
+                      }
+                    }
+                  }
+                  field.set(instance, arr)
+                } else {
+                  log.warn("Field \":%s\" of class \"%s\" is an array but value received is \"%s\" of type \"%s\"".format(
+                    key, klass.getName(), value, if (value == null) "null" else value.asInstanceOf[AnyRef].getClass().getName()
+                  ))
+                }
+              } else {
+                if (value != null) {
+                  val vclass = value.asInstanceOf[AnyRef].getClass()
+                  if (field.getType().isAssignableFrom(vclass)) {
+                    field.set(instance, value)
+                  } else {
+                    log.warn(("Field \"%s\" of class \"%s\" is of type %s " +
+                      "but value received is \"%s\" of type \"%s\"").format(
+                      key, klass.getName(), vclass.getName(), value,
+                      if (value == null) "null" else value.asInstanceOf[AnyRef].getClass().getName()
+                    ))
+                  }
+                }
               }
             }
-          }
-          //get the value
-          value = readType(data.readByte(), klass)
-          //if we have a class name and object
-          if (valueClassName != null && klass != null
-            && classOf[POLOContainer].isAssignableFrom(value.asInstanceOf[AnyRef].getClass)) {
-            //if the value was de-serialized as a POLOContainer
-            value = value.asInstanceOf[POLOContainer].as(klass, true)
+            case None => {
+              log.warn(("Field %s received with value %s but the " +
+                "field does not exist in class %s").format(key, value, poloClassName))
+            }
           }
         }
-        kv += key -> value
+        instance
+      } catch {
+        case cnfe: ClassNotFoundException => {
+          log.error("Class %s received but not found on classpath, value left as POLOContainer" format (poloClassName), cnfe)
+          null
+        }
       }
-      //return polo container with typed values
-      new POLOContainer(kv.toMap)
     } else {
       throw new UnsupportedBosonTypeException("Type %s is not a Boson POLO" format (Type), null)
     }

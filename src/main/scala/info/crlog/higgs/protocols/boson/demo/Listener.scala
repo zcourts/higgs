@@ -30,7 +30,7 @@ class Listener {
       a, b, nullObj,
       m,
       arr.mkString("[", ",", "]"),
-      bool, str, list, polo.i
+      bool, str, list, polo
     )
     Array(a, b, nullObj, m, arr, bool, str, list, polo)
   }

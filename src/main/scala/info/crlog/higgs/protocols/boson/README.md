@@ -100,7 +100,9 @@ of the message.
  An array contains several items, each of which can be any supported Boson data type.
 
 1. To write an array first write the type
-2. Then write the component type of the array (or null if types not supported or is unavailable),e.g. an array of type Array[String], the component type is String, you would write java.lang.String - For languages that don't do types just ignore it
+2. Then write the component type of the array (or null if types not supported or is unavailable).
+The component type of an array is any supported boson data type, i.e. __1 byte__ represented as documented under "Indicating a type".
+If the component type of an array is a mixture, i.e. its not just an array of integers but have maps, lists or POLOs included then the component type should be written as a POLO.
 3. followed by the total number of elements in the array.
 4. Next, write each element according to the rules for each type, __in order__.
 
@@ -112,43 +114,22 @@ A map contains a __unordered__ set of tuples (key value pairs). Both keys and va
 
 1. To write a map, first write the type
 2. followed by the total number of elements in the map.
-3. Next write the fully qualified class name of the key (com.domain.MyClass) as a string using the rules for writing a string
-4. Next, write the key according to the rules for its type
-5. Next write the fully qualified class name of the value (com.domain.MyValueClass) as a string using the rules for writing a string
-6. then write the value according to the rules for its type.
-
-At 3. and 5. if the serializer is in a language that doesn't support classes then the boson type, null should be
-written instead of the fully qualified class name. In this case the keys and values should be represented
-in a data structure appropriate for the language de-serializing.
+3. Next, write the key according to the rules for its type
+4. then write the value according to the rules for its type.
 
 Both key and value can be empty. If either are empty then a the boson type null, should be written.
 
 #### POLO
 A POLO contains a __unordered__ set of fields. These fields have a name and a value.
 Field names are strings and values can be any valid Boson data type.
-In languages that are not type safe this is the same as a boson map.
+In languages that are not type safe this is the same as a boson map. And the POLO flag __must not__ be used in those languages, instead the boson map data type should be used! The reason for this is that POLOs have a strict requirement for fully qualified class names to be provided.
 
 1. To write a POLO, first write the type
-2. followed by the total number of elements in the POLO.
-3. Next, write each field name according to the rules for a __string__
-4. If the __value is not null__, Immediately after each field name write the type of the value.  E.g. com.domain.MyClass - as a __string__,
-__If the value is null__ then write a boson null flag and __do not write anything else, i.e. ignore 5 below if the value is null__.
-If the value is __an array__, write __null__ followed by the array.
-See above, but basically an array will write its component's type (if available) so there's no need to do it here.
-This creates an ambiguity, if a value is null or the value is an array then null is written. To differentiate between the two situations.
-Check, if the
-__current byte == boson null__
-and the
-__next byte == boson array__
-then the value of the POLO's field __is an array__.
-Conversely, if the
-__current byte == boson null__
-and the
-__next byte != boson array__
-the value of the field __is not an array and should be set to null__
-5. Finally write the value for the field according to the rules for its type.
-__Values can be empty but not names__. If a field name is empty, skip and do not serialize.
-If a value is empty then a type is still required.
+2. Then write the fully qualified name of the POLO, e.g. com.domain.MyClass as a string using the rules for writing strings
+3. followed by the total number of elements in the POLO.
+4. Next, write each field name according to the rules for a __string__
+5. Immediately after each field name write the value according to the rules for its type
+__Values can be empty but not names__. If a field name is null, skip and do not serialize.
 
 RPC Serialization
 ---

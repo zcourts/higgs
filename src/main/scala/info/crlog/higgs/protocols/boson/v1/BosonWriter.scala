@@ -2,19 +2,17 @@ package info.crlog.higgs.protocols.boson.v1
 
 import info.crlog.higgs.protocols.boson.BosonType
 import io.netty.buffer.{ByteBuf, HeapByteBuf}
-import info.crlog.higgs.util.StringUtil
 import java.{util, lang}
-import collection.mutable
 import collection.mutable.ListBuffer
+import lang.reflect.Field
+import info.crlog.higgs.protocols.boson.BosonType._
 import info.crlog.higgs.protocols.boson.Message
 import info.crlog.higgs.protocols.boson.UnsupportedBosonTypeException
-import lang.reflect.Field
 
 /**
  * @author Courtney Robinson <courtney@crlog.info>
  */
 class BosonWriter(obj: Message) {
-
   def get(): Array[Byte] = {
     //using Int.MaxValue as max buffer size since messages are limited to that size...
     val buffer = new HeapByteBuf(0, Int.MaxValue)
@@ -115,7 +113,7 @@ class BosonWriter(obj: Message) {
 
   def writeString(buffer: ByteBuf, s: String) {
     buffer.writeByte(BosonType.STRING) //type
-    val str = new StringUtil().getBytes(s)
+    val str = s.getBytes("utf-8")
     buffer.writeInt(str.length) //size
     buffer.writeBytes(str) //payload
   }
@@ -123,7 +121,9 @@ class BosonWriter(obj: Message) {
   def writeList(value: List[Any], buffer: ByteBuf) {
     buffer.writeByte(BosonType.LIST) //type
     buffer.writeInt(value.size) //size
-    for (param <- value) {
+    val it = value.iterator
+    while (it.hasNext) {
+      val param = it.next()
       if (param == null) {
         writeNull(buffer)
       } else {
@@ -139,30 +139,25 @@ class BosonWriter(obj: Message) {
    * @param value
    */
   def writeArray(value: Array[_], buffer: ByteBuf) {
-    buffer.writeByte(BosonType.ARRAY) //type
+    buffer.writeByte(ARRAY) //type
     //we write the component type of the array or null if its not an array
-    val component = getArrayComponentClass(value.getClass())
-    if (component == null) {
-      writeNull(buffer)
-    } else {
-      writeString(buffer, component)
-    }
+    val component = getArrayComponent(value.getClass())
+    buffer.writeByte(component)
     buffer.writeInt(value.length) //size
     for (param <- value) {
-      if (param == null) {
-        writeNull(buffer)
-      } else {
-        validateAndWriteType(param, buffer) //payload
-      }
+      validateAndWriteType(param, buffer) //payload
     }
   }
 
   def writeMap(value: collection.Map[Any, Any], buffer: ByteBuf) {
     buffer.writeByte(BosonType.MAP) //type
     buffer.writeInt(value.size) //size
-    for ((key, value) <- value) {
-      validateAndWriteType(key, buffer, true) //key payload
-      validateAndWriteType(value, buffer, true) //value payload
+    val it = value.keysIterator
+    while (it.hasNext) {
+      val key = it.next()
+      val v = value(key)
+      validateAndWriteType(key, buffer) //key payload
+      validateAndWriteType(v, buffer) //value payload
     }
   }
 
@@ -173,7 +168,7 @@ class BosonWriter(obj: Message) {
     }
     val obj = value.asInstanceOf[AnyRef]
     val klass = obj.getClass()
-    val data = mutable.Map.empty[String, Any]
+    val data = new util.HashMap[String, Any]()
     //get super class's public fields
     val sc = klass.getSuperclass()
     val publicFields = if (sc == null) Array.empty[Field] else sc.getDeclaredFields()
@@ -197,7 +192,7 @@ class BosonWriter(obj: Message) {
             name = ann.value()
           }
         }
-        data += name -> field.get(value)
+        data.put(name, field.get(value))
       }
     }
     //process fields declared in the class itself
@@ -217,18 +212,20 @@ class BosonWriter(obj: Message) {
       }
       if (add) {
         //overwriting even if previously set when public fields were processed
-        data += name -> field.get(value)
+        data.put(name, field.get(value))
       }
     }
     //if at least one field is allowed to be serialized
-    if (data.size > 0) {
+    if (data.size() > 0) {
       buffer.writeByte(BosonType.POLO) //type
+      writeString(buffer, klass.getName()) //class name
       buffer.writeInt(data.size) //size
-      for ((key, value) <- data) {
-        //key is required to be string so no need to write class name
-        validateAndWriteType(key, buffer, false) //key payload
-        //value written with class name
-        validateAndWriteType(value, buffer, true) //value payload
+      val it = data.keySet().iterator()
+      while (it.hasNext()) {
+        val key = it.next()
+        val value = data.get(key)
+        writeString(buffer, key) //key payload must be a string
+        validateAndWriteType(value, buffer) //value payload
       }
     }
     //if no fields found that can be serialized then the arguments array
@@ -240,8 +237,8 @@ class BosonWriter(obj: Message) {
    * The JVM would return the java keywords int, long etc for all primitive types
    * on an array using the rules outlined below.
    * This is of no use when serializing/de-serializing so this method converts
-   * java primitive names to their fully qualified class equivalent, i.e.
-   * their "boxed" types. The rest of this java doc is from Java's Class class
+   * java primitive names to their boson data type equivalent.
+   * The rest of this java doc is from Java's Class class
    * which details how it treats array of primitives.
    *
    * <p> If this class object represents a primitive type or void, then the
@@ -285,36 +282,28 @@ class BosonWriter(obj: Message) {
    * @return the fully qualified class name of a java primitive or null if the class
    *         is not an array
    */
-  def getArrayComponentClass(klass: Class[_ <: AnyRef]): String = {
+  def getArrayComponent(klass: Class[_ <: AnyRef]): Int = {
     val name = if (klass.isArray()) klass.getComponentType().getName() else null
     name match {
-      case "boolean" => "java.lang.Boolean"
-      case "byte" => "java.lang.Byte"
-      case "char" => "java.lang.Character"
-      case "double" => "java.lang.Double"
-      case "float" => "java.lang.Float"
-      case "int" => "java.lang.Integer"
-      case "long" => "java.lang.Long"
-      case "short" => "java.lang.Short"
+      case "boolean" | "java.lang.Boolean" => BOOLEAN
+      case "byte" | "java.lang.Byte" => BYTE
+      case "char" | "java.lang.Character" => CHAR
+      case "double" | "java.lang.Double" => DOUBLE
+      case "float" | "java.lang.Float" => FLOAT
+      case "int" | "java.lang.Integer" => INT
+      case "long" | "java.lang.Long" => LONG
+      case "short" | "java.lang.Short" => SHORT
       case _ => {
-        //only write component information if its a primitive! leave the de-serializer to
-        //infer because chances are if its a "mixed" array name will be "java.lang.Object"
-        //the de-serializer will not try to infer anything then it'll just use java.lang.Object
-        null
+        POLO
       }
     }
   }
 
-  def validateAndWriteType(param: Any, buffer: ByteBuf, writeClassName: Boolean = false) {
+  def validateAndWriteType(param: Any, buffer: ByteBuf) {
     if (param == null) {
       writeNull(buffer)
     } else {
       val obj = param.asInstanceOf[AnyRef].getClass
-      if (obj.isArray() && writeClassName) {
-        writeNull(buffer)
-      } else if (!obj.isArray() && writeClassName) {
-        writeString(buffer, obj.getName())
-      }
       if (obj == classOf[Byte] || obj == classOf[lang.Byte]) {
         writeByte(buffer, param.asInstanceOf[Byte])
       } else if (obj == classOf[Short] || obj == classOf[lang.Short]) {
