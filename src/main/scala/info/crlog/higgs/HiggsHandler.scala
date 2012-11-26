@@ -28,7 +28,7 @@ trait HiggsHandler[Topic, Msg, SerializedMsg] extends ChannelStateHandler {
   }
 
   def messageReceived(ctx: ChannelHandlerContext, msg: SerializedMsg) {
-    events.message(ctx, msg)
+    events.emitMessage(ctx, msg)
   }
 
   override def exceptionCaught(ctx: ChannelHandlerContext, cause: Throwable) {

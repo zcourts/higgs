@@ -9,8 +9,7 @@ import io.netty.handler.codec.{MessageToByteEncoder, ByteToMessageDecoder}
 import java.net.ConnectException
 import java.nio.channels.ClosedChannelException
 import java.io.IOException
-import collection.mutable
-import java.util.concurrent.{LinkedBlockingDeque, Executors, ExecutorService}
+import java.util.concurrent.{LinkedBlockingQueue, LinkedBlockingDeque}
 
 /**
  * @author Courtney Robinson <courtney@crlog.info>
@@ -28,7 +27,7 @@ abstract case class Client[Topic, Msg, SerializedMsg](serviceName: String,
   var usingSSL = false
   val SSLclientMode = true
   var connected = false
-  val unsentMessages = mutable.Queue.empty[Msg]
+  val unsentMessages = new LinkedBlockingQueue[Msg]()
   /**
    * If true then should the connection to the server fail the client tries to reconnect
    * until successful at a configurable delay
@@ -45,7 +44,6 @@ abstract case class Client[Topic, Msg, SerializedMsg](serviceName: String,
   var enablePreEmptiveSend = true
   var preEmptiveTimeout = 200
   var addedReconnectListeners = false
-  val threadPool: ExecutorService = Executors.newCachedThreadPool()
   var blockingConnect = false
 
   /**
@@ -120,6 +118,24 @@ abstract case class Client[Topic, Msg, SerializedMsg](serviceName: String,
     ch.pipeline().addLast("handler", clientHandler)
   }
 
+  ++(Event.CHANNEL_INACTIVE, (ctx: ChannelHandlerContext, x: Option[Throwable]) => {
+    connected = false
+  })
+  //listen for when the client is connected
+  ++(Event.CHANNEL_ACTIVE, (ctx: ChannelHandlerContext, x: Option[Throwable]) => {
+    connected = true
+    log.info("Client connected to %s" format (serviceName))
+    //start sending any buffered messages
+    threadPool.submit(new Runnable {
+      def run() {
+        while (connected) {
+          val msg = unsentMessages.take()
+          channel.write(serialize(msg))
+          channel.flush()
+        }
+      }
+    })
+  })
 
   /**
    * Send a message to the server.If the client is not currently connected
@@ -132,43 +148,13 @@ abstract case class Client[Topic, Msg, SerializedMsg](serviceName: String,
    * @return   the client to support chaining
    */
   def send[T <: Msg](msg: T): Client[Topic, Msg, SerializedMsg] = {
-    if (connected && unsentMessages.isEmpty) {
-      channel.write(serialize(msg))
-      channel.flush()
+    if (!connected && !enableAutoReconnect) {
+      throw new IllegalStateException("Client is not connected to a server %s and Auto reconnect is disabled." +
+        "The message will not be queued as this could lead to out of memory errors due to the unset message backlog" format (serviceName))
     } else {
-      if (enableAutoReconnect) {
-        enqueueMessage(msg)
-      } else {
-        throw new IllegalStateException("Client is not connected to a server %s and Auto reconnect is disabled." +
-          "The message will not be queued as this could lead to out of memory errors due to the unset message backlog" format (serviceName))
-      }
+      unsentMessages.add(msg)
     }
     this
-  }
-
-  def enqueueMessage[T <: Msg](msg: T) = {
-    unsentMessages += msg
-    if (connected) {
-      flushMessageQueue()
-    }
-  }
-
-  def flushMessageQueue() = {
-    threadPool.submit(new Runnable {
-      def run() {
-        //keep trying to send messages on this thread while the queue is not empty
-        while (!unsentMessages.isEmpty) {
-          if (connected) {
-            send(unsentMessages.dequeue())
-            if (enablePreEmptiveSend) {
-              Thread.sleep(preEmptiveTimeout)
-            }
-          } else {
-            Thread.sleep(reconnectTimeout)
-          }
-        }
-      }
-    })
   }
 
   private def addReconnectListener(fn: () => Unit) {

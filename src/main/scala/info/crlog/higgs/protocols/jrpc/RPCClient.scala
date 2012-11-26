@@ -9,7 +9,7 @@ import java.util.concurrent.LinkedBlockingQueue
 /**
  * @author Courtney Robinson <courtney@crlog.info>
  */
-class RPCClient(serviceName: String,port: Int, host: String="localhost",  compress: Boolean = false)
+class RPCClient(serviceName: String, port: Int, host: String = "localhost", compress: Boolean = false)
   extends Client[String, RPC, Array[Byte]](serviceName, port, host, compress) {
   val serializer = new RPCSerializer()
 
@@ -31,7 +31,7 @@ class RPCClient(serviceName: String,port: Int, host: String="localhost",  compre
    */
   def invoke(remoteMethodName: String, params: Serializable*) {
     invoke(remoteMethodName, (r: Option[AnyRef], t: Option[Throwable]) => {
-      subscribers -= remoteMethodName
+      subscribers.remove(remoteMethodName)
     }, params: _*)
   }
 

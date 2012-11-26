@@ -13,4 +13,5 @@ object Event extends Enumeration {
   val CHANNEL_REGISTERED = Value("channel_registered")
   val CHANNEL_UNREGISTERED = Value("channel_unregistered")
   val EXCEPTION_CAUGHT = Value("exception_caught")
+  val MESSAGE_RECEIVED = Value("message_received")
 }
