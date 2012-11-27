@@ -1,13 +1,13 @@
 package info.crlog.higgs
 
 import io.netty.channel.{ChannelPipeline, Channel, ChannelHandlerContext}
-import collection.mutable.ListBuffer
-import collection.mutable
 import management.ManagementFactory
 import javax.net.ssl.SSLEngine
 import io.netty.handler.ssl.SslHandler
 import ssl.{SSLConfiguration, SSLContextFactory}
-import io.netty.logging.{InternalLoggerFactory, InternalLogger}
+import java.util.concurrent._
+import org.slf4j.LoggerFactory
+import scala.Some
 
 
 /**
@@ -15,18 +15,28 @@ import io.netty.logging.{InternalLoggerFactory, InternalLogger}
  */
 
 trait EventProcessor[T, M, SerializedMsg] {
-  val log: InternalLogger = InternalLoggerFactory.getInstance(getClass)
+  val log = LoggerFactory.getLogger(getClass)
   var logAllExceptions = false
-  val notificationListeners = mutable.Map.empty[Event.Value, ListBuffer[
-    (ChannelHandlerContext,
-      Option[Throwable]) => Boolean]]
+  val notificationListeners = new ConcurrentHashMap[Event.Value,
+    ConcurrentLinkedQueue[(ChannelHandlerContext,
+      Option[Throwable]) => Boolean]]()
   /**
    * A list of subscribed functions and a "validation" callback which determines on a per
    * message basis of the given callback "wants" the given message
    */
-  val subscribers = mutable.Map.empty[T, ListBuffer[((T, M) => Boolean, (Channel, M) => Unit)]]
+  val subscribers = new ConcurrentHashMap[T, ConcurrentLinkedQueue[
+    ((T, M) => Boolean, (Channel, M) => Unit)]]()
+  val messageQueue = new LinkedTransferQueue[(ChannelHandlerContext, SerializedMsg)]()
+  val eventQueue = new LinkedTransferQueue[(Event.Value, ChannelHandlerContext, Option[Throwable])]()
+  var processMessageQueue = true
+  var processEventQueue = true
   val serializer: Serializer[M, SerializedMsg]
   val SSLclientMode: Boolean
+  val availableProcessors = Runtime.getRuntime().availableProcessors()
+  //http://www.informit.com/guides/content.aspx?g=dotnet&seqNum=588
+  //yes, we're not doing .NET but its reasonable enough
+  val maxThreads = availableProcessors * 25
+  val threadPool: ExecutorService = Executors.newFixedThreadPool(maxThreads)
 
   /**
    * Add a function to be invoked when a supported event has occurred.
@@ -37,11 +47,18 @@ trait EventProcessor[T, M, SerializedMsg] {
    * The third parameter is an optional exception which is the cause of the notification
    * @param fn
    */
-  def ++(e: Event.Value, fn: (ChannelHandlerContext, Option[Throwable]) => Unit) {
-    notificationListeners.getOrElseUpdate(e, ListBuffer.empty) += ((ctx: ChannelHandlerContext, c: Option[Throwable]) => {
-      fn(ctx, c)
-      false
-    })
+  def ++[U](e: Event.Value, fn: (ChannelHandlerContext, Option[Throwable]) => U) {
+    var q = notificationListeners.get(e)
+    if (q == null) {
+      q = new ConcurrentLinkedQueue[(ChannelHandlerContext, Option[Throwable]) => Boolean]()
+      notificationListeners.put(e, q)
+    }
+    q.add(
+      ((ctx: ChannelHandlerContext, c: Option[Throwable]) => {
+        fn(ctx, c)
+        false
+      })
+    )
   }
 
   /**
@@ -52,7 +69,51 @@ trait EventProcessor[T, M, SerializedMsg] {
    * @param fn
    */
   def on(e: Event.Value, fn: (ChannelHandlerContext, Option[Throwable]) => Boolean) {
-    notificationListeners.getOrElseUpdate(e, ListBuffer.empty) += fn
+    ++(e, fn)
+  }
+
+  //process event queue by default
+  startProcessingEventQueue()
+
+  def startProcessingEventQueue() {
+    //emit event off of netty threads
+    threadPool.submit(new Runnable {
+      def run() {
+        while (processEventQueue) {
+          try {
+            val bufferedEvent = eventQueue.take()
+            val event = bufferedEvent._1
+            val context = bufferedEvent._2
+            val cause = bufferedEvent._3
+            cause match {
+              case None =>
+              case Some(s) => {
+                if (logAllExceptions)
+                  log.error(s.getMessage, s)
+              }
+            }
+            val fnList = notificationListeners.get(event)
+            if (fnList != null) {
+              var consumed = false
+              val it = fnList.iterator()
+              while (it.hasNext()) {
+                val listener = it.next()
+                if (!consumed) {
+                  if (listener(context, cause)) {
+                    consumed = true
+                  }
+                }
+              }
+            }
+          } catch {
+            case e => {
+              log.warn("An event handler caused an unhandled exception", e)
+            }
+          }
+        }
+      }
+    })
+
   }
 
   /**
@@ -62,28 +123,35 @@ trait EventProcessor[T, M, SerializedMsg] {
    * @param cause if available, the cause of this notification
    */
   def emit(event: Event.Value, context: ChannelHandlerContext, cause: Option[Throwable]) {
-    cause match {
-      case None =>
-      case Some(s) => {
-        if (logAllExceptions)
-          log.error(s.getMessage, s)
-      }
-    }
-    notificationListeners.get(event) match {
-      case None =>
-      //      case Some(fnList) => fnList foreach {
-      //        case fn => fn(context, cause)
-      //      }
-      case Some(fnList) => {
-        var consumed = false
-        for (listener <- fnList) {
-          if (!consumed)
-            if (listener(context, cause)) {
-              consumed = true
+    eventQueue.add((event, context, cause))
+  }
+
+  //start by default
+  startProcessingMessaged()
+
+  def startProcessingMessaged() {
+    //thread to process messages queue
+    threadPool.submit(new Runnable {
+      def run() {
+        while (processMessageQueue) {
+          try {
+            val bufferedMessage = messageQueue.take()
+            val ctx = bufferedMessage._1
+            val msg = bufferedMessage._2
+            emit(Event.MESSAGE_RECEIVED, ctx, None)
+            message(ctx, msg)
+          } catch {
+            case e => {
+              log.warn("A message listener caused an uncaught exception", e)
             }
+          }
         }
       }
-    }
+    })
+  }
+
+  def emitMessage(ctx: ChannelHandlerContext, msg: SerializedMsg) {
+    messageQueue.add((ctx, msg))
   }
 
   /**
@@ -108,31 +176,36 @@ trait EventProcessor[T, M, SerializedMsg] {
    * @param topic
    * @param message
    */
-  def notifySubscribers(channel: Channel, topic: T, message: M): Int = {
-    val listeners = ListBuffer.empty[((T, M) => Boolean, (Channel, M) => Unit)]
-    //get subscribers of "All" messages, i.e. subscribers to an empty string
-    if (topic != allTopicsKey()) {
-      //if topic is not already an empty string
-      subscribers get (allTopicsKey()) match {
-        case None =>
-        case Some(list) => listeners ++= list
-      }
-    }
-    //get actual subscribers to this specific topic
-    subscribers get (topic) match {
-      case None =>
-      case Some(list) => listeners ++= list
-    }
-    //invoke each function
-    listeners foreach {
-      case tuple => {
-        val wants = tuple._1(topic, message) //does this callback want to be invoked for this message?
-        if (wants) {
-          tuple._2(channel, message)
+  def notifySubscribers(channel: Channel, topic: T, message: M) {
+    //perform notifications off of netty threads
+    threadPool.submit(new Runnable {
+      def run() {
+        val listeners = new java.util.ArrayList[((T, M) => Boolean, (Channel, M) => Unit)]()
+        //get subscribers of "All" messages, i.e. subscribers to an empty string
+        if (topic != allTopicsKey()) {
+          //if topic is not already an empty string
+          val q = subscribers.get(allTopicsKey())
+          if (q != null) {
+            //add if exists
+            listeners.addAll(q)
+          }
+        }
+        //get actual subscribers to this specific topic
+        val q = subscribers.get(topic)
+        if (q != null) {
+          listeners.addAll(q)
+        }
+        //invoke each function
+        val it = listeners.iterator()
+        while (it.hasNext()) {
+          val tuple = it.next()
+          val wants = tuple._1(topic, message) //does this callback want to be invoked for this message?
+          if (wants) {
+            tuple._2(channel, message)
+          }
         }
       }
-    }
-    listeners.size
+    })
   }
 
   /**
@@ -161,12 +234,16 @@ trait EventProcessor[T, M, SerializedMsg] {
   }
 
   def listen(topic: T, fn: (Channel, M) => Unit, wants: (T, M) => Boolean) {
-    subscribers
-      .getOrElseUpdate(topic, ListBuffer.empty) += ((wants, fn))
+    var q = subscribers.get(topic)
+    if (q == null) {
+      q = new ConcurrentLinkedQueue[((T, M) => Boolean, (Channel, M) => Unit)]()
+      subscribers.put(topic, q)
+    }
+    q.add(((wants, fn)))
   }
 
   def unsubscribe(topic: T) {
-    subscribers -= topic
+    subscribers.remove(topic)
   }
 
   /**
