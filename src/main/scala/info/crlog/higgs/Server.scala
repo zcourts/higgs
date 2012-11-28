@@ -7,7 +7,7 @@ import io.netty.channel.socket.SocketChannel
 import io.netty.handler.codec.compression.{ZlibWrapper, ZlibCodecFactory}
 import io.netty.handler.codec.{MessageToByteEncoder, ByteToMessageDecoder}
 import info.crlog.higgs.Event._
-import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.{LinkedBlockingQueue, ConcurrentHashMap}
 
 
 abstract class Server[T, M, SM](host: String, port: Int, var compress: Boolean = true)

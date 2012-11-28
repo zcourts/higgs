@@ -10,7 +10,9 @@ object DemoClient {
   def main(args: Array[String]) {
     val client = new BosonClient("BosonTest", 12001, "localhost")
     client.connect()
-    for (i <- 1 to readInt()) {
+    var count = 0
+    val max = readInt()
+    for (i <- 1 to max) {
       val polo = new PoloExample(100)
       polo.i = i
       polo.name = "name-" + i
@@ -26,9 +28,11 @@ object DemoClient {
         Array(1.2F, 140, null, Map("a" -> 120), Array(1, 2, 356), false, "a string",
           List("Some List"), polo),
         (m: Array[AnyRef]) => {
-          for (i <- m) {
-            println(i)
-          }
+          //          for (i <- m) {
+          //            println(i)
+          //          }
+          count += 1
+          println(count)
         }, subscribe = false)
     }
   }
