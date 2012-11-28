@@ -1,5 +1,6 @@
 package info.crlog.higgs
 
+import concurrent.{Consumer, Producer}
 import io.netty.channel.{ChannelPipeline, Channel, ChannelHandlerContext}
 import management.ManagementFactory
 import javax.net.ssl.SSLEngine
@@ -35,8 +36,38 @@ trait EventProcessor[T, M, SerializedMsg] {
   val availableProcessors = Runtime.getRuntime().availableProcessors()
   //http://www.informit.com/guides/content.aspx?g=dotnet&seqNum=588
   //yes, we're not doing .NET but its reasonable enough
-  val maxThreads = availableProcessors * 25
+  val maxThreads = availableProcessors //* 25
+  val maxMessageProcessingThreads: Int = Double.box(maxThreads * 0.75).intValue()
   val threadPool: ExecutorService = Executors.newFixedThreadPool(maxThreads)
+  var messageProcessorTimeUnit = TimeUnit.SECONDS
+  /**
+   * By default the message processing queues block but re-check their wait condition
+   * every n time unit, where time unit is defined by messageProcessorTimeUnit
+   */
+  var messageProcessorTimeout = 10
+  val messageConsumerQueueCapacity = Int.MaxValue
+
+  val messageConsumers = new ThreadPoolExecutor(maxMessageProcessingThreads, maxMessageProcessingThreads,
+    messageProcessorTimeout, messageProcessorTimeUnit, new LinkedBlockingQueue[Runnable](messageConsumerQueueCapacity))
+  val messageProducers = new ThreadPoolExecutor(maxMessageProcessingThreads, maxMessageProcessingThreads,
+    messageProcessorTimeout, messageProcessorTimeUnit, new LinkedBlockingQueue[Runnable](messageConsumerQueueCapacity))
+  //  Executors.newSingleThreadExecutor()
+  ++(Event.MESSAGE_RECEIVED, (ctx, x) => {
+    submitMessageTask()
+  })
+
+  def submitMessageTask() {
+    messageProducers.submit(new Producer(messageConsumers, () => {
+      new Consumer(() => {
+        val bufferedMessage = messageQueue.poll(messageProcessorTimeout, messageProcessorTimeUnit)
+        val ctx = bufferedMessage._1
+        val msg = bufferedMessage._2
+        if (msg != null && ctx != null) {
+          message(ctx, msg)
+        }
+      })
+    }))
+  }
 
   /**
    * Add a function to be invoked when a supported event has occurred.
@@ -126,32 +157,10 @@ trait EventProcessor[T, M, SerializedMsg] {
     eventQueue.add((event, context, cause))
   }
 
-  //start by default
-  startProcessingMessaged()
-
-  def startProcessingMessaged() {
-    //thread to process messages queue
-    threadPool.submit(new Runnable {
-      def run() {
-        while (processMessageQueue) {
-          try {
-            val bufferedMessage = messageQueue.take()
-            val ctx = bufferedMessage._1
-            val msg = bufferedMessage._2
-            emit(Event.MESSAGE_RECEIVED, ctx, None)
-            message(ctx, msg)
-          } catch {
-            case e => {
-              log.warn("A message listener caused an uncaught exception", e)
-            }
-          }
-        }
-      }
-    })
-  }
 
   def emitMessage(ctx: ChannelHandlerContext, msg: SerializedMsg) {
     messageQueue.add((ctx, msg))
+    emit(Event.MESSAGE_RECEIVED, ctx, None)
   }
 
   /**
@@ -172,40 +181,37 @@ trait EventProcessor[T, M, SerializedMsg] {
 
   /**
    * Notify all subscribed functions to the given topic
+   * This should be invoked from the {@link #message} function which will process messages
+   * off of the netty worker threads
    * @param channel the Channel on which the event occurred. This is used to "respond" if supported
    * @param topic
    * @param message
    */
   def notifySubscribers(channel: Channel, topic: T, message: M) {
-    //perform notifications off of netty threads
-    threadPool.submit(new Runnable {
-      def run() {
-        val listeners = new java.util.ArrayList[((T, M) => Boolean, (Channel, M) => Unit)]()
-        //get subscribers of "All" messages, i.e. subscribers to an empty string
-        if (topic != allTopicsKey()) {
-          //if topic is not already an empty string
-          val q = subscribers.get(allTopicsKey())
-          if (q != null) {
-            //add if exists
-            listeners.addAll(q)
-          }
-        }
-        //get actual subscribers to this specific topic
-        val q = subscribers.get(topic)
-        if (q != null) {
-          listeners.addAll(q)
-        }
-        //invoke each function
-        val it = listeners.iterator()
-        while (it.hasNext()) {
-          val tuple = it.next()
-          val wants = tuple._1(topic, message) //does this callback want to be invoked for this message?
-          if (wants) {
-            tuple._2(channel, message)
-          }
-        }
+    val listeners = new java.util.ArrayList[((T, M) => Boolean, (Channel, M) => Unit)]()
+    //get subscribers of "All" messages, i.e. subscribers to an empty string
+    if (topic != allTopicsKey()) {
+      //if topic is not already an empty string
+      val q = subscribers.get(allTopicsKey())
+      if (q != null) {
+        //add if exists
+        listeners.addAll(q)
       }
-    })
+    }
+    //get actual subscribers to this specific topic
+    val q = subscribers.get(topic)
+    if (q != null) {
+      listeners.addAll(q)
+    }
+    //invoke each function
+    val it = listeners.iterator()
+    while (it.hasNext()) {
+      val tuple = it.next()
+      val wants = tuple._1(topic, message) //does this callback want to be invoked for this message?
+      if (wants) {
+        tuple._2(channel, message)
+      }
+    }
   }
 
   /**
