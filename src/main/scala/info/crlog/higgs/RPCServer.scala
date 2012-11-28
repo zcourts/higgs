@@ -124,54 +124,71 @@ abstract class RPCServer[M](host: String, port: Int, compress: Boolean)(implicit
     //listen for this method name to be invoked then call the given method on
     //the instance provided
     listen(methodName, (c: Channel, params: M) => {
-      //method.invoke returns null if the underlying method returns "void"/Unit
-      //so if no error occurred the return type should be Unit
-      var returns: Option[Serializable] = None
-      var error: Option[Throwable] = None
-      var args: Array[AnyRef] = getArguments(params)
-      val argTypes = method.getParameterTypes()
-      try {
-        val channelIndex = argTypes.indexOf(classOf[Channel])
-        val rpcIndex = argTypes.indexOf(mf.erasure)
-        //Channel MUST be first parameter and RPC must be second parameter if method wants
-        //to accept both, if only one is require it must be the first parameter
-        if (channelIndex != -1 && channelIndex == 0) args = Array(c) ++ args
-        if (rpcIndex != -1) {
-          args = if (channelIndex == 0) {
-            //if method wants channel index then original message becomes param 2
-            //in this case args(0) is already set to the channel
-            Array(args(0), params.asInstanceOf[AnyRef]) ++ args.slice(1, args.length)
-          } else {
-            Array(params.asInstanceOf[AnyRef]) ++ args
-          }
-        }
-        //Seq to var args syntax :_* - http://www.scala-lang.org/node/5209
-        val invoke = verifyArgumentType(args, argTypes)
-        val res = if (invoke) method.invoke(instance, args: _*) else null
-        returns = if (res != null) Some(res.asInstanceOf[Serializable]) else None
-      } catch {
-        case e => {
-          error = Some(e)
-          val expected = (for (arg <- argTypes) yield {
-            arg.getName
-          }).mkString("[", ",", "]")
-          val actual = (for (arg <- args) yield {
-            if (arg != null) {
-              arg.getClass.getName
-            } else {
-              "null"
-            }
-          }).mkString("[", ",", "]")
-          log.warn("Error invoking method %s with arguments %s : Path to method %s The method \n" +
-            "expected: %s \n" +
-            "received: %s"
-            format(methodName, args.mkString("[", ",", "]"), method.getDeclaringClass.getName + "." + method.getName,
-            expected, actual), e)
-        }
-      }
-      respond(c,
-        newResponse(methodName, clientCallback(params), returns, error))
+      processIncomingRequest(params, method, c, instance, methodName)
     })
+  }
+
+
+  protected def processIncomingRequest(params: M, method: Method, c: Channel, instance: Any, methodName: String) {
+    //method.invoke returns null if the underlying method returns "void"/Unit
+    //so if no error occurred the return type should be Unit
+    var returns: Option[Serializable] = None
+    var error: Option[Throwable] = None
+    var args: Array[AnyRef] = getArguments(params)
+    val argTypes = method.getParameterTypes()
+    try {
+      args = extractIncomingRequestParameters(argTypes, args, c, params)
+      val res: AnyRef = invokeMethod(args, argTypes, method, instance)
+      returns = if (res != null) Some(res.asInstanceOf[Serializable]) else None
+    } catch {
+      case e => {
+        error = Some(e)
+        val expected = (for (arg <- argTypes) yield {
+          arg.getName
+        }).mkString("[", ",", "]")
+        val actual = (for (arg <- args) yield {
+          if (arg != null) {
+            arg.getClass.getName
+          } else {
+            "null"
+          }
+        }).mkString("[", ",", "]")
+        log.warn("Error invoking method %s with arguments %s : Path to method %s The method \n" +
+          "expected: %s \n" +
+          "received: %s"
+          format(methodName, args.mkString("[", ",", "]"), method.getDeclaringClass.getName + "." + method.getName,
+          expected, actual), e)
+      }
+    }
+    respond(c,
+      newResponse(methodName, clientCallback(params), returns, error))
+  }
+
+
+  protected def extractIncomingRequestParameters(argTypes: Array[Class[_]], _args: Array[AnyRef], c: Channel, params: M): Array[AnyRef] = {
+    var args: Array[AnyRef] = _args
+    val channelIndex = argTypes.indexOf(classOf[Channel])
+    val rpcIndex = argTypes.indexOf(mf.erasure)
+    //Channel MUST be first parameter and RPC must be second parameter if method wants
+    //to accept both, if only one is require it must be the first parameter
+    if (channelIndex != -1 && channelIndex == 0) args = Array(c) ++ args
+    if (rpcIndex != -1) {
+      args = if (channelIndex == 0) {
+        //if method wants channel index then original message becomes param 2
+        //in this case args(0) is already set to the channel
+        Array(args(0), params.asInstanceOf[AnyRef]) ++ args.slice(1, args.length)
+      } else {
+        Array(params.asInstanceOf[AnyRef]) ++ args
+      }
+    }
+    args
+  }
+
+  protected def invokeMethod(args: Array[AnyRef], argTypes: Array[Class[_]], method: Method, instance: Any): AnyRef = {
+    //Seq to var args syntax :_* - http://www.scala-lang.org/node/5209
+    val invoke = verifyArgumentType(args, argTypes)
+    val res = if (invoke) method.invoke(instance, args: _*) else null
+    res
   }
 
   /**
