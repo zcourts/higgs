@@ -17,6 +17,8 @@ class Listener {
     println(a)
   }
 
+  var count = 0
+
   @method("all")
   def all(
            a: Float, b: Int, nullObj: Object,
@@ -32,6 +34,8 @@ class Listener {
       arr.mkString("[", ",", "]"),
       bool, str, list, polo
     )
+    count += 1
+    println(count)
     Array(a, b, nullObj, m, arr, bool, str, list, polo)
   }
 
