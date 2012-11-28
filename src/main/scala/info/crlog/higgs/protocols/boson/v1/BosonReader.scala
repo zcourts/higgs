@@ -17,7 +17,8 @@ import reflect.Field
  * @author Courtney Robinson <courtney@crlog.info>
  */
 case class BosonReader(obj: Array[Byte]) {
-  val loader = new BosonClassLoader(Thread.currentThread().getContextClassLoader())
+  val loader = Thread.currentThread().getContextClassLoader()
+  // new BosonClassLoader(Thread.currentThread().getContextClassLoader())
   val log = LoggerFactory.getLogger(getClass())
   val msg = new Message()
   //initialize a heap buffer setting the reader index to 0 and the writer index and capacity to array.length
@@ -546,15 +547,25 @@ case class BosonReader(obj: Array[Byte]) {
                 }
               } else {
                 if (value != null) {
-                  val vclass = value.asInstanceOf[AnyRef].getClass()
-                  if (field.getType().isAssignableFrom(vclass)) {
+                  try {
                     field.set(instance, value)
-                  } else {
-                    log.warn(("Field \"%s\" of class \"%s\" is of type %s " +
-                      "but value received is \"%s\" of type \"%s\"").format(
-                      key, klass.getName(), vclass.getName(), value,
-                      if (value == null) "null" else value.asInstanceOf[AnyRef].getClass().getName()
-                    ))
+                  } catch {
+                    case e: IllegalArgumentException => {
+                      try {
+                        //attempt to convert
+                        val converter = new FieldTypeConverter(value, fieldType, instance, field)
+                        converter.convert()
+                      } catch {
+                        case e => {
+                          val vclass = value.asInstanceOf[AnyRef].getClass()
+                          log.warn(("Field \"%s\" of class \"%s\" is of type %s " +
+                            "but value received is \"%s\" of type \"%s\"").format(
+                            key, klass.getName(), vclass.getName(), value,
+                            if (value == null) "null" else value.asInstanceOf[AnyRef].getClass().getName()
+                          ))
+                        }
+                      }
+                    }
                   }
                 }
               }
