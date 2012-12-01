@@ -14,9 +14,7 @@ It has since grown to be more robust than originally intended.
 
 1. HTTP/HTTPS (Client) - Server to be added
 2. WebSocket  (Client and Server) - Compatible with Socket.io or any other WebSocket client
-3. OMSG - A JVM based, topic protocol for sending arbitrary objects over the network
-4. JRPC - A custom RPC mechanism for JVM languages (Uses object serialization)
-5. Boson - A language independent, topic oriented protocol for sending/receiving arbitrary data over the network and
+3. Boson - A language independent, topic oriented protocol for sending/receiving arbitrary data over the network and
             performing remote method invocation (RMI/RPC).
 
 # Custom Protocols
@@ -25,8 +23,6 @@ It has since grown to be more robust than originally intended.
             However, as it stands, Higgs will continue to add support for "standard" protocols. On the to do list are
             ftp,ssh, sctp, telnet etc.
 
-### NOTE
-JRPC and OMSG protocols are highly experimental and not intended for general use (They were more for demonstration).
 
 + __Boson__ is the actively used/developed protocol and is the only custom protocol that is recommended for use.
 + A __Node JS__ implementation of the Boson protocol can be found here [https://github.com/zcourts/higgs-node](https://github.com/zcourts/higgs)
@@ -53,13 +49,63 @@ Each protocol comes with a simple client/server demo.
 
 ```scala
 
+package info.crlog.higgs.protocols.http
+
+import java.net.URL
+import java.nio.file.Files
+
+/**
+ * @author Courtney Robinson <courtney@crlog.info>
+ */
 object HttpDemo {
   def main(args: Array[String]) {
-    val client = new HttpClient()
-    client.GET(new URL("https://api.twitter.com/1.1/statuses/home_timeline.json"), (res: HTTPResponse) => {
-      println("Twitter")
-      println(res)
+    val file = Files.createTempFile("higgs.test", ".tmp").toFile()
+    val client = new HttpRequestBuilder()
+    //    for (x <- 1 to 100) {
+    client.query("a", "b")
+      //        .query("c", x)
+      .cookie("c", "d")
+      .cookies(Map("age" -> 100)) //or we can do
+      .header("X-val", "yes")
+      .headers(Map("X-a" -> 123, "X-b" -> "val"))
+      .compress(true)
+      .url(new URL("https://httpbin.org/delete"))
+      .DELETE() //http DELETE request
+      //build request and send
+      .build((r) => {
+      println(r) //print response
     })
+      .url(new URL("https://httpbin.org/get"))
+      .GET()
+      .build((r) => {
+      println(r)
+    })
+      .url(new URL("https://httpbin.org/post"))
+      .POST()
+      //upload a single file
+      .file(new HttpFile("post.txt", file))
+      //upload multiple files under the same name
+      .file("my-var", List(new PartialHttpFile(file), new PartialHttpFile(file)))
+      //or upload multiple files each with different names
+      .file(List(new HttpFile("file-1", file), new HttpFile("file-2", file)))
+      //use form to supply normal form field data i.e. none binary form fields
+      .form("name", "Courtney")
+      .build((r) => {
+      println(r)
+    })
+    //TODO add PUT support
+//      .url(new URL("https://httpbin.org/put"))
+//      .PUT()
+//      .form("name", "Courtney Robinson")
+//      .build((r) => {
+//      println(r)
+//    })
+    //notice all previous settings on the builder is kept and goes into the next request
+    //if you add files for e.g. and do a POST request then do a GET only settings supported by
+    //an HTTP GET request is used. to discard all previous settings use .clear() e.g.
+    .clear() //now everything set previously has been discarded and a clean/new builder is returned
+    .GET() //etc...
+    //    }
   }
 }
 
@@ -68,12 +114,101 @@ Output:
 
 ```javascript
 
-Twitter
-400 Bad Request
+200 OK
  SINGLE
  HTTP/1.1
- Map(Server -> ListBuffer(tfe), Date -> ListBuffer(Mon, 12 Nov 2012 00:09:06 UTC), Content-Type -> ListBuffer(application/json; charset=utf-8), Content-Length -> ListBuffer(61))
- {"errors":[{"message":"Bad Authentication data","code":215}]}
+ Map(Connection -> ListBuffer(Close), Server -> ListBuffer(gunicorn/0.13.4), Date -> ListBuffer(Sat, 01 Dec 2012 16:01:52 GMT), Content-Type -> ListBuffer(application/json), Content-Length -> ListBuffer(696))
+ {
+  "origin": "2.122.227.229",
+  "headers": {
+    "Content-Length": "",
+    "Accept-Language": "en",
+    "Accept-Encoding": "gzip,deflate",
+    "Host": "httpbin.org",
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+    "User-Agent": "Mozilla/5.0 (compatible; HiggsBoson/0.0.1; +https://github.com/zcourts/higgs)",
+    "Accept-Charset": "ISO-8859-1,utf-8;q=0.7,*;q=0.7",
+    "Connection": "keep-alive",
+    "X-A": "123",
+    "Referer": "https://httpbin.org/delete",
+    "X-B": "val",
+    "X-Val": "yes",
+    "Cookie": "c=d; age=100",
+    "Content-Type": ""
+  },
+  "json": null,
+  "url": "http://httpbin.org/delete?a=b",
+  "args": {
+    "a": "b"
+  },
+  "data": ""
+}
+
+200 OK
+ SINGLE
+ HTTP/1.1
+ Map(Connection -> ListBuffer(Close), Server -> ListBuffer(gunicorn/0.13.4), Date -> ListBuffer(Sat, 01 Dec 2012 16:01:52 GMT), Content-Type -> ListBuffer(application/json), Content-Length -> ListBuffer(660))
+ {
+  "url": "http://httpbin.org/get?a=b",
+  "headers": {
+    "Content-Length": "",
+    "Accept-Language": "en",
+    "Accept-Encoding": "gzip,deflate",
+    "Host": "httpbin.org",
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+    "User-Agent": "Mozilla/5.0 (compatible; HiggsBoson/0.0.1; +https://github.com/zcourts/higgs)",
+    "Accept-Charset": "ISO-8859-1,utf-8;q=0.7,*;q=0.7",
+    "Connection": "keep-alive",
+    "X-A": "123",
+    "Referer": "https://httpbin.org/get",
+    "X-B": "val",
+    "X-Val": "yes",
+    "Cookie": "c=d; age=100",
+    "Content-Type": ""
+  },
+  "args": {
+    "a": "b"
+  },
+  "origin": "2.122.227.229"
+}
+
+200 OK
+ SINGLE
+ HTTP/1.1
+ Map(Connection -> ListBuffer(Close), Server -> ListBuffer(gunicorn/0.13.4), Date -> ListBuffer(Sat, 01 Dec 2012 16:01:52 GMT), Content-Type -> ListBuffer(application/json), Content-Length -> ListBuffer(1465))
+ {
+  "origin": "2.122.227.229",
+  "files": {
+    "post.txt": "",
+    "file-2": "\r\nContent-Disposition: form-data; name=\"my-var\"\r\nContent-Type: multipart/mixed; boundary=545ffa43cd80502e\r\n\r\n--545ffa43cd80502e\r\nContent-Disposition: file; filename=\"higgs.test2350892187396857516.tmp\"\r\nContent-Disposition: form-data; name=\"my-var\"; filename=\"higgs.test2350892187396857516.tmp\"\r\nContent-Type: application/octet-stream\r\nContent-Transfer-Encoding: binary\r\n\r\n\r\n--545ffa43cd80502e\r\nContent-Disposition: file; filename=\"higgs.test2350892187396857516.tmp\"\r\nContent-Type: application/octet-stream\r\nContent-Transfer-Encoding: binary\r\n\r\n\r\n--545ffa43cd80502e--",
+    "file-1": ""
+  },
+  "form": {
+    "name": "Courtney"
+  },
+  "url": "http://httpbin.org/post?a=b",
+  "args": {
+    "a": "b"
+  },
+  "headers": {
+    "Content-Length": "1272",
+    "Accept-Language": "en",
+    "Accept-Encoding": "gzip,deflate",
+    "Host": "httpbin.org",
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+    "User-Agent": "Mozilla/5.0 (compatible; HiggsBoson/0.0.1; +https://github.com/zcourts/higgs)",
+    "Accept-Charset": "ISO-8859-1,utf-8;q=0.7,*;q=0.7",
+    "Connection": "keep-alive",
+    "X-A": "123",
+    "Referer": "https://httpbin.org/post",
+    "X-B": "val",
+    "X-Val": "yes",
+    "Cookie": "c=d; age=100",
+    "Content-Type": "multipart/form-data; boundary=67b1eeaaf8430d47"
+  },
+  "json": null,
+  "data": ""
+}
 
 ```
 ### Boson  [Protocol Specification](https://github.com/zcourts/higgs/tree/master/src/main/scala/info/crlog/higgs/protocols/boson)
@@ -219,3 +354,18 @@ class MyClient(serviceName: String, port: Int, host: String = "localhost", compr
 }
 
 ```
+
+# Metrics
+
+Some Metrics are published by the library to help you figure out what's going on in prod.
+Below are some ScreenShots of available metrics.
+
+![Metric 1](metric1.png)
+
+![Metric 2](metric2.png)
+
+![Metric 3](metric3.png)
+
+![Metric 4](metric4.png)
+
+![Metric 5](metric5.png)
