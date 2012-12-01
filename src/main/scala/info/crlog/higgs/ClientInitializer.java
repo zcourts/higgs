@@ -14,7 +14,7 @@ import io.netty.handler.codec.compression.ZlibWrapper;
 public class ClientInitializer extends ChannelInitializer<SocketChannel> {
     Client client;
 
-    ClientInitializer(Client client) {
+    ClientInitializer(Client<?, ?, ?> client) {
         this.client = client;
     }
 
