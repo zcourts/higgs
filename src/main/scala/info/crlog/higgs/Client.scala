@@ -8,7 +8,9 @@ import io.netty.handler.codec.{MessageToByteEncoder, ByteToMessageDecoder}
 import java.net.ConnectException
 import java.nio.channels.ClosedChannelException
 import java.io.IOException
-import java.util.concurrent.{LinkedBlockingQueue, LinkedBlockingDeque}
+import java.util.concurrent.LinkedBlockingQueue
+import com.yammer.metrics.Metrics
+import com.yammer.metrics.core.Gauge
 
 /**
  * @author Courtney Robinson <courtney@crlog.info>
@@ -41,10 +43,13 @@ abstract case class Client[Topic, Msg, SerializedMsg](serviceName: String,
    * it will use a delay between each message that has not yet been sent to the server
    */
   var enablePreEmptiveSend = true
-  var preEmptiveTimeout = 200
   var addedReconnectListeners = false
   var blockingConnect = false
   var running = false
+  val mRequestsSent = Metrics.newCounter(getClass(), "client-requests-sent")
+  val mUnsetMessageCount = Metrics.newGauge(getClass(), "unsent-messages", new Gauge[Int]() {
+    def value(): Int = unsentMessages.size()
+  })
 
   /**
    * Connect to the remote host in preparation for interaction.
@@ -53,7 +58,19 @@ abstract case class Client[Topic, Msg, SerializedMsg](serviceName: String,
    */
   def connect(fn: () => Unit = () => {}) {
     bootstrap = new Bootstrap()
-    addReconnectListener(fn)
+    addReconnectListener(() => {
+      fn()
+      if (unsentMessages.size() > 0) {
+        threadPool.submit(new Runnable {
+          def run() {
+            //empty unsent messages queue in a background thread when connected
+            while (unsentMessages.size() > 0) {
+              send(unsentMessages.take())
+            }
+          }
+        })
+      }
+    })
     bootstrap
       .group(new NioEventLoopGroup)
       .channel(classOf[NioSocketChannel])
@@ -77,11 +94,9 @@ abstract case class Client[Topic, Msg, SerializedMsg](serviceName: String,
     })
     if (blockingConnect) {
       conFuture.awaitUninterruptibly()
-      blockingQ.take() //block until something is available
     }
   }
 
-  val blockingQ = new LinkedBlockingDeque[String]()
 
   /**
    * @return The decoder which decodes message streams
@@ -102,40 +117,6 @@ abstract case class Client[Topic, Msg, SerializedMsg](serviceName: String,
     connected = false
   })
 
-  /**
-   *
-   * Starts up a thread via the existing {@link #threadPool}   takes messages off the unset
-   * messages queue and send them. If a callback is provided the it will not do this automatically
-   * the callback you provide must process unsent messages
-   * Called once when a client instance is created.
-   * Only call if {@connected} ==false OR you want multiple threads processing the
-   * unsent messages queue. Note its unlikely too many threads will yield any real benefit,
-   * moderate, 1 or 2 threads should be enough. Any more and the contention rate when reading
-   * from the queue will go up thus being counter productive as you're spending potentially more
-   * time locking tha you are sending...
-   * Also important to note is that this thread just sits in a loop, while(running)
-   * as such. if a callback is provided the callback should block when there is nothing for it
-   * to do.
-   * @param callback  A function to repeatedly execute while the client is running
-   */
-  def start(callback: () => Any = () => {
-    val msg = unsentMessages.take()
-    channel.write(serialize(msg))
-    channel.flush()
-  }) {
-    threadPool.submit(new Runnable {
-      def run() {
-        running = true
-        while (running) {
-          callback()
-        }
-        running = false
-      }
-    })
-  }
-
-  //call start once by default
-  start()
 
   /**
    * Set {@connected} to false causing the message processing thread to halt
@@ -161,7 +142,13 @@ abstract case class Client[Topic, Msg, SerializedMsg](serviceName: String,
       throw new IllegalStateException("Client is not connected to a server %s and Auto reconnect is disabled." +
         "The message will not be queued as this could lead to out of memory errors due to the unset message backlog" format (serviceName))
     } else {
-      unsentMessages.add(msg)
+      if (!connected) {
+        unsentMessages.add(msg)
+      } else {
+        channel.write(serialize(msg))
+        mRequests.mark()
+        mRequestsSent.inc()
+      }
     }
     this
   }

@@ -1,6 +1,5 @@
 package info.crlog.higgs
 
-import concurrent.{Consumer, Producer}
 import io.netty.channel.{ChannelPipeline, Channel, ChannelHandlerContext}
 import management.ManagementFactory
 import javax.net.ssl.SSLEngine
@@ -9,6 +8,7 @@ import ssl.{SSLConfiguration, SSLContextFactory}
 import java.util.concurrent._
 import org.slf4j.LoggerFactory
 import scala.Some
+import com.yammer.metrics.Metrics
 
 
 /**
@@ -27,19 +27,12 @@ trait EventProcessor[T, M, SerializedMsg] {
    */
   val subscribers = new ConcurrentHashMap[T, ConcurrentLinkedQueue[
     ((T, M) => Boolean, (Channel, M) => Unit)]]()
-  val messageQueue = new LinkedTransferQueue[(ChannelHandlerContext, SerializedMsg)]()
-  val eventQueue = new LinkedTransferQueue[(Event.Value, ChannelHandlerContext, Option[Throwable])]()
-  var processMessageQueue = true
-  var processEventQueue = true
   val serializer: Serializer[M, SerializedMsg]
   val SSLclientMode: Boolean
   val availableProcessors = Runtime.getRuntime().availableProcessors()
-  //http://www.informit.com/guides/content.aspx?g=dotnet&seqNum=588
-  //yes, we're not doing .NET but its reasonable enough
-  val maxThreads = availableProcessors
-  //* 25
+  val maxThreads = availableProcessors * 4
   val maxMessageProcessingThreads: Int = math.max(Double.box(maxThreads * 0.75).intValue(), 1)
-  val threadPool: ExecutorService = Executors.newFixedThreadPool(maxThreads)
+  //  val threadPool: ExecutorService = Executors.newFixedThreadPool(maxThreads)
   var messageProcessorTimeUnit = TimeUnit.SECONDS
   /**
    * By default the message processing queues block but re-check their wait condition
@@ -48,31 +41,16 @@ trait EventProcessor[T, M, SerializedMsg] {
   var messageProcessorTimeout = 10
   val messageConsumerQueueCapacity = Int.MaxValue
 
-  val messageConsumers = new ThreadPoolExecutor(maxMessageProcessingThreads, maxMessageProcessingThreads,
+  val threadPool = new ThreadPoolExecutor(maxMessageProcessingThreads, maxMessageProcessingThreads,
     messageProcessorTimeout, messageProcessorTimeUnit, new LinkedBlockingQueue[Runnable](messageConsumerQueueCapacity))
-  val messageProducers = new ThreadPoolExecutor(maxMessageProcessingThreads, maxMessageProcessingThreads,
-    messageProcessorTimeout, messageProcessorTimeUnit, new LinkedBlockingQueue[Runnable](messageConsumerQueueCapacity))
-  //  Executors.newSingleThreadExecutor()
-  ++(Event.MESSAGE_RECEIVED, (ctx, x) => {
-    submitMessageTask()
-  })
-
-  def submitMessageTask() {
-    messageProducers.submit(new Producer(messageConsumers, () => {
-      new Consumer(() => {
-        val bufferedMessage = messageQueue.poll(messageProcessorTimeout, messageProcessorTimeUnit)
-        val ctx = bufferedMessage._1
-        val msg = bufferedMessage._2
-        if (msg != null && ctx != null) {
-          message(ctx, msg)
-        }
-      })
-    }))
-  }
+  val mInvocationPerListener = Metrics.newTimer(getClass(), "per-listener-invocation-time", TimeUnit.MILLISECONDS, TimeUnit.SECONDS)
+  val mMessageInvocation = Metrics.newTimer(getClass(), "all-listeners-invocation-time", TimeUnit.MILLISECONDS, TimeUnit.SECONDS)
+  val mRequests = Metrics.newMeter(getClass(), "requests-rate", "requests", TimeUnit.SECONDS)
+  val mMessageReceived = Metrics.newCounter(getClass(), "messages-received")
+  val mMessagesProcessed = Metrics.newCounter(getClass(), "messages-processed")
 
   def shutdown() {
-    messageConsumers.shutdown()
-    messageProducers.shutdown()
+    threadPool.shutdown()
   }
 
   /**
@@ -109,50 +87,6 @@ trait EventProcessor[T, M, SerializedMsg] {
     ++(e, fn)
   }
 
-  //process event queue by default
-  startProcessingEventQueue()
-
-  def startProcessingEventQueue() {
-    //emit event off of netty threads
-    threadPool.submit(new Runnable {
-      def run() {
-        while (processEventQueue) {
-          try {
-            val bufferedEvent = eventQueue.take()
-            val event = bufferedEvent._1
-            val context = bufferedEvent._2
-            val cause = bufferedEvent._3
-            cause match {
-              case None =>
-              case Some(s) => {
-                if (logAllExceptions)
-                  log.error(s.getMessage, s)
-              }
-            }
-            val fnList = notificationListeners.get(event)
-            if (fnList != null) {
-              var consumed = false
-              val it = fnList.iterator()
-              while (it.hasNext()) {
-                val listener = it.next()
-                if (!consumed) {
-                  if (listener(context, cause)) {
-                    consumed = true
-                  }
-                }
-              }
-            }
-          } catch {
-            case e => {
-              log.warn("An event handler caused an unhandled exception", e)
-            }
-          }
-        }
-      }
-    })
-
-  }
-
   /**
    * Notify any notification listeners attached to this event processor
    * @param event the event this notification is for
@@ -160,13 +94,48 @@ trait EventProcessor[T, M, SerializedMsg] {
    * @param cause if available, the cause of this notification
    */
   def emit(event: Event.Value, context: ChannelHandlerContext, cause: Option[Throwable]) {
-    eventQueue.add((event, context, cause))
+    try {
+      cause match {
+        case None =>
+        case Some(s) => {
+          if (logAllExceptions)
+            log.error(s.getMessage, s)
+        }
+      }
+      val fnList = notificationListeners.get(event)
+      if (fnList != null) {
+        var consumed = false
+        val it = fnList.iterator()
+        while (it.hasNext()) {
+          val listener = it.next()
+          if (!consumed) {
+            if (listener(context, cause)) {
+              consumed = true
+            }
+          }
+        }
+      }
+    } catch {
+      case e => {
+        log.warn("An event handler caused an unhandled exception", e)
+      }
+    }
   }
 
 
   def emitMessage(ctx: ChannelHandlerContext, msg: SerializedMsg) {
-    messageQueue.add((ctx, msg))
+    mMessageReceived.inc()
+    mRequests.mark()
+    //    messageQueue.add((ctx, msg))
     emit(Event.MESSAGE_RECEIVED, ctx, None)
+    threadPool.submit(new Runnable {
+      def run() {
+        val timerCtx = mMessageInvocation.time()
+        message(ctx, msg)
+        timerCtx.stop()
+        mMessagesProcessed.inc()
+      }
+    })
   }
 
   /**
@@ -215,7 +184,9 @@ trait EventProcessor[T, M, SerializedMsg] {
       val tuple = it.next()
       val wants = tuple._1(topic, message) //does this callback want to be invoked for this message?
       if (wants) {
+        val timerContext = mInvocationPerListener.time()
         tuple._2(channel, message)
+        timerContext.stop()
       }
     }
   }

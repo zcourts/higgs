@@ -7,6 +7,7 @@ import io.netty.channel.socket.SocketChannel
 import io.netty.handler.codec.{MessageToByteEncoder, ByteToMessageDecoder}
 import info.crlog.higgs.Event._
 import java.util.concurrent.ConcurrentHashMap
+import com.yammer.metrics.Metrics
 
 
 abstract class Server[T, M, SM](host: String, port: Int, var compress: Boolean = true)
@@ -19,6 +20,7 @@ abstract class Server[T, M, SM](host: String, port: Int, var compress: Boolean =
   var usingCodec = false
   val SSLclientMode = false
   var bound = false
+  val mChannels = Metrics.newCounter(getClass(), "connected-channels")
 
   /**
    * Bind this server and get the channel it is bound to
@@ -99,9 +101,11 @@ abstract class Server[T, M, SM](host: String, port: Int, var compress: Boolean =
   //capture channel contexts when active  and remove them when inactive
   ++(CHANNEL_ACTIVE, (ctx: ChannelHandlerContext, c: Option[Throwable]) => {
     channels.put(ctx.channel().id().toInt, ctx.channel())
+    mChannels.inc()
   })
   ++(CHANNEL_INACTIVE, (ctx: ChannelHandlerContext, c: Option[Throwable]) => {
     channels.remove(ctx.channel().id().toInt)
+    mChannels.dec()
   })
 }
 

@@ -11,13 +11,11 @@ import collection.mutable.ListBuffer
 import multipart._
 import info.crlog.higgs.Client
 import java.io.File
-import java.util.concurrent.LinkedBlockingQueue
 
 /**
  * @author Courtney Robinson <courtney@crlog.info>
  */
 class RequestProcessor extends Client[String, HTTPResponse, AnyRef]("HttpClient", 80, "localhost", false) {
-  private val messageQ = new LinkedBlockingQueue[() => Unit]()
   val attReq = new AttributeKey[HttpRequestBuilder]("request")
   val attChunks = new AttributeKey[Boolean]("chunks")
   val attResponse = new AttributeKey[HTTPResponse]("response")
@@ -79,31 +77,28 @@ class RequestProcessor extends Client[String, HTTPResponse, AnyRef]("HttpClient"
     //get requests are simple and only require this
     val request = createRequest(req)
     request.setMethod(req.requestMethod)
-    val send = () => {
-      val bootstrap = newBootstrap(req)
-      val conFuture = bootstrap.connect
-      conFuture.sync
-      val channel: Channel = conFuture.channel
-      //try to use a unique ID as opposed to just the URL because multiple request can go to the
-      // same URLwith different callbacks which could cause the wrong callback to be invoked
-      val id = req.url().toString + System.nanoTime()
-      channel.attr(attTopic).set(id)
-      //listen for response
-      listen(id, (ch, res) => {
-        responseListener(res)
-      })
-      val l = conFuture.addListener(new ChannelFutureListener {
-        def operationComplete(f: ChannelFuture) {
-          if (f.isSuccess) {
-            channel.attr(attReq).set(req)
-            channel.write(request)
-            //TODO causes BlockingOpEx
-            //channel.closeFuture.sync
-          }
+    val bootstrap = newBootstrap(req)
+    val conFuture = bootstrap.connect
+    conFuture.sync
+    val channel: Channel = conFuture.channel
+    //try to use a unique ID as opposed to just the URL because multiple request can go to the
+    // same URLwith different callbacks which could cause the wrong callback to be invoked
+    val id = req.url().toString + System.nanoTime()
+    channel.attr(attTopic).set(id)
+    //listen for response
+    listen(id, (ch, res) => {
+      responseListener(res)
+    })
+    val l = conFuture.addListener(new ChannelFutureListener {
+      def operationComplete(f: ChannelFuture) {
+        if (f.isSuccess) {
+          channel.attr(attReq).set(req)
+          channel.write(request)
+          //TODO causes BlockingOpEx
+          //channel.closeFuture.sync
         }
-      })
-    }
-    messageQ.add(send)
+      }
+    })
   }
 
   def postOrPut[U](req: HttpRequestBuilder, responseListener: (HTTPResponse) => U) {
@@ -145,35 +140,32 @@ class RequestProcessor extends Client[String, HTTPResponse, AnyRef]("HttpClient"
     try {
       //encode
       encoder.finalizeRequest()
-      val send = () => {
-        val bootstrap = newBootstrap(req)
-        val conFuture = bootstrap.connect
-        conFuture.sync
-        val channel: Channel = conFuture.channel
-        //try to use a unique ID as opposed to just the URL because multiple request can go to the
-        // same URLwith different callbacks which could cause the wrong callback to be invoked
-        val id = req.url().toString + System.nanoTime()
-        channel.attr(attTopic).set(id)
-        //listen for response
-        listen(id, (ch, res) => {
-          responseListener(res)
-        })
-        val l = conFuture.addListener(new ChannelFutureListener {
-          def operationComplete(f: ChannelFuture) {
-            if (f.isSuccess) {
-              channel.attr(attReq).set(req)
-              channel.write(request)
-              // test if request was chunked and if so, finish the write
-              if (encoder.isChunked()) {
-                channel.write(encoder) //.awaitUninterruptibly
-              }
-              //TODO causes BlockingOpEx
-              //channel.closeFuture.sync
+      val bootstrap = newBootstrap(req)
+      val conFuture = bootstrap.connect
+      conFuture.sync
+      val channel: Channel = conFuture.channel
+      //try to use a unique ID as opposed to just the URL because multiple request can go to the
+      // same URLwith different callbacks which could cause the wrong callback to be invoked
+      val id = req.url().toString + System.nanoTime()
+      channel.attr(attTopic).set(id)
+      //listen for response
+      listen(id, (ch, res) => {
+        responseListener(res)
+      })
+      val l = conFuture.addListener(new ChannelFutureListener {
+        def operationComplete(f: ChannelFuture) {
+          if (f.isSuccess) {
+            channel.attr(attReq).set(req)
+            channel.write(request)
+            // test if request was chunked and if so, finish the write
+            if (encoder.isChunked()) {
+              channel.write(encoder) //.awaitUninterruptibly
             }
+            //TODO causes BlockingOpEx
+            //channel.closeFuture.sync
           }
-        })
-      }
-      messageQ.add(send)
+        }
+      })
     } catch {
       case e => {
         log.error("Unable to send %s request and exception occurred." +
@@ -182,14 +174,6 @@ class RequestProcessor extends Client[String, HTTPResponse, AnyRef]("HttpClient"
     }
     encoder.cleanFiles()
   }
-
-  //stop default message processing thread
-  stop()
-  //provide custom message processing function
-  start(() => {
-    val fn = messageQ.take()
-    fn()
-  })
 
   /**
    * Create an {@link HttpRequest} with {@link HttpHeaders} including (cookies, user agent etc),
@@ -218,7 +202,7 @@ class RequestProcessor extends Client[String, HTTPResponse, AnyRef]("HttpClient"
     req.requestHeaders.foreach((kv) => {
       request.setHeader(kv._1, kv._2)
     })
-    val cookieList = for (cookie <- req.requestCookies) yield new DefaultCookie(cookie._1, cookie._2)
+    val cookieList = for (cookie <- req.requestCookies) yield new DefaultCookie(cookie._1, cookie._2.toString())
     //set cookies
     request.setHeader(HttpHeaders.Names.COOKIE, ClientCookieEncoder.encode(cookieList.toSeq: _*))
     request

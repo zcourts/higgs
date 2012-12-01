@@ -61,6 +61,11 @@
             <version>0.5.0</version>
         </dependency>
         <dependency>
+            <groupId>com.yammer.metrics</groupId>
+            <artifactId>metrics-core</artifactId>
+            <version>2.2.0</version>
+        </dependency>
+        <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-core</artifactId>
             <version>${jackson.version}</version>
@@ -82,10 +87,10 @@
         </dependency>
         <!--testing-->
         <!--<dependency>-->
-            <!--<groupId>org.specs2</groupId>-->
-            <!--<artifactId>specs2_2.9.2</artifactId>-->
-            <!--<version>1.12.2</version>-->
-            <!--<scope>test</scope>-->
+        <!--<groupId>org.specs2</groupId>-->
+        <!--<artifactId>specs2_2.9.2</artifactId>-->
+        <!--<version>1.12.2</version>-->
+        <!--<scope>test</scope>-->
         <!--</dependency>-->
         <dependency>
             <groupId>junit</groupId>

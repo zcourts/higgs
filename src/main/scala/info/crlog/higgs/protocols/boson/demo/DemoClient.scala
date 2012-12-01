@@ -32,7 +32,7 @@ object DemoClient {
           //            println(i)
           //          }
           count += 1
-          println(count)
+         // println(count)
         }, subscribe = false)
     }
   }

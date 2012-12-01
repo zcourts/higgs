@@ -39,8 +39,8 @@ class HttpRequestBuilder {
    * request then only file names will be sent.
    */
   var multiPart = true
-  val requestHeaders: Map[String, String] = Map.empty[String, String]
-  val requestCookies: Map[String, String] = Map.empty[String, String]
+  val requestHeaders: Map[String, Any] = Map.empty[String, Any]
+  val requestCookies: Map[String, Any] = Map.empty[String, Any]
   var compressionEnabled: Boolean = false
   var shutdownAfter: Boolean = true
   var httpVersion: HttpVersion = HttpVersion.HTTP_1_1
@@ -181,7 +181,7 @@ class HttpRequestBuilder {
    * @param h
    * @return
    */
-  def headers(h: Map[String, String]): HttpRequestBuilder = {
+  def headers(h: Map[String, Any]): HttpRequestBuilder = {
     this.requestHeaders ++= h
     this
   }
@@ -192,7 +192,7 @@ class HttpRequestBuilder {
    * @param h
    * @return
    */
-  def headers(h: collection.immutable.Map[String, String]): HttpRequestBuilder = {
+  def headers(h: collection.immutable.Map[String, Any]): HttpRequestBuilder = {
     this.requestHeaders ++= h
     this
   }
@@ -213,7 +213,7 @@ class HttpRequestBuilder {
    * @param h
    * @return
    */
-  def cookies(h: Map[String, String]): HttpRequestBuilder = {
+  def cookies(h: Map[String, Any]): HttpRequestBuilder = {
     this.requestCookies ++= h
     this
   }
@@ -224,7 +224,7 @@ class HttpRequestBuilder {
    * @param h
    * @return
    */
-  def cookies(h: collection.immutable.Map[String, String]): HttpRequestBuilder = {
+  def cookies(h: collection.immutable.Map[String, Any]): HttpRequestBuilder = {
     this.requestCookies ++= h
     this
   }
