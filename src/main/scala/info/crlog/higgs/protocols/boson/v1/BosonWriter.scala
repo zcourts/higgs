@@ -1,7 +1,7 @@
 package info.crlog.higgs.protocols.boson.v1
 
 import info.crlog.higgs.protocols.boson.BosonType
-import io.netty.buffer.{ByteBuf, HeapByteBuf}
+import io.netty.buffer.{Unpooled, ByteBuf}
 import java.{util, lang}
 import collection.mutable.ListBuffer
 import lang.reflect.Field
@@ -15,7 +15,7 @@ import info.crlog.higgs.protocols.boson.UnsupportedBosonTypeException
 class BosonWriter(obj: Message) {
   def get(): Array[Byte] = {
     //using Int.MaxValue as max buffer size since messages are limited to that size...
-    val buffer = new HeapByteBuf(0, Int.MaxValue)
+    val buffer = Unpooled.buffer()
     val msg = if (obj.callback.isEmpty) {
       serializeResponse()
     } else {
@@ -35,7 +35,7 @@ class BosonWriter(obj: Message) {
   }
 
   def serializeResponse(): Array[Byte] = {
-    val buffer = new HeapByteBuf(0, Int.MaxValue)
+    val buffer = Unpooled.buffer()
     //write the method name
     buffer.writeByte(BosonType.RESPONSE_METHOD_NAME) //write type/flag - 1 byte
     writeString(buffer, obj.method)
@@ -50,7 +50,7 @@ class BosonWriter(obj: Message) {
   }
 
   def serializeRequest(): Array[Byte] = {
-    val buffer = new HeapByteBuf(0, Int.MaxValue)
+    val buffer = Unpooled.buffer()
     //write the method name
     buffer.writeByte(BosonType.REQUEST_METHOD_NAME) //write type/flag - 1 byte
     writeString(buffer, obj.method)

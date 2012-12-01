@@ -1,7 +1,6 @@
 package info.crlog.higgs.protocols.boson.v1
 
 import info.crlog.higgs.protocols.boson._
-import io.netty.buffer.HeapByteBuf
 import info.crlog.higgs.protocols.boson.BosonType._
 import info.crlog.higgs.util.StringUtil
 import collection.mutable
@@ -12,6 +11,7 @@ import info.crlog.higgs.protocols.boson.InvalidRequestResponseTypeException
 import org.slf4j.LoggerFactory
 import java.lang.{IllegalArgumentException, reflect}
 import reflect.Field
+import io.netty.buffer.Unpooled
 
 /**
  * @author Courtney Robinson <courtney@crlog.info>
@@ -22,7 +22,7 @@ case class BosonReader(obj: Array[Byte]) {
   val log = LoggerFactory.getLogger(getClass())
   val msg = new Message()
   //initialize a heap buffer setting the reader index to 0 and the writer index and capacity to array.length
-  val data = new HeapByteBuf(obj, obj.length)
+  val data = Unpooled.wrappedBuffer(obj)
 
   def get(): Message = {
     //protocol version and message size is not a part of the message so read before loop
