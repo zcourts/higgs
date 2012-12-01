@@ -360,12 +360,12 @@ class MyClient(serviceName: String, port: Int, host: String = "localhost", compr
 Some Metrics are published by the library to help you figure out what's going on in prod.
 Below are some ScreenShots of available metrics.
 
-![Metric 1](metric1.png)
+![Metric 1](higgs/metric1.png)
 
-![Metric 2](metric2.png)
+![Metric 2](higgs/metric2.png)
 
-![Metric 3](metric3.png)
+![Metric 3](higgs/metric3.png)
 
-![Metric 4](metric4.png)
+![Metric 4](higgs/metric4.png)
 
-![Metric 5](metric5.png)
+![Metric 5](higgs/metric5.png)
