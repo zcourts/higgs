@@ -4,7 +4,6 @@ import io.netty.bootstrap.Bootstrap
 import io.netty.channel._
 import io.netty.channel.socket.nio.{NioSocketChannel, NioEventLoopGroup}
 import io.netty.channel.socket.SocketChannel
-import io.netty.handler.codec.compression.{ZlibWrapper, ZlibCodecFactory}
 import io.netty.handler.codec.{MessageToByteEncoder, ByteToMessageDecoder}
 import java.net.ConnectException
 import java.nio.channels.ClosedChannelException
@@ -45,6 +44,7 @@ abstract case class Client[Topic, Msg, SerializedMsg](serviceName: String,
   var preEmptiveTimeout = 200
   var addedReconnectListeners = false
   var blockingConnect = false
+  var running = false
 
   /**
    * Connect to the remote host in preparation for interaction.
@@ -58,27 +58,7 @@ abstract case class Client[Topic, Msg, SerializedMsg](serviceName: String,
       .group(new NioEventLoopGroup)
       .channel(classOf[NioSocketChannel])
       .remoteAddress(host, port)
-      .handler(new ChannelInitializer[SocketChannel]() {
-      def initChannel(ch: SocketChannel) {
-        val pipeline = ch.pipeline()
-        if (usingSSL) {
-          //add SSL first if enabled
-          ssl(pipeline)
-        }
-        if (compress) {
-          // Enable stream compression
-          pipeline.addLast("deflater", ZlibCodecFactory.newZlibEncoder(ZlibWrapper.GZIP))
-          pipeline.addLast("inflater", ZlibCodecFactory.newZlibDecoder(ZlibWrapper.GZIP))
-        }
-        if (!usingCodec) {
-          // Add the encoder/decoder
-          pipeline.addLast("decoder", decoder())
-          pipeline.addLast("encoder", encoder())
-        }
-        //messaging logic
-        handler(ch)
-      }
-    })
+      .handler(new ClientInitializer(this))
     val conFuture = bootstrap.connect()
     channel = conFuture.channel()
     if (usingSSL) {
@@ -121,21 +101,50 @@ abstract case class Client[Topic, Msg, SerializedMsg](serviceName: String,
   ++(Event.CHANNEL_INACTIVE, (ctx: ChannelHandlerContext, x: Option[Throwable]) => {
     connected = false
   })
-  //listen for when the client is connected
-  ++(Event.CHANNEL_ACTIVE, (ctx: ChannelHandlerContext, x: Option[Throwable]) => {
-    connected = true
-    log.info("Client connected to %s" format (serviceName))
-    //start sending any buffered messages
+
+  /**
+   *
+   * Starts up a thread via the existing {@link #threadPool}   takes messages off the unset
+   * messages queue and send them. If a callback is provided the it will not do this automatically
+   * the callback you provide must process unsent messages
+   * Called once when a client instance is created.
+   * Only call if {@connected} ==false OR you want multiple threads processing the
+   * unsent messages queue. Note its unlikely too many threads will yield any real benefit,
+   * moderate, 1 or 2 threads should be enough. Any more and the contention rate when reading
+   * from the queue will go up thus being counter productive as you're spending potentially more
+   * time locking tha you are sending...
+   * Also important to note is that this thread just sits in a loop, while(running)
+   * as such. if a callback is provided the callback should block when there is nothing for it
+   * to do.
+   * @param callback  A function to repeatedly execute while the client is running
+   */
+  def start(callback: () => Any = () => {
+    val msg = unsentMessages.take()
+    channel.write(serialize(msg))
+    channel.flush()
+  }) {
     threadPool.submit(new Runnable {
       def run() {
-        while (connected) {
-          val msg = unsentMessages.take()
-          channel.write(serialize(msg))
-          channel.flush()
+        running = true
+        while (running) {
+          callback()
         }
+        running = false
       }
     })
-  })
+  }
+
+  //call start once by default
+  start()
+
+  /**
+   * Set {@connected} to false causing the message processing thread to halt
+   * @return
+   */
+  def stop() = {
+    connected = false
+    this
+  }
 
   /**
    * Send a message to the server.If the client is not currently connected
