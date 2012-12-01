@@ -36,8 +36,9 @@ trait EventProcessor[T, M, SerializedMsg] {
   val availableProcessors = Runtime.getRuntime().availableProcessors()
   //http://www.informit.com/guides/content.aspx?g=dotnet&seqNum=588
   //yes, we're not doing .NET but its reasonable enough
-  val maxThreads = availableProcessors //* 25
-  val maxMessageProcessingThreads: Int = Double.box(maxThreads * 0.75).intValue()
+  val maxThreads = availableProcessors
+  //* 25
+  val maxMessageProcessingThreads: Int = math.max(Double.box(maxThreads * 0.75).intValue(), 1)
   val threadPool: ExecutorService = Executors.newFixedThreadPool(maxThreads)
   var messageProcessorTimeUnit = TimeUnit.SECONDS
   /**
@@ -67,6 +68,11 @@ trait EventProcessor[T, M, SerializedMsg] {
         }
       })
     }))
+  }
+
+  def shutdown() {
+    messageConsumers.shutdown()
+    messageProducers.shutdown()
   }
 
   /**
