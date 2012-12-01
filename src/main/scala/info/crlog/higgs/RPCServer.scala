@@ -22,10 +22,10 @@ abstract class RPCServer[M](host: String, port: Int, compress: Boolean)(implicit
    * @param pkg Fully qualified package name as in com.domain.product
    */
   def registerPackage(pkg: String) {
-    log.info("Registering package %s" format (pkg))
+    log.debug("Registering package %s" format (pkg))
     PackageScanner.get(pkg) foreach {
       case klass => {
-        log.info("Class %s found" format (klass.getName))
+        log.debug("Class %s found" format (klass.getName))
         register(klass)
       }
     }
@@ -60,7 +60,7 @@ abstract class RPCServer[M](host: String, port: Int, compress: Boolean)(implicit
    */
   def register(obj: Any) {
     val klass = obj.asInstanceOf[AnyRef].getClass
-    log.info("Registering methods of %s" format (klass.getName))
+    log.debug("Registering methods of %s" format (klass.getName))
     //is the annotation applied to the whole class or not?
     val registerAllMethods = klass.isAnnotationPresent(classOf[method])
     val methods = klass.getMethods //get the class' methods
@@ -103,7 +103,8 @@ abstract class RPCServer[M](host: String, port: Int, compress: Boolean)(implicit
       klass.getName + "." + method.getName
     }
     doListen(methodName, method, instance)
-    log.info("Method %s registered with name (topic) %s" format(method.getName, methodName))
+    log.debug("Method %s registered with name (topic) %s" format(method.getName, methodName))
+    log.info("%s -> method:\"%s\" returns:\"%s\"" format(method.getName, methodName, method.getReturnType().getName()))
   }
 
   /**
