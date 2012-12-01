@@ -95,7 +95,7 @@ abstract case class Client[Topic, Msg, SerializedMsg](serviceName: String,
 
 
   def handler(ch: SocketChannel) {
-    ch.pipeline().addLast("handler", clientHandler)
+    new HiggsChannelPropertyWorkAround(ch, clientHandler)
   }
 
   ++(Event.CHANNEL_INACTIVE, (ctx: ChannelHandlerContext, x: Option[Throwable]) => {

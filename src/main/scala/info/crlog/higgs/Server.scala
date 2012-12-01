@@ -4,10 +4,9 @@ import io.netty.bootstrap.ServerBootstrap
 import io.netty.channel._
 import io.netty.channel.socket.nio.{NioEventLoopGroup, NioServerSocketChannel}
 import io.netty.channel.socket.SocketChannel
-import io.netty.handler.codec.compression.{ZlibWrapper, ZlibCodecFactory}
 import io.netty.handler.codec.{MessageToByteEncoder, ByteToMessageDecoder}
 import info.crlog.higgs.Event._
-import java.util.concurrent.{LinkedBlockingQueue, ConcurrentHashMap}
+import java.util.concurrent.ConcurrentHashMap
 
 
 abstract class Server[T, M, SM](host: String, port: Int, var compress: Boolean = true)
@@ -28,27 +27,7 @@ abstract class Server[T, M, SM](host: String, port: Int, var compress: Boolean =
     bootstrap.group(new NioEventLoopGroup, new NioEventLoopGroup)
       .channel(classOf[NioServerSocketChannel])
       .localAddress(host, port)
-      .childHandler(new ChannelInitializer[SocketChannel]() {
-      def initChannel(ch: SocketChannel) {
-        val pipeline: ChannelPipeline = ch.pipeline
-        if (usingSSL) {
-          //add SSL first if enabled
-          ssl(pipeline)
-        }
-        if (compress) {
-          // Enable stream compression
-          pipeline.addLast("deflater", ZlibCodecFactory.newZlibEncoder(ZlibWrapper.GZIP))
-          pipeline.addLast("inflater", ZlibCodecFactory.newZlibDecoder(ZlibWrapper.GZIP))
-        }
-        if (!usingCodec) {
-          // Add the encoder/decoder
-          pipeline.addLast("decoder", decoder())
-          pipeline.addLast("encoder", encoder())
-        }
-        //messaging logic
-        handler(ch)
-      }
-    })
+      .childHandler(new ServerInitializer(this))
     bootstrap
       .bind()
       .sync()
@@ -73,7 +52,7 @@ abstract class Server[T, M, SM](host: String, port: Int, var compress: Boolean =
   def encoder(): MessageToByteEncoder[SM]
 
   def handler(ch: SocketChannel) {
-    ch.pipeline().addLast("handler", handler)
+    new HiggsChannelPropertyWorkAround(ch, handler)
   }
 
   //  def allTopicsKey(): T
