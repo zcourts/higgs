@@ -1,25 +1,44 @@
 package info.crlog.higgs.protocols.http
 
 import java.net.URL
+import java.nio.file.Files
 
 /**
  * @author Courtney Robinson <courtney@crlog.info>
  */
 object HttpDemo {
   def main(args: Array[String]) {
-    val client = new HttpClient()
-    client.GET(new URL("https://api.twitter.com/1.1/statuses/home_timeline.json"), (res: HTTPResponse) => {
-      println("Twitter")
-      println(res)
+    val file = Files.createTempFile("higgs.test", ".tmp").toFile()
+    val client = new HttpRequestBuilder()
+    //    for (x <- 1 to 100) {
+    client.query("a", "b")
+      //        .query("c", x)
+      .cookie("c", "d")
+      .header("X-val", "yes")
+      .compress(true)
+      .url(new URL("https://httpbin.org/delete"))
+      .DELETE()
+      .build((r) => {
+      println(r)
     })
-//    println("xyx")
-//    client.POST(new URL("http://httpbin.org/post?a=123&b=4"), (res: HTTPResponse) => {
-//      println(res)
-//    }, Map("a" -> 124, "123" -> "10656755") )
-    //    TODO
-    //    val ssl = new HttpRequest(new URL("https://graph.facebook.com/me/feed?access_token=AAAC9iVp3fpoBAGuVHs63PfduHzKrZAMC88CavXOjTGKXFfIDZB76hXVWLlu48IZBZAVZAkELNdNQARBTv4w3hRs2sswWX5AV6maiCgzVC8QZDZD"), HttpMethod.GET)
-    //    ssl.send((res: HTTPResponse) => {
-    //      println(res)
-    //    })
+      .url(new URL("https://httpbin.org/get"))
+      .GET()
+      .build((r) => {
+      println(r)
+    })
+      .url(new URL("https://httpbin.org/post"))
+      .POST()
+      .file(new HttpFile("post.txt", file))
+      .form("name", "Courtney")
+      .build((r) => {
+      println(r)
+    })
+      .url(new URL("https://httpbin.org/put"))
+      .PUT()
+      .form("name", "Courtney Robinson")
+      .build((r) => {
+      println(r)
+    })
+    //    }
   }
 }
