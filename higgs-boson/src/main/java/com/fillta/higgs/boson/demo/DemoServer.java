@@ -12,8 +12,7 @@ import io.netty.channel.ChannelHandlerContext;
 public class DemoServer {
     public static void main(String... args) {
         BosonServer server = new BosonServer(8080);
-        //x messages processed per thread
-//        server.setQueueingStrategyAsBlockingQueue();
+        server.setQueueingStrategyAsBlockingQueue();
         server.bind();
         server.on(HiggsEvent.EXCEPTION_CAUGHT, new ChannelEventListener() {
             public void triggered(ChannelHandlerContext ctx, Optional<Throwable> ex) {

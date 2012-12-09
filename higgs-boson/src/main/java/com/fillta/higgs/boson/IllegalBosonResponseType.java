@@ -1,11 +1,15 @@
 package com.fillta.higgs.boson;
 
-/**
- * Created with IntelliJ IDEA.
- * User: Courtney
- * Date: 09/12/12
- * Time: 05:25
- * To change this template use File | Settings | File Templates.
- */
-public class IllegalBosonResponseType {
+public class IllegalBosonResponseType extends RuntimeException {
+    /**
+     * When a server responds with an object, if the client expects a different type
+     * this field will be an instance of the object returned. The client can determine
+     * what to do with it.
+     */
+    public final Object param;
+
+    public IllegalBosonResponseType(Object param, Throwable cause) {
+        super("Invalid response", cause);
+        this.param = param;
+    }
 }

@@ -10,12 +10,10 @@ public class Listener {
     public void ignoredMethod() {
     }
 
-    int c = 0;
-
     @method("name")
-    public void name(int a) {
-        c++;
-        System.out.println(c + ":" + a);
+    public int name(int a) {
+        System.out.println(a);
+        return a;
     }
 
     @method("age")
