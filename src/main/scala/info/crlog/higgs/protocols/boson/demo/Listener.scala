@@ -1,6 +1,7 @@
 package info.crlog.higgs.protocols.boson.demo
 
 import info.crlog.higgs.method
+import com.fillta.higgs.boson.demo.PoloExample
 
 /**
  * @author Courtney Robinson <courtney@crlog.info>
@@ -18,6 +19,14 @@ class Listener {
   }
 
   var count = 0
+  new Thread(new Runnable {
+    def run() {
+      while (true) {
+        println(count)
+        Thread.sleep(1000)
+      }
+    }
+  }).start()
 
   @method("all")
   def all(
@@ -28,14 +37,14 @@ class Listener {
            list: List[String],
            polo: PoloExample
            ) = {
-    println(
-      a, b, nullObj,
-      m,
-      arr.mkString("[", ",", "]"),
-      bool, str, list, polo
-    )
+    //    println(
+    //      a, b, nullObj,
+    //      m,
+    //      arr.mkString("[", ",", "]"),
+    //      bool, str, list, polo
+    //    )
     count += 1
-    println(count)
+    //    println(count)
     Array(a, b, nullObj, m, arr, bool, str, list, polo)
   }
 

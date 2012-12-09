@@ -41,7 +41,7 @@ class HttpRequestBuilder {
   var multiPart = true
   val requestHeaders: Map[String, Any] = Map.empty[String, Any]
   val requestCookies: Map[String, Any] = Map.empty[String, Any]
-  var compressionEnabled: Boolean = false
+  var compressionEnabled: Boolean = true
   var shutdownAfter: Boolean = true
   var httpVersion: HttpVersion = HttpVersion.HTTP_1_1
   var addDefaultHeaders: Boolean = true
@@ -75,11 +75,15 @@ class HttpRequestBuilder {
   DiskAttribute.baseDirectory = null
 
   def path(): String = {
-    if (url().getPath().isEmpty) {
+    var path = if (url().getPath().isEmpty) {
       "/"
     } else {
       url().getPath()
     }
+    if (url().getQuery()!=null && !url().getQuery().isEmpty()) {
+      path += "?" + url().getQuery()
+    }
+    path
   }
 
   /**

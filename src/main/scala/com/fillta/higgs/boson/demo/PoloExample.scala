@@ -1,4 +1,4 @@
-package info.crlog.higgs.protocols.boson.demo
+package com.fillta.higgs.boson.demo
 
 import info.crlog.higgs.protocols.boson.v1.BosonProperty
 
@@ -68,7 +68,7 @@ class NestedField {
   var b = 0L
   var c = 0D
   var d = 0F
-  var map = Map("0 dim" -> "map")
+  var map = Map("0 dim" -> "map", "sum" -> "bing bong", "bah" -> 12345)
 
   override def toString = {
     val buf = new StringBuilder()

@@ -1,6 +1,7 @@
 package info.crlog.higgs.protocols.boson.demo
 
 import info.crlog.higgs.protocols.boson.BosonClient
+import com.fillta.higgs.boson.demo.{NestedField, PoloExample}
 
 
 /**
@@ -8,32 +9,29 @@ import info.crlog.higgs.protocols.boson.BosonClient
  */
 object DemoClient {
   def main(args: Array[String]) {
-    val client = new BosonClient("BosonTest", 12001, "localhost")
+    val client = new BosonClient("BosonTest", 8080, "localhost")
     client.connect()
     var count = 0
     val max = readInt()
+    val polo = new PoloExample(100)
     for (i <- 1 to max) {
-      val polo = new PoloExample(100)
-      polo.i = i
-      polo.name = "name-" + i
-      polo.nested.list = List("12345", "£", "£", "$")
-      val nf = new NestedField
-      nf.map = Map("£_$" -> "%")
-      nf.a = (i * math.random).toInt
-      nf.b = (i * math.random).toLong
-      nf.c = i * math.random
-      nf.d = (i * math.random).toFloat
-      polo.nested.array = Array(nf)
-      client.invoke("all",
-        Array(1.2F, 140, null, Map("a" -> 120), Array(1, 2, 356), false, "a string",
-          List("Some List"), polo),
-        (m: Array[AnyRef]) => {
-          //          for (i <- m) {
-          //            println(i)
-          //          }
+      client.invoke("polo",
+        Array(polo),
+        (m: PoloExample) => {
+          println(m)
           count += 1
-         // println(count)
+          // println(count)
         }, subscribe = false)
+      //      client.invoke("all",
+      //        Array(1.2F, 140, null, Map("a" -> 120), Array(1, 2, 356), false, "a string",
+      //          List("Some List"), polo),
+      //        (m: Array[AnyRef]) => {
+      //          //          for (i <- m) {
+      //          //            println(i)
+      //          //          }
+      //          count += 1
+      //         // println(count)
+      //        }, subscribe = false)
     }
   }
 }

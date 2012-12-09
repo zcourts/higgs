@@ -51,12 +51,21 @@ class RequestProcessor extends Client[String, HTTPResponse, AnyRef]("HttpClient"
       response.transferEncoding = res.getTransferEncoding()
       if (res.getTransferEncoding.isMultiple) {
         ctx.channel().attr(attChunks).set(true)
+        if(res.isInstanceOf[HttpChunk] && res.asInstanceOf[HttpChunk].isLast()){
+          ctx.channel().attr(attChunks).set(false)
+          response.data append res.asInstanceOf[HttpChunk].getContent.toString(CharsetUtil.UTF_8)
+          //fire message received
+          notifySubscribers(ctx.channel(), requestID, response)
+        }
       } else {
         val content: ByteBuf = res.getContent
         if (content.readable) {
           //fire message received
           response.data append content.toString(CharsetUtil.UTF_8)
           notifySubscribers(ctx.channel(), requestID, response)
+        }else{
+          log.warn("Response received but is not readable. \nID:%s \ncontent:%s".format(
+            requestID,content.toString(CharsetUtil.UTF_8)))
         }
       }
     } else {
@@ -74,105 +83,99 @@ class RequestProcessor extends Client[String, HTTPResponse, AnyRef]("HttpClient"
   }
 
   def getOrDelete[U](req: HttpRequestBuilder, responseListener: (HTTPResponse) => U) {
-    //get requests are simple and only require this
-    val request = createRequest(req)
-    request.setMethod(req.requestMethod)
-    val bootstrap = newBootstrap(req)
-    val conFuture = bootstrap.connect
-    conFuture.sync
-    val channel: Channel = conFuture.channel
-    //try to use a unique ID as opposed to just the URL because multiple request can go to the
-    // same URLwith different callbacks which could cause the wrong callback to be invoked
-    val id = req.url().toString + System.nanoTime()
-    channel.attr(attTopic).set(id)
-    //listen for response
-    listen(id, (ch, res) => {
-      responseListener(res)
-    })
-    val l = conFuture.addListener(new ChannelFutureListener {
-      def operationComplete(f: ChannelFuture) {
-        if (f.isSuccess) {
-          channel.attr(attReq).set(req)
-          channel.write(request)
-          //TODO causes BlockingOpEx
-          //channel.closeFuture.sync
-        }
+    threadPool.submit(new Runnable {
+      def run() {
+        //get requests are simple and only require this
+        val request = createRequest(req)
+        request.setMethod(req.requestMethod)
+        val bootstrap = newBootstrap(req)
+        val conFuture = bootstrap.connect
+        conFuture.sync
+        val channel: Channel = conFuture.channel
+        //try to use a unique ID as opposed to just the URL because multiple request can go to the
+        // same URLwith different callbacks which could cause the wrong callback to be invoked
+        val id = req.url().toString + System.nanoTime()
+        channel.attr(attTopic).set(id)
+        //listen for response
+        listen(id, (ch, res) => {
+          responseListener(res)
+        })
+        channel.attr(attReq).set(req)
+        channel.write(request)
+        //channel.closeFuture.sync
       }
     })
   }
 
   def postOrPut[U](req: HttpRequestBuilder, responseListener: (HTTPResponse) => U) {
-    //get requests are simple and only require this
-    val request = createRequest(req)
-    request.setMethod(req.requestMethod)
-    // setup the factory: here using a mixed memory/disk based on size threshold
-    val factory: HttpDataFactory = new DefaultHttpDataFactory(DefaultHttpDataFactory.MINSIZE)
-    //if user explicitly sets multi-part to false then only file name is sent otherwise
-    //if at least 1 file is supplied it is multi-part
-    val multiPart = req.multiPart && (req.formMultiFiles.size > 0 || req.formFiles.size > 0)
-    //create a new POST encoder, if files are to be uploaded make it a multipart form (last param)
-    val encoder = new HttpPostRequestEncoder(factory, request, multiPart)
-    //add form params
-    req.formParameters.foreach((kv) => {
-      val name = kv._1
-      val value = kv._2
-      encoder.addBodyAttribute(name, value.toString())
-    })
-    //add form Files, if any
-    req.formFiles.foreach((file) => {
-      encoder.addBodyFileUpload(file.name, file.file, file.contentType, file.isText)
-    })
-    //add multiple files under the same name
-    req.formMultiFiles.foreach((kv) => {
-      val name = kv._1
-      val files = kv._2
-      val arrFiles = new Array[File](files.size)
-      val arrContentType = new Array[String](files.size)
-      val arrIsText = new Array[Boolean](files.size)
+    threadPool.submit(new Runnable {
+      def run() {
+        //get requests are simple and only require this
+        val request = createRequest(req)
+        request.setMethod(req.requestMethod)
+        // setup the factory: here using a mixed memory/disk based on size threshold
+        val factory: HttpDataFactory = new DefaultHttpDataFactory(DefaultHttpDataFactory.MINSIZE)
+        //if user explicitly sets multi-part to false then only file name is sent otherwise
+        //if at least 1 file is supplied it is multi-part
+        val multiPart = req.multiPart && (req.formMultiFiles.size > 0 || req.formFiles.size > 0)
+        //create a new POST encoder, if files are to be uploaded make it a multipart form (last param)
+        val encoder = new HttpPostRequestEncoder(factory, request, multiPart)
+        //add form params
+        req.formParameters.foreach((kv) => {
+          val name = kv._1
+          val value = kv._2
+          encoder.addBodyAttribute(name, value.toString())
+        })
+        //add form Files, if any
+        req.formFiles.foreach((file) => {
+          encoder.addBodyFileUpload(file.name, file.file, file.contentType, file.isText)
+        })
+        //add multiple files under the same name
+        req.formMultiFiles.foreach((kv) => {
+          val name = kv._1
+          val files = kv._2
+          val arrFiles = new Array[File](files.size)
+          val arrContentType = new Array[String](files.size)
+          val arrIsText = new Array[Boolean](files.size)
 
-      for (i <- 0 until files.size) {
-        arrFiles(i) = files(i).file
-        arrContentType(i) = files(i).contentType
-        arrIsText(i) = files(i).isText
-      }
-      encoder.addBodyFileUploads(name, arrFiles, arrContentType, arrIsText)
-    })
-    try {
-      //encode
-      encoder.finalizeRequest()
-      val bootstrap = newBootstrap(req)
-      val conFuture = bootstrap.connect
-      conFuture.sync
-      val channel: Channel = conFuture.channel
-      //try to use a unique ID as opposed to just the URL because multiple request can go to the
-      // same URLwith different callbacks which could cause the wrong callback to be invoked
-      val id = req.url().toString + System.nanoTime()
-      channel.attr(attTopic).set(id)
-      //listen for response
-      listen(id, (ch, res) => {
-        responseListener(res)
-      })
-      val l = conFuture.addListener(new ChannelFutureListener {
-        def operationComplete(f: ChannelFuture) {
-          if (f.isSuccess) {
-            channel.attr(attReq).set(req)
-            channel.write(request)
-            // test if request was chunked and if so, finish the write
-            if (encoder.isChunked()) {
-              channel.write(encoder) //.awaitUninterruptibly
-            }
-            //TODO causes BlockingOpEx
-            //channel.closeFuture.sync
+          for (i <- 0 until files.size) {
+            arrFiles(i) = files(i).file
+            arrContentType(i) = files(i).contentType
+            arrIsText(i) = files(i).isText
+          }
+          encoder.addBodyFileUploads(name, arrFiles, arrContentType, arrIsText)
+        })
+        try {
+          //encode
+          encoder.finalizeRequest()
+          val bootstrap = newBootstrap(req)
+          val conFuture = bootstrap.connect
+          conFuture.sync
+          val channel: Channel = conFuture.channel
+          //try to use a unique ID as opposed to just the URL because multiple request can go to the
+          // same URLwith different callbacks which could cause the wrong callback to be invoked
+          val id = req.url().toString + System.nanoTime()
+          channel.attr(attTopic).set(id)
+          //listen for response
+          listen(id, (ch, res) => {
+            responseListener(res)
+          })
+          channel.attr(attReq).set(req)
+          channel.write(request)
+          // test if request was chunked and if so, finish the write
+          if (encoder.isChunked()) {
+            channel.write(encoder) //.awaitUninterruptibly
+          }
+          //channel.closeFuture.sync
+        } catch {
+          case e => {
+            log.error("Unable to send %s request and exception occurred." +
+              " Perhaps you created a malformed or incomplete request" format (req.requestMethod), e)
           }
         }
-      })
-    } catch {
-      case e => {
-        log.error("Unable to send %s request and exception occurred." +
-          " Perhaps you created a malformed or incomplete request" format (req.requestMethod), e)
+        encoder.cleanFiles()
       }
-    }
-    encoder.cleanFiles()
+    })
   }
 
   /**
@@ -182,7 +185,7 @@ class RequestProcessor extends Client[String, HTTPResponse, AnyRef]("HttpClient"
    * @tparam U
    * @return
    */
-  def createRequest[U](req: HttpRequestBuilder): DefaultHttpRequest = {
+  def createRequest(req: HttpRequestBuilder): DefaultHttpRequest = {
     val encoder: QueryStringEncoder = new QueryStringEncoder(req.path())
     req.urlParameters.foreach((kv) => {
       encoder.addParam(kv._1, kv._2.toString())
