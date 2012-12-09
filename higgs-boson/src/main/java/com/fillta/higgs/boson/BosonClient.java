@@ -42,23 +42,21 @@ public class BosonClient extends HiggsClient<String, BosonMessage, BosonMessage,
     }
 
     public void connect(String serviceName, String host, int port,
-                        Function1<HiggsClientRequest<String, BosonMessage,
-                                BosonMessage, ByteBuf>> function) {
+                        Function1<BosonClientRequest> function) {
         connect(serviceName, host, port, false, false, function);
     }
 
     public void connect(String serviceName, String host, int port,
                         boolean decompress, boolean useSSL,
-                        Function1<HiggsClientRequest<String, BosonMessage,
-                                BosonMessage, ByteBuf>> function) {
+                        Function1<BosonClientRequest> function) {
         // connects with a new initializer
         connect(serviceName, host, port, decompress, useSSL,
                 initializer(decompress, decompress, useSSL), function);
     }
 
     @Override
-    protected HiggsClientRequest<String, BosonMessage, BosonMessage, ByteBuf> newClientRequest(HiggsClient<String, BosonMessage, BosonMessage, ByteBuf> client, String serviceName, String host, int port, boolean decompress, boolean useSSL, HiggsInitializer initializer) {
-        return new HiggsSingleMessageClientRequest<String, BosonMessage, ByteBuf>(
+    protected <H extends HiggsClientRequest<String, BosonMessage, BosonMessage, ByteBuf>> H newClientRequest(HiggsClient<String, BosonMessage, BosonMessage, ByteBuf> client, String serviceName, String host, int port, boolean decompress, boolean useSSL, HiggsInitializer initializer) {
+        return (H) new BosonClientRequest(
                 client, serviceName, host, port, decompress, useSSL, initializer
         );
     }
