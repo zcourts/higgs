@@ -27,12 +27,12 @@ public class DemoClient {
 
         client.connect("BosonDemo", "localhost", 8080, new Function1<BosonClientRequest>() {
             public void call(BosonClientRequest a) {
-                for (int i = 0; i < 1000000; i++) {
-                    a.invoke("name", new Function1<Integer>() {
-                        public void call(Integer a) {
+                for (int i = 0; i < 1000; i++) {
+                    a.invoke("polo", new Function1<PoloExample>() {
+                        public void call(PoloExample a) {
                             System.out.println(a);
                         }
-                    }, i);
+                    }, new PoloExample());
                 }
                 System.out.println("Done sending");
             }
