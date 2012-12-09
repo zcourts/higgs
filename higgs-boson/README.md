@@ -134,14 +134,14 @@ __Values can be empty but not names__. If a field name is null, skip and do not 
 RPC Serialization
 ---
 
-To allow for other data types to be added and be continuous both request and responses will use types starting from -127 in increasing order.
+To allow for other data types to be added and be continuous both connection and responses will use types starting from -127 in increasing order.
 
 # Request
 
-A request has 3 components to it.
+A connection has 3 components to it.
 
 1. __method__ - A remote method name, this is a __string__ of arbitrary length/content used to identify which method is invoked on the remote service.
-2. __callback__ - A __string__ which contains the name of the function to be invoked on the client when a response is received for a given request.
+2. __callback__ - A __string__ which contains the name of the function to be invoked on the client when a response is received for a given connection.
 3. __parameters__ - An __array__ of values, which can be any valid boson data type, these are the __ordered__ parameters that will be passed to the remote method.
 
 The order the method name, callback and parameters are sent in __must be (method,callback,parameters)__.
@@ -155,12 +155,12 @@ This will allow partial de-serialization and make de-serializing POLOs easier in
 
 ### Serialization
 
-1. Write the request type (-127,-126 or -125)
-2. Write the contents of the request type using the rules for that content's type ( e.g if its an int write int flag then the int)
+1. Write the connection type (-127,-126 or -125)
+2. Write the contents of the connection type using the rules for that content's type ( e.g if its an int write int flag then the int)
 
 # Response
 
-A request has 2 components to it.
+A connection has 2 components to it.
 
 1. __method__ - A __string__ which contains the name of the function to be invoked on the client when the response is received.
 3. __parameters__ - An __array__ of values, which can be any valid boson data type, these are the __ordered__ parameters that will be passed to the function on the client side.

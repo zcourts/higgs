@@ -14,25 +14,25 @@ import io.netty.handler.codec.MessageToByteEncoder;
  * @author Courtney Robinson <courtney@crlog.info>
  */
 public class BosonInitializer extends HiggsEncoderDecoderInitializer<ByteBuf, ByteBuf> {
-    EventProcessor events;
+	EventProcessor events;
 
-    public BosonInitializer(EventProcessor bosonServer, boolean inflate, boolean deflate, boolean ssl) {
-        super(inflate, deflate, ssl);
-        events = bosonServer;
-    }
+	public BosonInitializer(EventProcessor bosonServer, boolean inflate, boolean deflate, boolean ssl) {
+		super(inflate, deflate, ssl);
+		events = bosonServer;
+	}
 
-    @Override
-    public ChannelInboundMessageHandlerAdapter handler() {
-        return new HiggsEventHandlerProxy(events);
-    }
+	@Override
+	public ChannelInboundMessageHandlerAdapter handler() {
+		return new HiggsEventHandlerProxy(events);
+	}
 
-    @Override
-    public ByteToMessageDecoder<ByteBuf> decoder() {
-        return new BosonDecoder();
-    }
+	@Override
+	public ByteToMessageDecoder<ByteBuf> decoder() {
+		return new BosonDecoder();
+	}
 
-    @Override
-    public MessageToByteEncoder<ByteBuf> encoder() {
-        return new BosonEncoder();
-    }
+	@Override
+	public MessageToByteEncoder<ByteBuf> encoder() {
+		return new BosonEncoder();
+	}
 }

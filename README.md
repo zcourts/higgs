@@ -70,8 +70,8 @@ object HttpDemo {
       .headers(Map("X-a" -> 123, "X-b" -> "val"))
       .compress(true)
       .url(new URL("https://httpbin.org/delete"))
-      .DELETE() //http DELETE request
-      //build request and send
+      .DELETE() //http DELETE connection
+      //build connection and send
       .build((r) => {
       println(r) //print response
     })
@@ -100,9 +100,9 @@ object HttpDemo {
 //      .build((r) => {
 //      println(r)
 //    })
-    //notice all previous settings on the builder is kept and goes into the next request
-    //if you add files for e.g. and do a POST request then do a GET only settings supported by
-    //an HTTP GET request is used. to discard all previous settings use .clear() e.g.
+    //notice all previous settings on the builder is kept and goes into the next connection
+    //if you add files for e.g. and do a POST connection then do a GET only settings supported by
+    //an HTTP GET connection is used. to discard all previous settings use .clear() e.g.
     .clear() //now everything set previously has been discarded and a clean/new builder is returned
     .GET() //etc...
     //    }

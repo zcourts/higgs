@@ -9,12 +9,12 @@ import io.netty.channel.CombinedChannelHandler;
  * @author Courtney Robinson <courtney@crlog.info>
  */
 public abstract class HiggsEncoderDecoderInitializer<IM, OM> extends HiggsInitializer<IM, OM> {
-    public HiggsEncoderDecoderInitializer(boolean inflate, boolean deflate, boolean ssl) {
-        super(inflate, deflate, false, ssl);
-    }
+	public HiggsEncoderDecoderInitializer(boolean inflate, boolean deflate, boolean ssl) {
+		super(inflate, deflate, false, ssl);
+	}
 
-    @Override
-    public CombinedChannelHandler codec() {
-        return null;
-    }
+	@Override
+	public CombinedChannelHandler codec() {
+		return null;
+	}
 }

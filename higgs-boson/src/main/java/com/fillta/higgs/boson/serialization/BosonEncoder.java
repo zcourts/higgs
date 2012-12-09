@@ -8,8 +8,8 @@ import io.netty.handler.codec.MessageToByteEncoder;
  * @author Courtney Robinson <courtney@crlog.info>
  */
 public class BosonEncoder extends MessageToByteEncoder<ByteBuf> {
-    @Override
-    public void encode(ChannelHandlerContext ctx, ByteBuf msg, ByteBuf out) throws Exception {
-        out.writeBytes(msg);
-    }
+	@Override
+	public void encode(ChannelHandlerContext ctx, ByteBuf msg, ByteBuf out) throws Exception {
+		out.writeBytes(msg);
+	}
 }

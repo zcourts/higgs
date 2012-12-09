@@ -6,8 +6,11 @@ import com.fillta.higgs.http.client.HttpRequestBuilder;
 import com.fillta.higgs.http.client.PartialHttpFile;
 import com.fillta.higgs.util.Function1;
 
+import java.io.BufferedOutputStream;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
@@ -16,18 +19,18 @@ import java.util.Map;
  * @author Courtney Robinson <courtney@crlog.info>
  */
 public class Demo {
-    public static void main(String... args) throws IOException {
-//        File file = Files.createTempFile("higgs.test", ".tmp").toFile();
-        File file = new File("B:\\dev\\projects\\Higgs\\higgs-core\\src\\main\\resources\\ordering and visibility.png");
-        ArrayList<PartialHttpFile> files = new ArrayList();
-        files.add(new PartialHttpFile(file));
-        files.add(new PartialHttpFile(file));
-        Map params = new HashMap<String, Object>();
-        params.put("p", 1);
-        params.put("p", 2);
-        params.put("p2", "abc");
-        HttpRequestBuilder builder = new HttpRequestBuilder();
-        builder
+	public static void main(String... args) throws IOException {
+		File file = Files.createTempFile("higgs.test", ".tmp").toFile();
+		new BufferedOutputStream(new FileOutputStream(file)).write("Some random text".getBytes());
+		ArrayList<PartialHttpFile> files = new ArrayList();
+		files.add(new PartialHttpFile(file));
+		files.add(new PartialHttpFile(file));
+		Map params = new HashMap<String, Object>();
+		params.put("p", 1);
+		params.put("p", 2);
+		params.put("p2", "abc");
+		HttpRequestBuilder builder = new HttpRequestBuilder();
+		builder
 //                .url("http://httpbin.org/get")
 //                .GET()
 //                .query("a", 1)
@@ -46,19 +49,19 @@ public class Demo {
 //                        System.out.println(a);
 //                    }
 //                })
-                .url("http://httpbin.org/post")
+				.url("http://httpbin.org/post")
 //                .url("http://stuweb.cms.gre.ac.uk/~rc909/wad/item/create")
-                .POST()
-                .cookie("username", "courtney")
-                .cookie("id", 3)
-                .cookie("postcode", "cr8 4hb")
-                .form("title", "hacked upload")
-                .form("desc", "hacked upload desc")
-                .file(new HttpFile("images", file))
-                .build(new Function1<HTTPResponse>() {
-                    public void call(HTTPResponse a) {
-                        System.out.println(a);
-                    }
-                });
-    }
+				.POST()
+				.cookie("username", "courtney")
+				.cookie("id", 3)
+				.cookie("postcode", "cr8 4hb")
+				.form("title", "hacked upload")
+				.form("desc", "hacked upload desc")
+				.file(new HttpFile("images", file))
+				.build(new Function1<HTTPResponse>() {
+					public void call(HTTPResponse a) {
+						System.out.println(a);
+					}
+				});
+	}
 }

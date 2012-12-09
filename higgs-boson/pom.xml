@@ -3,7 +3,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.fillta</groupId>
     <artifactId>higgs-boson</artifactId>
-    <version>{$project.version}</version>
+    <version>0.0.1-SNAPSHOT</version>
     <name>${project.artifactId}</name>
     <packaging>jar</packaging>
     <description>Higgs' Boson protocol implementation</description>
@@ -18,7 +18,7 @@
         <dependency>
             <groupId>com.fillta</groupId>
             <artifactId>higgs-core</artifactId>
-            <version>{$project.version}</version>
+            <version>0.0.1-SNAPSHOT</version>
         </dependency>
     </dependencies>
 

@@ -66,85 +66,85 @@ import java.util.Set;
  * @author Courtney Robinson <courtney@crlog.info>
  */
 public abstract class QueueingStrategy<T, IM> {
-    public final ArrayListMultimap<T, Function1<ChannelMessage<IM>>> messageSubscribers = ArrayListMultimap.create();
-    public final Set<Function1<ChannelMessage<IM>>> allMessageSubscribers = new HashSet<>();
-    protected MessageTopicFactory<T, IM> topicFactory;
-    protected Logger log = LoggerFactory.getLogger(getClass());
+	public final ArrayListMultimap<T, Function1<ChannelMessage<IM>>> messageSubscribers = ArrayListMultimap.create();
+	public final Set<Function1<ChannelMessage<IM>>> allMessageSubscribers = new HashSet<>();
+	protected MessageTopicFactory<T, IM> topicFactory;
+	protected Logger log = LoggerFactory.getLogger(getClass());
 
-    public QueueingStrategy(MessageTopicFactory<T, IM> topicFactory) {
-        this.topicFactory = topicFactory;
-    }
+	public QueueingStrategy(MessageTopicFactory<T, IM> topicFactory) {
+		this.topicFactory = topicFactory;
+	}
 
-    /**
-     * Invoked when a message is received.
-     * Implementations are expected to take the message,
-     * 1) queue it if necessary,
-     * 2) get the topic from the message
-     * 3) invoke the message subscribers for the topic that are registered in the
-     * associated {@link com.fillta.higgs.EventProcessor}.
-     *
-     * @param ctx the channel context
-     * @param msg the message to queue
-     */
-    public abstract void enqueue(ChannelHandlerContext ctx, IM msg);
+	/**
+	 * Invoked when a message is received.
+	 * Implementations are expected to take the message,
+	 * 1) queue it if necessary,
+	 * 2) get the topic from the message
+	 * 3) invoke the message subscribers for the topic that are registered in the
+	 * associated {@link com.fillta.higgs.EventProcessor}.
+	 *
+	 * @param ctx the channel context
+	 * @param msg the message to queue
+	 */
+	public abstract void enqueue(ChannelHandlerContext ctx, IM msg);
 
-    /**
-     * Subscribes a function/callback to the given topic
-     *
-     * @param topic    the topic to listen to
-     * @param function the callback to be invoked
-     */
-    public void listen(T topic, Function1<ChannelMessage<IM>> function) {
-        messageSubscribers.put(topic, function);
-    }
+	/**
+	 * Subscribes a function/callback to the given topic
+	 *
+	 * @param topic    the topic to listen to
+	 * @param function the callback to be invoked
+	 */
+	public void listen(T topic, Function1<ChannelMessage<IM>> function) {
+		messageSubscribers.put(topic, function);
+	}
 
-    /**
-     * Subscribes the given function to <em>all</em> messages/events.
-     *
-     * @param function
-     */
-    public void listen(Function1<ChannelMessage<IM>> function) {
-        allMessageSubscribers.add(function);
-    }
+	/**
+	 * Subscribes the given function to <em>all</em> messages/events.
+	 *
+	 * @param function
+	 */
+	public void listen(Function1<ChannelMessage<IM>> function) {
+		allMessageSubscribers.add(function);
+	}
 
-    /**
-     * @param topic the topic to check
-     * @return true if at least one function is subscribed to the given topic
-     */
-    public boolean listening(T topic) {
-        return messageSubscribers.containsKey(topic);
-    }
+	/**
+	 * @param topic the topic to check
+	 * @return true if at least one function is subscribed to the given topic
+	 */
+	public boolean listening(T topic) {
+		return messageSubscribers.containsKey(topic);
+	}
 
-    /**
-     * @param topic Removes all functions subscribed to the given topic
-     * @return the list of removed functions
-     */
-    public List<Function1<ChannelMessage<IM>>> removeAll(T topic) {
-        return messageSubscribers.removeAll(topic);
-    }
+	/**
+	 * @param topic Removes all functions subscribed to the given topic
+	 * @return the list of removed functions
+	 */
+	public List<Function1<ChannelMessage<IM>>> removeAll(T topic) {
+		return messageSubscribers.removeAll(topic);
+	}
 
-    /**
-     * Invoke all listeners to the given message on the current thread.
-     *
-     * @param ctx
-     * @param msg
-     */
-    public void invokeListeners(ChannelHandlerContext ctx, IM msg) {
-        T topic = topicFactory.extract(msg);
-        ChannelMessage a = new ChannelMessage(ctx, msg);
-        //functions subscribed to "all" messages (note: new ArrayList(collection) copies)
-        List<Function1<ChannelMessage<IM>>> listeners = new ArrayList<>(allMessageSubscribers);
-        for (Function1<ChannelMessage<IM>> function : listeners) {
-            function.call(a);
-        }
-        //now process functions subscribed only to this message's topic
-        listeners = new ArrayList<>(messageSubscribers.get(topic));
-        for (Function1<ChannelMessage<IM>> function : listeners) {
-            function.call(a);
-        }
-        //only incoming messages count
-        if (listeners.size() == 0 && !a.isOutGoing) {
-            log.warn(String.format("Message received and decoded but no listeners found. Topic:%s", topic));
-        }
-    }
+	/**
+	 * Invoke all listeners to the given message on the current thread.
+	 *
+	 * @param ctx
+	 * @param msg
+	 */
+	public void invokeListeners(ChannelHandlerContext ctx, IM msg) {
+		T topic = topicFactory.extract(msg);
+		ChannelMessage a = new ChannelMessage(ctx, msg);
+		//functions subscribed to "all" messages (note: new ArrayList(collection) copies)
+		List<Function1<ChannelMessage<IM>>> listeners = new ArrayList<>(allMessageSubscribers);
+		for (Function1<ChannelMessage<IM>> function : listeners) {
+			function.call(a);
+		}
+		//now process functions subscribed only to this message's topic
+		listeners = new ArrayList<>(messageSubscribers.get(topic));
+		for (Function1<ChannelMessage<IM>> function : listeners) {
+			function.call(a);
+		}
+		//only incoming messages count
+		if (listeners.size() == 0 && !a.isOutGoing) {
+			log.warn(String.format("Message received and decoded but no listeners found. Topic:%s", topic));
+		}
+	}
 }

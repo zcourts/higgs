@@ -12,19 +12,19 @@ import java.io.File;
  * @author Courtney Robinson <courtney@crlog.info>
  */
 public class PartialHttpFile extends HttpFile {
-    private final String name;
+	private final String name;
 
-    public PartialHttpFile(File file) {
-        this(file, false);
-    }
+	public PartialHttpFile(File file) {
+		this(file, false);
+	}
 
-    public PartialHttpFile(File file, boolean isText) {
-        this(file, null, isText);
-        contentType(file.getName(), file);
-    }
+	public PartialHttpFile(File file, boolean isText) {
+		this(file, null, isText);
+		contentType(file.getName(), file);
+	}
 
-    public PartialHttpFile(File file, String contentType, boolean isText) {
-        super(null, file, contentType, isText);
-        name = null;
-    }
+	public PartialHttpFile(File file, String contentType, boolean isText) {
+		super(null, file, contentType, isText);
+		name = null;
+	}
 }

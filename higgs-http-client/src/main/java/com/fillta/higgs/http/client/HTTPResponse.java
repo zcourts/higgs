@@ -12,14 +12,14 @@ import java.util.Map;
  * @author Courtney Robinson <courtney@crlog.info>
  */
 public class HTTPResponse {
-    public String requestID;
-    public HttpTransferEncoding transferEncoding;
-    public HttpVersion protocolVersion;
-    public HttpResponseStatus status;
-    public final StringBuilder data = new StringBuilder();
-    public final Map<String, ArrayList<String>> headers = new HashMap();
+	public String requestID;
+	public HttpTransferEncoding transferEncoding;
+	public HttpVersion protocolVersion;
+	public HttpResponseStatus status;
+	public final StringBuilder data = new StringBuilder();
+	public final Map<String, ArrayList<String>> headers = new HashMap();
 
-    public String toString() {
-        return String.format("%s\n %s\n %s\n %s\n %s\n", status, transferEncoding, protocolVersion, headers, data.toString());
-    }
+	public String toString() {
+		return String.format("%s\n %s\n %s\n %s\n %s\n", status, transferEncoding, protocolVersion, headers, data.toString());
+	}
 }

@@ -11,17 +11,17 @@ import io.netty.handler.codec.MessageToByteEncoder;
  * @author Courtney Robinson <courtney@crlog.info>
  */
 public abstract class HiggsCodecInitializer<IM, OM> extends HiggsInitializer<IM, OM> {
-    public HiggsCodecInitializer(boolean inflate, boolean deflate, boolean ssl) {
-        super(inflate, deflate, true, ssl);
-    }
+	public HiggsCodecInitializer(boolean inflate, boolean deflate, boolean ssl) {
+		super(inflate, deflate, true, ssl);
+	}
 
-    @Override
-    public ByteToMessageDecoder<IM> decoder() {
-        return null;
-    }
+	@Override
+	public ByteToMessageDecoder<IM> decoder() {
+		return null;
+	}
 
-    @Override
-    public MessageToByteEncoder<OM> encoder() {
-        return null;
-    }
+	@Override
+	public MessageToByteEncoder<OM> encoder() {
+		return null;
+	}
 }

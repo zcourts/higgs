@@ -8,5 +8,5 @@ package com.fillta.higgs;
  * @author Courtney Robinson <courtney@crlog.info>
  */
 public interface MessageTopicFactory<T, IM> {
-    public T extract(IM msg);
+	public T extract(IM msg);
 }

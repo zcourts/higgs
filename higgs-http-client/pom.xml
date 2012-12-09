@@ -3,7 +3,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.fillta</groupId>
     <artifactId>higgs-http-client</artifactId>
-    <version>{$project.version}</version>
+    <version>0.0.1-SNAPSHOT</version>
     <name>${project.artifactId}</name>
     <description>Higgs HTTP Client</description>
     <packaging>jar</packaging>
@@ -17,7 +17,7 @@
         <dependency>
             <groupId>com.fillta</groupId>
             <artifactId>higgs-core</artifactId>
-            <version>{$project.version}</version>
+            <version>0.0.1-SNAPSHOT</version>
         </dependency>
     </dependencies>
 
