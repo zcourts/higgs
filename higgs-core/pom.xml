@@ -1,0 +1,25 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>com.fillta</groupId>
+    <artifactId>higgs-core</artifactId>
+    <version>{$project.version}</version>
+    <name>${project.artifactId}</name>
+    <packaging>jar</packaging>
+    <description>Core API and interfaces for Higgs</description>
+    <!-- Inherit most settings from parent project -->
+    <parent>
+        <groupId>com.fillta</groupId>
+        <artifactId>higgs</artifactId>
+        <relativePath>../pom.xml</relativePath>
+        <version>0.0.1-SNAPSHOT</version>
+    </parent>
+    <dependencies>
+        <dependency>
+            <groupId>io.netty</groupId>
+            <artifactId>netty</artifactId>
+            <version>4.0.1.Alpha8-SNAPSHOT</version>
+        </dependency>
+    </dependencies>
+
+</project>
