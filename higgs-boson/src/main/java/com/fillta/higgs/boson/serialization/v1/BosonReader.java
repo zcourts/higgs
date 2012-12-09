@@ -373,7 +373,7 @@ public class BosonReader {
         }
     }
 
-    public boolean readPolo(boolean verified, int verifiedType) {
+    public Object readPolo(boolean verified, int verifiedType) {
         int type = verifiedType;
         if (!verified) {
             type = data.readByte();
@@ -389,7 +389,7 @@ public class BosonReader {
             int size = data.readInt();
             //try to load the class if available
             try {
-                Class<?> klass = null;
+                Class<?> klass;
                 try {
                     klass = loader.loadClass(poloClassName);
                 } catch (ClassNotFoundException e) {
@@ -436,11 +436,11 @@ public class BosonReader {
                                 for (int j = 0; j < length; j++) {
                                     try {
                                         //get current array value
-                                        Object arrayValue = Array.get(value, i);
-                                        Array.set(arr, i, arrayValue); //set the value at the current index, i
+                                        Object arrayValue = Array.get(value, j);
+                                        Array.set(arr, j, arrayValue); //set the value at the current index, i
                                     } catch (IllegalArgumentException iae) {
                                         log.warn(String.format("Field \":%s\" of class \"%s\" is an array but failed to set value at index \"%s\" - type \"%s\"",
-                                                key, klass.getName(), i, cname));
+                                                key, klass.getName(), j, cname));
                                     }
                                 }
                                 try {
@@ -456,16 +456,10 @@ public class BosonReader {
                                 try {
                                     field.set(instance, value);
                                 } catch (IllegalArgumentException iae) {
-                                    try {
-                                        //attempt to convert
-//                                            val converter = new FieldTypeConverter(value, fieldType, instance, field)
-//                                            converter.convert()
-                                    } catch (Throwable t) {
-                                        String vclass = value.getClass().getName();
-                                        log.warn(String.format("Field \"%s\" of class \"%s\" is of type %s " +
-                                                "but value received is \"%s\" of type \"%s\"",
-                                                key, klass.getName(), vclass, value, cname));
-                                    }
+                                    String vclass = value.getClass().getName();
+                                    log.warn(String.format("Field \"%s\" of class \"%s\" is of type %s " +
+                                            "but value received is \"%s\" of type \"%s\"",
+                                            key, klass.getName(), vclass, value, cname));
                                 } catch (IllegalAccessException e) {
                                     log.warn(String.format("Unable to access field \"%s\" of class \"%s\" ",
                                             key, klass.getName()));
@@ -477,7 +471,7 @@ public class BosonReader {
                                 "field does not exist in class %s").format(key, value, poloClassName));
                     }
                 }
-                return true;
+                return instance;
             } catch (InstantiationException e) {
                 log.warn("Unable to create an instance", e);
             } catch (IllegalAccessException e) {
@@ -486,7 +480,7 @@ public class BosonReader {
         } else {
             throw new UnsupportedBosonTypeException(String.format("type %s is not a Boson POLO", type), null);
         }
-        return false;
+        return null;
     }
 
     /**
