@@ -1,5 +1,6 @@
 package com.fillta.higgs;
 
+import com.fillta.higgs.util.Function1;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
 import org.slf4j.Logger;

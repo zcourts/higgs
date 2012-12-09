@@ -25,11 +25,11 @@ import java.nio.channels.ClosedChannelException;
  */
 public abstract class HiggsClient<T, OM, IM, SM> extends EventProcessor<T, OM, IM, SM> {
 
-    public void connect(String serviceName, String host, int port,
-                        boolean decompress, boolean useSSL, HiggsInitializer initializer,
-                        Function1<HiggsClientRequest<T, OM, IM, SM>> function) {
-        final HiggsClientRequest<T, OM, IM, SM> request =
-                newClientRequest(this, serviceName, host, port, decompress, useSSL, initializer);
+    public <H extends HiggsClientRequest<T, OM, IM, SM>> void
+    connect(String serviceName, String host, int port, boolean decompress, boolean useSSL,
+            HiggsInitializer initializer, Function1<H> function) {
+        final H request =
+                (H) newClientRequest(this, serviceName, host, port, decompress, useSSL, initializer);
         try {
             initReconnect(request, new Function1<HiggsClientRequest<T, OM, IM, SM>>() {
                 @Override
@@ -61,7 +61,7 @@ public abstract class HiggsClient<T, OM, IM, SM> extends EventProcessor<T, OM, I
         }
     }
 
-    protected abstract HiggsClientRequest<T, OM, IM, SM> newClientRequest(
+    protected abstract <H extends HiggsClientRequest<T, OM, IM, SM>> H newClientRequest(
             HiggsClient<T, OM, IM, SM> client, String serviceName,
             String host, int port, boolean decompress, boolean useSSL,
             HiggsInitializer initializer
