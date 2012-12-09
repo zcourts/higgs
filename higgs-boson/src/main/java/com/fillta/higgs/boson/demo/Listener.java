@@ -21,4 +21,10 @@ public class Listener {
         System.out.println(a);
         return a;
     }
+
+    @method("polo")
+    public PoloExample polo(PoloExample a) {
+        System.out.println(a);
+        return a;
+    }
 }
