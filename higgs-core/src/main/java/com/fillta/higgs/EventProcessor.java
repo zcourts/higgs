@@ -1,5 +1,6 @@
 package com.fillta.higgs;
 
+import com.fillta.functional.Function1;
 import com.fillta.higgs.events.ChannelMessage;
 import com.fillta.higgs.events.HiggsEvent;
 import com.fillta.higgs.events.listeners.ChannelEventListener;
@@ -7,15 +8,18 @@ import com.fillta.higgs.queueingStrategies.CircularBufferQueueingStrategy;
 import com.fillta.higgs.queueingStrategies.LinkedBlockingQueueStrategy;
 import com.fillta.higgs.queueingStrategies.QueueingStrategy;
 import com.fillta.higgs.queueingStrategies.SameThreadQueueingStrategy;
-import com.fillta.higgs.util.Function1;
 import com.google.common.base.Optional;
-import com.google.common.collect.ArrayListMultimap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.concurrent.ForkJoinPool;
+import java.util.Collections;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static com.fillta.higgs.events.HiggsEvent.EXCEPTION_CAUGHT;
 
@@ -44,20 +48,48 @@ public abstract class EventProcessor<T, OM, IM, SM> {
 			emit(EXCEPTION_CAUGHT, null, Optional.of(e));
 		}
 	};
-	protected int availableProcessors = Runtime.getRuntime().availableProcessors();
-	protected int maxThreads = availableProcessors * 4;
-	protected boolean asyncForkJoin = true;
-	protected ForkJoinPool threadPool = new ForkJoinPool(maxThreads, ForkJoinPool.defaultForkJoinWorkerThreadFactory,
-			unhandledExceptionHandler, asyncForkJoin);
-
-	protected ArrayListMultimap<HiggsEvent, ChannelEventListener> eventSubscribers = ArrayListMultimap.create();
+	public static final int availableProcessors = Runtime.getRuntime().availableProcessors();
+	public static int maxThreads = availableProcessors;
+	private static ThreadPoolExecutor threadPool;
+	/**
+	 * A set of event listeners that will be notified when a given event occurs.
+	 * NOTE: used by multiple threads so the set's backing Map must be thread safe
+	 */
+	protected Map<HiggsEvent, Set<ChannelEventListener>> eventSubscribers = new ConcurrentHashMap<>();
 	protected QueueingStrategy<T, IM> messageQueue;
+	private AtomicBoolean daemonThreadPool = new AtomicBoolean();
 
 	public EventProcessor() {
 		messageQueue = messageQueue(threadPool);
 		Thread.setDefaultUncaughtExceptionHandler(unhandledExceptionHandler);
 	}
 
+	/**
+	 * @return A fixed size thread pool. where pool size = {@link #maxThreads}
+	 */
+	public ThreadPoolExecutor threadPool() {
+		if (threadPool == null) {
+			threadPool = new ThreadPoolExecutor(
+					//minimum of 1 core thread
+					Math.max(1, maxThreads / 2),
+					//up to this many threads may be used
+					maxThreads,
+					30000L,
+					TimeUnit.MILLISECONDS,
+					new LinkedBlockingQueue<Runnable>(), new ThreadFactory() {
+				private AtomicInteger totalThreads = new AtomicInteger();
+
+				public Thread newThread(final Runnable r) {
+					Thread thread = new Thread(r, getClass().getName() + "-higgs-" + totalThreads.getAndIncrement());
+					thread.setDaemon(daemonThreadPool.get());
+					thread.setDefaultUncaughtExceptionHandler(unhandledExceptionHandler);
+					return thread;
+				}
+			});
+			threadPool.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
+		}
+		return threadPool;
+	}
 
 	/**
 	 * Provide a queueing strategy for the event processor.
@@ -68,7 +100,7 @@ public abstract class EventProcessor<T, OM, IM, SM> {
 	 * @param threadPool A configured thread pool for the message queue to use if required.
 	 * @return
 	 */
-	protected QueueingStrategy<T, IM> messageQueue(ForkJoinPool threadPool) {
+	protected QueueingStrategy<T, IM> messageQueue(ExecutorService threadPool) {
 		return new SameThreadQueueingStrategy(topicFactory());
 	}
 
@@ -84,24 +116,26 @@ public abstract class EventProcessor<T, OM, IM, SM> {
 
 	/**
 	 * Set the queueing strategy to use a {@link com.fillta.higgs.buffer.CircularBuffer}
-	 *
-	 * @param threshold The max number of messages a single thread/consumer should try to
-	 *                  process before splitting into multiple consumers
 	 */
-	public void setQueueingStrategyAsCircularBuffer(int threshold) {
-		messageQueue = new CircularBufferQueueingStrategy<T, IM>(threadPool, topicFactory(), threshold);
+	public void setQueueingStrategyAsCircularBuffer() {
+		messageQueue = new CircularBufferQueueingStrategy<T, IM>(threadPool(), topicFactory());
 	}
 
 	/**
 	 * Set the queueing strategy to use a {@link java.util.concurrent.LinkedBlockingQueue}
 	 */
 	public void setQueueingStrategyAsBlockingQueue() {
-		messageQueue = new LinkedBlockingQueueStrategy<T, IM>(threadPool, topicFactory());
+		messageQueue = new LinkedBlockingQueueStrategy<T, IM>(threadPool(), topicFactory());
 	}
 
 	public void emit(HiggsEvent event, ChannelHandlerContext context, Optional<Throwable> ex) {
-		for (ChannelEventListener l : eventSubscribers.get(event)) {
-			l.triggered(context, ex);
+		Set<ChannelEventListener> set = eventSubscribers.get(event);
+		if (set != null) {
+			for (ChannelEventListener l : set) {
+				if (l != null) {
+					l.triggered(context, ex);
+				}
+			}
 		}
 	}
 
@@ -134,7 +168,15 @@ public abstract class EventProcessor<T, OM, IM, SM> {
 	}
 
 	public void on(HiggsEvent event, ChannelEventListener listener) {
-		eventSubscribers.put(event, listener);
+
+		Set<ChannelEventListener> set = eventSubscribers.get(event);
+		if (set == null) {
+			//important: concurrent hash map used because events can be triggered from multiple threads
+			//this means reading the set from multiple threads
+			set = Collections.newSetFromMap(new ConcurrentHashMap<ChannelEventListener, Boolean>());
+			eventSubscribers.put(event, set);
+		}
+		set.add(listener);
 	}
 
 	/**
@@ -145,6 +187,16 @@ public abstract class EventProcessor<T, OM, IM, SM> {
 	 */
 	public void listen(T topic, final Function1<ChannelMessage<IM>> function) {
 		messageQueue.listen(topic, function);
+	}
+
+	/**
+	 * Un-subscribe the given function under the given topic
+	 *
+	 * @param topic    the topic the function is subscribed to
+	 * @param function the function to be removed
+	 */
+	public void unsubscribe(T topic, Function1<ChannelMessage<IM>> function) {
+		messageQueue.remove(topic, function);
 	}
 
 	/**
@@ -171,4 +223,8 @@ public abstract class EventProcessor<T, OM, IM, SM> {
 	public abstract MessageConverter<IM, OM, SM> serializer();
 
 	public abstract MessageTopicFactory<T, IM> topicFactory();
+
+	public void setDaemonThreadPool(final boolean daemonThreadPool) {
+		this.daemonThreadPool.set(daemonThreadPool);
+	}
 }
