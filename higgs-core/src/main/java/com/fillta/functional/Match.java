@@ -13,7 +13,7 @@ public class Match {
 	 */
 	public Match caseAssignableFrom(Class<?> klass, Object obj, Function function) {
 		if (obj != null && klass.isAssignableFrom(obj.getClass())) {
-			function.call();
+			function.apply();
 		}
 		return this;
 	}
@@ -27,7 +27,7 @@ public class Match {
 	 */
 	public Match caseEquals(Class<?> klass, Object obj, Function function) {
 		if (obj != null && obj.getClass().equals(klass)) {
-			function.call();
+			function.apply();
 		}
 		return this;
 	}
@@ -42,7 +42,7 @@ public class Match {
 	 */
 	public Match caseEquals(Object a, Object b, Function function) {
 		if (a == b) {
-			function.call();
+			function.apply();
 		}
 		return this;
 	}
