@@ -4,7 +4,7 @@ import io.netty.handler.codec.ByteToMessageDecoder;
 import io.netty.handler.codec.MessageToByteEncoder;
 
 /**
- * An initializer which provides default NOOP implementations for {@link com.fillta.higgs.HiggsInitializer#decoder()}
+ * An newInitializer which provides default NOOP implementations for {@link com.fillta.higgs.HiggsInitializer#decoder()}
  * and {@link com.fillta.higgs.HiggsInitializer#encoder()}. It also configures parent options
  * suitable for codec implementations such as HTTP
  *
