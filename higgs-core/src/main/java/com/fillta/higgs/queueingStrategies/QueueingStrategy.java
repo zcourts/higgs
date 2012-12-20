@@ -1,17 +1,17 @@
 package com.fillta.higgs.queueingStrategies;
 
+import com.fillta.functional.Function1;
 import com.fillta.higgs.MessageTopicFactory;
 import com.fillta.higgs.events.ChannelMessage;
-import com.fillta.higgs.util.Function1;
-import com.google.common.collect.ArrayListMultimap;
 import io.netty.channel.ChannelHandlerContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
-import java.util.HashSet;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * This package exists largely because of an observation in the Scala implementation.
@@ -66,8 +66,8 @@ import java.util.Set;
  * @author Courtney Robinson <courtney@crlog.info>
  */
 public abstract class QueueingStrategy<T, IM> {
-	public final ArrayListMultimap<T, Function1<ChannelMessage<IM>>> messageSubscribers = ArrayListMultimap.create();
-	public final Set<Function1<ChannelMessage<IM>>> allMessageSubscribers = new HashSet<>();
+	protected final ConcurrentHashMap<T, Set<Function1<ChannelMessage<IM>>>> messageSubscribers = new ConcurrentHashMap<>();
+	protected final Set<Function1<ChannelMessage<IM>>> allMessageSubscribers = Collections.newSetFromMap(new ConcurrentHashMap());
 	protected MessageTopicFactory<T, IM> topicFactory;
 	protected Logger log = LoggerFactory.getLogger(getClass());
 
@@ -95,7 +95,13 @@ public abstract class QueueingStrategy<T, IM> {
 	 * @param function the callback to be invoked
 	 */
 	public void listen(T topic, Function1<ChannelMessage<IM>> function) {
-		messageSubscribers.put(topic, function);
+		Set<Function1<ChannelMessage<IM>>> set = messageSubscribers.get(topic);
+		if (set == null) {
+			//set must be backed by concurrent hash map to be thread safe
+			set = Collections.newSetFromMap(new ConcurrentHashMap());
+			messageSubscribers.put(topic, set);
+		}
+		set.add(function);
 	}
 
 	/**
@@ -112,15 +118,9 @@ public abstract class QueueingStrategy<T, IM> {
 	 * @return true if at least one function is subscribed to the given topic
 	 */
 	public boolean listening(T topic) {
-		return messageSubscribers.containsKey(topic);
-	}
-
-	/**
-	 * @param topic Removes all functions subscribed to the given topic
-	 * @return the list of removed functions
-	 */
-	public List<Function1<ChannelMessage<IM>>> removeAll(T topic) {
-		return messageSubscribers.removeAll(topic);
+		synchronized (messageSubscribers) {
+			return messageSubscribers.containsKey(topic);
+		}
 	}
 
 	/**
@@ -135,16 +135,46 @@ public abstract class QueueingStrategy<T, IM> {
 		//functions subscribed to "all" messages (note: new ArrayList(collection) copies)
 		List<Function1<ChannelMessage<IM>>> listeners = new ArrayList<>(allMessageSubscribers);
 		for (Function1<ChannelMessage<IM>> function : listeners) {
-			function.call(a);
+			function.apply(a);
 		}
 		//now process functions subscribed only to this message's topic
-		listeners = new ArrayList<>(messageSubscribers.get(topic));
+		Set<Function1<ChannelMessage<IM>>> set = messageSubscribers.get(topic);
+		if (set == null) {
+			listeners = new ArrayList<>();
+		} else {
+			listeners = new ArrayList<>(set);
+		}
 		for (Function1<ChannelMessage<IM>> function : listeners) {
-			function.call(a);
+			function.apply(a);
 		}
 		//only incoming messages count
 		if (listeners.size() == 0 && !a.isOutGoing) {
 			log.warn(String.format("Message received and decoded but no listeners found. Topic:%s", topic));
+		}
+	}
+
+	/**
+	 * @param topic Removes all functions subscribed to the given topic
+	 */
+	public void removeAll(T topic) {
+		Set<Function1<ChannelMessage<IM>>> set = messageSubscribers.get(topic);
+		if (set != null) {
+			set.clear();
+		}
+	}
+
+	/**
+	 * Un-subscribe the given function under the given topic
+	 *
+	 * @param topic    the topic the function is subscribed to
+	 * @param function the function to be removed
+	 */
+	public void remove(T topic, Function1<ChannelMessage<IM>> function) {
+		synchronized (messageSubscribers) {
+			Set<Function1<ChannelMessage<IM>>> listeners = messageSubscribers.get(topic);
+			if (listeners != null) {
+				listeners.remove(function);
+			}
 		}
 	}
 }

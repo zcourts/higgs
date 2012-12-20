@@ -1,14 +1,13 @@
 package com.fillta.higgs.queueingStrategies;
 
+import com.fillta.functional.Function1;
+import com.fillta.functional.Tuple;
 import com.fillta.higgs.MessageTopicFactory;
 import com.fillta.higgs.buffer.CircularBuffer;
 import com.fillta.higgs.buffer.CircularBufferConsumer;
-import com.fillta.higgs.buffer.Sequence;
-import com.fillta.higgs.util.Function1;
-import com.fillta.higgs.util.Tuple;
 import io.netty.channel.ChannelHandlerContext;
 
-import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.ExecutorService;
 
 /**
  * @author Courtney Robinson <courtney@crlog.info>
@@ -16,27 +15,23 @@ import java.util.concurrent.ForkJoinPool;
 public class CircularBufferQueueingStrategy<T, IM> extends QueueingStrategy<T, IM> {
 	//use default buffer size of 1M
 	protected CircularBuffer<Tuple<ChannelHandlerContext, IM>> buffer = new CircularBuffer<>();
-	//see http://docs.oracle.com/javase/tutorial/essential/concurrency/forkjoin.html
-	protected ForkJoinPool threadPool;
+	protected ExecutorService threadPool;
 	CircularBufferConsumer<IM> consumer;
-	private int consumerThreshold;
-	private Sequence sequence = new Sequence(buffer);
 
-	public CircularBufferQueueingStrategy(ForkJoinPool threadPool,
-	                                      MessageTopicFactory<T, IM> topicFactory,
-	                                      int consumerThreshold) {
+	public CircularBufferQueueingStrategy(ExecutorService threadPool,
+	                                      MessageTopicFactory<T, IM> topicFactory) {
 		super(topicFactory);
 		this.threadPool = threadPool;
-		this.consumerThreshold = consumerThreshold;
 		consumer = new CircularBufferConsumer(this.threadPool,
 				new Function1<Tuple<ChannelHandlerContext, IM>>() {
-					@Override
-					public void call(Tuple<ChannelHandlerContext, IM> a) {
+					public void apply(Tuple<ChannelHandlerContext, IM> a) {
 						if (a != null) {
 							invokeListeners(a.key, a.value);
 						}
 					}
-				}, buffer, this.consumerThreshold, -1, 1);
+				}, buffer);
+		//so easy to forget to do this,but its probably best left as a separate operation
+		consumer.start();
 	}
 
 	/**
@@ -50,6 +45,7 @@ public class CircularBufferQueueingStrategy<T, IM> extends QueueingStrategy<T, I
 	@Override
 	public void enqueue(ChannelHandlerContext ctx, IM msg) {
 		buffer.add(new Tuple(ctx, msg));
-		threadPool.invoke(consumer);
+		//let consumer know the buffer has been updated
+		consumer.updated();
 	}
 }

@@ -1,38 +1,23 @@
 package com.fillta.higgs.queueingStrategies;
 
+import com.fillta.functional.Tuple;
 import com.fillta.higgs.MessageTopicFactory;
-import com.fillta.higgs.util.Tuple;
 import io.netty.channel.ChannelHandlerContext;
 
-import java.util.concurrent.ForkJoinPool;
-import java.util.concurrent.LinkedTransferQueue;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
 
 /**
  * @author Courtney Robinson <courtney@crlog.info>
  */
 public class LinkedBlockingQueueStrategy<T, IM> extends QueueingStrategy<T, IM> {
-	private LinkedTransferQueue<Tuple<ChannelHandlerContext, IM>> queue = new LinkedTransferQueue<>();
+	private LinkedBlockingQueue<Tuple<ChannelHandlerContext, IM>> queue = new LinkedBlockingQueue<>();
+	private final ThreadPoolExecutor threadPool;
 
-	public LinkedBlockingQueueStrategy(final ForkJoinPool threadPool,
+	public LinkedBlockingQueueStrategy(final ThreadPoolExecutor threadPool,
 	                                   final MessageTopicFactory<T, IM> topicFactory) {
 		super(topicFactory);
-		for (int i = 0; i < threadPool.getParallelism(); i++) {
-			threadPool.submit(new Runnable() {
-				@Override
-				public void run() {
-					while (!threadPool.isShutdown()) {
-						try {
-							Tuple<ChannelHandlerContext, IM> tuple = queue.take();
-							if (tuple != null) {
-								invokeListeners(tuple.key, tuple.value);
-							}
-						} catch (InterruptedException e) {
-
-						}
-					}
-				}
-			});
-		}
+		this.threadPool = threadPool;
 	}
 
 	/**
@@ -45,5 +30,23 @@ public class LinkedBlockingQueueStrategy<T, IM> extends QueueingStrategy<T, IM> 
 	@Override
 	public void enqueue(ChannelHandlerContext ctx, IM msg) {
 		queue.add(new Tuple(ctx, msg));
+		processMessage();
+	}
+
+	private void processMessage() {
+		threadPool.execute(new Runnable() {
+			public void run() {
+				while (!threadPool.isShutdown()) {
+					try {
+						Tuple<ChannelHandlerContext, IM> tuple = queue.take();
+						if (tuple != null) {
+							invokeListeners(tuple.key, tuple.value);
+						}
+					} catch (InterruptedException e) {
+
+					}
+				}
+			}
+		});
 	}
 }

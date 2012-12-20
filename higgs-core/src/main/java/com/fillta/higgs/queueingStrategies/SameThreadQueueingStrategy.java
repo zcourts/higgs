@@ -1,7 +1,7 @@
 package com.fillta.higgs.queueingStrategies;
 
 import com.fillta.higgs.MessageTopicFactory;
-import com.fillta.higgs.util.Function1;
+import com.fillta.functional.Function1;
 import io.netty.channel.ChannelHandlerContext;
 
 /**
