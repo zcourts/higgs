@@ -49,8 +49,13 @@
         </dependency>
         <dependency>
             <groupId>io.netty</groupId>
+            <artifactId>netty</artifactId>
+            <version>4.0.0.Beta1-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>io.netty</groupId>
             <artifactId>netty-metrics-yammer</artifactId>
-            <version>4.0.1.Alpha8-SNAPSHOT</version>
+            <version>4.0.0.Beta1-SNAPSHOT</version>
         </dependency>
         <!-- Test -->
         <dependency>
@@ -63,22 +68,18 @@
 
     <build>
         <plugins>
+            <!--attach sources before install, i.e. during verify stage-->
             <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>build-helper-maven-plugin</artifactId>
-                <version>1.7</version>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-source-plugin</artifactId>
+                <version>2.2</version>
                 <executions>
                     <execution>
-                        <id>add-source</id>
-                        <phase>generate-sources</phase>
+                        <id>attach-sources</id>
+                        <phase>verify</phase>
                         <goals>
-                            <goal>add-source</goal>
+                            <goal>jar-no-fork</goal>
                         </goals>
-                        <configuration>
-                            <sources>
-                                <source>src/main/java</source>
-                            </sources>
-                        </configuration>
                     </execution>
                 </executions>
             </plugin>

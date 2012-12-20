@@ -1,4 +1,4 @@
-package com.fillta.higgs.util;
+package com.fillta.functional;
 
 /**
  * A simple immutable Tuple
