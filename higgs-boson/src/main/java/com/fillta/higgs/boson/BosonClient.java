@@ -3,7 +3,7 @@ package com.fillta.higgs.boson;
 import com.fillta.higgs.*;
 import com.fillta.higgs.boson.serialization.v1.BosonReader;
 import com.fillta.higgs.boson.serialization.v1.BosonWriter;
-import com.fillta.higgs.util.Function1;
+import com.fillta.functional.Function1;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
@@ -15,19 +15,16 @@ public class BosonClient extends HiggsClient<String, BosonMessage, BosonMessage,
 	@Override
 	public MessageConverter<BosonMessage, BosonMessage, ByteBuf> serializer() {
 		return new MessageConverter<BosonMessage, BosonMessage, ByteBuf>() {
-			@Override
 			public ByteBuf serialize(Channel ctx, BosonMessage msg) {
 				return new BosonWriter(msg).serialize();
 			}
 
-			@Override
 			public BosonMessage deserialize(ChannelHandlerContext ctx, ByteBuf msg) {
 				return new BosonReader(msg).deSerialize();
 			}
 		};
 	}
 
-	@Override
 	public MessageTopicFactory<String, BosonMessage> topicFactory() {
 		return new MessageTopicFactory<String, BosonMessage>() {
 			@Override
@@ -37,7 +34,7 @@ public class BosonClient extends HiggsClient<String, BosonMessage, BosonMessage,
 		};
 	}
 
-	public BosonInitializer initializer(boolean inflate, boolean deflate, boolean ssl) {
+	public BosonInitializer newInitializer(boolean inflate, boolean deflate, boolean ssl) {
 		return new BosonInitializer(this, inflate, deflate, ssl);
 	}
 
@@ -49,12 +46,11 @@ public class BosonClient extends HiggsClient<String, BosonMessage, BosonMessage,
 	public void connect(String serviceName, String host, int port,
 	                    boolean decompress, boolean useSSL,
 	                    Function1<BosonClientConnection> function) {
-		// connects with a new initializer
+		// connects with a new newInitializer
 		connect(serviceName, host, port, decompress, useSSL,
-				initializer(decompress, decompress, useSSL), function);
+				newInitializer(decompress, decompress, useSSL), function);
 	}
 
-	@Override
 	protected <H extends HiggsClientConnection<String, BosonMessage, BosonMessage, ByteBuf>> H newClientRequest(HiggsClient<String, BosonMessage, BosonMessage, ByteBuf> client, String serviceName, String host, int port, boolean decompress, boolean useSSL, HiggsInitializer initializer) {
 		return (H) new BosonClientConnection(
 				client, serviceName, host, port, decompress, useSSL, initializer
