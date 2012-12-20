@@ -1,5 +1,6 @@
 package com.fillta.higgs;
 
+import com.fillta.functional.Function;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelInitializer;
@@ -19,12 +20,23 @@ public abstract class HiggsServer<T, OM, IM, SM> extends EventProcessor<T, OM, I
 	}
 
 	public void bind() {
+		bind(new Function() {
+			public void apply() {
+				//NO-OP
+			}
+		});
+	}
+
+	public void bind(Function function) {
 		try {
 			bootstrap.group(parentGroup(), childGroup())
 					.channel(channelClass())
 					.localAddress(port)
 					.childHandler(initializer());
 			channel = bootstrap.bind().sync().channel();
+			if (function != null) {
+				function.apply();
+			}
 		} catch (InterruptedException ie) {
 		}
 	}
