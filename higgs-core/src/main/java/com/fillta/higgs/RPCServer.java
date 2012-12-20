@@ -1,8 +1,8 @@
 package com.fillta.higgs;
 
+import com.fillta.functional.Function1;
 import com.fillta.higgs.events.ChannelMessage;
 import com.fillta.higgs.reflect.PackageScanner;
-import com.fillta.higgs.util.Function1;
 import com.google.common.base.Optional;
 
 import java.lang.reflect.Constructor;
@@ -99,6 +99,7 @@ public abstract class RPCServer<OM, IM, SM> extends HiggsServer<String, OM, IM, 
 					//register all methods is true, the method hasn't been opted out
 					doRegister(klass, obj, method);
 				} else {
+					//String.format("%1$50s", s)
 					log.debug(String.format("method %s not registered, optout=true", method.getName()));
 				}
 			} else if (method.isAnnotationPresent(methodClass)
@@ -144,12 +145,11 @@ public abstract class RPCServer<OM, IM, SM> extends HiggsServer<String, OM, IM, 
 		//listen for this method name to be invoked then call the given method on
 		//the instance provided
 		listen(methodName, new Function1<ChannelMessage<IM>>() {
-			public void call(final ChannelMessage<IM> a) {
+			public void apply(final ChannelMessage<IM> a) {
 				processIncomingRequest(a, method, instance, methodName);
 			}
 		});
-		log.debug(String.format("Method %s registered with name (topic) %s", method.getName(), methodName));
-		log.info(String.format("%s -> method:\"%s\" returns:\"%s\"", method.getName(), methodName, method.getReturnType().getName()));
+		log.info(String.format("REGISTERED > %1$-20s | %2$-20s | %3$-5s", method.getName(), methodName, method.getReturnType().getName()));
 	}
 
 	public void processIncomingRequest(final ChannelMessage<IM> request, Method method, Object instance, String methodName) {
