@@ -5,6 +5,7 @@ import com.fillta.higgs.HiggsCodecInitializer;
 import com.fillta.higgs.HiggsEventHandlerProxy;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelInboundMessageHandlerAdapter;
+import io.netty.channel.ChannelPipeline;
 import io.netty.channel.CombinedChannelHandler;
 import io.netty.handler.codec.http.HttpClientCodec;
 import io.netty.handler.codec.http.HttpContentDecompressor;
@@ -21,10 +22,13 @@ public class HttpClientInitializer<T, OM, IM, SM> extends HiggsCodecInitializer<
 		this.events = events;
 	}
 
-	@Override
-	public ChannelInboundMessageHandlerAdapter handler() {
+	public void beforeHandler(ChannelPipeline pipeline) {
 		//add chunked writer before handler is added
 		pipeline.addLast("chunkedWriter", new ChunkedWriteHandler());
+	}
+
+	@Override
+	public ChannelInboundMessageHandlerAdapter handler() {
 		return new HiggsEventHandlerProxy(events);
 	}
 
