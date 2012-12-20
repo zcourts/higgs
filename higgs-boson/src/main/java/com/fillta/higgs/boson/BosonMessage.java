@@ -25,4 +25,9 @@ public class BosonMessage {
 		this.method = method;
 		this.callback = callback;
 	}
+
+	public BosonMessage(Object[] arguments, String method) {
+		this.arguments = arguments;
+		this.method = method;
+	}
 }
