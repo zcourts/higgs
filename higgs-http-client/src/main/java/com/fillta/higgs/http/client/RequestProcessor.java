@@ -1,8 +1,8 @@
 package com.fillta.higgs.http.client;
 
+import com.fillta.functional.Function1;
 import com.fillta.higgs.*;
 import com.fillta.higgs.events.ChannelMessage;
-import com.fillta.higgs.util.Function1;
 import io.netty.handler.codec.http.ClientCookieEncoder;
 import io.netty.handler.codec.http.DefaultCookie;
 import io.netty.handler.codec.http.HttpHeaders;
@@ -17,8 +17,38 @@ import java.net.URISyntaxException;
 import java.util.List;
 
 public class RequestProcessor extends HiggsClient<String, HttpRequest, HTTPResponse, Object> {
+	private static RequestProcessor instance;
 
-	public RequestProcessor() {
+	private RequestProcessor() {
+		this(1);
+	}
+
+	private RequestProcessor(int max) {
+		super.maxThreads = max;
+	}
+
+
+	/**
+	 * Only a single instance must exist so that resources that can be shared amongst requests
+	 * are used.
+	 *
+	 * @return
+	 */
+	public static RequestProcessor getInstance() {
+		return getInstance(1);
+	}
+
+	/**
+	 * Only a single instance must exist so that resources that can be shared amongst requests
+	 * are used.
+	 *
+	 * @return
+	 */
+	public static RequestProcessor getInstance(int maxThreads) {
+		if (instance == null) {
+			instance = new RequestProcessor(maxThreads);
+		}
+		return instance;
 	}
 
 	@Override
@@ -26,7 +56,7 @@ public class RequestProcessor extends HiggsClient<String, HttpRequest, HTTPRespo
 		return new MessageTopicFactory<String, HTTPResponse>() {
 			@Override
 			public String extract(HTTPResponse msg) {
-				return msg.requestID;
+				return msg.getRequestID();
 			}
 		};
 	}
@@ -53,17 +83,17 @@ public class RequestProcessor extends HiggsClient<String, HttpRequest, HTTPRespo
 			}
 			boolean ssl = "https".equalsIgnoreCase(scheme);
 			final HttpRequest request = createRequest(req);
-			listen(request.id, new Function1<ChannelMessage<HTTPResponse>>() {
+			listen(request.getId(), new Function1<ChannelMessage<HTTPResponse>>() {
 				@Override
-				public void call(ChannelMessage<HTTPResponse> a) {
-					callback.call(a.message);
+				public void apply(ChannelMessage<HTTPResponse> a) {
+					callback.apply(a.message);
 				}
 			});
-			connect(req.url().toString(), host, port, req.compressionEnabled, ssl,
-					new HttpClientInitializer(this, req.compressionEnabled, ssl),
+			connect(req.url().toString(), host, port, req.isCompressionEnabled(), ssl,
+					new HttpClientInitializer(this, req.isCompressionEnabled(), ssl),
 					new Function1<HiggsClientConnection<String, HttpRequest, HTTPResponse, Object>>() {
 						@Override
-						public void call(HiggsClientConnection<String, HttpRequest, HTTPResponse, Object> clientConnection) {
+						public void apply(HiggsClientConnection<String, HttpRequest, HTTPResponse, Object> clientConnection) {
 							clientConnection.send(request);
 						}
 					});
@@ -92,48 +122,46 @@ public class RequestProcessor extends HiggsClient<String, HttpRequest, HTTPRespo
 			HttpDataFactory factory = new DefaultHttpDataFactory(DefaultHttpDataFactory.MINSIZE);
 			//if user explicitly sets multi-part to false then only file name is sent otherwise
 			//if at least 1 file is supplied it is multi-part
-			boolean multiPart = req.multiPart && (req.formMultiFiles.size() > 0 || req.formFiles.size() > 0);
+			boolean multiPart = req.isMultiPart() && (req.getFormMultiFiles().size() > 0 || req.getFormFiles().size() > 0);
 			//create a new POST encoder, if files are to be uploaded make it a multipart form (last param)
 			final HttpPostRequestEncoder encoder = new HttpPostRequestEncoder(factory, request, multiPart);
 			//add form params
-			for (String name : req.formParameters.keySet()) {
-				Object value = req.formParameters.get(name);
+			for (String name : req.getFormParameters().keySet()) {
+				Object value = req.getFormParameters().get(name);
 				if (value != null) {
 					encoder.addBodyAttribute(name, value.toString());
 				}
 			}
 			//add form Files, if any
-			for (HttpFile file : req.formFiles) {
-				encoder.addBodyFileUpload(file.name, file.file, file.contentType, file.isText);
+			for (HttpFile file : req.getFormFiles()) {
+				encoder.addBodyFileUpload(file.getName(), file.getFile(), file.getContentType(), file.isText());
 			}
 			//add multiple files under the same name
-			for (String name : req.formMultiFiles.keySet()) {
-				List<PartialHttpFile> files = req.formMultiFiles.get(name);
+			for (String name : req.getFormMultiFiles().keySet()) {
+				List<PartialHttpFile> files = req.getFormMultiFiles().get(name);
 				File[] arrFiles = new File[files.size()];
 				String[] arrContentType = new String[files.size()];
 				boolean[] arrIsText = new boolean[files.size()];
 				for (int i = 0; i < files.size(); i++) {
-					arrFiles[i] = files.get(i).file;
-					arrContentType[i] = files.get(i).contentType;
-					arrIsText[i] = files.get(i).isText;
+					arrFiles[i] = files.get(i).getFile();
+					arrContentType[i] = files.get(i).getContentType();
+					arrIsText[i] = files.get(i).isText();
 				}
 				encoder.addBodyFileUploads(name, arrFiles, arrContentType, arrIsText);
 			}
 			encoder.finalizeRequest();
-			listen(request.id, new Function1<ChannelMessage<HTTPResponse>>() {
-				@Override
-				public void call(ChannelMessage<HTTPResponse> a) {
-					callback.call(a.message);
+			listen(request.getId(), new Function1<ChannelMessage<HTTPResponse>>() {
+				public void apply(ChannelMessage<HTTPResponse> a) {
+					callback.apply(a.message);
 				}
 			});
-			connect(req.url().toString(), host, port, req.compressionEnabled, ssl,
-					new HttpClientInitializer(this, req.compressionEnabled, ssl),
+			connect(req.url().toString(), host, port, req.isCompressionEnabled(), ssl,
+					new HttpClientInitializer(this, req.isCompressionEnabled(), ssl),
 					new Function1<HiggsClientConnection<String, HttpRequest, HTTPResponse, Object>>() {
-						@Override
-						public void call(HiggsClientConnection<String, HttpRequest, HTTPResponse, Object> clientConnection) {
+						public void apply(HiggsClientConnection<String, HttpRequest, HTTPResponse, Object> clientConnection) {
 							clientConnection.send(request);
 							if (encoder.isChunked()) {
-								clientConnection.channel.write(encoder);
+								clientConnection.getChannel().write(encoder);
 							}
 							encoder.cleanFiles();
 						}
@@ -155,34 +183,34 @@ public class RequestProcessor extends HiggsClient<String, HttpRequest, HTTPRespo
 	 */
 	public HttpRequest createRequest(HttpRequestBuilder req) throws URISyntaxException {
 		QueryStringEncoder encoder = new QueryStringEncoder(req.path());
-		for (String name : req.urlParameters.keySet()) {
-			Object value = req.urlParameters.get(name);
+		for (String name : req.getUrlParameters().keySet()) {
+			Object value = req.getUrlParameters().get(name);
 			if (value != null) {
 				encoder.addParam(name, value.toString());
 			}
 		}
 		URI uriGet = new URI(encoder.toString());
-		HttpRequest request = new HttpRequest(req, req.httpVersion, req.requestMethod, uriGet.toASCIIString());
-		if (req.addDefaultHeaders) {
+		HttpRequest request = new HttpRequest(req, req.getHttpVersion(), req.getRequestMethod(), uriGet.toASCIIString());
+		if (req.isAddDefaultHeaders()) {
 			request.setHeader(HttpHeaders.Names.HOST, req.url().getHost());
-			request.setHeader(HttpHeaders.Names.CONNECTION, req.header_connection_value);
-			request.setHeader(HttpHeaders.Names.ACCEPT_ENCODING, req.header_accept_encoding);
-			request.setHeader(HttpHeaders.Names.ACCEPT_CHARSET, req.header_accept_charset);
-			request.setHeader(HttpHeaders.Names.ACCEPT_LANGUAGE, req.header_accept_lang);
+			request.setHeader(HttpHeaders.Names.CONNECTION, req.getHeaderConnectionValue());
+			request.setHeader(HttpHeaders.Names.ACCEPT_ENCODING, req.getHeaderAcceptEncoding());
+			request.setHeader(HttpHeaders.Names.ACCEPT_CHARSET, req.getHeaderAcceptCharset());
+			request.setHeader(HttpHeaders.Names.ACCEPT_LANGUAGE, req.getHeaderAcceptLang());
 			request.setHeader(HttpHeaders.Names.REFERER, req.url().toString());
-			request.setHeader(HttpHeaders.Names.USER_AGENT, req.USER_AGENT);
-			request.setHeader(HttpHeaders.Names.ACCEPT, req.requestContentType);
+			request.setHeader(HttpHeaders.Names.USER_AGENT, req.getUserAgent());
+			request.setHeader(HttpHeaders.Names.ACCEPT, req.getRequestContentType());
 		}
-		for (String name : req.requestHeaders.keySet()) {
-			Object value = req.requestHeaders.get(name);
+		for (String name : req.getRequestHeaders().keySet()) {
+			Object value = req.getRequestHeaders().get(name);
 			if (name != null) {
 				request.setHeader(name, value);
 			}
 		}
-		DefaultCookie[] cookieList = new DefaultCookie[req.requestCookies.size()];
+		DefaultCookie[] cookieList = new DefaultCookie[req.getRequestCookies().size()];
 		int i = 0;
-		for (String name : req.requestCookies.keySet()) {
-			Object value = req.requestCookies.get(name);
+		for (String name : req.getRequestCookies().keySet()) {
+			Object value = req.getRequestCookies().get(name);
 			if (value != null) {
 				cookieList[i++] = new DefaultCookie(name, value.toString());
 			}
@@ -196,6 +224,13 @@ public class RequestProcessor extends HiggsClient<String, HttpRequest, HTTPRespo
 
 	@Override
 	protected <H extends HiggsClientConnection<String, HttpRequest, HTTPResponse, Object>> H newClientRequest(HiggsClient<String, HttpRequest, HTTPResponse, Object> client, String serviceName, String host, int port, boolean decompress, boolean useSSL, HiggsInitializer initializer) {
-		return (H) new HiggsClientConnection<>(client, serviceName, host, port, decompress, useSSL, initializer);
+		H request = (H) new HiggsClientConnection<>(client, serviceName, host, port, decompress, useSSL, initializer);
+		request.setAutoReconnect(false);
+		return request;
+	}
+
+	@Override
+	public <H extends HiggsInitializer<HTTPResponse, HttpRequest>> H newInitializer(final boolean inflate, final boolean deflate, final boolean ssl) {
+		return (H) new HttpClientInitializer<>(this, deflate, ssl);
 	}
 }
