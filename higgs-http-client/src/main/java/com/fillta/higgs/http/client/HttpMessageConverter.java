@@ -4,6 +4,7 @@ import com.fillta.higgs.MessageConverter;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.handler.codec.http.DefaultHttpResponse;
 import io.netty.handler.codec.http.HttpChunk;
 import io.netty.handler.codec.http.HttpResponse;
 import io.netty.util.Attribute;
@@ -18,15 +19,14 @@ import java.util.ArrayList;
  * @author Courtney Robinson <courtney@crlog.info>
  */
 public class HttpMessageConverter implements MessageConverter<HTTPResponse, HttpRequest, Object> {
-	public static AttributeKey<Boolean> attChunks = new AttributeKey("reading-chunks");
-	public static AttributeKey<String> attTopic = new AttributeKey("topic");
-	public static AttributeKey<HTTPResponse> attResponse = new AttributeKey("response");
+	public final static AttributeKey<Boolean> attChunks = new AttributeKey("reading-chunks");
+	public final static AttributeKey<String> attTopic = new AttributeKey("topic");
+	public final static AttributeKey<HTTPResponse> attResponse = new AttributeKey("response");
 	protected Logger log = LoggerFactory.getLogger(getClass());
 
 	@Override
 	public Object serialize(Channel channel, HttpRequest msg) {
-		//use request URL + current time in nano seconds as request ID
-		channel.attr(attTopic).set(msg.id);
+		channel.attr(attTopic).set(msg.getId());
 		return msg;
 	}
 
@@ -42,7 +42,7 @@ public class HttpMessageConverter implements MessageConverter<HTTPResponse, Http
 		Attribute<String> topicAtt = ctx.channel().attr(attTopic);
 		topicAtt.compareAndSet(null, "");
 		String requestID = topicAtt.get();
-		response.requestID = requestID;
+		response.setRequestID(requestID);
 		if (!readingChunks) {
 			HttpResponse res = (HttpResponse) msg;
 			//get headers
@@ -51,18 +51,18 @@ public class HttpMessageConverter implements MessageConverter<HTTPResponse, Http
 				for (String name : res.getHeaderNames()) {
 					//get header values
 					for (String value : res.getHeaders(name)) {
-						ArrayList<String> values = response.headers.get(name);
+						ArrayList<String> values = response.getHeaders().get(name);
 						if (values == null) {
 							values = new ArrayList();
-							response.headers.put(name, values);
+							response.getHeaders().put(name, values);
 						}
 						values.add(value);
 					}
 				}
 			}
-			response.status = res.getStatus();
-			response.protocolVersion = res.getProtocolVersion();
-			response.transferEncoding = res.getTransferEncoding();
+			response.setStatus(res.getStatus());
+			response.setProtocolVersion(res.getProtocolVersion());
+			response.setTransferEncoding(res.getTransferEncoding());
 			if (res.getTransferEncoding().isMultiple()) {
 				//mark as reading chunks
 				ctx.channel().attr(attChunks).set(true);
@@ -70,13 +70,19 @@ public class HttpMessageConverter implements MessageConverter<HTTPResponse, Http
 					HttpChunk chunk = ((HttpChunk) res);
 					//last chunk
 					ctx.channel().attr(attChunks).set(false);
-					response.data.append(chunk.getContent().toString(CharsetUtil.UTF_8));
+					response.append(chunk.getContent().toString(CharsetUtil.UTF_8));
+					//clean up
+					cleanUp(ctx);
 					//fire message received
 					return response;
 				} else {
 					if (res instanceof HttpChunk) {
 						HttpChunk chunk = ((HttpChunk) res);
-						response.data.append(chunk.getContent().toString(CharsetUtil.UTF_8));
+						response.append(chunk.getContent().toString(CharsetUtil.UTF_8));
+						return null;//more to come
+					} else if (res instanceof DefaultHttpResponse) {
+						DefaultHttpResponse responseChunk = (DefaultHttpResponse) res;
+						response.append(responseChunk.getContent().toString(CharsetUtil.UTF_8));
 						return null;//more to come
 					} else {
 						log.warn(String.format("Unknown state encountered while de-serializing an Http message. Netty chunk marked as multiple but is not an instance of HttpChunk type = %s", res.getClass().getName()));
@@ -87,7 +93,8 @@ public class HttpMessageConverter implements MessageConverter<HTTPResponse, Http
 				ByteBuf content = res.getContent();
 				if (content.readable()) {
 					//fire message received
-					response.data.append(content.toString(CharsetUtil.UTF_8));
+					response.append(content.toString(CharsetUtil.UTF_8));
+					cleanUp(ctx);
 					return response;
 				} else {
 					log.warn(String.format("Response received but is not readable. \nID:%s \ncontent:%s",
@@ -99,14 +106,21 @@ public class HttpMessageConverter implements MessageConverter<HTTPResponse, Http
 			HttpChunk chunk = (HttpChunk) msg;
 			if (chunk.isLast()) {
 				ctx.channel().attr(attChunks).set(false);
-				response.data.append(chunk.getContent().toString(CharsetUtil.UTF_8));
+				response.append(chunk.getContent().toString(CharsetUtil.UTF_8));
+				cleanUp(ctx);
 				//fire message received
 				return response;
 			} else {
 				//save chunk
-				response.data.append(chunk.getContent().toString(CharsetUtil.UTF_8));
+				response.append(chunk.getContent().toString(CharsetUtil.UTF_8));
 				return null;//more to come
 			}
 		}
+	}
+
+	private void cleanUp(final ChannelHandlerContext ctx) {
+		ctx.channel().attr(attChunks).remove();
+		ctx.channel().attr(attTopic).remove();
+		ctx.channel().attr(attResponse).remove();
 	}
 }
