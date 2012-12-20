@@ -8,8 +8,8 @@ import io.netty.handler.codec.http.HttpVersion;
  * @author Courtney Robinson <courtney@crlog.info>
  */
 public class HttpRequest extends DefaultHttpRequest {
-	public final HttpRequestBuilder req;
-	public final String id;
+	private final HttpRequestBuilder req;
+	private final String id;
 
 	/**
 	 * Creates a new instance.
@@ -22,5 +22,13 @@ public class HttpRequest extends DefaultHttpRequest {
 		super(httpVersion, method, uri);
 		this.req = req;
 		id = req.url() + "-" + System.nanoTime();
+	}
+
+	public HttpRequestBuilder getReq() {
+		return req;
+	}
+
+	public String getId() {
+		return id;
 	}
 }
