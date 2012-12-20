@@ -15,7 +15,6 @@ import javax.net.ssl.SSLEngine;
 public abstract class HiggsInitializer<IM, OM> extends ChannelInitializer<SocketChannel> {
 
 	final protected boolean useDeflater, useInflater, useCodec, useSSL;
-	protected ChannelPipeline pipeline;
 
 	public HiggsInitializer(boolean inflate, boolean deflate, boolean usecodec, boolean ssl) {
 		useCodec = usecodec;
@@ -24,29 +23,38 @@ public abstract class HiggsInitializer<IM, OM> extends ChannelInitializer<Socket
 		useSSL = ssl;
 	}
 
+	int count = 0;
+
 	@Override
 	public void initChannel(SocketChannel ch) throws Exception {
-		pipeline = ch.pipeline();
+		ChannelPipeline pipeline = ch.pipeline();
 		//in all cases if SSL is enabled, add it to the pipeline first
 		if (useSSL) {
+			beforeSSL(pipeline);
 			pipeline.addLast("ssl", ssl());
 		}
 		if (useCodec) {
+			beforeCodec(pipeline);
 			pipeline.addLast("codec", codec());
 		}
 		//separate inflater and deflater checks because HTTP will usually only add inflator
 		//to automatically deflate incoming data
 		if (useDeflater) {
+			beforeDeflater(pipeline);
 			pipeline.addLast("deflater", deflater());
 		}
 		if (useInflater) {
+			beforeInflater(pipeline);
 			pipeline.addLast("inflater", inflater());
 		}
 		//if not using a codec both encoder and decoder are required
 		if (!useCodec) {
+			beforeDecoder(pipeline);
 			pipeline.addLast("decoder", decoder());
+			beforeEncoder(pipeline);
 			pipeline.addLast("encoder", encoder());
 		}
+		beforeHandler(pipeline);
 		pipeline.addLast("handler", handler());
 	}
 
@@ -71,5 +79,27 @@ public abstract class HiggsInitializer<IM, OM> extends ChannelInitializer<Socket
 
 	public ChannelOutboundHandlerAdapter deflater() {
 		return ZlibCodecFactory.newZlibEncoder(ZlibWrapper.GZIP);
+	}
+
+	//NO-OP methods that can be overriden to add to the pipeline before each of these are added
+	public void beforeSSL(ChannelPipeline pipeline) {
+	}
+
+	public void beforeCodec(ChannelPipeline pipeline) {
+	}
+
+	public void beforeDeflater(ChannelPipeline pipeline) {
+	}
+
+	public void beforeInflater(ChannelPipeline pipeline) {
+	}
+
+	public void beforeDecoder(ChannelPipeline pipeline) {
+	}
+
+	public void beforeEncoder(ChannelPipeline pipeline) {
+	}
+
+	public void beforeHandler(ChannelPipeline pipeline) {
 	}
 }
