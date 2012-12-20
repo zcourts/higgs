@@ -3,7 +3,7 @@ package com.fillta.higgs;
 import io.netty.channel.CombinedChannelHandler;
 
 /**
- * An initializer which provides default NOOP implementations for {@link com.fillta.higgs.HiggsInitializer#codec()}
+ * An newInitializer which provides default NOOP implementations for {@link com.fillta.higgs.HiggsInitializer#codec()}
  * And initializes super arguments as required to super encoder/decoder based initializers
  *
  * @author Courtney Robinson <courtney@crlog.info>
