@@ -1,6 +1,6 @@
 package com.fillta.higgs.http.client;
 
-import com.fillta.higgs.util.Function1;
+import com.fillta.functional.Function1;
 import io.netty.handler.codec.http.HttpHeaders;
 import io.netty.handler.codec.http.HttpMethod;
 import io.netty.handler.codec.http.HttpVersion;
@@ -18,49 +18,53 @@ import java.util.Map;
  * @author Courtney Robinson <courtney@crlog.info>
  */
 public class HttpRequestBuilder {
+
 	/**
 	 * Only a single instance of the requester.
 	 * EventProcessor uses a thread pool to process requests/responses
 	 * so its more efficient to only use one.
 	 */
-	public static RequestProcessor requester = new RequestProcessor();
-	public URL requestURL;
-	public HttpMethod requestMethod = HttpMethod.GET;
-	public Map<String, Object> urlParameters = new HashMap();
+	public static RequestProcessor getRequester() {
+		return RequestProcessor.getInstance();
+	}
+
+	private URL requestURL;
+	private HttpMethod requestMethod = HttpMethod.GET;
+	private Map<String, Object> urlParameters = new HashMap();
 	/**
 	 * A key value pair of form fields  to send in a POST or PUT request.
 	 * Values can be strings (numbers get .toString() automatically) NOT FILES
 	 */
-	public Map<String, Object> formParameters = new HashMap();
+	private Map<String, Object> formParameters = new HashMap();
 	/**
 	 * Set of files to upload
 	 */
-	public ArrayList<HttpFile> formFiles = new ArrayList();
+	private ArrayList<HttpFile> formFiles = new ArrayList();
 	/**
 	 * Set of files to upload where 1 name/key has many files
 	 */
-	public Map<String, List<PartialHttpFile>> formMultiFiles = new HashMap();
+	private Map<String, List<PartialHttpFile>> formMultiFiles = new HashMap();
 	/**
 	 * Defaults to true. If set to false and files are provided in a PUT or POST
 	 * request then only file names will be sent.
 	 */
-	public boolean multiPart = true;
-	public Map<String, Object> requestHeaders = new HashMap();
-	public Map<String, Object> requestCookies = new HashMap();
-	public boolean compressionEnabled = true;
-	public boolean shutdownAfter = true;
-	public HttpVersion httpVersion = HttpVersion.HTTP_1_1;
-	public boolean addDefaultHeaders = true;
-	public String requestContentType = "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8";
-	public String USER_AGENT = "Mozilla/5.0 (compatible; HiggsBoson/0.0.1; +https://github.com/zcourts/higgs)";
+	private boolean multiPart = true;
+	private Map<String, Object> requestHeaders = new HashMap();
+	private Map<String, Object> requestCookies = new HashMap();
+	private boolean compressionEnabled = true;
+	private boolean shutdownAfter = true;
+	private HttpVersion httpVersion = HttpVersion.HTTP_1_1;
+	private boolean addDefaultHeaders = true;
+	private String requestContentType = "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8";
+	private String userAgent = "Mozilla/5.0 (compatible; HiggsBoson/0.0.1; +https://github.com/zcourts/higgs)";
 	//default header values
-	public String header_connection_value = HttpHeaders.Values.CLOSE;
-	public String header_accept_encoding = HttpHeaders.Values.GZIP + ',' + HttpHeaders.Values.DEFLATE;
-	public String header_accept_charset = "ISO-8859-1,utf-8;q=0.7,*;q=0.7";
-	public String header_accept_lang = "en";
+	private String headerConnectionValue = HttpHeaders.Values.CLOSE;
+	private String headerAcceptEncoding = HttpHeaders.Values.GZIP + ',' + HttpHeaders.Values.DEFLATE;
+	private String headerAcceptCharset = "ISO-8859-1,utf-8;q=0.7,*;q=0.7";
+	private String headerAcceptLang = "en";
 	//attributes used in generating the request or processing the response but aren't
 	//exactly configurable as such
-	public boolean useSSL = false;
+	private boolean useSSL = false;
 
 	public HttpRequestBuilder() {
 		try {
@@ -72,6 +76,130 @@ public class HttpRequestBuilder {
 		DiskFileUpload.baseDirectory = null;
 		DiskAttribute.deleteOnExitTemporaryFile = true;
 		DiskAttribute.baseDirectory = null;
+	}
+
+	public boolean isMultiPart() {
+		return multiPart;
+	}
+
+	public void setMultiPart(final boolean multiPart) {
+		this.multiPart = multiPart;
+	}
+
+	public boolean isCompressionEnabled() {
+		return compressionEnabled;
+	}
+
+	public void setCompressionEnabled(final boolean compressionEnabled) {
+		this.compressionEnabled = compressionEnabled;
+	}
+
+	public boolean isShutdownAfter() {
+		return shutdownAfter;
+	}
+
+	public void setShutdownAfter(final boolean shutdownAfter) {
+		this.shutdownAfter = shutdownAfter;
+	}
+
+	public HttpVersion getHttpVersion() {
+		return httpVersion;
+	}
+
+	public void setHttpVersion(final HttpVersion httpVersion) {
+		this.httpVersion = httpVersion;
+	}
+
+	public boolean isAddDefaultHeaders() {
+		return addDefaultHeaders;
+	}
+
+	public void setAddDefaultHeaders(final boolean addDefaultHeaders) {
+		this.addDefaultHeaders = addDefaultHeaders;
+	}
+
+	public String getRequestContentType() {
+		return requestContentType;
+	}
+
+	public void setRequestContentType(final String requestContentType) {
+		this.requestContentType = requestContentType;
+	}
+
+	public String getUserAgent() {
+		return userAgent;
+	}
+
+	public void setUserAgent(final String userAgent) {
+		this.userAgent = userAgent;
+	}
+
+	public boolean isUseSSL() {
+		return useSSL;
+	}
+
+	public void setUseSSL(final boolean useSSL) {
+		this.useSSL = useSSL;
+	}
+
+	public String getHeaderConnectionValue() {
+		return headerConnectionValue;
+	}
+
+	public void setHeaderConnectionValue(final String headerConnectionValue) {
+		this.headerConnectionValue = headerConnectionValue;
+	}
+
+	public String getHeaderAcceptEncoding() {
+		return headerAcceptEncoding;
+	}
+
+	public void setHeaderAcceptEncoding(final String headerAcceptEncoding) {
+		this.headerAcceptEncoding = headerAcceptEncoding;
+	}
+
+	public String getHeaderAcceptCharset() {
+		return headerAcceptCharset;
+	}
+
+	public void setHeaderAcceptCharset(final String headerAcceptCharset) {
+		this.headerAcceptCharset = headerAcceptCharset;
+	}
+
+	public String getHeaderAcceptLang() {
+		return headerAcceptLang;
+	}
+
+	public void setHeaderAcceptLang(final String headerAcceptLang) {
+		this.headerAcceptLang = headerAcceptLang;
+	}
+
+	public Map<String, List<PartialHttpFile>> getFormMultiFiles() {
+		return formMultiFiles;
+	}
+
+	public ArrayList<HttpFile> getFormFiles() {
+		return formFiles;
+	}
+
+	public Map<String, Object> getFormParameters() {
+		return formParameters;
+	}
+
+	public Map<String, Object> getUrlParameters() {
+		return urlParameters;
+	}
+
+	public Map<String, Object> getRequestHeaders() {
+		return requestHeaders;
+	}
+
+	public HttpMethod getRequestMethod() {
+		return requestMethod;
+	}
+
+	public Map<String, Object> getRequestCookies() {
+		return requestCookies;
 	}
 
 	/**
@@ -159,7 +287,7 @@ public class HttpRequestBuilder {
 	}
 
 	/**
-	 * If true (default) then HOST,CONNECTION and USER_AGENT headers are added automatically.
+	 * If true (default) then HOST,CONNECTION and userAgent headers are added automatically.
 	 *
 	 * @param b
 	 * @return
@@ -188,7 +316,7 @@ public class HttpRequestBuilder {
 	 * @return
 	 */
 	public HttpRequestBuilder userAgent(String a) {
-		this.USER_AGENT = a;
+		this.userAgent = a;
 		return this;
 	}
 
@@ -408,17 +536,18 @@ public class HttpRequestBuilder {
 	 */
 	public HttpRequestBuilder build(Function1<HTTPResponse> callback) {
 		if (requestMethod == HttpMethod.GET) {
-			HttpRequestBuilder.requester.getOrDelete(this, callback);
+			getRequester().getOrDelete(this, callback);
 		} else if (requestMethod == HttpMethod.DELETE) {
-			HttpRequestBuilder.requester.getOrDelete(this, callback);
+			getRequester().getOrDelete(this, callback);
 		} else if (requestMethod == HttpMethod.POST) {
-			HttpRequestBuilder.requester.postOrPut(this, callback);
+			getRequester().postOrPut(this, callback);
 //        } else if (requestMethod == HttpMethod.PUT) {
-//            HttpRequestBuilder.requester.postOrPut(this, callback);
+//            getRequester().postOrPut(this, callback);
 		} else {
 			throw new UnsupportedOperationException(String.format("HTTP method \"%s\" not supported", requestMethod));
 		}
 		return this;
 	}
+
 
 }
