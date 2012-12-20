@@ -12,13 +12,25 @@ import io.netty.channel.ChannelHandlerContext;
 public class DemoServer {
 	public static void main(String... args) {
 		BosonServer server = new BosonServer(8080);
-		server.setQueueingStrategyAsBlockingQueue();
-		server.bind();
+//		server.setQueueingStrategyAsBlockingQueue();
+		server.setQueueingStrategyAsCircularBuffer();
 		server.on(HiggsEvent.EXCEPTION_CAUGHT, new ChannelEventListener() {
 			public void triggered(ChannelHandlerContext ctx, Optional<Throwable> ex) {
 				ex.get().printStackTrace();
 			}
 		});
 		server.registerPackage(Listener.class.getPackage().getName());
+		server.bind();
 	}
+
+
+//	public static void main(String[] args) throws Exception {
+//		// create a script engine manager
+//		ScriptEngineManager factory = new ScriptEngineManager();
+//		// create a JavaScript engine
+//		ScriptEngine engine = factory.getEngineByName("JavaScript");
+//		// evaluate JavaScript code from String
+//		System.out.println(engine.eval("print new Date('2012-12-14T13:43:00+0000').getTime()"));
+//	}
+
 }

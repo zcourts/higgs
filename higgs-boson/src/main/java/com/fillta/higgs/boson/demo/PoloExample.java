@@ -12,6 +12,8 @@ public class PoloExample {
 		i = j;
 	}
 
+	public static boolean dont = true;
+	public static boolean stillDont = false;
 	@BosonProperty
 	int i = 0;
 	String name = "Test non-annotated field";
