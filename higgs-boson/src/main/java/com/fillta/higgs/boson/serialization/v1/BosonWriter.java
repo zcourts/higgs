@@ -2,17 +2,15 @@ package com.fillta.higgs.boson.serialization.v1;
 
 import com.fillta.higgs.boson.BosonMessage;
 import com.fillta.higgs.boson.serialization.BosonProperty;
-import com.fillta.higgs.boson.serialization.UnsupportedBosonTypeException;
+import com.fillta.higgs.reflect.ReflectionUtil;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
-import org.apache.log4j.helpers.LogLog;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Field;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static com.fillta.higgs.boson.BosonType.*;
 
@@ -22,6 +20,12 @@ import static com.fillta.higgs.boson.BosonType.*;
 public class BosonWriter {
 	ByteBuf buffer = Unpooled.buffer();
 	final BosonMessage msg;
+	private Logger log = LoggerFactory.getLogger(getClass());
+	/**
+	 * The maximum number of times methods can invoked themselves.
+	 */
+	public static final int MAX_RECURSION_DEPTH = 10;
+	private final ReflectionUtil reflection = new ReflectionUtil(MAX_RECURSION_DEPTH);
 
 	public BosonWriter(BosonMessage msg) {
 		this.msg = msg;
@@ -171,6 +175,12 @@ public class BosonWriter {
 		}
 	}
 
+	/**
+	 * Serialize any* Java object.
+	 * Does not currently support circular references.
+	 * @param obj
+	 * @return
+	 */
 	public boolean writePolo(Object obj) {
 		if (obj == null) {
 			validateAndWriteType(obj);
@@ -179,60 +189,41 @@ public class BosonWriter {
 		Class<BosonProperty> propertyClass = BosonProperty.class;
 		Class<?> klass = obj.getClass();
 		Map data = new HashMap<String, Object>();
-		//get super class's public fields
-		Class<?> sc = klass.getSuperclass();
-		Field[] publicFields = new Field[0];
-		if (sc != null) {
-			sc.getDeclaredFields();
-		}
-		//get ALL (public,private,protect,package) fields declared in the class - excludes inherited fields
-		Field[] classFields = klass.getDeclaredFields();
 		boolean ignoreInheritedFields = false;
 		if (klass.isAnnotationPresent(propertyClass)) {
 			ignoreInheritedFields = klass.getAnnotation(propertyClass).ignoreInheritedFields();
 		}
-		//process inherited fields first - don't ignore inherited fields by default
-		for (Field field : publicFields) {
-			field.setAccessible(true);
-			boolean annotated = field.isAnnotationPresent(propertyClass);
-			//add if annotated with BosonProperty
-			if (annotated || !ignoreInheritedFields) {
-				field.setAccessible(true);
-				String name = field.getName();
-				if (annotated) {
-					BosonProperty ann = field.getAnnotation(propertyClass);
-					if (ann != null && annotated && ann.value().isEmpty()) {
-						name = ann.value();
-					}
-				}
-				try {
-					data.put(name, field.get(obj));
-				} catch (IllegalAccessException e) {
-					LogLog.warn(String.format("Unable to access field %s in class %s", field.getName(), field.getDeclaringClass().getName()), e);
-				}
+		//get ALL (public,private,protect,package) fields declared in the class - includes inherited fields
+		List<Field> fields = reflection.getAllFields(new ArrayList<Field>(), klass, 0);
+		for (Field field : fields) {
+			//if inherited fields are to be ignored then fields must be declared in the current class
+			if (ignoreInheritedFields && klass != field.getDeclaringClass()) {
+				continue;
 			}
-		}
-		//process fields declared in the class itself
-		for (Field field : classFields) {
 			field.setAccessible(true);
 			boolean add = true;
+			field.setAccessible(true);
 			String name = field.getName();
-			//add if annotated with BosonProperty and not marked as ignored
+			//add if annotated with BosonProperty
 			if (field.isAnnotationPresent(propertyClass)) {
 				BosonProperty ann = field.getAnnotation(propertyClass);
+				if (ann != null && !ann.value().isEmpty()) {
+					name = ann.value();
+				}
 				if (ann.ignore()) {
 					add = false;
 				}
-				if (!ann.value().isEmpty()) {
-					name = ann.value(); //use name given in annotation if not empty
+				//if configured to ignore inherited fields then
+				//only fields declared in the object's class are allowed
+				if (ann.ignoreInheritedFields() && field.getDeclaringClass() != klass) {
+					add = false;
 				}
 			}
 			if (add) {
-				//overwriting even if previously set when public fields were processed
 				try {
 					data.put(name, field.get(obj));
 				} catch (IllegalAccessException e) {
-					LogLog.warn(String.format("Unable to access field %s in class %s", field.getName(), field.getDeclaringClass().getName()), e);
+					log.warn(String.format("Unable to access field %s in class %s", field.getName(), field.getDeclaringClass().getName()), e);
 				}
 			}
 		}
@@ -358,7 +349,7 @@ public class BosonWriter {
 				writeMap((Map) param);
 			} else {
 				if (!writePolo(param)) {
-					throw new UnsupportedBosonTypeException(String.format("%s is not a supported type, see BosonType for a list of supported types", obj.getName()), null);
+					log.warn(String.format("%s is not a supported type, see BosonType for a list of supported types", obj.getName()));
 				}
 			}
 		}

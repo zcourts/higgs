@@ -4,6 +4,7 @@ import com.fillta.higgs.boson.BosonMessage;
 import com.fillta.higgs.boson.serialization.InvalidDataException;
 import com.fillta.higgs.boson.serialization.InvalidRequestResponseTypeException;
 import com.fillta.higgs.boson.serialization.UnsupportedBosonTypeException;
+import com.fillta.higgs.reflect.ReflectionUtil;
 import com.fillta.higgs.util.StringUtil;
 import io.netty.buffer.ByteBuf;
 import org.slf4j.Logger;
@@ -11,6 +12,7 @@ import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.Array;
 import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -27,6 +29,11 @@ public class BosonReader {
 	// new BosonClassLoader(Thread.currentThread().getContextClassLoader())
 	BosonMessage msg = new BosonMessage();
 	ByteBuf data;
+	/**
+	 * The maximum number of times methods can invoked themselves.
+	 */
+	public static final int MAX_RECURSION_DEPTH = 10;
+	private final ReflectionUtil reflection = new ReflectionUtil(MAX_RECURSION_DEPTH);
 
 	public BosonReader(ByteBuf msg) {
 		data = msg;
@@ -396,21 +403,23 @@ public class BosonReader {
 					throw new IllegalArgumentException(String.format("Cannot load the requested class %s", poloClassName), e);
 				}
 				Object instance = klass.newInstance();
-				//superclass's fields
-				Class<?> sf = klass.getSuperclass();
-				Field[] publicFields = new Field[0];
-				if (sf != null) sf.getDeclaredFields();
 				//get ALL (public,private,protect,package) fields declared in the class - excludes inherited fields
-				Field[] classFields = klass.getDeclaredFields();
+				List<Field> fields = reflection.getAllFields(new ArrayList<Field>(), klass, 0);
 				//create a map of fields names -> Field
 				Map<String, Field> fieldset = new HashMap();
-				for (Field f : publicFields) {
-					fieldset.put(f.getName(), f);
+				for (Field field : fields) {
+					try {
+						//if there is a "final" modifier, try to remove the bit that marks it as such
+						//http://stackoverflow.com/a/3301720/400048 - usually a bad thing  to do but
+						//de-serializing an object seems a genuine use case for this
+						Field modifiersField = Field.class.getDeclaredField("modifiers");
+						modifiersField.setAccessible(true);
+						modifiersField.setInt(field, field.getModifiers() & ~Modifier.FINAL);
+					} catch (NoSuchFieldException nsfe) {
+						//ignore
+					}
+					fieldset.put(field.getName(), field);
 				}
-				for (Field f : classFields) {
-					fieldset.put(f.getName(), f);
-				}
-
 				for (int i = 0; i < size; i++) {
 					verifyReadable();
 					//polo keys are required to be strings
@@ -446,7 +455,7 @@ public class BosonReader {
 								try {
 									field.set(instance, arr);
 								} catch (IllegalAccessException e) {
-									log.warn(String.format("Unable to access field \"%s\" of class \"%s\" ", key, klass.getName()));
+									log.debug(String.format("Unable to access field \"%s\" of class \"%s\" ", key, klass.getName()));
 								}
 							} else {
 								log.warn("Field \":%s\" of class \"%s\" is an array but value received is \"%s\" of type \"%s\"".format(key, klass.getName(), value, cname));
@@ -461,21 +470,21 @@ public class BosonReader {
 											"but value received is \"%s\" of type \"%s\"",
 											key, klass.getName(), vclass, value, cname));
 								} catch (IllegalAccessException e) {
-									log.warn(String.format("Unable to access field \"%s\" of class \"%s\" ",
+									log.debug(String.format("Unable to access field \"%s\" of class \"%s\" ",
 											key, klass.getName()));
 								}
 							}
 						}
 					} else {
-						log.warn(("Field %s received with value %s but the " +
-								"field does not exist in class %s").format(key, value, poloClassName));
+						log.warn(String.format("Field %s received with value %s but the " +
+								"field does not exist in class %s", key, value, poloClassName));
 					}
 				}
 				return instance;
 			} catch (InstantiationException e) {
 				log.warn("Unable to create an instance", e);
 			} catch (IllegalAccessException e) {
-				e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+				log.debug("Unable to access field");
 			}
 		} else {
 			throw new UnsupportedBosonTypeException(String.format("type %s is not a Boson POLO", type), null);
