@@ -11,5 +11,6 @@ public class BosonEncoder extends MessageToByteEncoder<ByteBuf> {
 	@Override
 	public void encode(ChannelHandlerContext ctx, ByteBuf msg, ByteBuf out) throws Exception {
 		out.writeBytes(msg);
+		ctx.flush();
 	}
 }
