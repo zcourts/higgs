@@ -16,9 +16,9 @@ import io.netty.handler.codec.MessageToByteEncoder;
 public class BosonInitializer extends HiggsEncoderDecoderInitializer<ByteBuf, ByteBuf> {
 	EventProcessor events;
 
-	public BosonInitializer(EventProcessor bosonServer, boolean inflate, boolean deflate, boolean ssl) {
+	public BosonInitializer(EventProcessor eventProcessor, boolean inflate, boolean deflate, boolean ssl) {
 		super(inflate, deflate, ssl);
-		events = bosonServer;
+		events = eventProcessor;
 	}
 
 	@Override
