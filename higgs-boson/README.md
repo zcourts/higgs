@@ -11,23 +11,38 @@ The protocol handles 8 primitive types
 
 See [Java datatypes](http://docs.oracle.com/javase/tutorial/java/nutsandbolts/datatypes.html) for more
 
-+ __byte__ - 8 bit signed two's compliment integer
-+ __short__ - 16 bit signed two's complement integer
-+ __int__ - 32 bit signed two's complement integer
-+ __long__ - 64 bit signed two's compliment integer
-+ __float__ - single-precision 32-bit IEEE 754 floating point
-+ __double__ - double-precision 64-bit IEEE 754 floating point
-+ __boolean__ - 1 byte 1 or 0 where 1 === true and 0 === false where 1 = 0x1 and 0 = 0x0
-+ __char__ - 16-bit Unicode character. minimum value of '\u0000' (or 0) and a maximum value of '\uffff' (or 65,535 inclusive)
+# Primitives
+
++ __byte__ => 8 bit signed two's compliment integer
++ __short__ => 16 bit signed two's complement integer
++ __int__ => 32 bit signed two's complement integer
++ __long__ => 64 bit signed two's compliment integer
++ __float__ => single-precision 32-bit IEEE 754 floating point
++ __double__ => double-precision 64-bit IEEE 754 floating point
++ __boolean__ => 1 byte 1 or 0 where 1 === true and 0 === false where 1 = 0x1 and 0 = 0x0
++ __char__ => 16-bit Unicode character. minimum value of '\u0000' (or 0) and a maximum value of '\uffff' (or 65,535 inclusive)
 
 In addition, the following data structures can be handled
 
-+ __null__ - Indicates a nullable value, if sent in place of a numeric field that field will be set to 0
-+ __string__ - A sequence of characters, any valid UTF-8 string
-+ __array__ - An ordered set of items, the items can be any valid Boson data type
-+ __list__ - An un-ordered set of items, the items can be any valid Boson data type
-+ __map__ - A set of key value pairs, both keys and values can be any valid Boson data type, including map itself
-+ __POLO__ - __P__lain __O__ld __L__anguage __O__bject - A POLO is any object whose fields are valid Boson types.
++ __null__ => Indicates a nullable value, if sent in place of a numeric field that field will be set to 0
++ __string__ => A sequence of characters, any valid UTF-8 string
+
+# Structures
+
++ __array__ => An ordered set of items, the items can be any valid Boson data type
++ __list__ => An un-ordered set of items, the items can be any valid Boson data type
++ __map__ => A set of key value pairs, both keys and values can be any valid Boson data type, including map itself
++ __POLO__ => __P__lain __O__ld __L__anguage __O__bject - A POLO is any object whose fields are valid Boson types.
+
+# Miscellaneous
+
++ __References__ => Furthermore, as circular references can become an issue in some languages (e.g. Java, C++), reference types are supported.
+                    A reference is a Boson __int__ which refers to any boson __structure__ type (i.e. not primitives).
+                    When serializing, a reference map must be passed immediately after the message size.
+                    The reference map is a key, value set where the key = the numeric reference and value = the structure/object.
+                    The reference map, __cannot itself contain references__ only the numeric key value pairs.
+                    Values are allowed to be null but keys are not, keys must __ALWAYS__ be an int reference.
+While possible it is not required for all structures to be references, only in places where it would create a circular reference is it required. As such, de-serializers should use the Boson flag byte to determine what type it is to read.
 
 Encoding/Decoding
 --
@@ -48,27 +63,28 @@ Once the protocol version is written it must be immediately followed by the size
 
 ### Payload
 
-The payload of the message immediately follows the message size i.e. the 6th byte onwards
+The payload of the message immediately follows the message size i.e. the 6th byte onwards, the pay load includes the reference Map. The reference map is written __before__ the rest of the payload.
 
 #### Indicating a type
 
 The value should always preceded by the type.
 To indicate a type use a single byte which corresponds to the following data types, for:
 
-+ __byte__ - 1
-+ __short__ - 2
-+ __int__ - 3
-+ __long__ - 4
-+ __float__ - 5
-+ __double__ - 6
-+ __boolean__ - 7
-+ __char__ - 8
-+ __null__ - 9
-+ __string__ - 10
-+ __array__ - 11
-+ __list__ - 12
-+ __map__ - 13
-+ __POLO__ - 14
++ __byte__ => 1
++ __short__ => 2
++ __int__ => 3
++ __long__ => 4
++ __float__ => 5
++ __double__ => 6
++ __boolean__ => 7
++ __char__ => 8
++ __null__ => 9
++ __string__ => 10
++ __array__ => 11
++ __list__ => 12
++ __map__ => 13
++ __POLO__ => 14
++ __REFERENCE__ => 15
 
 ### Indicating size
 
@@ -76,23 +92,25 @@ Where required the size should immediately follow the type.
 The size is a 32 bit signed int. However, the total size of all types in the payload contribute to the total size
 of the message.
 
-+ __byte__ - N/A a byte is always 8 bits
-+ __short__ - N/A a short is always 16 bits, i.e. 2 bytes
-+ __int__ - N/A an int is always 32 bits, i.e. 4 bytes
-+ __long__ - N/A a long is always 64 bits, i.e. 8 bytes
-+ __float__ - N/A a float is always 32 bits, i.e. 4 bytes
-+ __double__ - N/A a double is always 64 bits, i.e. 8 bytes
-+ __boolean__ - N/A a boolean is always 1 byte, i.e 1 or 0 - This is always converted to true or false in languages
++ __byte__ => N/A a byte is always 8 bits
++ __short__ => N/A a short is always 16 bits, i.e. 2 bytes
++ __int__ => N/A an int is always 32 bits, i.e. 4 bytes
++ __long__ => N/A a long is always 64 bits, i.e. 8 bytes
++ __float__ => N/A a float is always 32 bits, i.e. 4 bytes
++ __double__ => N/A a double is always 64 bits, i.e. 8 bytes
++ __boolean__ => N/A a boolean is always 1 byte, i.e 1 or 0 - This is always converted to true or false in languages
 				that support this
-+ __char__ - N/A a char is always 16 bits
-+ __null__ - N/A once the type is given as null it is enough and the next byte should be the start of the next part of the payload
-+ __string__ - 4 bytes (int) - this is the total number of bytes that make up the whole string i.e. size of all
++ __char__ => N/A a char is always 16 bits
++ __null__ => N/A once the type is given as null it is enough and the next byte should be the start of the next part of the payload
++ __string__ => 4 bytes (int) - this is the total number of bytes that make up the whole string i.e. size of all
 				chars in the string __NOT__ the number of chars but the size of all the chars when converted to bytes
-+ __array__ - 4 bytes  - This is __not the total bytes__ it is a __count/sum__ of how many items are in the array
-+ __list__ - 4 bytes  - This is __not the total bytes__ it is a __count/sum__ of how many items are in the list
-+ __map__ - 4 bytes  - This is __not the total bytes__ it is a __count/sum__ of how many items are in the map
-+ __POLO__ - 4 bytes - This is __not the total bytes of the object__, it is a __count/sum__ of how many fields from the
++ __array__ => 4 bytes  - This is __not the total bytes__ it is a __count/sum__ of how many items are in the array
++ __list__ => 4 bytes  - This is __not the total bytes__ it is a __count/sum__ of how many items are in the list
++ __map__ => 4 bytes  - This is __not the total bytes__ it is a __count/sum__ of how many items are in the map
++ __POLO__ => 4 bytes - This is __not the total bytes of the object__, it is a __count/sum__ of how many fields from the
 			object is serialized
++ __REFERENCE__ => N/A Once a reference is encountered only the reference flag needs to be written since the object in question would
+                have had its size specified in the reference Map.
 
 ### Writing data structures
 
@@ -140,9 +158,9 @@ To allow for other data types to be added and be continuous both connection and 
 
 A connection has 3 components to it.
 
-1. __method__ - A remote method name, this is a __string__ of arbitrary length/content used to identify which method is invoked on the remote service.
-2. __callback__ - A __string__ which contains the name of the function to be invoked on the client when a response is received for a given connection.
-3. __parameters__ - An __array__ of values, which can be any valid boson data type, these are the __ordered__ parameters that will be passed to the remote method.
+1. __method__ => A remote method name, this is a __string__ of arbitrary length/content used to identify which method is invoked on the remote service.
+2. __callback__ => A __string__ which contains the name of the function to be invoked on the client when a response is received for a given connection.
+3. __parameters__ => An __array__ of values, which can be any valid boson data type, these are the __ordered__ parameters that will be passed to the remote method.
 
 The order the method name, callback and parameters are sent in __must be (method,callback,parameters)__.
 This will allow partial de-serialization and make de-serializing POLOs easier in statically typed languages
@@ -162,8 +180,8 @@ This will allow partial de-serialization and make de-serializing POLOs easier in
 
 A connection has 2 components to it.
 
-1. __method__ - A __string__ which contains the name of the function to be invoked on the client when the response is received.
-3. __parameters__ - An __array__ of values, which can be any valid boson data type, these are the __ordered__ parameters that will be passed to the function on the client side.
+1. __method__ => A __string__ which contains the name of the function to be invoked on the client when the response is received.
+3. __parameters__ => An __array__ of values, which can be any valid boson data type, these are the __ordered__ parameters that will be passed to the function on the client side.
 Functions only return a single value but if the remote service wants to provide additional data such as an error message, or flag it can do so in this array.
 
 If the length of the array in the second component is more than 1 then the __first__ value must always be the value of the response returned from the invoked function.
