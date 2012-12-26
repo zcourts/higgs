@@ -1,13 +1,13 @@
 # Boson Protocol version 1
 
-Boson is a language independent binary protocol for remote method invocation.
+Boson is a language independent binary protocol for object serialization and remote method invocation.
 While the base types are based on Java's primitives, the bit size of data type is given
 to make it uniform across languages.
 
 Basic data types
 --
 
-The protocol handles 8 primitive types
+The protocol handles 10 primitive types
 
 See [Java datatypes](http://docs.oracle.com/javase/tutorial/java/nutsandbolts/datatypes.html) for more
 
@@ -21,9 +21,6 @@ See [Java datatypes](http://docs.oracle.com/javase/tutorial/java/nutsandbolts/da
 + __double__ => double-precision 64-bit IEEE 754 floating point
 + __boolean__ => 1 byte 1 or 0 where 1 === true and 0 === false where 1 = 0x1 and 0 = 0x0
 + __char__ => 16-bit Unicode character. minimum value of '\u0000' (or 0) and a maximum value of '\uffff' (or 65,535 inclusive)
-
-In addition, the following data structures can be handled
-
 + __null__ => Indicates a nullable value, if sent in place of a numeric field that field will be set to 0
 + __string__ => A sequence of characters, any valid UTF-8 string
 
@@ -36,13 +33,12 @@ In addition, the following data structures can be handled
 
 # Miscellaneous
 
-+ __References__ => Furthermore, as circular references can become an issue in some languages (e.g. Java, C++), reference types are supported.
-                    A reference is a Boson __int__ which refers to any boson __structure__ type (i.e. not primitives).
-                    When serializing, a reference map must be passed immediately after the message size.
-                    The reference map is a key, value set where the key = the numeric reference and value = the structure/object.
-                    The reference map, __cannot itself contain references__ only the numeric key value pairs.
-                    Values are allowed to be null but keys are not, keys must __ALWAYS__ be an int reference.
-While possible it is not required for all structures to be references, only in places where it would create a circular reference is it required. As such, de-serializers should use the Boson flag byte to determine what type it is to read.
++ __References__ => Furthermore, as circular references can become an issue in some languages (e.g. Java, C++),
+                    reference types are supported. A reference is a Boson __int__ which refers to a boson __POLO__ type.
+
+                    While possible it is not required for all structures to be references, only in places where it would
+                    create a circular reference is it required. As such, de-serializers should use the Boson flag byte
+                    to determine what type it is to read.
 
 Encoding/Decoding
 --
@@ -59,11 +55,11 @@ Once the protocol version is written it must be immediately followed by the size
 
 + The size is __4 bytes__ of the message, i.e. a __32 bit signed int__ from the second to the 5th byte
 + A side effect of this is that a message is limited to about 2GB
-+ Size excludes the first 5 bytes (protocol version and message size) - i.e. the size is the total bytes of the payloadF
++ Size excludes the first 5 bytes (protocol version and message size) - i.e. the size is the total bytes of the payload
 
 ### Payload
 
-The payload of the message immediately follows the message size i.e. the 6th byte onwards, the pay load includes the reference Map. The reference map is written __before__ the rest of the payload.
+The payload of the message immediately follows the message size i.e. the 6th byte onwards.
 
 #### Indicating a type
 
@@ -109,8 +105,8 @@ of the message.
 + __map__ => 4 bytes  - This is __not the total bytes__ it is a __count/sum__ of how many items are in the map
 + __POLO__ => 4 bytes - This is __not the total bytes of the object__, it is a __count/sum__ of how many fields from the
 			object is serialized
-+ __REFERENCE__ => N/A Once a reference is encountered only the reference flag needs to be written since the object in question would
-                have had its size specified in the reference Map.
++ __REFERENCE__ => 5 bytes, the first Byte is 15 (the boson type for a reference) and the following for bytes is an integer
+                   representing the numeric reference.
 
 ### Writing data structures
 
