@@ -70,8 +70,8 @@ public class BosonReader {
 					msg.arguments = readArray(false, 0);
 					break;
 				}
-				case REFERENCE_MAP:
-					readMap(false, -1);
+				case REFERENCE_LIST:
+					readList(false, -1);
 					break;
 				default:
 					throw new InvalidRequestResponseTypeException(String.
