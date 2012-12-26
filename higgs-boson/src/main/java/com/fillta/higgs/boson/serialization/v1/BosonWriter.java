@@ -9,8 +9,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.UnsupportedEncodingException;
+import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static com.fillta.higgs.boson.BosonType.*;
 
@@ -18,7 +20,9 @@ import static com.fillta.higgs.boson.BosonType.*;
  * @author Courtney Robinson <courtney@crlog.info>
  */
 public class BosonWriter {
-	ByteBuf buffer = Unpooled.buffer();
+	final HashMap<Object, Integer> references = new HashMap<>();
+	final HashMap<Object, Integer> referencesWritten = new HashMap<>();
+	final AtomicInteger reference = new AtomicInteger();
 	final BosonMessage msg;
 	private Logger log = LoggerFactory.getLogger(getClass());
 	/**
@@ -26,6 +30,7 @@ public class BosonWriter {
 	 */
 	public static final int MAX_RECURSION_DEPTH = 10;
 	private final ReflectionUtil reflection = new ReflectionUtil(MAX_RECURSION_DEPTH);
+	private boolean writingReferenceTable;
 
 	public BosonWriter(BosonMessage msg) {
 		this.msg = msg;
@@ -33,82 +38,89 @@ public class BosonWriter {
 
 
 	public ByteBuf serialize() {
+		ByteBuf msgBuffer = Unpooled.buffer();
+		// Temporarily stores all reference writes and copied to {@link #msgBuffer} at the end
+		ByteBuf refBuffer = Unpooled.buffer();
 		//first thing to write is the protocol version
-		buffer.writeByte(msg.protocolVersion);
+		msgBuffer.writeByte(msg.protocolVersion);
 		//pad the buffer with 4 bytes which will be updated after serialization to set the size of the message
-		buffer.writeInt(0);
+		msgBuffer.writeInt(0);
 		//then write the message itself
 		if (msg.callback != null && !msg.callback.isEmpty()) {
 			//otherwise its a request
-			serializeRequest();
+			serializeRequest(refBuffer);
 		} else {
 			//if there's no callback then its a response...responses don't send callbacks
-			serializeResponse();
+			serializeResponse(refBuffer);
 		}
+		//write the reference Map
+		writeReferenceMap(msgBuffer);
+		//write the object graph
+		msgBuffer.writeBytes(refBuffer);
 		//calculate the total size of the message. we wrote 5 bytes to the buffer before serializing
 		//this means byte 6 until buffer.writerIndex() = total message size
 		//set message size at index = 1 with value writerIndex() - 5 bytes
-		buffer.setInt(1, buffer.writerIndex() - 5);
-		return buffer;
+		msgBuffer.setInt(1, msgBuffer.writerIndex() - 5);
+		return msgBuffer;
 	}
 
-	private void serializeResponse() {
+	private void serializeResponse(final ByteBuf buffer) {
 		//write the method name
 		buffer.writeByte(RESPONSE_METHOD_NAME); //write type/flag - 1 byte
-		writeString(msg.method);
+		writeString(buffer, msg.method);
 		//write the parameters
 		buffer.writeByte(RESPONSE_PARAMETERS); //write type/flag - int = 4 bytes
-		writeArray(msg.arguments); //write the size/length and payload
+		validateAndWriteType(buffer, msg.arguments); //write the size/length and payload
 		buffer.resetReaderIndex();
 	}
 
-	private void serializeRequest() {
+	private void serializeRequest(final ByteBuf buffer) {
 		buffer.writeByte(REQUEST_METHOD_NAME); //write type/flag - 1 byte
 		//write the method name
-		writeString(msg.method);
+		writeString(buffer, msg.method);
 		//write the callback name
 		buffer.writeByte(REQUEST_CALLBACK); //write type/flag - 1 byte
-		writeString(msg.callback);
+		writeString(buffer, msg.callback);
 		//write the parameters
 		buffer.writeByte(REQUEST_PARAMETERS); //write type/flag - int = 4 bytes
-		writeArray(msg.arguments); //write the size/length and payload
+		validateAndWriteType(buffer, msg.arguments); //write the size/length and payload
 	}
 
-	public void writeByte(byte b) {
+	public void writeByte(final ByteBuf buffer, byte b) {
 		buffer.writeByte(BYTE);
 		buffer.writeByte(b);
 	}
 
-	public void writeNull() {
+	public void writeNull(final ByteBuf buffer) {
 		buffer.writeByte(NULL);
 	}
 
-	public void writeShort(short s) {
+	public void writeShort(final ByteBuf buffer, short s) {
 		buffer.writeByte(SHORT);
 		buffer.writeShort(s);
 	}
 
-	public void writeInt(int i) {
+	public void writeInt(final ByteBuf buffer, int i) {
 		buffer.writeByte(INT);
 		buffer.writeInt(i);
 	}
 
-	public void writeLong(long l) {
+	public void writeLong(final ByteBuf buffer, long l) {
 		buffer.writeByte(LONG);
 		buffer.writeLong(l);
 	}
 
-	public void writeFloat(float f) {
+	public void writeFloat(final ByteBuf buffer, float f) {
 		buffer.writeByte(FLOAT);
 		buffer.writeFloat(f);
 	}
 
-	public void writeDouble(double d) {
+	public void writeDouble(final ByteBuf buffer, double d) {
 		buffer.writeByte(DOUBLE);
 		buffer.writeDouble(d);
 	}
 
-	public void writeBoolean(boolean b) {
+	public void writeBoolean(final ByteBuf buffer, boolean b) {
 		buffer.writeByte(BOOLEAN);
 		if (b)
 			buffer.writeByte(1);
@@ -116,12 +128,12 @@ public class BosonWriter {
 			buffer.writeByte(0);
 	}
 
-	public void writeChar(char c) {
+	public void writeChar(final ByteBuf buffer, char c) {
 		buffer.writeByte(CHAR);
 		buffer.writeChar(c);
 	}
 
-	public void writeString(String s) {
+	public void writeString(final ByteBuf buffer, String s) {
 		buffer.writeByte(STRING);//type
 		try {
 			byte[] str = s.getBytes("utf-8");
@@ -132,16 +144,16 @@ public class BosonWriter {
 
 	}
 
-	public void writeList(List<Object> value) {
+	public void writeList(final ByteBuf buffer, List<Object> value) {
 		buffer.writeByte(LIST); //type
 		buffer.writeInt(value.size()); //size
 		Iterator it = value.iterator();
 		while (it.hasNext()) {
 			Object param = it.next();
 			if (param == null) {
-				writeNull();
+				writeNull(buffer);
 			} else {
-				validateAndWriteType(param);//payload
+				validateAndWriteType(buffer, param); //payload
 			}
 		}
 	}
@@ -152,38 +164,78 @@ public class BosonWriter {
 	 *
 	 * @param value
 	 */
-	public void writeArray(Object[] value) {
+	public void writeArray(final ByteBuf buffer, Object[] value) {
 		buffer.writeByte(ARRAY); //type
 		//we write the component type of the array or null if its not an array
 		int component = getArrayComponent(value.getClass());
 		buffer.writeByte(component);
 		buffer.writeInt(value.length); //size
 		for (Object param : value) {
-			validateAndWriteType(param); //payload
+			validateAndWriteType(buffer, param); //payload
 		}
 	}
 
-	public void writeMap(Map<?, ?> value) {
+	/**
+	 * Writes the contents of  references table so that the integer values become the keys
+	 * and the keys, its values
+	 *
+	 * @param buffer
+	 */
+	private void writeReferenceMap(final ByteBuf buffer) {
+		writingReferenceTable = true;
+		buffer.writeByte(REFERENCE_MAP);
+		buffer.writeByte(MAP); //type
+		buffer.writeInt(references.size());//size
+		Object[] keys = references.keySet().toArray();
+		//sort the objects by their reference IDs
+		Arrays.sort(keys, new Comparator<Object>() {
+			/**
+			 * @return a negative integer, zero, or a positive integer as the
+			 *         first argument is less than, equal to, or greater than the
+			 *         second.
+			 */
+			public int compare(final Object o1, final Object o2) {
+				Integer a = references.get(o1);
+				Integer b = references.get(o2);
+				if (a < b)
+					return -1;
+				if (a > b)
+					return 1;
+				return 0;
+			}
+		});
+		for (Object key : keys) {
+			Object v = references.get(key);
+			validateAndWriteType(buffer, v); //value is the key payload
+			validateAndWriteType(buffer, key);//key is the value payload
+		}
+		writingReferenceTable = false;
+	}
+
+	public void writeMap(final ByteBuf buffer, Map<?, ?> value) {
 		buffer.writeByte(MAP); //type
 		buffer.writeInt(value.size());//size
 		Iterator<?> it = value.keySet().iterator();
 		while (it.hasNext()) {
 			Object key = it.next();
 			Object v = value.get(key);
-			validateAndWriteType(key);//key payload
-			validateAndWriteType(v); //value payload
+			validateAndWriteType(buffer, key);//key payload
+			validateAndWriteType(buffer, v); //value payload
 		}
 	}
 
 	/**
 	 * Serialize any* Java object.
-	 * Does not currently support circular references.
+	 * Circular reference support based on
+	 * http://beza1e1.tuxen.de/articles/deepcopy.html
+	 * http://stackoverflow.com/questions/5157764/java-detect-circular-references-during-custom-cloning
+	 *
 	 * @param obj
 	 * @return
 	 */
-	public boolean writePolo(Object obj) {
+	public boolean writePolo(final ByteBuf buffer, Object obj) {
 		if (obj == null) {
-			validateAndWriteType(obj);
+			validateAndWriteType(buffer, obj);
 			return false;
 		}
 		Class<BosonProperty> propertyClass = BosonProperty.class;
@@ -230,14 +282,20 @@ public class BosonWriter {
 		//if at least one field is allowed to be serialized
 		if (data.size() > 0) {
 			buffer.writeByte(POLO); //type
-			writeString(klass.getName());//class name
+			Integer ref = references.get(obj);
+			if (ref != null) {
+				writeReference(buffer, ref);
+			} else {
+				writeReference(buffer, -1);
+			}
+			writeString(buffer, klass.getName());//class name
 			buffer.writeInt(data.size()); //size
 			Iterator<?> it = data.keySet().iterator();
 			while (it.hasNext()) {
 				Object key = it.next();
 				Object value = data.get(key);
-				writeString((String) key);//key payload must be a string
-				validateAndWriteType(value); //value payload
+				writeString(buffer, (String) key);//key payload must be a string
+				validateAndWriteType(buffer, value); //value payload
 			}
 		}
 		//if no fields found that can be serialized then the arguments array
@@ -318,39 +376,144 @@ public class BosonWriter {
 		}
 	}
 
-	public void validateAndWriteType(Object param) {
+	/**
+	 * @param buffer
+	 * @param param
+	 */
+	public void validateAndWriteType(final ByteBuf buffer, Object param) {
 		if (param == null) {
-			writeNull();
+			writeNull(buffer);
 		} else {
 			Class<?> obj = param.getClass();
 			if (obj == Byte.class) {
-				writeByte((Byte) param);
+				writeByte(buffer, (Byte) param);
 			} else if (obj == Short.class) {
-				writeShort((Short) param);
+				writeShort(buffer, (Short) param);
 			} else if (obj == Integer.class) {
-				writeInt((Integer) param);
+				writeInt(buffer, (Integer) param);
 			} else if (obj == Long.class) {
-				writeLong((Long) param);
+				writeLong(buffer, (Long) param);
 			} else if (obj == Float.class) {
-				writeFloat((Float) param);
+				writeFloat(buffer, (Float) param);
 			} else if (obj == Double.class) {
-				writeDouble((Double) param);
+				writeDouble(buffer, (Double) param);
 			} else if (obj == Boolean.class) {
-				writeBoolean((Boolean) param);
+				writeBoolean(buffer, (Boolean) param);
 			} else if (obj == Character.class) {
-				writeChar((Character) param);
+				writeChar(buffer, (Character) param);
 			} else if (obj == String.class) {
-				writeString((String) param);
-			} else if (List.class.isAssignableFrom(obj)) {
-				writeList((List) param);
+				writeString(buffer, (String) param);
 			} else if (obj.isArray()) {
-				writeArray((Object[]) param);
-			} else if (Map.class.isAssignableFrom(obj)) {
-				writeMap((Map) param);
+				//array values can be reference types but not the arrays themselves
+				writeArray(buffer, (Object[]) param);
 			} else {
-				if (!writePolo(param)) {
-					log.warn(String.format("%s is not a supported type, see BosonType for a list of supported types", obj.getName()));
+				//all other types can create circular references so needs checking
+				Integer ref = references.get(param);
+				//if a reference doesn't exist for the object then add it
+				if (ref == null) {
+					//first time seeing it give it a reference
+					ref = reference.getAndIncrement();
+					//put it before attempting to write so if this gets called again during this write, it exists
+					references.put(param, ref);
+					//add param to list of references and discover all its dependencies
+					traverseObjectGraph(param, new IdentityHashMap<Object, Object>());
+					//if writing reference table and the reference hasn't already been written then write the object
+					if (writingReferenceTable) {
+						Integer writtenRef = referencesWritten.get(param);
+						//if is not written then write it
+						if (writtenRef == null) {
+							writtenRef = ref;
+							referencesWritten.put(param, writtenRef);
+							writeReferenceType(buffer, param, obj);
+						} else {
+							//if already written then write a reference to the already written object
+							writeReference(buffer, writtenRef);
+						}
+					} else {
+						//write a reference otherwise
+						writeReference(buffer, ref);
+					}
+				} else {
+					if (writingReferenceTable) {
+						Integer writtenRef = referencesWritten.get(param);
+						//if is not written then write it
+						if (writtenRef == null) {
+							writtenRef = ref;
+							referencesWritten.put(param, writtenRef);
+							writeReferenceType(buffer, param, obj);
+						} else {
+							//if already written then write a reference to the already written object
+							writeReference(buffer, writtenRef);
+						}
+					} else {
+						//write a reference otherwise
+						writeReference(buffer, ref);
+					}
 				}
+			}
+		}
+	}
+
+	private void writeReference(final ByteBuf buffer, final Integer ref) {
+		//if the object has been written already then write a negative reference
+		buffer.writeByte(REFERENCE);
+		buffer.writeInt(ref);
+	}
+
+	private void writeReferenceType(final ByteBuf buffer, final Object param, final Class<?> obj) {
+		//only if they wouldn't create a circular reference do we write them
+		if (List.class.isAssignableFrom(obj)) {
+			writeList(buffer, (List) param);
+		} else if (Map.class.isAssignableFrom(obj)) {
+			writeMap(buffer, (Map) param);
+		} else {
+			if (!writePolo(buffer, param)) {
+				log.warn(String.format("%s is not a supported type, see BosonType for a list of supported types", obj.getName()));
+			}
+		}
+	}
+
+	public void traverseObjectGraph(final Object obj, final IdentityHashMap<Object, Object> got) {
+		if (obj != null) {
+			if (obj.getClass().isArray()) {
+				traversArrayReferences(obj, got);
+			} else {
+				traversObjectReferences(obj, got);
+			}
+		}
+	}
+
+	private void traversArrayReferences(final Object obj, final IdentityHashMap<Object, Object> got) {
+		int length = Array.getLength(obj);
+		for (int i = 0; i < length; i++) {
+			Object f = Array.get(obj, i);
+			traverseObjectGraph(f, got);
+		}
+	}
+
+	public void traversObjectReferences(final Object obj, final IdentityHashMap<Object, Object> got) {
+		//if a ref hasn't been stored already
+		if (!references.containsKey(obj)) {
+			references.put(obj, reference.getAndIncrement());
+		}
+		//discover object dependencies.
+		List<Field> fields = reflection.getAllFields(new ArrayList<Field>(), obj.getClass(), 0);
+		for (Field field : fields) {
+			try {
+				Object f = field.get(obj);
+				if (f != null) {
+					//if it has this key, we've already added it and its sub-graph, continue
+					if (!got.containsKey(f)) {
+						//if it has this value it means we'll be adding it in a later iteration, jog on
+						if (!got.containsValue(obj)) {
+							//make sure to put before attempting to traverse again
+							got.put(f, obj);
+							traverseObjectGraph(f, got);
+						}
+					}
+				}
+			} catch (IllegalAccessException e) {
+				//ignore, keep calm, carry on
 			}
 		}
 	}
