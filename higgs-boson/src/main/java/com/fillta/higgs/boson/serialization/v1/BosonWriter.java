@@ -30,7 +30,6 @@ public class BosonWriter {
 	 */
 	public static final int MAX_RECURSION_DEPTH = 10;
 	private final ReflectionUtil reflection = new ReflectionUtil(MAX_RECURSION_DEPTH);
-	private boolean writingReferenceTable;
 
 	public BosonWriter(BosonMessage msg) {
 		this.msg = msg;
@@ -38,46 +37,24 @@ public class BosonWriter {
 
 
 	public ByteBuf serialize() {
-		ByteBuf msgBuffer = Unpooled.buffer();
-		// Temporarily stores all reference writes and copied to {@link #msgBuffer} at the end
-		ByteBuf refBuffer = Unpooled.buffer();
+		ByteBuf buffer = Unpooled.buffer();
 		//first thing to write is the protocol version
-		msgBuffer.writeByte(msg.protocolVersion);
+		buffer.writeByte(msg.protocolVersion);
 		//pad the buffer with 4 bytes which will be updated after serialization to set the size of the message
-		msgBuffer.writeInt(0);
+		buffer.writeInt(0);
 		//then write the message itself
 		if (msg.callback != null && !msg.callback.isEmpty()) {
 			//otherwise its a request
-			serializeRequest(refBuffer);
+			serializeRequest(buffer);
 		} else {
 			//if there's no callback then its a response...responses don't send callbacks
-			serializeResponse(refBuffer);
+			serializeResponse(buffer);
 		}
-		List<Object> refs = new ArrayList<>(references.keySet());
-		writingReferenceTable = true;
-		msgBuffer.writeByte(REFERENCE_LIST);
-		//sort the objects by their reference IDs
-		Collections.sort(refs, new Comparator<Object>() {
-			public int compare(final Object o1, final Object o2) {
-				Integer a = references.get(o1);
-				Integer b = references.get(o2);
-				if (a < b)
-					return -1;
-				if (a > b)
-					return 1;
-				return 0;
-			}
-		});
-		//write the reference Map
-		writeList(msgBuffer, refs);
-		writingReferenceTable = false;
-		//write the object graph
-		msgBuffer.writeBytes(refBuffer);
 		//calculate the total size of the message. we wrote 5 bytes to the buffer before serializing
 		//this means byte 6 until buffer.writerIndex() = total message size
 		//set message size at index = 1 with value writerIndex() - 5 bytes
-		msgBuffer.setInt(1, msgBuffer.writerIndex() - 5);
-		return msgBuffer;
+		buffer.setInt(1, buffer.writerIndex() - 5);
+		return buffer;
 	}
 
 	private void serializeResponse(final ByteBuf buffer) {
@@ -396,40 +373,25 @@ public class BosonWriter {
 					references.put(param, ref);
 					//add param to list of references and discover all its dependencies
 					traverseObjectGraph(param, new IdentityHashMap<Object, Object>());
-					//if writing reference table and the reference hasn't already been written then write the object
-					if (writingReferenceTable) {
-						Integer writtenRef = referencesWritten.get(param);
-						//if is not written then write it
-						if (writtenRef == null) {
-							writtenRef = ref;
-							referencesWritten.put(param, writtenRef);
-							writeReferenceType(buffer, param, obj);
-						} else {
-							//if already written then write a reference to the already written object
-							writeReference(buffer, writtenRef);
-						}
-					} else {
-						//write a reference otherwise
-						writeReference(buffer, ref);
-					}
+					verifyReferenceAndWrite(buffer, param, obj, ref);
 				} else {
-					if (writingReferenceTable) {
-						Integer writtenRef = referencesWritten.get(param);
-						//if is not written then write it
-						if (writtenRef == null) {
-							writtenRef = ref;
-							referencesWritten.put(param, writtenRef);
-							writeReferenceType(buffer, param, obj);
-						} else {
-							//if already written then write a reference to the already written object
-							writeReference(buffer, writtenRef);
-						}
-					} else {
-						//write a reference otherwise
-						writeReference(buffer, ref);
-					}
+					//if is not written then write it
+					verifyReferenceAndWrite(buffer, param, obj, ref);
 				}
 			}
+		}
+	}
+
+	private void verifyReferenceAndWrite(final ByteBuf buffer, final Object param, final Class<?> obj, final Integer ref) {
+		Integer writtenRef = referencesWritten.get(param);
+		//if is not written then write it
+		if (writtenRef == null) {
+			writtenRef = ref;
+			referencesWritten.put(param, writtenRef);
+			writeReferenceType(buffer, param, obj);
+		} else {
+			//if already written then write a reference to the already written object
+			writeReference(buffer, writtenRef);
 		}
 	}
 

@@ -4,6 +4,9 @@ import com.fillta.higgs.boson.BosonMessage;
 import io.netty.buffer.ByteBuf;
 import org.junit.Test;
 
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+
 /**
  * @author Courtney Robinson <courtney@crlog.info>
  */
@@ -15,11 +18,29 @@ public class BosonWriterTest {
 			b[i] = new CircularReferenceB();
 			b[i].init();
 		}
-		BosonWriter writer = new BosonWriter(new BosonMessage(b, "test", "callback"));
+		BosonMessage original = new BosonMessage(b, "test", "callback");
+		BosonWriter writer = new BosonWriter(original);
 		ByteBuf obj = writer.serialize();
 		BosonReader reader = new BosonReader(obj);
 		BosonMessage msg = reader.deSerialize();
-		System.out.println(msg.arguments);
+		//first verify what we serialize
+		assertTrue("At least 1 instance required", original.arguments.length > 0);
+		Object arg = original.arguments[0];
+		assertTrue("Must be instance of CircularReferenceB", arg instanceof CircularReferenceB);
+		CircularReferenceB b1 = (CircularReferenceB) arg;
+		assertNotNull("CircularReferenceA not initialized", b1.a);
+		CircularReferenceA a1 = b1.a;
+		assertNotNull("CircularReferenceB not initialized", a1.b);
+		assertTrue("CircularReferenceB and CircularReferenceA are not equal", a1.b == b1);
+		//verify what we de-serialize
+		assertTrue("At least 1 instance required", msg.arguments.length > 0);
+		Object arg1 = msg.arguments[0];
+		assertTrue("Must be instance of CircularReferenceB", arg1 instanceof CircularReferenceB);
+		CircularReferenceB b2 = (CircularReferenceB) arg;
+		assertNotNull("CircularReferenceA not initialized", b2.a);
+		CircularReferenceA a2 = b2.a;
+		assertNotNull("CircularReferenceB not initialized", a2.b);
+		assertTrue("CircularReferenceB and CircularReferenceA are not equal", a2.b == b2);
 	}
 
 	@Test

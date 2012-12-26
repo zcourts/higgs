@@ -70,9 +70,6 @@ public class BosonReader {
 					msg.arguments = readArray(false, 0);
 					break;
 				}
-				case REFERENCE_LIST:
-					readList(false, -1);
-					break;
 				default:
 					throw new InvalidRequestResponseTypeException(String.
 							format("The type %s does not match any of the supported" +
