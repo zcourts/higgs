@@ -8,43 +8,18 @@ import org.junit.Test;
  * @author Courtney Robinson <courtney@crlog.info>
  */
 public class BosonWriterTest {
-	private class CircularReferenceA extends BosonMessage {
-		CircularReferenceB b;
-
-		public void init() {
-			b = new CircularReferenceB();
-			b.init();
-		}
-
-		public String toString() {
-			return hashCode() + "-A";
-		}
-	}
-
-	private class CircularReferenceB extends BosonMessage {
-		CircularReferenceA a;
-
-		public void init() {
-			a = new CircularReferenceA();
-		}
-
-		public String toString() {
-			return hashCode() + "-B";
-		}
-	}
-
 	@Test
 	public void testSerializeCircularReference() throws Exception {
-		CircularReferenceA[] a = new CircularReferenceA[1];
-		for (int i = 0; i < a.length; i++) {
-			a[i] = new CircularReferenceA();
-			a[i].init();
+		CircularReferenceB[] b = new CircularReferenceB[1];
+		for (int i = 0; i < b.length; i++) {
+			b[i] = new CircularReferenceB();
+			b[i].init();
 		}
-		BosonWriter writer = new BosonWriter(new BosonMessage(a, "test", "callback"));
+		BosonWriter writer = new BosonWriter(new BosonMessage(b, "test", "callback"));
 		ByteBuf obj = writer.serialize();
 		BosonReader reader = new BosonReader(obj);
 		BosonMessage msg = reader.deSerialize();
-//		System.out.println(msg.arguments);
+		System.out.println(msg.arguments);
 	}
 
 	@Test
