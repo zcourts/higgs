@@ -18,10 +18,12 @@ public class BosonType {
 	public final static int LIST = 12;
 	public final static int MAP = 13;
 	public final static int POLO = 14;
+	public final static int REFERENCE = 15;
 	//request response flags
 	public final static int REQUEST_METHOD_NAME = -127;
 	public final static int REQUEST_PARAMETERS = -126;
 	public final static int REQUEST_CALLBACK = -125;
 	public final static int RESPONSE_METHOD_NAME = -124;
 	public final static int RESPONSE_PARAMETERS = -123;
+	public static final int REFERENCE_MAP = -122;
 }
