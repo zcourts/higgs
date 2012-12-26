@@ -25,5 +25,5 @@ public class BosonType {
 	public final static int REQUEST_CALLBACK = -125;
 	public final static int RESPONSE_METHOD_NAME = -124;
 	public final static int RESPONSE_PARAMETERS = -123;
-	public static final int REFERENCE_MAP = -122;
+	public static final int REFERENCE_LIST = -122;
 }
