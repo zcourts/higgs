@@ -53,8 +53,24 @@ public class BosonWriter {
 			//if there's no callback then its a response...responses don't send callbacks
 			serializeResponse(refBuffer);
 		}
+		List<Object> refs = new ArrayList<>(references.keySet());
+		writingReferenceTable = true;
+		msgBuffer.writeByte(REFERENCE_LIST);
+		//sort the objects by their reference IDs
+		Collections.sort(refs, new Comparator<Object>() {
+			public int compare(final Object o1, final Object o2) {
+				Integer a = references.get(o1);
+				Integer b = references.get(o2);
+				if (a < b)
+					return -1;
+				if (a > b)
+					return 1;
+				return 0;
+			}
+		});
 		//write the reference Map
-		writeReferenceMap(msgBuffer);
+		writeList(msgBuffer, refs);
+		writingReferenceTable = false;
 		//write the object graph
 		msgBuffer.writeBytes(refBuffer);
 		//calculate the total size of the message. we wrote 5 bytes to the buffer before serializing
@@ -173,43 +189,6 @@ public class BosonWriter {
 		for (Object param : value) {
 			validateAndWriteType(buffer, param); //payload
 		}
-	}
-
-	/**
-	 * Writes the contents of  references table so that the integer values become the keys
-	 * and the keys, its values
-	 *
-	 * @param buffer
-	 */
-	private void writeReferenceMap(final ByteBuf buffer) {
-		writingReferenceTable = true;
-		buffer.writeByte(REFERENCE_MAP);
-		buffer.writeByte(MAP); //type
-		buffer.writeInt(references.size());//size
-		Object[] keys = references.keySet().toArray();
-		//sort the objects by their reference IDs
-		Arrays.sort(keys, new Comparator<Object>() {
-			/**
-			 * @return a negative integer, zero, or a positive integer as the
-			 *         first argument is less than, equal to, or greater than the
-			 *         second.
-			 */
-			public int compare(final Object o1, final Object o2) {
-				Integer a = references.get(o1);
-				Integer b = references.get(o2);
-				if (a < b)
-					return -1;
-				if (a > b)
-					return 1;
-				return 0;
-			}
-		});
-		for (Object key : keys) {
-			Object v = references.get(key);
-			validateAndWriteType(buffer, v); //value is the key payload
-			validateAndWriteType(buffer, key);//key is the value payload
-		}
-		writingReferenceTable = false;
 	}
 
 	public void writeMap(final ByteBuf buffer, Map<?, ?> value) {
