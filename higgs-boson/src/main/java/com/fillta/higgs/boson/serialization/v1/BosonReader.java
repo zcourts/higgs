@@ -12,11 +12,7 @@ import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.Array;
 import java.lang.reflect.Field;
-import java.lang.reflect.Modifier;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static com.fillta.higgs.boson.BosonType.*;
 
@@ -34,6 +30,7 @@ public class BosonReader {
 	 */
 	public static final int MAX_RECURSION_DEPTH = 10;
 	private final ReflectionUtil reflection = new ReflectionUtil(MAX_RECURSION_DEPTH);
+	private IdentityHashMap<Integer, Object> references = new IdentityHashMap<>();
 
 	public BosonReader(ByteBuf msg) {
 		data = msg;
@@ -73,6 +70,9 @@ public class BosonReader {
 					msg.arguments = readArray(false, 0);
 					break;
 				}
+				case REFERENCE_MAP:
+					readMap(false, -1);
+					break;
 				default:
 					throw new InvalidRequestResponseTypeException(String.
 							format("The type %s does not match any of the supported" +
@@ -387,6 +387,9 @@ public class BosonReader {
 		}
 		if (POLO == type) {
 			verifyReadable();
+			//read reference
+			int refType = data.readByte();
+			int ref = data.readInt();
 			//get class name
 			String poloClassName = readString(false, -1);
 			if (poloClassName == null || poloClassName.isEmpty()) {
@@ -403,22 +406,19 @@ public class BosonReader {
 					throw new IllegalArgumentException(String.format("Cannot load the requested class %s", poloClassName), e);
 				}
 				Object instance = klass.newInstance();
+				//if ref > -1 then put the instance in the reference table
+				if (ref > -1) {
+					references.put(ref, instance);
+				}
 				//get ALL (public,private,protect,package) fields declared in the class - excludes inherited fields
 				List<Field> fields = reflection.getAllFields(new ArrayList<Field>(), klass, 0);
 				//create a map of fields names -> Field
 				Map<String, Field> fieldset = new HashMap();
 				for (Field field : fields) {
-					try {
-						//if there is a "final" modifier, try to remove the bit that marks it as such
-						//http://stackoverflow.com/a/3301720/400048 - usually a bad thing  to do but
-						//de-serializing an object seems a genuine use case for this
-						Field modifiersField = Field.class.getDeclaredField("modifiers");
-						modifiersField.setAccessible(true);
-						modifiersField.setInt(field, field.getModifiers() & ~Modifier.FINAL);
-					} catch (NoSuchFieldException nsfe) {
-						//ignore
-					}
+//					if (!Modifier.isFinal(field.getModifiers())) {
+					//only add non-final fields
 					fieldset.put(field.getName(), field);
+//					}
 				}
 				for (int i = 0; i < size; i++) {
 					verifyReadable();
@@ -492,6 +492,21 @@ public class BosonReader {
 		return null;
 	}
 
+	public Object readReference(final boolean verified, int verifiedType) {
+		int type = verifiedType;
+		if (!verified) {
+			type = data.readByte();
+		}
+		Object obj = null;
+		if (REFERENCE == type) {
+			int reference = data.readInt();
+			obj = references.get(reference);
+			return obj;
+		} else {
+			throw new UnsupportedBosonTypeException(String.format("type %s is not a Boson POLO", type), null);
+		}
+	}
+
 	/**
 	 * Read the next type from the buffer.
 	 * The type param must match one of Boson's supported types otherwise an exception is thrown
@@ -529,6 +544,8 @@ public class BosonReader {
 				return readMap(true, type);
 			case POLO:
 				return readPolo(true, type);
+			case REFERENCE:
+				return readReference(true, type);
 			default: {
 				throw new UnsupportedBosonTypeException(String.format("type %s is not a valid boson type", type), null);
 			}
