@@ -372,7 +372,7 @@ public class BosonWriter {
 					//put it before attempting to write so if this gets called again during this write, it exists
 					references.put(param, ref);
 					//add param to list of references and discover all its dependencies
-					traverseObjectGraph(param, new IdentityHashMap<Object, Object>());
+					traverseObjectGraph(param);
 					verifyReferenceAndWrite(buffer, param, obj, ref);
 				} else {
 					//if is not written then write it
@@ -414,25 +414,25 @@ public class BosonWriter {
 		}
 	}
 
-	public void traverseObjectGraph(final Object obj, final IdentityHashMap<Object, Object> got) {
+	public void traverseObjectGraph(final Object obj) {
 		if (obj != null) {
 			if (obj.getClass().isArray()) {
-				traversArrayReferences(obj, got);
+				traversArrayReferences(obj);
 			} else {
-				traversObjectReferences(obj, got);
+				traversObjectReferences(obj);
 			}
 		}
 	}
 
-	private void traversArrayReferences(final Object obj, final IdentityHashMap<Object, Object> got) {
+	private void traversArrayReferences(final Object obj) {
 		int length = Array.getLength(obj);
 		for (int i = 0; i < length; i++) {
 			Object f = Array.get(obj, i);
-			traverseObjectGraph(f, got);
+			traverseObjectGraph(f);
 		}
 	}
 
-	public void traversObjectReferences(final Object obj, final IdentityHashMap<Object, Object> got) {
+	public void traversObjectReferences(final Object obj) {
 		//if a ref hasn't been stored already
 		if (!references.containsKey(obj)) {
 			references.put(obj, reference.getAndIncrement());
@@ -444,13 +444,8 @@ public class BosonWriter {
 				Object f = field.get(obj);
 				if (f != null) {
 					//if it has this key, we've already added it and its sub-graph, continue
-					if (!got.containsKey(f)) {
-						//if it has this value it means we'll be adding it in a later iteration, jog on
-						if (!got.containsValue(obj)) {
-							//make sure to put before attempting to traverse again
-							got.put(f, obj);
-							traverseObjectGraph(f, got);
-						}
+					if (!references.containsKey(f)) {
+						traverseObjectGraph(f);
 					}
 				}
 			} catch (IllegalAccessException e) {
