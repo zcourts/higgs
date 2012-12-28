@@ -64,6 +64,7 @@ public abstract class HiggsClient<T, OM, IM, SM> extends EventProcessor<T, OM, I
 							function.apply(request);
 						} else {
 							if (request.isAutoReconnectEnabled()) {
+								request.setState(HiggsClientConnection.State.DISCONNECTED);
 								log.debug(String.format("Connecting to %s failed. Attempting to retry in %s milliseconds", request.getHost(), request.getReconnectTimeout()), future.cause());
 								Thread.sleep(request.getReconnectTimeout());
 								connect(request, function);
@@ -128,18 +129,11 @@ public abstract class HiggsClient<T, OM, IM, SM> extends EventProcessor<T, OM, I
 				public void triggered(ChannelHandlerContext ctx, Optional<Throwable> ex) {
 					if (ex.isPresent()) {
 						if (ex.get() instanceof ConnectException) {
-							connection.setConnected(HiggsClientConnection.State.DISCONNECTED);
-							log.warn(String.format("Failed to connect to %s on %s:%s, attempting to retry", connection.getServiceName(), connection.getHost(), connection.getPort()));
-							sleep(connection.getReconnectTimeout());
-							connect(connection, function);
+							reconnect(String.format("Failed to connect to %s on %s:%s, attempting to retry", connection.getServiceName(), connection.getHost(), connection.getPort()));
 						} else if (ex.get() instanceof ClosedChannelException) {
-							connection.setConnected(HiggsClientConnection.State.DISCONNECTED);
-							log.warn(String.format("Client connection to %s on %s:%s socket closed", connection.getServiceName(), connection.getHost(), connection.getPort()));
+							reconnect(String.format("Client connection to %s on %s:%s socket closed", connection.getServiceName(), connection.getHost(), connection.getPort()));
 						} else if (ex.get() instanceof IOException) {
-							connection.setConnected(HiggsClientConnection.State.DISCONNECTED);
-							log.warn(String.format("Connection to %s on %s:%s, was forcibly closed, the server may be unavailable, attempting to reconnect", connection.getServiceName(), connection.getHost(), connection.getPort()));
-							sleep(connection.getReconnectTimeout());
-							connect(connection, function);
+							reconnect(String.format("Connection to %s on %s:%s, was forcibly closed, the server may be unavailable, attempting to reconnect", connection.getServiceName(), connection.getHost(), connection.getPort()));
 						} else if (ex.get() instanceof ChannelException) {
 							if (ex.isPresent() && ex.get() instanceof BindException) {
 								log.error(String.format("Cannot start service on localhost:%s address already in use", connection.getPort()), ex.get());
@@ -147,6 +141,13 @@ public abstract class HiggsClient<T, OM, IM, SM> extends EventProcessor<T, OM, I
 							}
 						}
 					}
+				}
+
+				private void reconnect(String logMsg) {
+					connection.setConnected(HiggsClientConnection.State.DISCONNECTED);
+					log.warn(logMsg);
+					sleep(connection.getReconnectTimeout());
+					connect(connection, function);
 				}
 			});
 		}
