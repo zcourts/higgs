@@ -3,30 +3,28 @@
 The name shamelessly stolen from the almost mythical Higgs Boson http://en.wikipedia.org/wiki/Higgs_boson .
 
 * __Higgs__ - the name of the library
-* __Boson__ - the name of the protocol, the protocol specification is in the "info.crlog.higgs.protocols.boson" package
+* __Boson__ - the name of the protocol
 
-Together with __Netty__ forms a pure JVM (NIO based) high performance, message oriented networking library.
+Together with __Netty__ forms a pure JVM (NIO based) high performance, message oriented networking framework.
 The project was started to remove the need I had for ZeroMQ (too many issues with native dependency in jzmq)
-
-It has since grown to be more robust than originally intended.
+The other protocols were added as the need arose. And it has since grown to be more robust than originally intended.
 
 # Supported protocols
 
-1. HTTP/HTTPS (Client) - Server to be added
-2. WebSocket  (Client and Server) - Compatible with Socket.io or any other WebSocket client
+1. HTTP/HTTPS (Client and Server)
+2. WebSocket  (Client and Server) - Compatible with Socket.io or any other WebSocket client (being ported from original Scala implementation)
 3. Boson - A language independent, topic oriented protocol for sending/receiving arbitrary data over the network and
             performing remote method invocation (RMI/RPC).
 
 # Custom Protocols
+
 + One of the biggest wins with Higgs is it provides a simple framework for you to do your own protocol.
             The [advanced](#advanced) section below shows how trivial it is to do so.
             However, as it stands, Higgs will continue to add support for "standard" protocols. On the to do list are
-            ftp,ssh, sctp, telnet etc.
-
-
-+ __Boson__ is the actively used/developed protocol.
+            ftp,ssh, sctp, telnet etc (They'll probably be external projects with a dependency on higgs rather than core modules).
++ __Boson__ is the actively used/developed custom protocol and is a detailed example of doing your own.
 + A __Node JS__ implementation of the Boson protocol can be found here [https://github.com/zcourts/higgs-node](https://github.com/zcourts/higgs)
-+ The Boson protocol is actively used between Node JS and Scala at [Fillta](http://fillta.com)
++ The Boson protocol is actively used between Node JS and Java/Scala at [Fillta](http://fillta.com)
 + The library uses the latest version 4 Netty API. Since the netty project had a major refactor between v3 and v4
 it is not compatible with previous versions and Netty needs to be built and installed in your local maven REPO using the [master branch](https://github.com/netty/netty)
 + TODO: See if replacing reflection based invocation with code generation via [ReflexASM](http://code.google.com/p/reflectasm/) makes a diff.
@@ -45,7 +43,7 @@ it is not compatible with previous versions and Netty needs to be built and inst
 + __higgs-http-client__  A feature rich asynchronous HTTP Client
 + __higgs-http-s3__ (Higgs Http Single Site Server [s3]) Is an HTTP server built for deploying a single site. It is highly configurable
                     and feature rich. Can be used to serve either REST/JSON services,static files (including HTML,images etc) AND dynamic HTML.
-                    Dynamic HTML support is made possible by [Thymelead](http://www.thymeleaf.org/). Loosely coupled so any feature can be removed or disabled
+                    Dynamic HTML support is made possible by [Thymeleaf](http://www.thymeleaf.org/). Loosely coupled so any feature can be removed or disabled
                     via configurations. Extensible, add custom output or input manager. Annotation based configurations.
 + __higgs-scala__ On the to do list, intention is to provide a Scala esk API
 
@@ -128,6 +126,8 @@ See the demo package [/higgs-boson/src/main/java/com/fillta/higgs/boson/demo](ht
 S3 is a simple way for you to deploy self contained web services and applications.
 The below example creates the Api resource and serves its endpoints based on the annotations.
 The default config also serves static files from /public
+Access test method at: http://localhost:3434/api/test/a/12345?a=v&c=x,d,s
+Query string etc are random but gives some data to populate the HTML page generated
 
 ```java
 
@@ -217,6 +217,8 @@ public class Api {
 
 
 ```
+
+![Thymeleaf Resource Screenshot](https://raw.github.com/zcourts/higgs/master/higgs-http-s3/example.png)
 
 # Advanced
 
