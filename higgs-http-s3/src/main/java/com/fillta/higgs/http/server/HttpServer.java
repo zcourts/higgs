@@ -43,7 +43,7 @@ import java.util.concurrent.atomic.AtomicReference;
  *
  * @author Courtney Robinson <courtney@crlog.info>
  */
-public class HttpServer extends HiggsServer<String, HttpResponse, HttpRequest, Object> {
+public class HttpServer<C extends ServerConfig> extends HiggsServer<String, HttpResponse, HttpRequest, Object> {
 	private Map<String, HttpSession> sessions = new ConcurrentHashMap<String, HttpSession>();
 	private Set<Endpoint> get = Collections.newSetFromMap(new ConcurrentHashMap<Endpoint, Boolean>());
 	private Set<Endpoint> put = Collections.newSetFromMap(new ConcurrentHashMap<Endpoint, Boolean>());
@@ -55,14 +55,10 @@ public class HttpServer extends HiggsServer<String, HttpResponse, HttpRequest, O
 	private final LinkedBlockingDeque<ResponseTransformer> transformers = new LinkedBlockingDeque<>();
 	private final LinkedBlockingDeque<ResourceFilter> filters = new LinkedBlockingDeque<>();
 	//default settings
-	private ServerConfig config;
+	protected C config;
 	public static final String SID = "HS3SESSIONID";
 
-	public HttpServer() {
-		this(new ServerConfig());
-	}
-
-	public HttpServer(final ServerConfig config) {
+	public HttpServer(final C config) {
 		super(8080);
 		if (config == null)
 			throw new NullPointerException("You cannot create a server instance with a null getConfig");
@@ -71,7 +67,7 @@ public class HttpServer extends HiggsServer<String, HttpResponse, HttpRequest, O
 		parseConfig();
 	}
 
-	public HttpServer(String configFile) {
+	public HttpServer(Class<C> klass, String configFile) {
 		super(8080);
 		if (configFile == null || configFile.isEmpty()) {
 			throw new RuntimeException(String.format("usage: %s path/to/config.yml", getClass().getName()));
@@ -80,9 +76,9 @@ public class HttpServer extends HiggsServer<String, HttpResponse, HttpRequest, O
 		try {
 			config = yaml.loadAs(Thread.currentThread().getContextClassLoader()
 					.getResourceAsStream(configFile)
-					, ServerConfig.class);
-		} catch (Exception e) {
-			log.error(String.format("The service cannot be started, its config file was not found (%s)", configFile), e);
+					, klass);
+		} catch (Throwable e) {
+			log.error(String.format("The server cannot be started, unable to load config (%s)", configFile), e);
 			//start up error. should not continue
 			System.exit(-1);
 		}
