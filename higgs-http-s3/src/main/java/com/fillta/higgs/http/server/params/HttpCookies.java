@@ -13,4 +13,8 @@ public class HttpCookies extends HashMap<String, HttpCookie> {
 		}
 		return null;
 	}
+
+	public int getSize() {
+		return size();
+	}
 }

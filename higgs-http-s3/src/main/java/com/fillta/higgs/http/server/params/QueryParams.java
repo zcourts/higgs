@@ -21,4 +21,8 @@ public class QueryParams extends HashMap<String, List<String>> {
 			return null;
 		return vals.get(0);
 	}
+
+	public int getSize() {
+		return size();
+	}
 }
