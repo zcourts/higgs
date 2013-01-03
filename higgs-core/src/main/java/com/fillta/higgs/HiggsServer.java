@@ -11,11 +11,19 @@ import io.netty.channel.socket.nio.NioServerSocketChannel;
 
 public abstract class HiggsServer<T, OM, IM, SM> extends EventProcessor<T, OM, IM, SM> {
 
-	private final int port;
+	private int port;
 	private ServerBootstrap bootstrap = new ServerBootstrap();
 	public Channel channel;
 
 	public HiggsServer(int port) {
+		this.port = port;
+	}
+
+	/**
+	 * Set the server's port. Only has any effect if the server is not already bound to a port.
+	 * @param port
+	 */
+	public void setPort(final int port) {
 		this.port = port;
 	}
 
