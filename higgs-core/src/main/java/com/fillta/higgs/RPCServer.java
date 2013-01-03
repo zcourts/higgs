@@ -157,8 +157,8 @@ public abstract class RPCServer<OM, IM, SM> extends HiggsServer<String, OM, IM, 
 		//so if no error occurred the return type should be Unit
 		Optional<Object> returns = Optional.absent();
 		Optional<Throwable> error = Optional.absent();
-		Object[] args = getArguments(request);
 		Class<?>[] argTypes = method.getParameterTypes();
+		Object[] args = getArguments(argTypes, request);
 		try {
 			args = extractIncomingRequestParameters(argTypes, args, request, methodName);
 			//invoke the request method with the extracted parameters
@@ -203,7 +203,7 @@ public abstract class RPCServer<OM, IM, SM> extends HiggsServer<String, OM, IM, 
 	 *
 	 * @return
 	 */
-	public abstract Object[] getArguments(ChannelMessage<IM> request);
+	public abstract Object[] getArguments(final Class<?>[] argTypes, ChannelMessage<IM> request);
 
 	/**
 	 * When invoked concrete classes are to return a response object suitable for sending back to the client.
