@@ -6,9 +6,9 @@ import java.util.Map;
  * @author Courtney Robinson <courtney@crlog.info>
  */
 public class StaticClasspathFileResolver {
-	private static final StaticClassPathCache cache = new StaticClassPathCache(".*[^\\.class]");
+	private static final StaticClassPathCache cache = new StaticClassPathCache(".*(?<!\\.class)$");
 
-	public byte[] load(String path) {
+	public static byte[] load(String path) {
 		if (cache.contains(path)) {
 			return cache.load(path);
 		}

@@ -25,10 +25,10 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
 
 import static io.netty.handler.codec.http.HttpHeaders.Names.*;
-import static io.netty.handler.codec.http.HttpHeaders.isKeepAlive;
 import static io.netty.handler.codec.http.HttpHeaders.setContentLength;
 
 /**
@@ -46,6 +46,7 @@ public class StaticFile {
 	public static Method NOT_MODIFIED;
 	public static Method SEND_FILE;
 	private HttpServer server;
+	private static Map<String, String> formats = new ConcurrentHashMap<>();
 
 	static {
 		try {
@@ -73,13 +74,15 @@ public class StaticFile {
 	public StaticFile(HttpServer server, File file) {
 		this.file = file;
 		this.server = server;
-		if (server.getConfig().files().handle_text_files) {
-			   //htm,html:text/html;json:application/json;xml:application/xml
-//			String textFormats=server.getConfig().files().text_formats;
-//			String[] formats=textFormats.split(";");
-//			for(String format:formats){
-//				dfffd
-//			}
+		//htm,html -> text/html, json -> application/json, xml -> application/xml
+		Map<String, String> textFormats = server.getConfig().files.custom_mime_types;
+		//map multiple extensions to the same content type
+		for (String commaSeparatedExtensions : textFormats.keySet()) {
+			String[] extensions = commaSeparatedExtensions.split(",");
+			String contentType = textFormats.get(commaSeparatedExtensions);
+			for (String extension : extensions) {
+				formats.put(extension, contentType);
+			}
 		}
 	}
 
@@ -98,19 +101,27 @@ public class StaticFile {
 	}
 
 	public Function sendFile(final ChannelMessage<HttpRequest> req) {
-		MimetypesFileTypeMap mimeTypesMap = new MimetypesFileTypeMap();
 		try {
+			MimetypesFileTypeMap mimeTypesMap = new MimetypesFileTypeMap();
 			String contentType = mimeTypesMap.getContentType(file.getPath());
 			final RandomAccessFile raf = new RandomAccessFile(file, "r");
 			final long fileLength = raf.length();
 			final HttpResponse response = new HttpResponse();
 			setContentLength(response, fileLength);
+			//if its a supported text file then set to text mime type
+			for (final String ext : formats.keySet()) {
+				if (file.getName().endsWith(ext)) {
+					contentType = formats.get(ext);
+					break;
+				}
+			}
 			//set mime type
 			response.setHeader(CONTENT_TYPE, contentType);
 			setDateAndCacheHeaders(response, file);
-			if (isKeepAlive(req.message)) {
-				response.setHeader(CONNECTION, HttpHeaders.Values.KEEP_ALIVE);
-			}
+			HttpHeaders.setKeepAlive(response, false);
+			//if (isKeepAlive(req.message)) {
+			//	response.setHeader(CONNECTION, HttpHeaders.Values.KEEP_ALIVE);
+			//}
 			return new Function() {
 				public void apply() {
 					// Write the initial line and the header.
@@ -120,15 +131,15 @@ public class StaticFile {
 					try {
 						writeFuture = req.channel.write
 								(new ChunkedFile
-										(raf, 0, fileLength, server.getConfig().files().chunk_size));
+										(raf, 0, fileLength, server.getConfig().files.chunk_size));
 					} catch (IOException e) {
 						log.warn("Error writing chunk", e);
 					}
 					// Decide whether to close the connection or not.
-					if (!isKeepAlive(req.message)) {
-						// Close the connection when the whole content is written out.
-						writeFuture.addListener(ChannelFutureListener.CLOSE);
-					}
+					//if (!isKeepAlive(req.message)) {
+					// Close the connection when the whole content is written out.
+					writeFuture.addListener(ChannelFutureListener.CLOSE);
+					//}
 				}
 			};
 		} catch (FileNotFoundException fnfe) {

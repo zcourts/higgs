@@ -11,6 +11,7 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.net.URL;
 import java.net.URLDecoder;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -39,33 +40,64 @@ public class StaticResourceFilter implements ResourceFilter {
 		if (!request.getMethod().getName().equalsIgnoreCase(HttpMethod.GET.getName()))
 			return null;
 		String uri = request.getUri();
-		if (uri.equals("/") && server.getConfig().files().serve_index_file) {
-			uri = server.getConfig().files().index_file;
+		if (uri.equals("/") && server.getConfig().files.serve_index_file) {
+			uri = server.getConfig().files.index_file;
 		}
 		//the URL must be from the public directory
 		if (!uri.startsWith("/"))
 			uri = "/" + uri;
-		if (server.getConfig().files().public_directory.endsWith("/"))
+		if (server.getConfig().files.public_directory.endsWith("/"))
 			uri = uri.substring(1);
-		uri = server.getConfig().files().public_directory + uri;
-		final String path = sanitizeUri(uri);
-		if (path == null) {
-			return null;
+		uri = server.getConfig().files.public_directory + uri;
+		File file = null;
+		//check the classpath first
+		URL source = Thread.currentThread().getContextClassLoader().getResource(uri);
+		try {
+			if (source != null) {
+				//jar:file:/B:/dev/projects/Higgs/higgs-http-s3/target/higgs-http-3s-0.0.1-SNAPSHOT.jar!/public/default.html
+				String url = source.toExternalForm();
+				if (url.startsWith("jar:")) {
+					//if it's a JAR path see if we can get it
+					Endpoint e = returnJarStreamEndpoint(url);
+					if (e != null) {
+						return e;
+					}
+					//if we couldn't get it from the JAR continue anyway and see if it exists on disk
+				} else {
+					file = new File(source.toURI());
+					if (file.isHidden() || !file.exists())
+						file = null;
+				}
+			}
+		} catch (Throwable e) {
 		}
-		File base = new File(sanitizeUri(server.getConfig().files().public_directory));
-		if (!base.exists()) {
-			log.warn("Public files directory that is configured does not exist. Will not serve static files");
-			return null;
+		//if we couldn't load it from the class path then try to get it from disk
+		if (file == null) {
+			String base_dir = server.getConfig().files.public_directory;
+			//if we're getting it from disk prepend with / if it doesn't have it
+			if (!uri.startsWith("/"))
+				uri = "/" + uri;
+			if (!base_dir.startsWith("/"))
+				base_dir = "/" + base_dir;
+			final String path = sanitizeUri(uri);
+			if (path == null) {
+				return null;
+			}
+			File base = new File(sanitizeUri(base_dir));
+			if (!base.exists()) {
+				log.warn("Public files directory that is configured does not exist. Will not serve static files");
+				return null;
+			}
+			file = new File(path);
+			if (file.isHidden() || !file.exists()) {
+				return null;
+			}
+			//if its not a sub directory tell them no!
+			if (!isSubDirectory(base, file))
+				return null;
 		}
-		File file = new File(path);
-		if (file.isHidden() || !file.exists()) {
-			return null;
-		}
-		//if its not a sub directory tell them no!
-		if (!isSubDirectory(base, file))
-			return null;
 		if (file.isDirectory()) {
-			if (server.getConfig().files().enable_directory_listing)
+			if (server.getConfig().files.enable_directory_listing)
 				return new Endpoint("" + System.nanoTime(), server, StaticFile.class, StaticFile.DIRECTORY,
 						StaticFile.SERVER_FILE_CONSTRUCTOR, server, file);
 			return null;//directory listing not enabled return 404 or another error
@@ -94,6 +126,29 @@ public class StaticResourceFilter implements ResourceFilter {
 		}
 		return new Endpoint("" + System.nanoTime(), server, StaticFile.class, StaticFile.SEND_FILE,
 				StaticFile.SERVER_FILE_CONSTRUCTOR, server, file);
+	}
+
+	private Endpoint returnJarStreamEndpoint(final String url) throws IOException {
+		return null;
+		//use classpath similar to  this to test:
+		//java  -Xdebug -X"runjdwp:transport=dt_socket,server=y,suspend=n,address=5005" -classpath "B:\Courtney\.m2\repository\org\slf4j\slf4j-api\1.6.1\slf4j-api-1.6.1.jar;B:\Courtney\.m2\repository\org\slf4j\slf4j-log4j12\1.7.0\slf4j-log4j12-1.7.0.jar;B:\Courtney\.m2\repository\log4j\log4j\1.2.17\log4j-1.2.17.jar;B:\Courtney\.m2\repository\com\google\guava\guava\13.0.1\guava-13.0.1.jar;B:\Courtney\.m2\repository\io\netty\netty\4.0.0.Beta1-SNAPSHOT\netty-4.0.0.Beta1-SNAPSHOT.jar;B:\Courtney\.m2\repository\io\netty\netty-metrics-yammer\4.0.0.Beta1-SNAPSHOT\netty-metrics-yammer-4.0.0.Beta1-SNAPSHOT.jar;B:\Courtney\.m2\repository\io\netty\netty-common\4.0.0.Beta1-SNAPSHOT\netty-common-4.0.0.Beta1-SNAPSHOT.jar;B:\Courtney\.m2\repository\com\yammer\metrics\metrics-core\2.1.4\metrics-core-2.1.4.jar;B:\Courtney\.m2\repository\com\fasterxml\jackson\core\jackson-databind\2.1.2\jackson-databind-2.1.2.jar;B:\Courtney\.m2\repository\com\fasterxml\jackson\core\jackson-annotations\2.1.1\jackson-annotations-2.1.1.jar;B:\Courtney\.m2\repository\com\fasterxml\jackson\core\jackson-core\2.1.1\jackson-core-2.1.1.jar;B:\Courtney\.m2\repository\org\thymeleaf\thymeleaf\2.0.15\thymeleaf-2.0.15.jar;B:\Courtney\.m2\repository\ognl\ognl\3.0.5\ognl-3.0.5.jar;B:\Courtney\.m2\repository\org\javassist\javassist\3.16.1-GA\javassist-3.16.1-GA.jar;B:\Courtney\.m2\repository\org\yaml\snakeyaml\1.11\snakeyaml-1.11.jar;B:\dev\projects\Higgs\higgs-core\target\higgs-core-0.0.1-SNAPSHOT.jar;B:\dev\projects\Higgs\higgs-http-s3\target\higgs-http-3s-0.0.1-SNAPSHOT.jar;B:\dev\projects\Higgs\higgs-http-s3\src\main\resources" com.fillta.higgs.http.server.demo.HttpServerDemo
+		//todo support  serving files from JARs
+		//need to implement or extend StaticFile so thatit accepts an input stream.
+		//then modify sendFile method to send a netty ChunkedStream passing in the jar input stream
+//		String jar = url.substring(url.indexOf(":") + 1, url.indexOf("!"));
+//		String jarFile = url.substring(url.indexOf("!") + 1);
+//		ZipFile zip = new ZipFile(jar);
+//		if (zip != null) {
+//			Enumeration<? extends ZipEntry> entries = zip.entries();
+//			if (entries != null) {
+//				while (entries.hasMoreElements()) {
+//					ZipEntry entry = entries.nextElement();
+//					if (jarFile.equalsIgnoreCase(entry.getName())) {
+////									zip.getInputStream()
+//					}
+//				}
+//			}
+//		}
 	}
 
 	/**
