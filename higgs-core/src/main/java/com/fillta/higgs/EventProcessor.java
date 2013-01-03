@@ -10,6 +10,7 @@ import com.fillta.higgs.queueingStrategies.QueueingStrategy;
 import com.fillta.higgs.queueingStrategies.SameThreadQueueingStrategy;
 import com.google.common.base.Optional;
 import io.netty.channel.Channel;
+import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandlerContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -216,8 +217,14 @@ public abstract class EventProcessor<T, OM, IM, SM> {
 		return messageQueue.listening(topic);
 	}
 
-	public void respond(Channel c, OM obj) {
-		c.write(serializer().serialize(c, obj));
+	/**
+	 * @param c
+	 * @param obj
+	 * @return The write future. If you won't be writing any more and the connection won;t be needed
+	 * use .addListener(ChannelFutureListener.CLOSE) to close the connection.
+	 */
+	public ChannelFuture respond(Channel c, OM obj) {
+		return c.write(serializer().serialize(c, obj));
 	}
 
 	public abstract MessageConverter<IM, OM, SM> serializer();

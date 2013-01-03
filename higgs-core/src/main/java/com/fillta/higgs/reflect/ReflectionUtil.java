@@ -23,4 +23,23 @@ public class ReflectionUtil {
 		}
 		return fields;
 	}
+
+	/**
+	 * @param klass
+	 * @return true if klass represents a numeric type, including byte. Both boxed and unboxed.
+	 */
+	public boolean isNumeric(Class<?> klass) {
+		return Integer.class.isAssignableFrom(klass) ||
+				int.class.isAssignableFrom(klass) ||
+				Long.class.isAssignableFrom(klass) ||
+				long.class.isAssignableFrom(klass) ||
+				Double.class.isAssignableFrom(klass) ||
+				double.class.isAssignableFrom(klass) ||
+				Float.class.isAssignableFrom(klass) ||
+				float.class.isAssignableFrom(klass) ||
+				Short.class.isAssignableFrom(klass) ||
+				Short.class.isAssignableFrom(klass) ||
+				Byte.class.isAssignableFrom(klass) ||
+				byte.class.isAssignableFrom(klass);
+	}
 }
