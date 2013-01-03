@@ -6,7 +6,7 @@ import java.util.TreeSet;
 import java.util.regex.Pattern;
 
 /**
- * Essentially a re-writer
+ * Essentially a request re-writer
  * On receiving a request it modifies the request path based on the rules given
  *
  * @author Courtney Robinson <courtney@crlog.info>
@@ -30,32 +30,19 @@ public class Transcriber extends DefaultResourceFilter {
 	public Endpoint getEndpoint(HttpRequest request) {
 		//apply any transcription
 		for (Transcription transcription : transcriptions) {
-			//check starts with premise
-			if (transcription.hasStartsWith()) {
-				if (request.getUri().startsWith(transcription.getStartsWith())) {
-					//should we replace the entire request path?
-					if (transcription.startsWithReplaceWholeRequest()) {
-						request.setUri(transcription.startsWithReplacePath());
+			if (transcription.matches(request.getUri())) {
+				if (transcription.isReplaceWholeRequest()) {
+					request.setUri(transcription.getReplacementPath());
+				} else {
+					String newPath;
+					if (transcription.isReplaceFirstOccurrence()) {
+						newPath = transcription.replaceFirstMatch(request.getUri());
 					} else {
-						String uri = request.getUri();
-						//just replace the start
-						uri = transcription.startsWithReplacePath() +
-								uri.substring(transcription.getStartsWith().length() - 1);
-						request.setUri(uri);
+						newPath = transcription.replaceAllMatches(request.getUri());
 					}
-					break;
+					request.setUri(newPath);
 				}
-			}
-			if (transcription.isMatchable()) {
-				if (transcription.matches(request.getUri())) {
-					if (transcription.matchesReplaceWholeRequest()) {
-						request.setUri(transcription.matchesReplacePath());
-					} else {
-						String newPath = transcription.replaceMatches(request.getUri());
-						request.setUri(newPath);
-					}
-					break;
-				}
+				break;
 			}
 		}
 		return super.getEndpoint(request);
@@ -71,180 +58,140 @@ public class Transcriber extends DefaultResourceFilter {
 	}
 
 	/**
-	 * Convenience method which creates a {@link Transcription} with starts with criteria.
-	 * Essentially, if an HTTP request's path starts with the given string, replace it with
+	 * Convenience method which creates a {@link Transcription} with a {@link Pattern} criteria.
+	 * if an HTTP request's path pattern the given regex, replace all occurrences with
 	 * the provided alternative
 	 *
-	 * @param startsWith        the string to check if the request path begins with
-	 * @param replaceWith       the string to replace it with if it begins with the startsWith param
-	 * @param replaceEntirePath if true then the entire request path is replace, otherwise only the
-	 *                          startWith portion is replaced from the start of the string
+	 * @param regex               the regex to use for search
+	 * @param replaceWith         the string to replace it with if it begins with the startsWith param
+	 * @param replaceEntirePath   if true then the entire request path is replace, otherwise only the
+	 *                            startWith portion is replaced from the start of the string
+	 * @param firstOccurrenceOnly if true only the first occurrence of the pattern is replaced/re-written
 	 */
-	public void addTranscription(String startsWith, String replaceWith, boolean replaceEntirePath) {
+	public void addTranscription(String regex, String replaceWith, boolean replaceEntirePath, boolean firstOccurrenceOnly) {
+		if (regex == null)
+			throw new NullPointerException("A regex is required");
+		if (replaceWith == null)
+			throw new NullPointerException("A replacement string is required");
 		Transcription transcription = new Transcription();
-		transcription.setStartsWith(startsWith);
-		transcription.startsWithReplacePath(replaceWith);
-		transcription.startsWithReplaceWholeRequest(replaceEntirePath);
+		transcription.setPattern(Pattern.compile(regex));
+		transcription.setReplacementPath(replaceWith);
+		transcription.setReplaceWholeRequest(replaceEntirePath);
+		transcription.setReplaceFirstOccurrence(firstOccurrenceOnly);
 		addTranscription(transcription);
 	}
 
 	/**
-	 * Convenience method which creates a {@link Transcription} with a {@link Pattern} criteria.
-	 * if an HTTP request's path matches the given regex, replace all occurrences with
-	 * the provided alternative
+	 * Rewrites/replaced a request based on the provided options
 	 *
-	 * @param regex             the regex to use for search
-	 * @param replaceWith       the string to replace it with if it begins with the startsWith param
-	 * @param replaceEntirePath if true then the entire request path is replace, otherwise only the
-	 *                          startWith portion is replaced from the start of the string
+	 * @param regex             a regex to match
+	 * @param replaceWith       a replacement string to be used to replace matches
+	 * @param replaceEntirePath if true the request's entire path is replaced with the replacement string
 	 */
-	public void addTranscriptionPattern(String regex, String replaceWith, boolean replaceEntirePath) {
-		Transcription transcription = new Transcription();
-		transcription.setMatches(Pattern.compile(regex));
-		transcription.matchesReplacePath(replaceWith);
-		transcription.matchesReplaceWholeRequest(replaceEntirePath);
-		addTranscription(transcription);
+	public void addTranscription(String regex, String replaceWith, boolean replaceEntirePath) {
+		addTranscription(regex, replaceWith, replaceEntirePath, false);
+	}
+
+	/**
+	 * Replaces/re-writes the entire request path with the given replacement
+	 *
+	 * @param regex       the regex to match
+	 * @param replaceWith the string to replace with
+	 */
+	public void addTranscription(String regex, String replaceWith) {
+		addTranscription(regex, replaceWith, true, false);
 	}
 
 	/**
 	 * A Transcription defines a set of actions that can be performed on a request given
-	 * one or more of the predefined premises are true.
-	 * For e.g. if startsWith is defined, then if a request's path starts with the given string
-	 * the request's path can be completely changed or the start of the path can be replaced.
+	 * a predefined premise is true.
 	 */
 	public static class Transcription {
-		private String startsWith;
-		//the path to replace startWith with
-		private String startsWithReplacePath;
-		private boolean startsWithWholeRequest;
-		private String endsWith;
-		private String contains;
-		private Pattern matches;
+		private Pattern pattern;
 		private final long createdAt = System.nanoTime();
-		private boolean matchesReplaceWholeRequest;
-		private String matchesReplacePath;
+		private boolean replaceWholeRequest;
+		private String replacementPath;
+		private boolean replaceFirstOccurrence;
 
 		public Transcription() {
 		}
 
-		public Transcription(String startsWith, String endsWith, String contains, Pattern matches) {
-			this.startsWith = startsWith;
-			this.endsWith = endsWith;
-			this.contains = contains;
-			this.matches = matches;
+		public Transcription(Pattern pattern) {
+			if (pattern == null)
+				throw new NullPointerException("You must provide a transcription pattern");
+			this.pattern = pattern;
 		}
 
 		public long getCreatedAt() {
 			return createdAt;
 		}
 
-		public void startsWithReplacePath(String path) {
-			startsWithReplacePath = path;
+		public Pattern getPattern() {
+			return pattern;
 		}
 
-		public void startsWithReplaceWholeRequest(boolean replace) {
-			startsWithWholeRequest = replace;
+		public void setPattern(final Pattern pattern) {
+			if (pattern == null)
+				throw new NullPointerException("You must provide a transcription pattern");
+			this.pattern = pattern;
 		}
 
-		public String startsWithReplacePath() {
-			return startsWithReplacePath;
+		public boolean matches(final String uri) {
+			return pattern.matcher(uri).matches();
 		}
 
-		public boolean startsWithReplaceWholeRequest() {
-			return startsWithWholeRequest;
+		public boolean isReplaceWholeRequest() {
+			return replaceWholeRequest;
 		}
 
-		public boolean hasStartsWith() {
-			return startsWith != null;
+		public void setReplaceWholeRequest(final boolean replace) {
+			replaceWholeRequest = replace;
 		}
 
-		//ends with
-		public boolean hasEndsWith() {
-			return endsWith != null;
+		public String getReplacementPath() {
+			return replacementPath;
 		}
 
-		public boolean hasContains() {
-			return contains != null;
+		public void setReplacementPath(final String replaceWith) {
+			replacementPath = replaceWith;
 		}
 
-		public String getStartsWith() {
-			return startsWith;
+		public String replaceAllMatches(String uri) {
+			return pattern.matcher(uri).replaceAll(getReplacementPath());
 		}
 
-		public void setStartsWith(final String startsWith) {
-			this.startsWith = startsWith;
+		public String replaceFirstMatch(String uri) {
+			return pattern.matcher(uri).replaceFirst(getReplacementPath());
 		}
 
-		public String getEndsWith() {
-			return endsWith;
+		public boolean isReplaceFirstOccurrence() {
+			return replaceFirstOccurrence;
 		}
 
-		public void setEndsWith(final String endsWith) {
-			this.endsWith = endsWith;
-		}
-
-		public String getContains() {
-			return contains;
-		}
-
-		public void setContains(final String contains) {
-			this.contains = contains;
-		}
-
-
-		public boolean isMatchable() {
-			return matches != null;
-		}
-
-		public Pattern getMatches() {
-			return matches;
-		}
-
-		public void setMatches(final Pattern matches) {
-			this.matches = matches;
+		public void setReplaceFirstOccurrence(final boolean firstOccurrenceOnly) {
+			this.replaceFirstOccurrence = firstOccurrenceOnly;
 		}
 
 		public boolean equals(final Object o) {
 			if (this == o) return true;
 			if (!(o instanceof Transcription)) return false;
 			final Transcription that = (Transcription) o;
-			if (contains != null ? !contains.equals(that.contains) : that.contains != null) return false;
-			if (endsWith != null ? !endsWith.equals(that.endsWith) : that.endsWith != null) return false;
-			if (matches != null ? !matches.equals(that.matches) : that.matches != null) return false;
-			if (startsWith != null ? !startsWith.equals(that.startsWith) : that.startsWith != null) return false;
+			if (createdAt != that.createdAt) return false;
+			if (replaceFirstOccurrence != that.replaceFirstOccurrence) return false;
+			if (replaceWholeRequest != that.replaceWholeRequest) return false;
+			if (pattern != null ? !pattern.equals(that.pattern) : that.pattern != null) return false;
+			if (replacementPath != null ? !replacementPath.equals(that.replacementPath) : that.replacementPath != null)
+				return false;
 			return true;
 		}
 
 		public int hashCode() {
-			int result = startsWith != null ? startsWith.hashCode() : 0;
-			result = 31 * result + (endsWith != null ? endsWith.hashCode() : 0);
-			result = 31 * result + (contains != null ? contains.hashCode() : 0);
-			result = 31 * result + (matches != null ? matches.hashCode() : 0);
+			int result = pattern != null ? pattern.hashCode() : 0;
+			result = 31 * result + (int) (createdAt ^ (createdAt >>> 32));
+			result = 31 * result + (replaceWholeRequest ? 1 : 0);
+			result = 31 * result + (replacementPath != null ? replacementPath.hashCode() : 0);
+			result = 31 * result + (replaceFirstOccurrence ? 1 : 0);
 			return result;
-		}
-
-		public boolean matches(final String uri) {
-			return matches.matcher(uri).matches();
-		}
-
-		public boolean matchesReplaceWholeRequest() {
-			return matchesReplaceWholeRequest;
-		}
-
-		public String matchesReplacePath() {
-			return matchesReplacePath;
-		}
-
-		public String replaceMatches(String uri) {
-			return matches.matcher(uri).replaceAll(matchesReplacePath());
-		}
-
-		public void matchesReplaceWholeRequest(final boolean replace) {
-			matchesReplaceWholeRequest = replace;
-		}
-
-		public void matchesReplacePath(final String replaceWith) {
-			matchesReplacePath = replaceWith;
 		}
 	}
 }
