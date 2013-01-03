@@ -5,19 +5,13 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.introspect.VisibilityChecker;
-import com.fillta.higgs.events.ChannelMessage;
-import com.fillta.higgs.http.server.HiggsEndpoint;
-import com.fillta.higgs.http.server.HiggsHttpRequest;
-import com.fillta.higgs.http.server.HiggsHttpResponse;
-import com.fillta.higgs.http.server.HiggsResponseTransformer;
+import com.fillta.higgs.http.server.*;
 import com.fillta.higgs.http.server.resource.MediaType;
 import io.netty.buffer.Unpooled;
 import io.netty.handler.codec.http.HttpHeaders;
-import io.netty.handler.codec.http.HttpResponseStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.List;
 import java.util.Queue;
 
 /**
@@ -39,8 +33,8 @@ public class JsonTransformer extends BaseTransformer {
 	}
 
 	@Override
-	public boolean canTransform(final Object response, final HiggsHttpRequest request, final List<MediaType> mediaTypes, final HiggsEndpoint endpoint) {
-		for (MediaType type : mediaTypes) {
+	public boolean canTransform(Object response, HttpRequest request) {
+		for (MediaType type : request.getMediaTypes()) {
 			if (type.isCompatible(MediaType.TEXT_PLAIN_TYPE) ||
 					type.isCompatible(MediaType.APPLICATION_JSON_TYPE))
 				return true;
@@ -49,10 +43,9 @@ public class JsonTransformer extends BaseTransformer {
 	}
 
 	@Override
-	public HiggsHttpResponse transform(final Object returns, final List<MediaType> mediaTypes,
-	                                   final ChannelMessage<HiggsHttpRequest> request,
-	                                   final HiggsEndpoint endpoint, final Queue<HiggsResponseTransformer> registeredTransformers) {
-		HiggsHttpResponse response = new HiggsHttpResponse(request.message);
+	public HttpResponse transform(HttpServer server, final Object returns, HttpRequest request,
+	                              Queue<ResponseTransformer> registeredTransformers) {
+		HttpResponse response = new HttpResponse(request);
 		byte[] data = null;
 		if (returns == null) {
 			data = "{}".getBytes();
@@ -61,7 +54,7 @@ public class JsonTransformer extends BaseTransformer {
 				data = mapper.writeValueAsBytes(returns);
 			} catch (JsonProcessingException e) {
 				log.warn("Unable to transform response to JSON", e);
-				response.setStatus(HttpResponseStatus.INTERNAL_SERVER_ERROR);
+				response.setStatus(HttpStatus.INTERNAL_SERVER_ERROR);
 				return response;
 			}
 		}
@@ -69,7 +62,7 @@ public class JsonTransformer extends BaseTransformer {
 			response.setContent(Unpooled.wrappedBuffer(data));
 			HttpHeaders.setContentLength(response, data.length);
 		} else {
-			return tryNextTransformer(returns, mediaTypes, request, endpoint, registeredTransformers);
+			return tryNextTransformer(server, returns, request, registeredTransformers);
 		}
 		return response;
 	}
