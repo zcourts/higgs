@@ -1,87 +1,45 @@
 package com.fillta.higgs.http.server.transformers;
 
-import com.fillta.higgs.events.ChannelMessage;
-import com.fillta.higgs.http.server.HiggsEndpoint;
-import com.fillta.higgs.http.server.HiggsHttpRequest;
-import com.fillta.higgs.http.server.HiggsHttpResponse;
-import com.fillta.higgs.http.server.HiggsResponseTransformer;
-import com.fillta.higgs.http.server.config.HiggsTemplateConfig;
-import com.fillta.higgs.http.server.params.HiggsFormFiles;
-import com.fillta.higgs.http.server.params.HiggsFormParams;
-import com.fillta.higgs.http.server.params.HiggsQueryParams;
-import com.fillta.higgs.http.server.params.HiggsSession;
+import com.fillta.higgs.http.server.*;
+import com.fillta.higgs.http.server.config.TemplateConfig;
 import com.fillta.higgs.http.server.resource.MediaType;
-import com.fillta.higgs.http.server.transformers.thymeleaf.HiggsWebContext;
+import com.fillta.higgs.http.server.resource.Path;
 import com.fillta.higgs.http.server.transformers.thymeleaf.Thymeleaf;
+import com.fillta.higgs.http.server.transformers.thymeleaf.WebContext;
+import com.fillta.higgs.reflect.ReflectionUtil;
 import io.netty.buffer.Unpooled;
 import io.netty.handler.codec.http.HttpHeaders;
-import io.netty.handler.codec.http.HttpResponseStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.thymeleaf.TemplateEngine;
 
+import java.lang.reflect.Field;
 import java.nio.charset.Charset;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Queue;
+import java.util.*;
 
 /**
- * The following will be injected by default
- * <pre>
- * <table>
- *     <thead>
- *         <tr>
- *             <td><strong>Template Variable name</strong></td>
- *             <td><strong>Class/Type</strong></td>
- *         </tr>
- *     </thead>
- *         <tr>
- *             <td>${_query}</td>
- *             <td>{@link HiggsQueryParams}</td>
- *         </tr>
- *         <tr>
- *             <td>${_form}</td>
- *             <td>{@link HiggsFormParams}</td>
- *         </tr>
- *         <tr>
- *             <td>${_files}</td>
- *             <td>{@link HiggsFormFiles}</td>
- *         </tr>
- *         <tr>
- *             <td>${_session}</td>
- *             <td>{@link HiggsSession}</td>
- *         </tr>
- *         <tr>
- *             <td>${_cookies}</td>
- *             <td>{@link HashMap}</td>
- *         </tr>
- *         <tr>
- *             <td>${_request}</td>
- *             <td>{@link HiggsHttpRequest}</td>
- *         </tr>
- * </table>
- * </pre>
+ * See {@link Path#template()} for a list of types that will be injected by default
  *
  * @author Courtney Robinson <courtney@crlog.info>
  */
 public class ThymeleafTransformer extends BaseTransformer {
 	private Logger log = LoggerFactory.getLogger(getClass());
-	protected HiggsTemplateConfig config;
+	private final ReflectionUtil reflection = new ReflectionUtil();
+	protected TemplateConfig config;
 	protected Thymeleaf tl;
 
-	public ThymeleafTransformer(HiggsTemplateConfig config) {
+	public ThymeleafTransformer(TemplateConfig config) {
 		this.config = config;
 		tl = new Thymeleaf(this.config);
 	}
 
 	@Override
-	public boolean canTransform(final Object response, final HiggsHttpRequest request, final List<MediaType> mediaTypes, final HiggsEndpoint endpoint) {
+	public boolean canTransform(Object response, HttpRequest request) {
 		//first and foremost an endpoint must have a template annotation to even be considered
-		if (!endpoint.hasTemplate()) {
+		if (!request.getEndpoint().hasTemplate()) {
 			return false;
 		}
-		for (MediaType type : mediaTypes) {
+		for (MediaType type : request.getMediaTypes()) {
 			if (type.isCompatible(MediaType.WILDCARD_TYPE) ||
 					type.isCompatible(MediaType.TEXT_HTML_TYPE) ||
 					type.isCompatible(MediaType.APPLICATION_FORM_URLENCODED_TYPE) ||
@@ -92,45 +50,88 @@ public class ThymeleafTransformer extends BaseTransformer {
 	}
 
 	@Override
-	public HiggsHttpResponse transform(final Object returns, final List<MediaType> mediaTypes,
-	                                   final ChannelMessage<HiggsHttpRequest> request,
-	                                   final HiggsEndpoint endpoint,
-	                                   final Queue<HiggsResponseTransformer> registeredTransformers) {
-		HiggsHttpResponse response = new HiggsHttpResponse(request.message);
+	public HttpResponse transform(final HttpServer server, Object returns, final HttpRequest request,
+	                              final Queue<ResponseTransformer> registeredTransformers) {
+		WebContext ctx = new WebContext();
+		return transform(ctx,server, returns, request, registeredTransformers,
+				request.getEndpoint().getTemplate());
+	}
 
-		HiggsWebContext ctx = new HiggsWebContext();
-		populateContext(ctx, returns, request, endpoint);
+	public HttpResponse transform(WebContext ctx, HttpServer server, Object returns, HttpRequest request,
+	                              final Queue<ResponseTransformer> registeredTransformers, String template) {
+		HttpResponse response = new HttpResponse(request);
 		byte[] data = null;
 		if (returns == null) {
-			data = "{}".getBytes();
+			//if returns==null then the resource method returned void so return No Content
+			throw new WebApplicationException(HttpStatus.NO_CONTENT, request);
 		} else {
 			try {
-				String content = tl.getTemplateEngine().process(endpoint.getTemplate(), ctx);
-				data = content.getBytes(Charset.forName(config.getCharacterEncoding()));
+				if (config.determine_language_from_accept_header) {
+					try {
+						ctx.setLocale(Locale.forLanguageTag(
+								request.getHeader(HttpHeaders.Names.ACCEPT_LANGUAGE)));
+					} catch (Throwable t) {
+						log.warn("Unable to set locale from accept header");
+					}
+				}
+				populateContext(ctx, server, returns, request);
+				String content = tl.getTemplateEngine().process(template, ctx);
+				data = content.getBytes(Charset.forName(config.character_encoding));
 			} catch (Throwable e) {
 				log.warn("Unable to transform response to HTML using Thymeleaf transformer", e);
-				response.setStatus(HttpResponseStatus.INTERNAL_SERVER_ERROR);
-				return response;
+				throw new WebApplicationException(HttpStatus.INTERNAL_SERVER_ERROR, request);
 			}
 		}
 		if (data != null) {
 			response.setContent(Unpooled.wrappedBuffer(data));
 			HttpHeaders.setContentLength(response, data.length);
 		} else {
-			return tryNextTransformer(returns, mediaTypes, request, endpoint, registeredTransformers);
+			return tryNextTransformer(server, returns, request, registeredTransformers);
 		}
 		return response;
 	}
 
-	private void populateContext(final HiggsWebContext ctx, final Object response,
-	                             final ChannelMessage<HiggsHttpRequest> request,
-	                             final HiggsEndpoint endpoint) {
-		if (response instanceof Map) {
-
+	private void populateContext(final WebContext ctx, final HttpServer server, final Object response,
+	                             final HttpRequest request) {
+		//set defaults first so that users can override
+		//${_query} ,${_form},${_files},${_session},${_cookies},${_request},${_response},${_server}
+		ctx.setVariable("_query", request.getQueryParams());
+		ctx.setVariable("_form", request.getFormParam());
+		ctx.setVariable("_files", request.getFormFiles());
+		//TODO session should never be null!
+		ctx.setVariable("_session", server.getSession(request.getSessionId()));
+		ctx.setVariable("_cookies", request.getCookies());
+		ctx.setVariable("_request", request);
+		ctx.setVariable("_response", response);
+		ctx.setVariable("_server", server);
+		//response already available under ${_response} so only include if is POJO or Map, then we can
+		//do a field to value setup
+		if (response != null) {
+			if (!reflection.isNumeric(response.getClass())
+					|| List.class.isAssignableFrom(response.getClass())
+					|| Set.class.isAssignableFrom(response.getClass())) {
+				if (response instanceof Map && config.convert_map_responses_to_key_value_pairs) {
+					ctx.setVariables((Map<String, ?>) response);
+				} else {
+					//it must be a POJO otherwise (since its not a primitive or a Map,List or Set...)
+					if (config.convert_pojo_responses_to_key_value_pairs) {
+						//get fields going a max of 10 parent classes up in the chain
+						List<Field> fields = reflection.getAllFields(new ArrayList<Field>(), response.getClass(), 10);
+						for (Field field : fields) {
+							try {
+								field.setAccessible(true);
+								ctx.setVariable(field.getName(), field.get(response));
+							} catch (IllegalAccessException e) {
+								log.warn(String.format("Unable to set template variable %s", field.getName()), e);
+							}
+						}
+					}
+				}
+			}
 		}
 	}
 
-	public HiggsTemplateConfig getConfig() {
+	public TemplateConfig getConfig() {
 		return config;
 	}
 
