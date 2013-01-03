@@ -83,9 +83,13 @@ public class RequestProcessor extends HiggsClient<String, HttpRequest, HTTPRespo
 			}
 			boolean ssl = "https".equalsIgnoreCase(scheme);
 			final HttpRequest request = createRequest(req);
+			final HiggsClientConnection<String, HttpRequest, HTTPResponse, Object>[] conn = new HiggsClientConnection[1];
 			listen(request.getId(), new Function1<ChannelMessage<HTTPResponse>>() {
 				@Override
 				public void apply(ChannelMessage<HTTPResponse> a) {
+					if (conn[0] != null) {
+						conn[0].getChannel().close();
+					}
 					callback.apply(a.message);
 				}
 			});
@@ -94,6 +98,7 @@ public class RequestProcessor extends HiggsClient<String, HttpRequest, HTTPRespo
 					new Function1<HiggsClientConnection<String, HttpRequest, HTTPResponse, Object>>() {
 						@Override
 						public void apply(HiggsClientConnection<String, HttpRequest, HTTPResponse, Object> clientConnection) {
+							conn[0] = clientConnection;
 							clientConnection.send(request);
 						}
 					});

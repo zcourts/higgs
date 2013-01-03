@@ -34,7 +34,7 @@ public class BosonServer extends RPCServer<BosonMessage, BosonMessage, ByteBuf> 
 		this.ssl = ssl;
 	}
 
-	public Object[] getArguments(ChannelMessage<BosonMessage> request) {
+	public Object[] getArguments(final Class<?>[] argTypes, ChannelMessage<BosonMessage> request) {
 		return request.message.arguments;
 	}
 

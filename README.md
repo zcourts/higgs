@@ -18,13 +18,13 @@ It has since grown to be more robust than originally intended.
             performing remote method invocation (RMI/RPC).
 
 # Custom Protocols
-+ One of the biggest wins with Higgs is it provides a simple infrastructure for you to do your own protocol.
++ One of the biggest wins with Higgs is it provides a simple framework for you to do your own protocol.
             The [advanced](#advanced) section below shows how trivial it is to do so.
             However, as it stands, Higgs will continue to add support for "standard" protocols. On the to do list are
             ftp,ssh, sctp, telnet etc.
 
 
-+ __Boson__ is the actively used/developed protocol and is the only custom protocol that is recommended for use.
++ __Boson__ is the actively used/developed protocol.
 + A __Node JS__ implementation of the Boson protocol can be found here [https://github.com/zcourts/higgs-node](https://github.com/zcourts/higgs)
 + The Boson protocol is actively used between Node JS and Scala at [Fillta](http://fillta.com)
 + The library uses the latest version 4 Netty API. Since the netty project had a major refactor between v3 and v4
@@ -35,9 +35,19 @@ it is not compatible with previous versions and Netty needs to be built and inst
 * Simplicity and Abstraction from the underlying NIO operations & socket handling.
 * Extensible - Allowing user supplied protocols, encoders,decoders,client server handlers
 * Performant
-* Easily extensible to add custom protocols, binary or otherwise. OMSG and JRPC are intended as a demonstration of how
-	easy it is to do custom protocols.
+* Easily extensible to add custom protocols, binary or otherwise.
 * Built on top of [Netty](http://netty.io)
+
+#Modules
+
++ __higgs-core__ The Higgs framework. If you want to do a custom protocol without the other modules, add this as a dependency.
++ __higgs-boson__ An implementation of the Boson  [Protocol Specification](https://github.com/zcourts/higgs/tree/master/higgs-boson)
++ __higgs-http-client__  A feature rich asynchronous HTTP Client
++ __higgs-http-s3__ (Higgs Http Single Site Server [s3]) Is an HTTP server built for deploying a single site. It is highly configurable
+                    and feature rich. Can be used to serve either REST/JSON services,static files (including HTML,images etc) AND dynamic HTML.
+                    Dynamic HTML support is made possible by [Thymelead](http://www.thymeleaf.org/). Loosely coupled so any feature can be removed or disabled
+                    via configurations. Extensible, add custom output or input manager. Annotation based configurations.
++ __higgs-scala__ On the to do list, intention is to provide a Scala esk API
 
 # Getting started
 
@@ -47,66 +57,30 @@ Each protocol comes with a simple client/server demo.
 
 ### HTTP
 
-```scala
+```java
 
-package info.crlog.higgs.protocols.http
-
-import java.net.URL
-import java.nio.file.Files
-
-/**
- * @author Courtney Robinson <courtney@crlog.info>
- */
-object HttpDemo {
-  def main(args: Array[String]) {
-    val file = Files.createTempFile("higgs.test", ".tmp").toFile()
-    val client = new HttpRequestBuilder()
-    //    for (x <- 1 to 100) {
-    client.query("a", "b")
-      //        .query("c", x)
-      .cookie("c", "d")
-      .cookies(Map("age" -> 100)) //or we can do
-      .header("X-val", "yes")
-      .headers(Map("X-a" -> 123, "X-b" -> "val"))
-      .compress(true)
-      .url(new URL("https://httpbin.org/delete"))
-      .DELETE() //http DELETE connection
-      //build connection and send
-      .build((r) => {
-      println(r) //print response
-    })
-      .url(new URL("https://httpbin.org/get"))
-      .GET()
-      .build((r) => {
-      println(r)
-    })
-      .url(new URL("https://httpbin.org/post"))
-      .POST()
-      //upload a single file
-      .file(new HttpFile("post.txt", file))
-      //upload multiple files under the same name
-      .file("my-var", List(new PartialHttpFile(file), new PartialHttpFile(file)))
-      //or upload multiple files each with different names
-      .file(List(new HttpFile("file-1", file), new HttpFile("file-2", file)))
-      //use form to supply normal form field data i.e. none binary form fields
-      .form("name", "Courtney")
-      .build((r) => {
-      println(r)
-    })
-    //TODO add PUT support
-//      .url(new URL("https://httpbin.org/put"))
-//      .PUT()
-//      .form("name", "Courtney Robinson")
-//      .build((r) => {
-//      println(r)
-//    })
-    //notice all previous settings on the builder is kept and goes into the next connection
-    //if you add files for e.g. and do a POST connection then do a GET only settings supported by
-    //an HTTP GET connection is used. to discard all previous settings use .clear() e.g.
-    .clear() //now everything set previously has been discarded and a clean/new builder is returned
-    .GET() //etc...
-    //    }
-  }
+import com.fillta.functional.Function1;
+import com.fillta.higgs.http.client.HTTPResponse;
+import com.fillta.higgs.http.client.HttpRequestBuilder;
+import java.io.IOException;
+public class Demo {
+	public static void main(String... args) throws IOException, InterruptedException {
+		HttpRequestBuilder builder = new HttpRequestBuilder();
+		builder
+				.url("http://httpbin.org/post")
+				.POST()
+				.cookie("username", "courtney")
+				.cookie("id", 3)
+				.cookie("postcode", "cr8 4hb")
+				.form("title", "some post field")
+				.form("desc", "a post field desc")
+						//.file(new HttpFile("images", file))
+				.build(new Function1<HTTPResponse>() {
+					public void apply(HTTPResponse a) {
+						System.out.println(a);
+					}
+				});
+	}
 }
 
 ```
@@ -117,139 +91,130 @@ Output:
 200 OK
  SINGLE
  HTTP/1.1
- Map(Connection -> ListBuffer(Close), Server -> ListBuffer(gunicorn/0.13.4), Date -> ListBuffer(Sat, 01 Dec 2012 16:01:52 GMT), Content-Type -> ListBuffer(application/json), Content-Length -> ListBuffer(696))
+ {Date=[Wed, 02 Jan 2013 23:24:57 GMT], Content-Length=[778], Content-Type=[application/json], Connection=[Close], Server=[gunicorn/0.16.1]}
  {
-  "origin": "2.122.227.229",
-  "headers": {
-    "Content-Length": "",
-    "Accept-Language": "en",
-    "Accept-Encoding": "gzip,deflate",
-    "Host": "httpbin.org",
-    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-    "User-Agent": "Mozilla/5.0 (compatible; HiggsBoson/0.0.1; +https://github.com/zcourts/higgs)",
-    "Accept-Charset": "ISO-8859-1,utf-8;q=0.7,*;q=0.7",
-    "Connection": "keep-alive",
-    "X-A": "123",
-    "Referer": "https://httpbin.org/delete",
-    "X-B": "val",
-    "X-Val": "yes",
-    "Cookie": "c=d; age=100",
-    "Content-Type": ""
-  },
-  "json": null,
-  "url": "http://httpbin.org/delete?a=b",
-  "args": {
-    "a": "b"
-  },
-  "data": ""
-}
-
-200 OK
- SINGLE
- HTTP/1.1
- Map(Connection -> ListBuffer(Close), Server -> ListBuffer(gunicorn/0.13.4), Date -> ListBuffer(Sat, 01 Dec 2012 16:01:52 GMT), Content-Type -> ListBuffer(application/json), Content-Length -> ListBuffer(660))
- {
-  "url": "http://httpbin.org/get?a=b",
-  "headers": {
-    "Content-Length": "",
-    "Accept-Language": "en",
-    "Accept-Encoding": "gzip,deflate",
-    "Host": "httpbin.org",
-    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-    "User-Agent": "Mozilla/5.0 (compatible; HiggsBoson/0.0.1; +https://github.com/zcourts/higgs)",
-    "Accept-Charset": "ISO-8859-1,utf-8;q=0.7,*;q=0.7",
-    "Connection": "keep-alive",
-    "X-A": "123",
-    "Referer": "https://httpbin.org/get",
-    "X-B": "val",
-    "X-Val": "yes",
-    "Cookie": "c=d; age=100",
-    "Content-Type": ""
-  },
-  "args": {
-    "a": "b"
-  },
-  "origin": "2.122.227.229"
-}
-
-200 OK
- SINGLE
- HTTP/1.1
- Map(Connection -> ListBuffer(Close), Server -> ListBuffer(gunicorn/0.13.4), Date -> ListBuffer(Sat, 01 Dec 2012 16:01:52 GMT), Content-Type -> ListBuffer(application/json), Content-Length -> ListBuffer(1465))
- {
-  "origin": "2.122.227.229",
-  "files": {
-    "post.txt": "",
-    "file-2": "\r\nContent-Disposition: form-data; name=\"my-var\"\r\nContent-Type: multipart/mixed; boundary=545ffa43cd80502e\r\n\r\n--545ffa43cd80502e\r\nContent-Disposition: file; filename=\"higgs.test2350892187396857516.tmp\"\r\nContent-Disposition: form-data; name=\"my-var\"; filename=\"higgs.test2350892187396857516.tmp\"\r\nContent-Type: application/octet-stream\r\nContent-Transfer-Encoding: binary\r\n\r\n\r\n--545ffa43cd80502e\r\nContent-Disposition: file; filename=\"higgs.test2350892187396857516.tmp\"\r\nContent-Type: application/octet-stream\r\nContent-Transfer-Encoding: binary\r\n\r\n\r\n--545ffa43cd80502e--",
-    "file-1": ""
-  },
+  "origin": "10.117.13.242",
+  "files": {},
   "form": {
-    "name": "Courtney"
+    "desc": "hacked upload desc",
+    "title": "hacked upload"
   },
-  "url": "http://httpbin.org/post?a=b",
-  "args": {
-    "a": "b"
-  },
+  "url": "http://httpbin.org/post",
+  "args": {},
   "headers": {
-    "Content-Length": "1272",
+    "Content-Length": "43",
     "Accept-Language": "en",
     "Accept-Encoding": "gzip,deflate",
-    "Host": "httpbin.org",
+    "Connection": "keep-alive",
     "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
     "User-Agent": "Mozilla/5.0 (compatible; HiggsBoson/0.0.1; +https://github.com/zcourts/higgs)",
     "Accept-Charset": "ISO-8859-1,utf-8;q=0.7,*;q=0.7",
-    "Connection": "keep-alive",
-    "X-A": "123",
-    "Referer": "https://httpbin.org/post",
-    "X-B": "val",
-    "X-Val": "yes",
-    "Cookie": "c=d; age=100",
-    "Content-Type": "multipart/form-data; boundary=67b1eeaaf8430d47"
+    "Host": "httpbin.org",
+    "Referer": "http://httpbin.org/post",
+    "Cookie": "id=3; username=courtney; postcode=\"cr8 4hb\"",
+    "Content-Type": "application/x-www-form-urlencoded"
   },
   "json": null,
   "data": ""
 }
 
 ```
-### Boson  [Protocol Specification](https://github.com/zcourts/higgs/tree/master/src/main/scala/info/crlog/higgs/protocols/boson)
+### Boson  [Protocol Specification](https://github.com/zcourts/higgs/tree/master/higgs-boson)
 
-```scala
+See the demo package [/higgs-boson/src/main/java/com/fillta/higgs/boson/demo](https://github.com/zcourts/higgs/tree/master/higgs-boson/src/main/java/com/fillta/higgs/boson/demo)
 
-class Listener {
-  @method("test")
-  def test(a: Double, str: String) = {
-    println(a, str)
-    a * math.random
-  }
+### Higgs S3
+
+S3 is a simple way for you to deploy self contained web services and applications.
+The below example creates the Api resource and serves its endpoints based on the annotations.
+The default config also serves static files from /public
+
+```java
+
+public class HttpServerDemo {
+	public static void main(String... args) throws IOException, InterruptedException {
+		HttpServer server = new HttpServer("./config.yml");
+		server.register(Api.class);
+		server.bind();
+	}
+}
+@Path("/api")
+public class Api {
+	String a = "a";
+	int b = 023343;
+	long c = 999999999;
+	double d = Math.random();
+	static int count;
+
+	@GET
+	public String index() {
+		System.out.println("index");
+		return "yes index";
+	}
+
+	//value uses the JAX-RS format http://jersey.java.net/nonav/documentation/latest/user-guide.html#d4e104
+	//template is the name of the HTML template to use, if no template is provided then another resource
+	//transformer is used on the response, if no transformer can convert the response a Not Acceptable status is returned
+	@Path(value = "test/{string:[a-z0-9]+}/{num:[0-9]+}", template = "api")
+	@GET
+	@POST
+	public Object test(
+			//inject these named parameters
+			//for cookies, values can be a cookie object or a HiggsHttpCookie
+			@CookieParam(HttpServer.SID) String sessionid, //gets HiggsHttpCookie.getValue()
+			@CookieParam(HttpServer.SID) HttpCookie sessionidAsCookie, //gets HiggsHttpCookie
+			//will be null in get requests
+			@FormParam("textline") String text,
+			@HeaderParam("Connection") String keepAlive,
+			@PathParam("string") String random,
+			//if a primitive number such as int,double,float etc is not found it'll be 0
+			@PathParam("num") int integer,
+			@PathParam("num-doesn't-exist") int integerPrimitive,
+			//if boxed Number such as Integer,Double,Float etc is not found then value will be null
+			@PathParam("some-random-name") Integer randomInt,
+			@QueryParam("a") String a,
+			//all these unnamed parameters can be injected and should never be null
+			HttpServer server,
+			ChannelMessage<HttpRequest> message,
+			HttpRequest request, FormFiles files,
+			FormParams form, HttpCookies cookies,
+			QueryParams query, HttpSession session,
+			ResourcePath path
+	) throws JsonProcessingException {
+		count += 1;
+		System.out.println("test:" + count);
+		return new ObjectMapper().writeValueAsString(this);
+	}
+
+	@Path("boom1")
+	@GET
+	public void boom1(HttpRequest request) {
+	    //can throw web exception to return html error to user
+		throw new WebApplicationException(HttpStatus.NOT_IMPLEMENTED, null, request, "error/default");
+	}
+
+	@Path("boom2")
+	@GET
+	public Object boom2() {
+		//you can, and SHOULD return WebApplicationException
+		//if a wae is returned wae.setRequest() is automatically called
+		return new WebApplicationException(HttpStatus.NOT_IMPLEMENTED, "error/default");
+	}
+
+	@Path("manual")
+	@GET
+	public Object manual(final ChannelMessage<HttpRequest> message) {
+		//if a Function is returned then we must write the response manually
+		return new Function() {
+			public void apply() {
+				message.channel.write(new HttpResponse(HttpStatus.FOUND));
+				//close as soon as its written
+				message.channel.closeFuture().addListener(ChannelFutureListener.CLOSE);
+			}
+		};
+	}
 }
 
-object DemoClient {
-  def main(args: Array[String]) {
-    val server = new BosonServer(12001)
-    server.register(new Listener)
-    server.bind()
-    val client = new BosonClient("BosonTest", 12001)
-    client.connect()
-    for (i <- 1 to 10) {
-      client.invoke("test", Array(math.random * i, "random"), (m: Double) => {
-        println("received:", m)
-      }, false)
-    }
-  }
-}
-
-```
-Output
-
-```javascript
-
-(0.6504514338228282,random)
-(received:,0.13370158985585276)
-(0.5559087056550658,random)
-(2.264004979117151,random)
-(received:,0.13683075122251703)
-(1.0331329639981006,random)
-...
 
 ```
 
@@ -257,115 +222,82 @@ Output
 
 Higgs is a fairly flexible library.
 
-Here's a quick protocol implementation  creates a server and client.
-When the client is connected to the server it sends the number 12345,
-When the server receives this it responds with 67890
+Here's a quick protocol implementation  creates a server.
+When a client sends a string to the server, the server invokes a locally registered method called
+"test" (hard coded for the example). The example then returns the same string back to the client.
+Obviously, if you need a custom protocol you won't be sending a simple string some complex serialization
+and de-serialization will be needed. The most complete example of a complex protocol is the __higgs-boson__
+module. Its serialization goes as far as supporting "references".  That will be a more complete example for
+using higgs-core.
 
-```scala
+```java
 
-//See this example in the package below
-package info.crlog.higgs.protocols
+public class SingleFileDemo {
+	public static class MyServer extends RPCServer<String, String, ByteBuf> {
+		private final MyServer me;
 
-import info.crlog.higgs.{Serializer, Server, Client}
-import io.netty.handler.codec.{ByteToMessageDecoder, MessageToByteEncoder}
-import io.netty.channel.ChannelHandlerContext
-import io.netty.buffer.{Unpooled, ByteBuf}
+		public MyServer(int port) {
+			super(port);
+			me = this;
+		}
 
-/**
- * @author Courtney Robinson <courtney@crlog.info>
- */
-object Readme {
-  def main(args: Array[String]) {
-    val server = new MyServer(9090)
-    val client = new MyClient("Test Server", 9090)
-    server.bind()
-    client.connect(() => {
-      client.send(12345)
-    })
-  }
-}
+		//given an incoming request, extract the data necessary to construct a set of parameters for a method
+		public Object[] getArguments(final Class<?>[] argTypes, final ChannelMessage<String> request) {
+			return new Object[]{request.message};
+		}
 
-class MyEncoder extends MessageToByteEncoder[Array[Byte]] {
-  def encode(ctx: ChannelHandlerContext, msg: Array[Byte], out: ByteBuf) {
-    out.writeBytes(msg)
-  }
-}
+		protected String newResponse(final String methodName, final ChannelMessage<String> request, final Optional<Object> returns, final Optional<Throwable> error) {
+			return request.message;//just return the same message that was received for simplicity
+		}
 
-class MyDecoder extends ByteToMessageDecoder[Array[Byte]] {
-  def decode(ctx: ChannelHandlerContext, buffer: ByteBuf): Array[Byte] = {
-    // Wait until an int is available, int = 4 bytes
-    if (buffer.readableBytes < 4) {
-      return null
-    }
-    buffer.resetReaderIndex()
-    val messageContents: Array[Byte] = new Array[Byte](4)
-    buffer.readBytes(messageContents)
-    messageContents
-  }
-}
+		public ChannelInitializer<SocketChannel> initializer() {
+			return new HiggsEncoderDecoderInitializer<String, String>(false, false, false) {
+				public ChannelInboundMessageHandlerAdapter handler() {
+					return new HiggsEventHandlerProxy(me);
+				}
 
-class MySerializer extends Serializer[Int, Array[Byte]] {
-  def serialize(obj: Int) = {
-    val buf = Unpooled.copyInt(obj)
-    val arr = new Array[Byte](buf.writerIndex())
-    buf.getBytes(0, arr, 0, buf.writerIndex())
-    arr
-  }
+				public ByteToMessageDecoder<String> decoder() {
+					return new ByteToMessageDecoder<String>() {
+						protected String decode(final ChannelHandlerContext context, final ByteBuf buf) throws Exception {
+							byte[] data = new byte[buf.writerIndex()];
+							buf.getBytes(buf.writerIndex(), data);
+							return new String(data);
+						}
+					};
+				}
 
-  def deserialize(obj: Array[Byte]) = Unpooled.copiedBuffer(obj).readInt()
-}
+				public MessageToByteEncoder<String> encoder() {
+					return new MessageToByteEncoder<String>() {
+						protected void encode(final ChannelHandlerContext context, final String s, final ByteBuf buf) throws Exception {
+							buf.writeBytes(s.getBytes());
+						}
+					};
+				}
+			};
+		}
 
-class MyServer(port: Int, host: String = "localhost", compress: Boolean = true)
-  extends Server[String, Int, Array[Byte]](host, port, compress) {
-  val serializer = new MySerializer()
+		public MessageConverter<String, String, ByteBuf> serializer() {
+			return new MessageConverter<String, String, ByteBuf>() {
+				public ByteBuf serialize(final Channel ctx, final String msg) {
+					return Unpooled.wrappedBuffer(msg.getBytes());
+				}
 
-  def decoder() = new MyDecoder()
+				public String deserialize(final ChannelHandlerContext ctx, final ByteBuf msg) {
+					byte[] data = new byte[msg.writerIndex()];
+					msg.getBytes(msg.writerIndex(), data);
+					return new String(data);
+				}
+			};
+		}
 
-  def encoder() = new MyEncoder()
-
-  def allTopicsKey(): String = ""
-
-  def broadcast(obj: Int) {
-    //TODO
-  }
-
-  def message(context: ChannelHandlerContext, value: Array[Byte]) {
-    val data = serializer.deserialize(value)
-    println("Server received", data)
-    respond(context.channel(), 67890)
-  }
-}
-
-class MyClient(serviceName: String, port: Int, host: String = "localhost", compress: Boolean = true)
-  extends Client[String, Int, Array[Byte]](serviceName, port, host, compress) {
-  val serializer = new MySerializer()
-
-  def decoder() = new MyDecoder()
-
-  def encoder() = new MyEncoder()
-
-  def allTopicsKey(): String = ""
-
-  def message(context: ChannelHandlerContext, value: Array[Byte]) {
-    val data = serializer.deserialize(value)
-    println("Client received", data)
-    System.exit(0)
-  }
+		public MessageTopicFactory<String, String> topicFactory() {
+			return new MessageTopicFactory<String, String>() {
+				public String extract(final String msg) {
+					return "test";//determine which method to invoke
+				}
+			};
+		}
+	}
 }
 
 ```
-
-# Metrics
-
-Some Metrics are published by the library to help you figure out what's going on in prod.
-Below are some ScreenShots of available metrics.
-
-![Metric 1](https://raw.github.com/zcourts/higgs/master/metric1.png)
-
-![Metric 2](https://raw.github.com/zcourts/higgs/master/metric2.png)
-
-![Metric 3](https://raw.github.com/zcourts/higgs/master/metric3.png)
-
-![Metric 4](https://raw.github.com/zcourts/higgs/master/metric4.png)
-
-![Metric 5](https://raw.github.com/zcourts/higgs/master/metric5.png)
