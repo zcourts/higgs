@@ -2,10 +2,10 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.fillta</groupId>
-    <artifactId>higgs-http-3s</artifactId>
+    <artifactId>higgs-http-s3</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <name>${project.artifactId}</name>
-    <description>Higgs HTTP 3s (Single Site Server)</description>
+    <description>Higgs HTTP S3 (Single Site Server)</description>
     <packaging>jar</packaging>
     <parent>
         <groupId>com.fillta</groupId>

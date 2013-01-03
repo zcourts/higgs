@@ -1,3 +1,4 @@
+#if true a new instance of a resource is created per request otherwise, one instance serves all requests
 instance_per_request : true
 port : 3434
 add_thymeleaf_transformer : true
