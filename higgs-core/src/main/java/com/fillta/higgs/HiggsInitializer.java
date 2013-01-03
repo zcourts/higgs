@@ -15,6 +15,7 @@ import javax.net.ssl.SSLEngine;
 public abstract class HiggsInitializer<IM, OM> extends ChannelInitializer<SocketChannel> {
 
 	final protected boolean useDeflater, useInflater, useCodec, useSSL;
+	protected boolean sslClientMode = true;
 
 	public HiggsInitializer(boolean inflate, boolean deflate, boolean usecodec, boolean ssl) {
 		useCodec = usecodec;
@@ -23,7 +24,11 @@ public abstract class HiggsInitializer<IM, OM> extends ChannelInitializer<Socket
 		useSSL = ssl;
 	}
 
-	int count = 0;
+	public HiggsInitializer(final boolean inflate, final boolean deflate, final boolean ssl,
+	                        final boolean usecodec, final boolean sslClientMode) {
+		this(inflate, deflate, usecodec, ssl);
+		this.sslClientMode = sslClientMode;
+	}
 
 	@Override
 	public void initChannel(SocketChannel ch) throws Exception {
@@ -68,7 +73,7 @@ public abstract class HiggsInitializer<IM, OM> extends ChannelInitializer<Socket
 
 	public SslHandler ssl() {
 		SSLEngine engine = SSLContextFactory.getSSLSocket(SSLConfigFactory.sslConfiguration).createSSLEngine();
-		engine.setUseClientMode(true);
+		engine.setUseClientMode(sslClientMode);
 		return new SslHandler(engine);
 	}
 
