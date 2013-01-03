@@ -13,6 +13,9 @@ import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URL;
 import java.net.URLDecoder;
+import java.nio.file.DirectoryStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -40,6 +43,10 @@ public class StaticResourceFilter implements ResourceFilter {
 		if (!request.getMethod().getName().equalsIgnoreCase(HttpMethod.GET.getName()))
 			return null;
 		String uri = request.getUri();
+		//remove query string from path
+		if (uri.indexOf("?") != -1) {
+			uri = uri.substring(0, uri.indexOf("?"));
+		}
 		if (uri.equals("/") && server.getConfig().files.serve_index_file) {
 			uri = server.getConfig().files.index_file;
 		}
@@ -97,10 +104,30 @@ public class StaticResourceFilter implements ResourceFilter {
 				return null;
 		}
 		if (file.isDirectory()) {
-			if (server.getConfig().files.enable_directory_listing)
-				return new Endpoint("" + System.nanoTime(), server, StaticFile.class, StaticFile.DIRECTORY,
-						StaticFile.SERVER_FILE_CONSTRUCTOR, server, file);
-			return null;//directory listing not enabled return 404 or another error
+			//get list of files, if index/default found then send it instead of listing directory
+			try {
+				DirectoryStream<Path> paths = Files.newDirectoryStream(file.toPath());
+				boolean list = true;
+				for (Path path : paths) {
+					Path name = path.getFileName();
+					if (server.getConfig().files.index_file.endsWith(name.toString())) {
+						file = path.toFile();
+						list = false;
+						break;
+					}
+				}
+				if (list) {
+					if (server.getConfig().files.enable_directory_listing) {
+						return new Endpoint("" + System.nanoTime(), server, StaticFile.class, StaticFile.DIRECTORY,
+								StaticFile.SERVER_FILE_CONSTRUCTOR, server, file);
+					} else {
+						return null;//directory listing not enabled return 404 or another error
+					}
+				}
+			} catch (IOException e) {
+				log.info(String.format("Failed to list files in directory {%s}", e.getMessage()));
+				return null;
+			}
 		}
 		if (!file.isFile())
 			return null;
