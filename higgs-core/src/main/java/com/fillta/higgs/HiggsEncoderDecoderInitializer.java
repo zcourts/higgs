@@ -13,6 +13,10 @@ public abstract class HiggsEncoderDecoderInitializer<IM, OM> extends HiggsInitia
 		super(inflate, deflate, false, ssl);
 	}
 
+	protected HiggsEncoderDecoderInitializer(final boolean inflate, final boolean deflate, final boolean ssl, final boolean usecodec, final boolean sslClientMode) {
+		super(inflate, deflate, ssl, usecodec, sslClientMode);
+	}
+
 	@Override
 	public CombinedChannelHandler codec() {
 		return null;
