@@ -291,6 +291,8 @@ public class MediaType {
 	 */
 	public static List<MediaType> valueOf(String mtype) {
 		ArrayList<MediaType> types = new ArrayList<>();
+		if (mtype == null)
+			return types;
 		//multiple media types are separated by commas
 		Set<String> individualTypes = parseDelimitedType(mtype.length(), mtype, ",");
 		for (String m : individualTypes) {
