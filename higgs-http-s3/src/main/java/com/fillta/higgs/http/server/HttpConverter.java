@@ -8,7 +8,6 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.HttpChunk;
 import io.netty.handler.codec.http.HttpMethod;
-import io.netty.handler.codec.http.HttpRequest;
 import io.netty.handler.codec.http.multipart.*;
 import io.netty.util.Attribute;
 import io.netty.util.AttributeKey;
@@ -26,19 +25,19 @@ import static java.lang.Integer.parseInt;
 /**
  * @author Courtney Robinson <courtney@crlog.info>
  */
-public class HttpConverter implements MessageConverter<HiggsHttpRequest, HiggsHttpResponse, Object> {
+public class HttpConverter implements MessageConverter<HttpRequest, HttpResponse, Object> {
 	public final static AttributeKey<Boolean> attChunks = new AttributeKey("reading-chunks");
 	public final static AttributeKey<HttpPostRequestDecoder> attDecoder = new AttributeKey("files-decoder");
-	public final static AttributeKey<HiggsHttpRequest> attRequest = new AttributeKey("channel-request");
+	public final static AttributeKey<HttpRequest> attRequest = new AttributeKey("channel-request");
 	private static final HttpDataFactory factory = new DefaultHttpDataFactory(DefaultHttpDataFactory.MINSIZE); //Disk
 	private Logger log = LoggerFactory.getLogger(getClass());
-	private final HiggsHttpServer server;
+	private final HttpServer server;
 
-	public HttpConverter(final HiggsHttpServer server) {
+	public HttpConverter(final HttpServer server) {
 		this.server = server;
 	}
 
-	public HiggsHttpResponse serialize(final Channel ctx, final HiggsHttpResponse msg) {
+	public HttpResponse serialize(final Channel ctx, final HttpResponse msg) {
 		return msg;
 	}
 
@@ -52,16 +51,16 @@ public class HttpConverter implements MessageConverter<HiggsHttpRequest, HiggsHt
 	 * @param msg the serialized message
 	 * @return
 	 */
-	public HiggsHttpRequest deserialize(final ChannelHandlerContext ctx, final Object msg) {
+	public HttpRequest deserialize(final ChannelHandlerContext ctx, final Object msg) {
 		//in large post requests only the first object will be of type HttpRequest, others may be chunks
-		if (msg instanceof HttpRequest) {
+		if (msg instanceof io.netty.handler.codec.http.HttpRequest) {
 			//since we have the request see if we had one on the channel already, if not init session
-			HttpRequest req = (HttpRequest) msg;
-			Attribute<HiggsHttpRequest> requestAttribute = ctx.channel().attr(attRequest);
-			HiggsHttpRequest request = requestAttribute.get();
+			io.netty.handler.codec.http.HttpRequest req = (io.netty.handler.codec.http.HttpRequest) msg;
+			Attribute<HttpRequest> requestAttribute = ctx.channel().attr(attRequest);
+			HttpRequest request = requestAttribute.get();
 			if (request == null) {
 				//associate a request with the channel if not already done
-				request = initHiggsRequest((HttpRequest) msg);
+				request = initHiggsRequest((io.netty.handler.codec.http.HttpRequest) msg);
 				requestAttribute.set(request);
 			}
 			if (!HttpMethod.POST.getName().equalsIgnoreCase(req.getMethod().getName()) &&
@@ -122,7 +121,7 @@ public class HttpConverter implements MessageConverter<HiggsHttpRequest, HiggsHt
 		return null;
 	}
 
-	private HiggsHttpRequest readAllHttpDataReceived(final Channel channel) {
+	private HttpRequest readAllHttpDataReceived(final Channel channel) {
 		//entire message/request received
 		HttpPostRequestDecoder decoder = channel.attr(attDecoder).get();
 		List<InterfaceHttpData> data;
@@ -133,8 +132,8 @@ public class HttpConverter implements MessageConverter<HiggsHttpRequest, HiggsHt
 			return null;
 		}
 		//called when all data is received, go over request data and separate form fields from files
-		Attribute<HiggsHttpRequest> requestAttribute = channel.attr(attRequest);
-		HiggsHttpRequest request = requestAttribute.get();
+		Attribute<HttpRequest> requestAttribute = channel.attr(attRequest);
+		HttpRequest request = requestAttribute.get();
 		for (InterfaceHttpData httpData : data) {
 			//check if is file upload or attribute, attributes go into form params and file uploads to file params
 			if (httpData instanceof io.netty.handler.codec.http.multipart.Attribute) {
@@ -166,23 +165,24 @@ public class HttpConverter implements MessageConverter<HiggsHttpRequest, HiggsHt
 	 * @param request
 	 * @return
 	 */
-	private HiggsHttpRequest getAndCleanRequest(final Attribute<HiggsHttpRequest> attribute, final HiggsHttpRequest request) {
+	private HttpRequest getAndCleanRequest(final Attribute<HttpRequest> attribute, final HttpRequest request) {
 		attribute.set(null);
 		return request;
 	}
 
-	private HiggsHttpRequest initHiggsRequest(final HttpRequest req) {
+	private HttpRequest initHiggsRequest(final io.netty.handler.codec.http.HttpRequest req) {
 		//convert Netty HttpRequest to a HiggsHttpRequest via copy constructor
-		HiggsHttpRequest request = new HiggsHttpRequest(req);
+		HttpRequest request = new HttpRequest(req);
 		//if the user has no session available then set one
 		if (!request.hasSessionID()) {
 			SecureRandom random = new SecureRandom();
 			String id = new BigInteger(130, random).toString(32);
-			HttpCookie session = new HttpCookie(HiggsHttpServer.SID, id);
+			HttpCookie session = new HttpCookie(HttpServer.SID, id);
 			session.setPath(server.getConfig().session_path);
 			session.setMaxAge(server.getConfig().session_max_age);
 			session.setHttpOnly(server.getConfig().session_http_only);
-			if (server.getConfig().session_domain != null && !server.getConfig().session_domain.isEmpty())
+			if (server.getConfig().session_domain != null &&
+					!server.getConfig().session_domain.isEmpty())
 				session.setDomain(server.getConfig().session_domain);
 			String sp = server.getConfig().session_ports;
 			if (sp != null && !sp.isEmpty()) {
