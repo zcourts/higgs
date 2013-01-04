@@ -23,6 +23,7 @@
         <module>higgs-boson</module>
         <module>higgs-http-client</module>
         <module>higgs-http-s3</module>
+        <module>higgs-ws</module>
         <module>higgs-scala</module>
     </modules>
 
