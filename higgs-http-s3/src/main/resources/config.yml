@@ -74,4 +74,5 @@ files :
     json : application/json
     xml : application/xml
     png : image/png
+    css : text/css
 
