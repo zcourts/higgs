@@ -41,10 +41,12 @@ it is not compatible with previous versions and Netty needs to be built and inst
 + __higgs-core__ The Higgs framework. If you want to do a custom protocol without the other modules, add this as a dependency.
 + __higgs-boson__ An implementation of the Boson  [Protocol Specification](https://github.com/zcourts/higgs/tree/master/higgs-boson)
 + __higgs-http-client__  A feature rich asynchronous HTTP Client
-+ __higgs-http-s3__ (Higgs Http Single Site Server [s3]) Is an HTTP server built for deploying a single site. It is highly configurable
++ __higgs-http-s3__ (Higgs Http Single Site Server [s3] or HS3) Is an HTTP server built for deploying a single site. It is highly configurable
                     and feature rich. Can be used to serve either REST/JSON services,static files (including HTML,images etc) AND dynamic HTML.
                     Dynamic HTML support is made possible by [Thymeleaf](http://www.thymeleaf.org/). Loosely coupled so any feature can be removed or disabled
                     via configurations. Extensible, add custom output or input manager. Annotation based configurations.
++ __higgs-ws__ WebSocket server and client. The server depends on HS3 and inherits all its features. In addition, it allows serving
+                either a plain WebSocket api or mixing HTTP and WebSockets on the same port and using the same or different paths.
 + __higgs-scala__ On the to do list, intention is to provide a Scala esk API
 
 # Getting started
@@ -219,6 +221,36 @@ public class Api {
 ```
 
 ![Thymeleaf Resource Screenshot](https://raw.github.com/zcourts/higgs/master/higgs-http-s3/example.png)
+
+# WebSocket Server
+
+```java
+
+public class WebSocketServerDemo {
+	static int count = 0;
+
+	public static void main(String... args) {
+		WebSocketServer server = new WebSocketServer(3535);
+		server.HTTP.register(Api.class);
+		server.listen("test", new Function1<ChannelMessage<JsonEvent>>() {
+			public void apply(final ChannelMessage<JsonEvent> a) {
+				System.out.println(++count + " : " + a.message);
+			}
+		});
+		server.bind();
+	}
+}
+
+```
+## Output
+
+```javascript
+
+1 : TextEvent{message='{}', topic='test'}
+2 : TextEvent{message='{}', topic='test'}
+3 : TextEvent{message='{}', topic='test'}
+
+```
 
 # Advanced
 
