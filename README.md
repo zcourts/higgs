@@ -1,5 +1,7 @@
 # Higgs Boson
 
+A high performance, message oriented network library. It provides a core extensible framework and libraries built on top of the core. Libraries include WebSocket server, HTTP Server and Client and Boson a custom serialization and RMI library. 
+
 The name shamelessly stolen from the almost mythical Higgs Boson http://en.wikipedia.org/wiki/Higgs_boson .
 
 * __Higgs__ - the name of the library
