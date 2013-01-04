@@ -49,7 +49,10 @@ public class WebSocketServer extends RPCServer<JsonEvent, JsonEvent, TextWebSock
 		addPath(path);
 		setSniffProtocol(true);
 		enableHTTPDetection(HTTP);
+		//detects the Higgs HFS protocol header with 3 bytes
 		addProtocolDetector(new FlashSocketProtocolDetector(this, this.policy));
+		//detects flash policy requests with 23 bytes
+		addProtocolDetector(new FlashSocketPolicyDetector(this, this.policy));
 		//must add interceptor to HTTP requests
 		HTTP.addInterceptor(interceptor);
 	}
