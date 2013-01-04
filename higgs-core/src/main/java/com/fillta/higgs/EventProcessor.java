@@ -59,6 +59,8 @@ public abstract class EventProcessor<T, OM, IM, SM> {
 	protected Map<HiggsEvent, Set<ChannelEventListener>> eventSubscribers = new ConcurrentHashMap<>();
 	protected QueueingStrategy<T, IM> messageQueue;
 	private AtomicBoolean daemonThreadPool = new AtomicBoolean();
+	protected final Set<HiggsInterceptor> interceptors =
+			Collections.newSetFromMap(new ConcurrentHashMap<HiggsInterceptor, Boolean>());
 
 	public EventProcessor() {
 		messageQueue = messageQueue(threadPool);
@@ -141,11 +143,33 @@ public abstract class EventProcessor<T, OM, IM, SM> {
 	}
 
 	public void emitMessage(ChannelHandlerContext ctx, SM msg) {
-		IM imsg = deserialize(ctx, msg);
-		//if de-serializer returns null then do not queue
-		if (imsg != null) {
-			messageQueue.enqueue(ctx, imsg);
+		boolean intercepted = false;
+		for (HiggsInterceptor interceptor : interceptors) {
+			if (interceptor.matches(msg)) {
+				intercepted = interceptor.intercept(ctx, msg);
+				if (intercepted)
+					break;//don't attempt to process the message, it has been intercepted!
+			}
 		}
+		if (!intercepted) {
+			IM imsg = deserialize(ctx, msg);
+			//if de-serializer returns null then do not queue
+			if (imsg != null) {
+				messageQueue.enqueue(ctx, imsg);
+			}
+		}
+	}
+
+	/**
+	 * Registers an interceptor to this even processor
+	 *
+	 * @param interceptor the interceptor to add
+	 * @param <T>
+	 */
+	public <T extends HiggsInterceptor> void addInterceptor(T interceptor) {
+		if (interceptor == null)
+			throw new NullPointerException("Cannot add a null interceptor");
+		interceptors.add(interceptor);
 	}
 
 	/**
@@ -221,7 +245,7 @@ public abstract class EventProcessor<T, OM, IM, SM> {
 	 * @param c
 	 * @param obj
 	 * @return The write future. If you won't be writing any more and the connection won;t be needed
-	 * use .addListener(ChannelFutureListener.CLOSE) to close the connection.
+	 *         use .addListener(ChannelFutureListener.CLOSE) to close the connection.
 	 */
 	public ChannelFuture respond(Channel c, OM obj) {
 		return c.write(serializer().serialize(c, obj));
