@@ -7,6 +7,7 @@ import com.fillta.higgs.sniffing.ProtocolSniffer;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelInitializer;
+import io.netty.channel.ChannelPipeline;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioEventLoopGroup;
@@ -21,7 +22,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public abstract class HiggsServer<T, OM, IM, SM> extends EventProcessor<T, OM, IM, SM> {
 
 	private int port;
-	private ServerBootstrap bootstrap = new ServerBootstrap();
+	protected ServerBootstrap bootstrap = new ServerBootstrap();
 	public Channel channel;
 	//set of protocol sniffers
 	private final Set<ProtocolDetector> detectors =
@@ -62,7 +63,9 @@ public abstract class HiggsServer<T, OM, IM, SM> extends EventProcessor<T, OM, I
 				final EventProcessor me = this;
 				bootstrap.childHandler(new ChannelInitializer<SocketChannel>() {
 					public void initChannel(SocketChannel ch) throws Exception {
-						ch.pipeline().addLast(new ProtocolSniffer(detectors, me, enableSSL, enableGZip));
+						ChannelPipeline pipeline=ch.pipeline();
+						beforeProtocolSniffer(pipeline);
+						pipeline.addLast(new ProtocolSniffer(detectors, me, enableSSL, enableGZip));
 					}
 				});
 			}
@@ -72,6 +75,9 @@ public abstract class HiggsServer<T, OM, IM, SM> extends EventProcessor<T, OM, I
 			}
 		} catch (InterruptedException ie) {
 		}
+	}
+
+	public void beforeProtocolSniffer(ChannelPipeline pipeline) {
 	}
 
 	/**
