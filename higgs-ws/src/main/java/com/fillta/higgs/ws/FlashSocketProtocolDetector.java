@@ -25,11 +25,11 @@ public class FlashSocketProtocolDetector extends ProtocolDetector {
 	}
 
 	public Boolean apply(final ByteBuf in) {
-		//detect flash policy file request => Higgs Flash Socket (Header)
-		String request = in.toString(Charset.forName("utf-8"));
-		//adobe documents it as "<policy-file-request />" with a space but in reality flash 10 has no space
-		//http://help.adobe.com/en_US/AS2LCR/Flash_10.0/help.html?content=00000471.html
-		if (request.contains("<policy-file-request")) {
+		int magic1 = in.getUnsignedByte(in.readerIndex());
+		int magic2 = in.getUnsignedByte(in.readerIndex() + 1);
+		int magic3 = in.getUnsignedByte(in.readerIndex() + 2);
+		//HFS => Higgs Flash Socket (Header)
+		if (magic1 == 'H' && magic2 == 'F' && magic3 == 'S') {
 			return true;
 		}
 		return false;
@@ -38,7 +38,7 @@ public class FlashSocketProtocolDetector extends ProtocolDetector {
 	public ChannelPipeline setupPipeline(final ChannelHandlerContext ctx) {
 		ChannelPipeline pipeline = ctx.pipeline();
 		//add the flashpolicy decoder first
-		pipeline.addLast("flash-policy-decoder",new FlashPolicyDecoder(policy));
+		pipeline.addLast("flash-policy-decoder", new FlashPolicyDecoder(policy));
 		pipeline.addLast("decoder", new Decoder());
 		pipeline.addLast("encoder", new Encoder());
 		pipeline.addLast("handler", new HiggsEventHandlerProxy(events));
@@ -46,6 +46,6 @@ public class FlashSocketProtocolDetector extends ProtocolDetector {
 	}
 
 	public int bytesRequired() {
-		return 23;
+		return 3;
 	}
 }
