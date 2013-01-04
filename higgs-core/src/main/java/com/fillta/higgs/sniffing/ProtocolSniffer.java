@@ -1,7 +1,6 @@
 package com.fillta.higgs.sniffing;
 
 import com.fillta.higgs.EventProcessor;
-import com.fillta.higgs.HiggsEventHandlerProxy;
 import com.fillta.higgs.ssl.SSLConfigFactory;
 import com.fillta.higgs.ssl.SSLContextFactory;
 import io.netty.buffer.ByteBuf;
@@ -10,9 +9,6 @@ import io.netty.channel.ChannelInboundByteHandlerAdapter;
 import io.netty.channel.ChannelPipeline;
 import io.netty.handler.codec.compression.ZlibCodecFactory;
 import io.netty.handler.codec.compression.ZlibWrapper;
-import io.netty.handler.codec.http.HttpContentCompressor;
-import io.netty.handler.codec.http.HttpRequestDecoder;
-import io.netty.handler.codec.http.HttpResponseEncoder;
 import io.netty.handler.ssl.SslHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,7 +27,7 @@ public class ProtocolSniffer extends ChannelInboundByteHandlerAdapter {
 	private final boolean detectGzip;
 	private final Set<ProtocolDetector> detectors;
 
-	private ProtocolSniffer(Set<ProtocolDetector> detectors, EventProcessor events,
+	public ProtocolSniffer(Set<ProtocolDetector> detectors, EventProcessor events,
 	                        boolean detectSsl, boolean detectGZip) {
 		this.events = events;
 		this.detectSsl = detectSsl;
@@ -51,8 +47,6 @@ public class ProtocolSniffer extends ChannelInboundByteHandlerAdapter {
 			final int magic2 = in.getUnsignedByte(in.readerIndex() + 1);
 			if (isGzip(magic1, magic2)) {
 				enableGzip(ctx);
-			} else if (isHttp(magic1, magic2)) {
-				switchToHttp(ctx);
 			} else {
 				boolean foundProtocol = false;
 				for (ProtocolDetector fn : detectors) {
@@ -95,19 +89,6 @@ public class ProtocolSniffer extends ChannelInboundByteHandlerAdapter {
 		return false;
 	}
 
-	private static boolean isHttp(int magic1, int magic2) {
-		return
-				magic1 == 'G' && magic2 == 'E' || // GET
-						magic1 == 'P' && magic2 == 'O' || // POST
-						magic1 == 'P' && magic2 == 'U' || // PUT
-						magic1 == 'H' && magic2 == 'E' || // HEAD
-						magic1 == 'O' && magic2 == 'P' || // OPTIONS
-						magic1 == 'P' && magic2 == 'A' || // PATCH
-						magic1 == 'D' && magic2 == 'E' || // DELETE
-						magic1 == 'T' && magic2 == 'R' || // TRACE
-						magic1 == 'C' && magic2 == 'O';   // CONNECT
-	}
-
 	private void enableSsl(ChannelHandlerContext ctx) {
 		ChannelPipeline p = ctx.pipeline();
 		SSLEngine engine = SSLContextFactory.getSSLSocket(SSLConfigFactory.sslConfiguration).createSSLEngine();
@@ -125,14 +106,4 @@ public class ProtocolSniffer extends ChannelInboundByteHandlerAdapter {
 		p.addLast("unificationB", new ProtocolSniffer(detectors, events, detectSsl, false));
 		p.remove(this);
 	}
-
-	private void switchToHttp(ChannelHandlerContext ctx) {
-		ChannelPipeline p = ctx.pipeline();
-		p.addLast("decoder", new HttpRequestDecoder());
-		p.addLast("encoder", new HttpResponseEncoder());
-		p.addLast("deflater", new HttpContentCompressor());
-		p.addLast("handler", new HiggsEventHandlerProxy(events));
-		p.remove(this);
-	}
-
 }
