@@ -8,9 +8,11 @@ import com.fillta.higgs.RPCServer;
 import com.fillta.higgs.events.ChannelMessage;
 import com.fillta.higgs.http.server.HttpServer;
 import com.fillta.higgs.http.server.config.ServerConfig;
+import com.fillta.higgs.ws.flash.FlashPolicyEncoder;
 import com.google.common.base.Optional;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelPipeline;
 import io.netty.handler.codec.http.websocketx.TextWebSocketFrame;
 
 import java.io.IOException;
@@ -22,12 +24,13 @@ public class WebSocketServer extends RPCServer<JsonEvent, JsonEvent, TextWebSock
 	public final static ObjectMapper mapper = new ObjectMapper();
 	/**
 	 * This server is never bound to a port BY DEFAULT. An already bound instance of an
-	 * {@link HttpServer} can be provided via {@link #WebSocketServer(HttpServer, String, int)}
+	 * {@link HttpServer} can be provided via {@link #WebSocketServer(HttpServer, FlashPolicyFile, String, int)}
 	 * By default it shares the same port as this {@link WebSocketServer} and is used to
 	 * handle HTTP requests on the WebSocket port.
 	 */
 	public final HttpServer HTTP;
 	protected final WebSocketInterceptor interceptor;
+	private final FlashPolicyFile policy;
 
 	/**
 	 * Creates a web socket server whose only path is set to /
@@ -35,19 +38,27 @@ public class WebSocketServer extends RPCServer<JsonEvent, JsonEvent, TextWebSock
 	 * @param port
 	 */
 	public WebSocketServer(int port) {
-		this(new HttpServer(new ServerConfig()), "/", port);
+		this(new HttpServer(new ServerConfig()), new FlashPolicyFile(), "/", port);
 	}
 
-	public WebSocketServer(HttpServer http, String path, int port) {
+	public WebSocketServer(HttpServer http, FlashPolicyFile policy, String path, int port) {
 		super(port);
 		HTTP = http;
+		this.policy = policy;
 		interceptor = new WebSocketInterceptor(this);
 		addPath(path);
 		setSniffProtocol(true);
 		enableHTTPDetection(HTTP);
-		addProtocolDetector(new FlashSocketProtocolDetector(this));
+		addProtocolDetector(new FlashSocketProtocolDetector(this, this.policy));
 		//must add interceptor to HTTP requests
 		HTTP.addInterceptor(interceptor);
+	}
+
+	public void beforeProtocolSniffer(final ChannelPipeline pipeline) {
+		FlashPolicyEncoder policyEncoder = new FlashPolicyEncoder();
+		//add an encoder to the pipeline to send the policy file.
+		pipeline.addLast("flash-policy-encoder", policyEncoder);
+
 	}
 
 	public void addPath(String path) {
