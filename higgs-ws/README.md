@@ -6,7 +6,7 @@ It automatically detects the request type and handles it with an appropriate res
 
 # Server
 
-java```
+```java
 
 public class WebSocketServerDemo {
 	static int count = 0;
@@ -26,7 +26,7 @@ public class WebSocketServerDemo {
 ```
 ## Output
 
-javascript```
+```javascript
 
 1 : TextEvent{message='{}', topic='test'}
 2 : TextEvent{message='{}', topic='test'}
