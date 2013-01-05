@@ -1,23 +1,18 @@
-package com.fillta.higgs.ws;
+package com.fillta.higgs.ws.flash;
 
 import com.fillta.higgs.EventProcessor;
 import com.fillta.higgs.HiggsEventHandlerProxy;
 import com.fillta.higgs.sniffing.ProtocolDetector;
-import com.fillta.higgs.ws.flash.Decoder;
-import com.fillta.higgs.ws.flash.Encoder;
-import com.fillta.higgs.ws.flash.FlashPolicyDecoder;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPipeline;
-
-import java.nio.charset.Charset;
 
 /**
  * @author Courtney Robinson <courtney@crlog.info>
  */
 public class FlashSocketProtocolDetector extends ProtocolDetector {
-	private EventProcessor events;
-	private final FlashPolicyFile policy;
+	protected EventProcessor events;
+	protected final FlashPolicyFile policy;
 
 	public FlashSocketProtocolDetector(EventProcessor events, final FlashPolicyFile policy) {
 		this.events = events;
@@ -25,24 +20,31 @@ public class FlashSocketProtocolDetector extends ProtocolDetector {
 	}
 
 	public Boolean apply(final ByteBuf in) {
-		int magic1 = in.getUnsignedByte(in.readerIndex());
-		int magic2 = in.getUnsignedByte(in.readerIndex() + 1);
-		int magic3 = in.getUnsignedByte(in.readerIndex() + 2);
+		int magic1 = in.getByte(in.readerIndex());
+		int magic2 = in.getByte(in.readerIndex() + 1);
+		int magic3 = in.getByte(in.readerIndex() + 2);
 		//HFS => Higgs Flash Socket (Header)
-		if (magic1 == 'H' && magic2 == 'F' && magic3 == 'S') {
+		if (magic1 == Encoder.H && magic2 == Encoder.F && magic3 == Encoder.S) {
+			//advance the reader index by the 3 bytes for the header so that the decoder doesn't need to do it
+			in.readerIndex(in.readerIndex()+3);
 			return true;
 		}
 		return false;
 	}
 
-	public ChannelPipeline setupPipeline(final ChannelHandlerContext ctx) {
+	public boolean setupPipeline(final ChannelHandlerContext ctx) {
 		ChannelPipeline pipeline = ctx.pipeline();
-		//add the flashpolicy decoder first
-		pipeline.addLast("flash-policy-decoder", new FlashPolicyDecoder(policy));
+		if (pipeline.get("decoder") != null)
+			pipeline.remove("decoder");
+		if (pipeline.get("encoder") != null)
+			pipeline.remove("encoder");
+		if (pipeline.get("handler") != null)
+			pipeline.remove("handler");
 		pipeline.addLast("decoder", new Decoder());
 		pipeline.addLast("encoder", new Encoder());
 		pipeline.addLast("handler", new HiggsEventHandlerProxy(events));
-		return pipeline;
+		//protocol sniffer shouldn't remove itself from the pipeline
+		return false;
 	}
 
 	public int bytesRequired() {

@@ -1,4 +1,4 @@
-package com.fillta.higgs.ws;
+package com.fillta.higgs.ws.flash;
 
 import java.nio.charset.Charset;
 
