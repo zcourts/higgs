@@ -397,6 +397,9 @@ public class HttpServer<C extends ServerConfig> extends HiggsServer<String, Http
 					new ThymeleafTransformer(config.template_config))
 			);
 		}
+		if(config.log_requests){
+			addFilter(new RequestLogFilter());
+		}
 	}
 
 	public Map<String, HttpSession> getSessions() {
