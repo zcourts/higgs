@@ -6,8 +6,11 @@ import com.fillta.higgs.http.server.*;
 import com.fillta.higgs.http.server.resource.MediaType;
 import com.fillta.higgs.http.server.transformers.thymeleaf.WebContext;
 import com.google.common.base.Optional;
+import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.HttpResponseStatus;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -22,6 +25,7 @@ public class HttpErrorTransformer extends BaseTransformer {
 	protected final Map<Integer, String> templates = new HashMap<>();
 	private final ThymeleafTransformer thymeleaf;
 	private final JsonTransformer json;
+	private Logger log = LoggerFactory.getLogger(getClass());
 
 	public HttpErrorTransformer(final HttpServer server, JsonTransformer jsonTransformer,
 	                            ThymeleafTransformer thymeleafTransformer) {
@@ -30,8 +34,10 @@ public class HttpErrorTransformer extends BaseTransformer {
 		thymeleaf = thymeleafTransformer;
 		this.server.on(HiggsEvent.EXCEPTION_CAUGHT, new ChannelEventListener() {
 			public void triggered(final ChannelHandlerContext ctx, final Optional<Throwable> ex) {
+				log.warn(String.format("Exception caught. \nMessage: %s ,\nCause: %s", ex.get().getMessage(),
+						ex.get().getCause() == null ? "null" : ex.get().getCause().getMessage()));
 				HttpResponse response = buildErrorResponse(ex.get(), null);
-				server.respond(ctx.channel(), response);
+				server.respond(ctx.channel(), response).addListener(ChannelFutureListener.CLOSE);
 			}
 		});
 	}

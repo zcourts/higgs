@@ -4,6 +4,7 @@ port : 3434
 add_thymeleaf_transformer : true
 add_json_transformer : true
 add_default_error_transformer : true
+log_requests : true
 session_path : /
 #ignored if null
 session_domain:
@@ -72,7 +73,8 @@ files :
   custom_mime_types :
     htm,html : text/html
     json : application/json
-    xml : application/xml
-    png : image/png
-    css : text/css
+    xml  : application/xml
+    png  : image/png
+    css  : text/css
+    js   : text/javascript
 
