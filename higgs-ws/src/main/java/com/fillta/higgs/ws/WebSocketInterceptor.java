@@ -95,7 +95,7 @@ public class WebSocketInterceptor implements HiggsInterceptor {
 					ctx.channel().attr(attHandshaker).set(handshaker);
 					return true;
 				} catch (WebSocketHandshakeException wshe) {
-					log.warn(String.format("HTTP request received on WebSocket path, will not intercept."));
+					log.debug(String.format("HTTP request received on WebSocket path, will not intercept."));
 					return false;
 				}
 			}

@@ -8,6 +8,10 @@ import com.fillta.higgs.ws.JsonEvent;
 import com.fillta.higgs.ws.WebSocketServer;
 import com.google.common.base.Optional;
 import io.netty.channel.ChannelHandlerContext;
+import org.apache.log4j.Level;
+import org.apache.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.thymeleaf.templateresolver.AbstractTemplateResolver;
 
 /**
  * @author Courtney Robinson <courtney@crlog.info>
@@ -16,6 +20,7 @@ public class WebSocketServerDemo {
 	static int count = 0;
 
 	public static void main(String... args) {
+		Logger.getLogger(AbstractTemplateResolver.class).setLevel(Level.DEBUG);
 		WebSocketServer server = new WebSocketServer(3535);
 		server.on(HiggsEvent.EXCEPTION_CAUGHT, new ChannelEventListener() {
 			public void triggered(final ChannelHandlerContext ctx, final Optional<Throwable> ex) {
