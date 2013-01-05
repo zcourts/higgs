@@ -31,4 +31,5 @@ public class ServerConfig {
 	public boolean add_default_injector = true;
 	public boolean add_default_resource_filter = true;
 	public boolean add_static_resource_filter = true;
+	public boolean log_requests = true;
 }

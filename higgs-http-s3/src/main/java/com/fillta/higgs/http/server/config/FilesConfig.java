@@ -14,6 +14,7 @@ public class FilesConfig {
 		custom_mime_types.put("xml", "application/xml");
 		custom_mime_types.put("png", "image/png");
 		custom_mime_types.put("css", "text/css");
+		custom_mime_types.put("js","text/javascript");
 	}
 
 	public boolean delete_temp_on_exit = true;
