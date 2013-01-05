@@ -12,6 +12,8 @@ import com.google.common.base.Optional;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.logging.InternalLoggerFactory;
+import io.netty.logging.Slf4JLoggerFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,6 +35,10 @@ import static com.fillta.higgs.events.HiggsEvent.EXCEPTION_CAUGHT;
  * @author Courtney Robinson <courtney@crlog.info>
  */
 public abstract class EventProcessor<T, OM, IM, SM> {
+	static {
+		InternalLoggerFactory.setDefaultFactory(new Slf4JLoggerFactory());
+	}
+
 	protected Logger log = LoggerFactory.getLogger(getClass());
 	/**
 	 * One of the worse errors/bugs to have is a thread terminating because of an uncaught exception.

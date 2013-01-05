@@ -28,9 +28,9 @@ public abstract class ProtocolDetector implements Function1<Boolean, ByteBuf> {
 	 * On invocation, the method should add its custom handlers to the pipeline.
 	 *
 	 * @param ctx The channel context whose pipeline should be modified
-	 * @return the {@link ChannelPipeline} obtained from ctx.pipeline()
+	 * @return true if the protocol sniffer should remove itself from the pipeline after invoking this.
 	 */
-	public abstract ChannelPipeline setupPipeline(final ChannelHandlerContext ctx);
+	public abstract boolean setupPipeline(final ChannelHandlerContext ctx);
 
 	/**
 	 * At least 2 bytes is required to detect an HTTP or GZipped request. 5 bytes are required

@@ -14,6 +14,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.net.ssl.SSLEngine;
+import java.nio.charset.Charset;
 import java.util.Set;
 
 /**
@@ -28,7 +29,7 @@ public class ProtocolSniffer extends ChannelInboundByteHandlerAdapter {
 	private final Set<ProtocolDetector> detectors;
 
 	public ProtocolSniffer(Set<ProtocolDetector> detectors, EventProcessor events,
-	                        boolean detectSsl, boolean detectGZip) {
+	                       boolean detectSsl, boolean detectGZip) {
 		this.events = events;
 		this.detectSsl = detectSsl;
 		this.detectGzip = detectGZip;
@@ -36,8 +37,11 @@ public class ProtocolSniffer extends ChannelInboundByteHandlerAdapter {
 	}
 
 	public void inboundBufferUpdated(ChannelHandlerContext ctx, ByteBuf in) throws Exception {
-		// Will use the first five bytes to detect a protocol.
-		if (in.readableBytes() < 5) {
+		// Will use the first five bytes to detect SSL.
+		if (detectSsl && in.readableBytes() < 5) {
+			return;
+		}
+		if (detectGzip && in.readableBytes() < 2) {
 			return;
 		}
 		if (isSsl(in)) {
@@ -49,14 +53,20 @@ public class ProtocolSniffer extends ChannelInboundByteHandlerAdapter {
 				enableGzip(ctx);
 			} else {
 				boolean foundProtocol = false;
+				if (log.isDebugEnabled()) {
+					log.debug(new String(in.toString(Charset.forName("utf-8"))));
+				}
 				for (ProtocolDetector fn : detectors) {
 					if (in.readableBytes() < fn.bytesRequired()) {
-						return;
+						//go to the next detector this one can't detect the protocol from what's available
+						continue;
 					}
 					foundProtocol = fn.apply(in);
 					if (foundProtocol) {
-						ChannelPipeline pipeline = fn.setupPipeline(ctx);
-						pipeline.remove(this);
+						boolean removeSelf = fn.setupPipeline(ctx);
+						if (removeSelf) {
+							ctx.pipeline().remove(this);
+						}
 						break;
 					}
 				}
