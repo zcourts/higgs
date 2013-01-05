@@ -1,6 +1,7 @@
 package com.fillta.higgs.ws.demo;
 
 import com.fillta.higgs.http.server.resource.GET;
+import com.fillta.higgs.http.server.resource.POST;
 import com.fillta.higgs.http.server.resource.Path;
 
 /**
@@ -8,8 +9,9 @@ import com.fillta.higgs.http.server.resource.Path;
  */
 @Path("/")
 public class Api {
-	@Path("/test")
+	@Path(value = "/", template = "index")
 	@GET
+	@POST
 	public String test() {
 		return "{}";
 	}

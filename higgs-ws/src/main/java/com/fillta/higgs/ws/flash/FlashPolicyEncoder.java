@@ -1,6 +1,5 @@
 package com.fillta.higgs.ws.flash;
 
-import com.fillta.higgs.ws.FlashPolicyFile;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToByteEncoder;
