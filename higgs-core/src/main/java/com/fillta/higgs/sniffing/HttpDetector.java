@@ -33,14 +33,14 @@ public class HttpDetector extends ProtocolDetector {
 						magic1 == 'C' && magic2 == 'O';   // CONNECT
 	}
 
-	public ChannelPipeline setupPipeline(final ChannelHandlerContext ctx) {
+	public boolean setupPipeline(final ChannelHandlerContext ctx) {
 		ChannelPipeline p = ctx.pipeline();
 		p.addLast("decoder", new HttpRequestDecoder());
 		p.addLast("encoder", new HttpResponseEncoder());
 		p.addLast("deflater", new HttpContentCompressor());
 		p.addLast("chunkedWriter", new ChunkedWriteHandler());
 		p.addLast("handler", new HiggsEventHandlerProxy(events));
-		return p;
+		return true;
 	}
 
 	public int bytesRequired() {
