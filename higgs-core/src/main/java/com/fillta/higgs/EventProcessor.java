@@ -12,8 +12,11 @@ import com.google.common.base.Optional;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.handler.codec.http.HttpRequest;
+import io.netty.handler.codec.http.websocketx.TextWebSocketFrame;
 import io.netty.logging.InternalLoggerFactory;
 import io.netty.logging.Slf4JLoggerFactory;
+import io.netty.util.AttributeKey;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,6 +43,33 @@ public abstract class EventProcessor<T, OM, IM, SM> {
 	}
 
 	protected Logger log = LoggerFactory.getLogger(getClass());
+	/**
+	 * When an exception occurs it is not always possible to know which request caused it.
+	 * The only thing that is always accessible is the channel, to get access to the request
+	 * we can associate data with each channel. In this case they data associated is the request
+	 * object. To get the request you need to something similar to:
+	 * <pre>
+	 * {@code
+	 * EventProcessor.on(HiggsEvent.EXCEPTION_CAUGHT, new ChannelEventListener() {
+	 * 		public void triggered(final ChannelHandlerContext ctx, final Optional<Throwable> ex) {
+	 * 			Attribute<Object> request = ctx.channel().attr(EventProcessor.REQUEST_KEY);
+	 * 		    if(request.get()!=null && request instanceof MyRequestType){
+	 * 		        //do something clever
+	 * 		    }
+	 *         }
+	 *     })
+	 * }
+	 * </pre>
+	 * You must check the request type and also check it is not null. The {@link EventProcessor}
+	 * guarantees that it will always set the request object but unfortunately the field is mutable
+	 * and can be changed by ANYTHING which gets access to the channel or context. For example a custom
+	 * {@link HiggsInterceptor} could unset the request (intentionally or by accident).
+	 * An interceptor might also add an unexpected type which would result in a ClassCastException. For
+	 * e.g. The HS3 implementation expects an {@link HttpRequest} but the WebSocket server uses an interceptor
+	 * and adds {@link TextWebSocketFrame}...clearly not compatible. Always check the request is of the
+	 * expected type before casting.
+	 */
+	public static final AttributeKey<Object> REQUEST_KEY = new AttributeKey<>("request-key");
 	/**
 	 * One of the worse errors/bugs to have is a thread terminating because of an uncaught exception.
 	 * It leaves no indication of what happened and sometimes the error happens on a thread you don't
@@ -149,6 +179,8 @@ public abstract class EventProcessor<T, OM, IM, SM> {
 	}
 
 	public void emitMessage(ChannelHandlerContext ctx, SM msg) {
+		//always associate the request with the channel
+		ctx.channel().attr(REQUEST_KEY).set(msg);
 		boolean intercepted = false;
 		for (HiggsInterceptor interceptor : interceptors) {
 			if (interceptor.matches(msg)) {
