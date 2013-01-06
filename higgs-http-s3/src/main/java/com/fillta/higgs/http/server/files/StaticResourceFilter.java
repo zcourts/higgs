@@ -25,6 +25,8 @@ import java.util.regex.Pattern;
 import static io.netty.handler.codec.http.HttpHeaders.Names.IF_MODIFIED_SINCE;
 
 /**
+ * todo this class and the rest of this package needs refactoring and cleaning up like there's no tomorrow!
+ *
  * @author Courtney Robinson <courtney@crlog.info>
  */
 public class StaticResourceFilter implements ResourceFilter {
@@ -42,6 +44,7 @@ public class StaticResourceFilter implements ResourceFilter {
 	public Endpoint getEndpoint(final HttpRequest request) {
 		if (!request.getMethod().getName().equalsIgnoreCase(HttpMethod.GET.getName()))
 			return null;
+		String base_dir = server.getConfig().files.public_directory;
 		String uri = request.getUri();
 		//remove query string from path
 		if (uri.indexOf("?") != -1) {
@@ -53,9 +56,10 @@ public class StaticResourceFilter implements ResourceFilter {
 		//the URL must be from the public directory
 		if (!uri.startsWith("/"))
 			uri = "/" + uri;
-		if (server.getConfig().files.public_directory.endsWith("/"))
+		if (base_dir.endsWith("/"))
 			uri = uri.substring(1);
-		uri = server.getConfig().files.public_directory + uri;
+		//sanitize before use
+		uri = base_dir + sanitizeUri(uri);
 		File file = null;
 		//check the classpath first
 		URL source = Thread.currentThread().getContextClassLoader().getResource(uri);
@@ -80,22 +84,12 @@ public class StaticResourceFilter implements ResourceFilter {
 		}
 		//if we couldn't load it from the class path then try to get it from disk
 		if (file == null) {
-			String base_dir = server.getConfig().files.public_directory;
-			//if we're getting it from disk prepend with / if it doesn't have it
-			if (!uri.startsWith("/"))
-				uri = "/" + uri;
-			if (!base_dir.startsWith("/"))
-				base_dir = "/" + base_dir;
-			final String path = sanitizeUri(uri);
-			if (path == null) {
-				return null;
-			}
-			File base = new File(sanitizeUri(base_dir));
+			File base = new File(base_dir);
 			if (!base.exists()) {
 				log.warn("Public files directory that is configured does not exist. Will not serve static files");
 				return null;
 			}
-			file = new File(path);
+			file = new File(uri);
 			if (file.isHidden() || !file.exists()) {
 				return null;
 			}
@@ -207,7 +201,7 @@ public class StaticResourceFilter implements ResourceFilter {
 
 	private static final Pattern INSECURE_URI = Pattern.compile(".*[<>&\"].*");
 
-	private static String sanitizeUri(String uri) {
+	private String sanitizeUri(String uri) {
 		// Decode the path.
 		try {
 			uri = URLDecoder.decode(uri, "UTF-8");
@@ -233,7 +227,6 @@ public class StaticResourceFilter implements ResourceFilter {
 			return null;
 		}
 
-		// Convert to absolute path.
-		return System.getProperty("user.dir") + File.separator + uri;
+		return uri;
 	}
 }
