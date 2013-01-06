@@ -34,20 +34,16 @@ public class HttpErrorTransformer extends BaseTransformer {
 		thymeleaf = thymeleafTransformer;
 		this.server.on(HiggsEvent.EXCEPTION_CAUGHT, new ChannelEventListener() {
 			public void triggered(final ChannelHandlerContext ctx, final Optional<Throwable> ex) {
-				log.warn(String.format("Exception caught. \nMessage: %s ,\nCause: %s", ex.get().getMessage(),
-						ex.get().getCause() == null ? "null" : ex.get().getCause().getMessage()));
-				server.on(HiggsEvent.EXCEPTION_CAUGHT, new ChannelEventListener() {
-					public void triggered(final ChannelHandlerContext ctx, final Optional<Throwable> ex) {
-						Object request = server.getRequest(ctx.channel());
-						//only if it's an HttpRequest should we attempt to respond to the client...
-						//could be an interceptor's type e.g. WebSocket intercepts HTTP requests
-						//in that case request would be an instanceof TextWebSocketFrame...
-						if (request instanceof HttpRequest) {
-							HttpResponse response = buildErrorResponse(ex.get(), null);
-							server.respond(ctx.channel(), response).addListener(ChannelFutureListener.CLOSE);
-						}
-					}
-				});
+				Object request = server.getRequest(ctx.channel());
+				//only if it's an HttpRequest should we attempt to respond to the client...
+				//could be an interceptor's type e.g. WebSocket intercepts HTTP requests
+				//in that case request would be an instanceof TextWebSocketFrame...
+				if (request instanceof HttpRequest) {
+					log.warn(String.format("Exception caught. \nMessage: %s ,\nCause: %s", ex.get().getMessage(),
+							ex.get().getCause() == null ? "null" : ex.get().getCause().getMessage()));
+					HttpResponse response = buildErrorResponse(ex.get(), null);
+					server.respond(ctx.channel(), response).addListener(ChannelFutureListener.CLOSE);
+				}
 			}
 		});
 	}
