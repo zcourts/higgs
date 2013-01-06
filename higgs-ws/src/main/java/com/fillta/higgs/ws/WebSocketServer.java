@@ -7,6 +7,8 @@ import com.fillta.higgs.MessageConverter;
 import com.fillta.higgs.MessageTopicFactory;
 import com.fillta.higgs.RPCServer;
 import com.fillta.higgs.events.ChannelMessage;
+import com.fillta.higgs.events.HiggsEvent;
+import com.fillta.higgs.events.listeners.ChannelEventListener;
 import com.fillta.higgs.http.server.HttpServer;
 import com.fillta.higgs.http.server.config.ServerConfig;
 import com.fillta.higgs.sniffing.ProtocolSniffer;
@@ -17,6 +19,8 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.websocketx.TextWebSocketFrame;
 
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * A WebSocket server piggy backs on an HTTP server. As such, this implementation makes user of Higgs'
@@ -129,6 +133,26 @@ public class WebSocketServer extends RPCServer<JsonEvent, JsonEvent, TextWebSock
 		addProtocolDetector(new FlashSocketProtocolDetector(this, this.policy));
 		//must add interceptor to HTTP requests
 		HTTP.addInterceptor(interceptor);
+		addErrorListener();
+	}
+
+	private void addErrorListener() {
+		final WebSocketServer me = this;
+		ChannelEventListener errorHandler = new ChannelEventListener() {
+			public void triggered(ChannelHandlerContext ctx, Optional<Throwable> ex) {
+				Object request = me.getRequest(ctx.channel());
+				if (request instanceof TextWebSocketFrame) {
+					Map<String, String> returns = new HashMap<>();
+					returns.put("error", ex.get().getMessage());
+					returns.put("cause", ex.get().getCause() == null ? null : ex.get().getCause().getMessage());
+					me.respond(ctx.channel(), new JsonEvent("error", mapper.createObjectNode().POJONode(returns)));
+					log.warn("An error occurred handling a WebSocket/JSON request", ex.get());
+				}
+			}
+		};
+		//add the error handler to both event processors
+		on(HiggsEvent.EXCEPTION_CAUGHT, errorHandler);
+		HTTP.on(HiggsEvent.EXCEPTION_CAUGHT, errorHandler);
 	}
 
 	public void addPath(String path) {
@@ -182,8 +206,7 @@ public class WebSocketServer extends RPCServer<JsonEvent, JsonEvent, TextWebSock
 				try {
 					return new TextWebSocketFrame(mapper.writeValueAsString(msg));
 				} catch (JsonProcessingException e) {
-					log.warn("Unable to serialize JsonEvent", e);
-					return new TextWebSocketFrame();
+					throw new WebSocketException("Unable to serialize data to be sent", e);
 				}
 			}
 
@@ -191,8 +214,8 @@ public class WebSocketServer extends RPCServer<JsonEvent, JsonEvent, TextWebSock
 				try {
 					return mapper.readValue(msg.getText(), JsonEvent.class);
 				} catch (IOException e) {
-					log.warn(String.format("Unable to de-serialize JSON message"), e);
-					return new JsonEvent();
+					//throw error so that it propagates and the error handler notifies the client
+					throw new WebSocketException("Unable to de-serialize message", e);
 				}
 			}
 		};
