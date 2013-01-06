@@ -201,7 +201,7 @@ public abstract class EventProcessor<T, OM, IM, SM> {
 		if (channel == null)
 			return null;//have it back!
 		Attribute<Object> request = channel.attr(REQUEST_KEY);
-		return request;
+		return request.get();
 	}
 
 	/**
