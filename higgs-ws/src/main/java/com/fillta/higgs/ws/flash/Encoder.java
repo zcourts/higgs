@@ -1,6 +1,7 @@
 package com.fillta.higgs.ws.flash;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToByteEncoder;
 import io.netty.handler.codec.http.websocketx.TextWebSocketFrame;
@@ -13,14 +14,12 @@ public class Encoder extends MessageToByteEncoder<TextWebSocketFrame> {
 
 	protected void encode(ChannelHandlerContext ctx, TextWebSocketFrame out, ByteBuf buf) throws Exception {
 		ByteBuf msg = out.getBinaryData();
-		//first 3 bytes is header   ('H'=72,'F'=83,'S'=70)
+		ByteBuf data= Unpooled.buffer();
 		//next 4 bytes is the message size
 		//everything after is the string payload
-		buf.writeByte(H);
-		buf.writeByte(F);
-		buf.writeByte(S); //header written
-		buf.writeInt(msg.writerIndex());     //message size written
-		buf.writeBytes(msg);  //data written
+		data.writeInt(msg.writerIndex());     //message size written
+		data.writeBytes(msg);  //data written
+		buf.writeBytes(data);
 		ctx.flush();     //flush
 	}
 }
