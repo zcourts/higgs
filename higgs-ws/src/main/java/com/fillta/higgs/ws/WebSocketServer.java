@@ -31,7 +31,7 @@ import java.util.Map;
  * <p/>
  * The structure of a message is fairly simple. It is a JSON object with two fields, topic and message.
  * The topic is a Higgs topic which identifies a method or callback registered on the WebSocket server.
- * The message is any arbitrary JSON object. Using {@link JsonEvent#as(Class)} the message can be converted
+ * The message is any arbitrary JSON object. Using {@link JsonRequestEvent#as(Class)} the message can be converted
  * to a compatible type...
  * <p/>
  * <p/>
@@ -98,7 +98,7 @@ import java.util.Map;
  *
  * @author Courtney Robinson <courtney@crlog.info>
  */
-public class WebSocketServer extends RPCServer<JsonEvent, JsonEvent, TextWebSocketFrame> {
+public class WebSocketServer<R extends JsonRequestEvent> extends RPCServer<JsonResponseEvent, R, TextWebSocketFrame> {
 	public final static ObjectMapper mapper = new ObjectMapper();
 	/**
 	 * This server is never bound to a port BY DEFAULT. An already bound instance of an
@@ -109,6 +109,7 @@ public class WebSocketServer extends RPCServer<JsonEvent, JsonEvent, TextWebSock
 	public final HttpServer HTTP;
 	protected final WebSocketInterceptor interceptor;
 	private final FlashPolicyFile policy;
+	private Class<R> requestClass = (Class<R>) JsonRequest.class;
 
 	/**
 	 * Creates a web socket server whose only path is set to /
@@ -145,7 +146,7 @@ public class WebSocketServer extends RPCServer<JsonEvent, JsonEvent, TextWebSock
 					Map<String, String> returns = new HashMap<>();
 					returns.put("error", ex.get().getMessage());
 					returns.put("cause", ex.get().getCause() == null ? null : ex.get().getCause().getMessage());
-					me.respond(ctx.channel(), new JsonEvent("error", mapper.createObjectNode().POJONode(returns)));
+					me.respond(ctx.channel(), new JsonResponse("error", returns));
 					log.warn("An error occurred handling a WebSocket/JSON request", ex.get());
 				}
 			}
@@ -159,12 +160,12 @@ public class WebSocketServer extends RPCServer<JsonEvent, JsonEvent, TextWebSock
 		interceptor.addPath(path);
 	}
 
-	public Object[] getArguments(Class<?>[] argTypes, ChannelMessage<JsonEvent> request) {
+	public Object[] getArguments(Class<?>[] argTypes, ChannelMessage<R> request) {
 		if (argTypes.length == 0)
 			return new Object[0];
 		Object[] args = new Object[argTypes.length];
 		for (int i = 0; i < argTypes.length; i++) {
-			if (argTypes[i].isAssignableFrom(JsonEvent.class))
+			if (JsonRequestEvent.class.isAssignableFrom(argTypes[i]))
 				args[i] = request.message;
 			else if (argTypes[i].isAssignableFrom(ChannelMessage.class))
 				args[i] = request;
@@ -186,23 +187,25 @@ public class WebSocketServer extends RPCServer<JsonEvent, JsonEvent, TextWebSock
 		return args;
 	}
 
-	protected JsonEvent newResponse(String methodName, ChannelMessage<JsonEvent> request,
-	                                Optional<Object> returns, Optional<Throwable> error) {
+	protected JsonResponseEvent newResponse(String methodName, ChannelMessage<R> request,
+	                                        Optional<Object> returns, Optional<Throwable> error) {
 		if (returns.isPresent()) {
-			if (returns.get() instanceof JsonEvent) {
-				JsonEvent event = (JsonEvent) returns.get();
-				event.setTopic(methodName);
-				return event;
+			if (returns.get() instanceof JsonResponseEvent) {
+				return (JsonResponseEvent) returns.get();
+			} else if (returns.get() instanceof JsonRequestEvent) {
+				JsonRequestEvent event = (JsonRequestEvent) returns.get();
+				return new JsonResponse(event, event.getMessage());
 			} else {
-				return new JsonEvent(methodName, mapper.createObjectNode().POJONode(returns));
+				return new JsonResponse(request.message.getCallback(),
+						mapper.createObjectNode().POJONode(returns));
 			}
 		}
 		return null;
 	}
 
-	public MessageConverter<JsonEvent, JsonEvent, TextWebSocketFrame> serializer() {
-		return new MessageConverter<JsonEvent, JsonEvent, TextWebSocketFrame>() {
-			public TextWebSocketFrame serialize(Channel ctx, JsonEvent msg) {
+	public MessageConverter<R, JsonResponseEvent, TextWebSocketFrame> serializer() {
+		return new MessageConverter<R, JsonResponseEvent, TextWebSocketFrame>() {
+			public TextWebSocketFrame serialize(Channel ctx, JsonResponseEvent msg) {
 				try {
 					return new TextWebSocketFrame(mapper.writeValueAsString(msg));
 				} catch (JsonProcessingException e) {
@@ -210,9 +213,9 @@ public class WebSocketServer extends RPCServer<JsonEvent, JsonEvent, TextWebSock
 				}
 			}
 
-			public JsonEvent deserialize(ChannelHandlerContext ctx, TextWebSocketFrame msg) {
+			public R deserialize(ChannelHandlerContext ctx, TextWebSocketFrame msg) {
 				try {
-					return mapper.readValue(msg.getText(), JsonEvent.class);
+					return mapper.readValue(msg.getText(), requestClass);
 				} catch (IOException e) {
 					//throw error so that it propagates and the error handler notifies the client
 					throw new WebSocketException("Unable to de-serialize message", e);
@@ -221,11 +224,20 @@ public class WebSocketServer extends RPCServer<JsonEvent, JsonEvent, TextWebSock
 		};
 	}
 
-	public MessageTopicFactory<String, JsonEvent> topicFactory() {
-		return new MessageTopicFactory<String, JsonEvent>() {
-			public String extract(JsonEvent msg) {
+	public MessageTopicFactory<String, R> topicFactory() {
+		return new MessageTopicFactory<String, R>() {
+			public String extract(JsonRequestEvent msg) {
 				return msg.getTopic();
 			}
 		};
+	}
+
+	/**
+	 * Set the class that all requests should be de-serialized as.
+	 *
+	 * @param requestClass
+	 */
+	public void setRequestClass(final Class<R> requestClass) {
+		this.requestClass = requestClass;
 	}
 }
