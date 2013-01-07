@@ -124,8 +124,8 @@ public class StaticFile {
 			//}
 			return new Function() {
 				public void apply() {
-					// Write the initial line and the header.
-					req.channel.write(response);
+					// Write the initial line and the header via the server's standard respond method
+					server.respond(req.channel,response);
 					// Write the content.
 					ChannelFuture writeFuture = null;
 					try {
@@ -144,10 +144,11 @@ public class StaticFile {
 			};
 		} catch (FileNotFoundException fnfe) {
 			//return null for 404
+			return null;
 		} catch (IOException e) {
 			log.warn("Error reading file", e);
+			return null;
 		}
-		return null;
 	}
 
 	private void setDateAndCacheHeaders(HttpResponse response, File fileToCache) {

@@ -15,24 +15,22 @@ import java.io.IOException;
  *
  * @author Courtney Robinson <courtney@crlog.info>
  */
-public class JsonEvent {
+public class JsonRequest {
 	@JsonIgnore
-	private final Logger log = LoggerFactory.getLogger(getClass());
+	protected final Logger log = LoggerFactory.getLogger(getClass());
 	@JsonProperty
-	private JsonNode message;
+	protected JsonNode message;
 	@JsonProperty
-	private String topic = "";
+	protected String topic = "";
+	@JsonProperty
+	protected String client_callback = "";
 
-	public JsonEvent(String topic, JsonNode obj) {
+	public JsonRequest(String topic, JsonNode obj) {
 		this.topic = topic;
 		message = obj;
 	}
 
-	public JsonEvent() {
-	}
-
-	public JsonEvent(String topic) {
-		this.topic = topic;
+	public JsonRequest() {
 	}
 
 	public String getTopic() {
@@ -49,6 +47,14 @@ public class JsonEvent {
 
 	public void setMessage(JsonNode data) {
 		message = data;
+	}
+
+	public String getClient_callback() {
+		return client_callback;
+	}
+
+	public void setClient_callback(final String client_callback) {
+		this.client_callback = client_callback;
 	}
 
 	/**
@@ -74,6 +80,7 @@ public class JsonEvent {
 	public String toString() {
 		return "JsonEvent{" +
 				"\nTopic='" + topic + '\'' +
+				"\nClient callback='" + client_callback + '\'' +
 				",\nMessage='" + message + '\'' +
 				"\n}";
 	}
