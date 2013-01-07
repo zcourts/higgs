@@ -4,6 +4,7 @@ import com.fillta.higgs.http.server.params.*;
 import com.fillta.higgs.http.server.resource.MediaType;
 import com.fillta.higgs.reflect.ReflectionUtil;
 import io.netty.handler.codec.http.*;
+import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,6 +29,7 @@ public class HttpRequest extends DefaultHttpRequest {
 	private ResourcePath path;
 	private List<MediaType> mediaTypes;
 	private boolean newSession;
+	private final DateTime created=new DateTime();
 
 	/**
 	 * Creates a new instance.
@@ -210,5 +212,9 @@ public class HttpRequest extends DefaultHttpRequest {
 				", files=" + files.size() +
 				", queryParams=" + queryParams.size() +
 				'}';
+	}
+
+	public DateTime getRequestTime() {
+		return created;
 	}
 }
