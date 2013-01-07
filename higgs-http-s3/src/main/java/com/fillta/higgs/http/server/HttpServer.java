@@ -12,18 +12,19 @@ import com.fillta.higgs.http.server.resource.*;
 import com.fillta.higgs.http.server.transformers.HttpErrorTransformer;
 import com.fillta.higgs.http.server.transformers.JsonTransformer;
 import com.fillta.higgs.http.server.transformers.ThymeleafTransformer;
+import io.netty.channel.Channel;
+import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.socket.SocketChannel;
+import io.netty.handler.codec.http.HttpHeaders;
 import io.netty.handler.codec.http.multipart.DiskAttribute;
 import io.netty.handler.codec.http.multipart.DiskFileUpload;
 import org.yaml.snakeyaml.Yaml;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Set;
+import java.net.SocketAddress;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.atomic.AtomicReference;
@@ -397,9 +398,6 @@ public class HttpServer<C extends ServerConfig> extends HiggsServer<String, Http
 					new ThymeleafTransformer(config.template_config))
 			);
 		}
-		if(config.log_requests){
-			addFilter(new RequestLogFilter());
-		}
 	}
 
 	public Map<String, HttpSession> getSessions() {
@@ -408,5 +406,25 @@ public class HttpServer<C extends ServerConfig> extends HiggsServer<String, Http
 
 	public HttpSession getSession(final String sessionID) {
 		return sessions.get(sessionID);
+	}
+
+	public ChannelFuture respond(Channel channel, HttpResponse response) {
+		Object obj = getRequest(channel);
+		if (obj instanceof io.netty.handler.codec.http.HttpRequest && config.log_requests) {
+			io.netty.handler.codec.http.HttpRequest request = (io.netty.handler.codec.http.HttpRequest) obj;
+			SocketAddress address = channel.remoteAddress();
+			//going with the Apache format
+			//194.116.215.20 - [14/Nov/2005:22:28:57 +0000] “GET / HTTP/1.0″ 200 16440
+			log.info(String.format("%s - [%s] \"%s %s %s\" %s %s",
+					address,
+					HttpHeaders.getDate(request,new Date()),
+					request.getMethod().getName(),
+					request.getUri(),
+					request.getProtocolVersion(),
+					response.getStatus().getCode(),
+					response.getContent().writerIndex()
+			));
+		}
+		return super.respond(channel, response);
 	}
 }
