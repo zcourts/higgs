@@ -20,7 +20,14 @@ public interface JsonRequestEvent {
 	 *
 	 * @return
 	 */
-	public String getClient_callback();
+	public String getCallback();
+
+	/**
+	 * The callback function that will receive responses...if any
+	 *
+	 * @param callback
+	 */
+	public void setCallback(String callback);
 
 	/**
 	 * Set the name of the server callback to be invoked
@@ -30,16 +37,11 @@ public interface JsonRequestEvent {
 	public void setTopic(String topic);
 
 	/**
-	 * The callback function that will receive responses...if any
-	 *
-	 * @param callback
-	 */
-	public void setClient_callback(String callback);
-
-	/**
 	 * @return The name registered with {@link method} or a plain string.
 	 */
 	public String getTopic();
 
 	public Object getMessage();
+
+	public void setMessage(Object o);
 }

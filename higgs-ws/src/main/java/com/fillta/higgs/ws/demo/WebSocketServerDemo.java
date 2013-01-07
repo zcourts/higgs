@@ -4,13 +4,12 @@ import com.fillta.functional.Function1;
 import com.fillta.higgs.events.ChannelMessage;
 import com.fillta.higgs.events.HiggsEvent;
 import com.fillta.higgs.events.listeners.ChannelEventListener;
-import com.fillta.higgs.ws.JsonEvent;
+import com.fillta.higgs.ws.JsonRequestEvent;
 import com.fillta.higgs.ws.WebSocketServer;
 import com.google.common.base.Optional;
 import io.netty.channel.ChannelHandlerContext;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.thymeleaf.templateresolver.AbstractTemplateResolver;
 
 /**
@@ -27,10 +26,10 @@ public class WebSocketServerDemo {
 				ex.get().printStackTrace();
 			}
 		});
-		server.HTTP.getConfig().template_config.cacheable=false;
+		server.HTTP.getConfig().template_config.cacheable = false;
 		server.HTTP.register(Api.class);
-		server.listen("test", new Function1<ChannelMessage<JsonEvent>>() {
-			public void apply(final ChannelMessage<JsonEvent> a) {
+		server.listen("test", new Function1<ChannelMessage<JsonRequestEvent>>() {
+			public void apply(final ChannelMessage<JsonRequestEvent> a) {
 				System.out.println(++count + " : " + a.message);
 			}
 		});
