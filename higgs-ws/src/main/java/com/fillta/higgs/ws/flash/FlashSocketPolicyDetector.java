@@ -15,7 +15,7 @@ import java.nio.charset.Charset;
  *
  * @author Courtney Robinson <courtney@crlog.info>
  */
-public class FlashSocketPolicyDetector extends ProtocolDetector {
+public class FlashSocketPolicyDetector implements ProtocolDetector {
 	protected EventProcessor events;
 	protected final FlashPolicyFile policy;
 

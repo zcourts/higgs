@@ -85,7 +85,7 @@ public class WebApplicationException extends RuntimeException {
 				"status=" + status +
 				", template='" + template + '\'' +
 				", response=" + response +
-				", path=" + request == null ? "null" : request.getUri() +
+				", path=" + request == null ? "null" : request.uri() +
 				'}';
 	}
 }

@@ -16,7 +16,7 @@ import java.util.Set;
 /**
  * @author Courtney Robinson <courtney@crlog.info>
  */
-public class HttpRequest extends DefaultHttpRequest {
+public class HttpRequest extends DefaultFullHttpRequest {
 	private final ReflectionUtil reflection = new ReflectionUtil();
 	private final QueryParams queryParams = new QueryParams();
 	private final FormFiles files = new FormFiles();
@@ -27,9 +27,10 @@ public class HttpRequest extends DefaultHttpRequest {
 	private boolean supportedMethod = true;
 	private Endpoint endpoint;
 	private ResourcePath path;
-	private List<MediaType> mediaTypes;
+	private List<MediaType> mediaTypes = new ArrayList<>();
 	private boolean newSession;
-	private final DateTime created=new DateTime();
+	private final DateTime createdAt = new DateTime();
+	private HttpCookie session;
 
 	/**
 	 * Creates a new instance.
@@ -48,7 +49,7 @@ public class HttpRequest extends DefaultHttpRequest {
 	 * @param request
 	 */
 	public HttpRequest(io.netty.handler.codec.http.HttpRequest request) {
-		this(request.getProtocolVersion(), request.getMethod(), request.getUri());
+		this(request.protocolVersion(), request.method(), request.uri());
 		List<Field> fields = reflection.getAllFields(new ArrayList<Field>(), DefaultHttpRequest.class, 10);
 		for (Field field : fields) {
 			try {
@@ -59,17 +60,24 @@ public class HttpRequest extends DefaultHttpRequest {
 
 			}
 		}
-		String accept = getHeader(HttpHeaders.Names.ACCEPT);
+	}
+
+	/**
+	 * Because some custom fields depend on headers not set on construction this method
+	 * must be invoked after Netty populates the headers.
+	 */
+	void init() {
+		String accept = headers().get(HttpHeaders.Names.ACCEPT);
 		mediaTypes = MediaType.valueOf(accept);
-		String cookiesStr = getHeader(HttpHeaders.Names.COOKIE);
+		String cookiesStr = headers().get(HttpHeaders.Names.COOKIE);
 		if (cookiesStr != null) {
 			Set<Cookie> cookie = CookieDecoder.decode(cookiesStr);
 			for (Cookie c : cookie) {
 				cookies.put(c.getName(), new HttpCookie(c));
 			}
 		}
-		QueryStringDecoder decoderQuery = new QueryStringDecoder(getUri());
-		queryParams.putAll(decoderQuery.getParameters());
+		QueryStringDecoder decoderQuery = new QueryStringDecoder(uri());
+		queryParams.putAll(decoderQuery.parameters());
 	}
 
 	public List<MediaType> getMediaTypes() {
@@ -85,27 +93,27 @@ public class HttpRequest extends DefaultHttpRequest {
 	}
 
 	public boolean isGet() {
-		return HttpMethod.GET.getName().equalsIgnoreCase(getMethod().getName());
+		return HttpMethod.GET.name().equalsIgnoreCase(method().name());
 	}
 
 	public boolean isPost() {
-		return HttpMethod.POST.getName().equalsIgnoreCase(getMethod().getName());
+		return HttpMethod.POST.name().equalsIgnoreCase(method().name());
 	}
 
 	public boolean isPut() {
-		return HttpMethod.PUT.getName().equalsIgnoreCase(getMethod().getName());
+		return HttpMethod.PUT.name().equalsIgnoreCase(method().name());
 	}
 
 	public boolean isDelete() {
-		return HttpMethod.DELETE.getName().equalsIgnoreCase(getMethod().getName());
+		return HttpMethod.DELETE.name().equalsIgnoreCase(method().name());
 	}
 
 	public boolean isHead() {
-		return HttpMethod.HEAD.getName().equalsIgnoreCase(getMethod().getName());
+		return HttpMethod.HEAD.name().equalsIgnoreCase(method().name());
 	}
 
 	public boolean isOptions() {
-		return HttpMethod.OPTIONS.getName().equalsIgnoreCase(getMethod().getName());
+		return HttpMethod.OPTIONS.name().equalsIgnoreCase(method().name());
 	}
 
 	public void setEndpoint(final Endpoint endpoint) {
@@ -156,8 +164,13 @@ public class HttpRequest extends DefaultHttpRequest {
 		return newSession;
 	}
 
-	public void setNewSession(final boolean newSession) {
-		this.newSession = newSession;
+	public void setNewSession(final HttpCookie session) {
+		this.newSession = true;
+		this.session = session;
+	}
+
+	public HttpCookie getSession() {
+		return session;
 	}
 
 	public void addFormField(final String name, final String value) {
@@ -196,7 +209,15 @@ public class HttpRequest extends DefaultHttpRequest {
 	}
 
 	public String getSessionId() {
-		return getCookie(HttpServer.SID).getValue();
+		return session.getValue();
+	}
+
+	public HttpMethod getMethod() {
+		return method();
+	}
+
+	public String getUri() {
+		return uri();
 	}
 
 	@Override
@@ -214,7 +235,7 @@ public class HttpRequest extends DefaultHttpRequest {
 				'}';
 	}
 
-	public DateTime getRequestTime() {
-		return created;
+	public DateTime getCreatedAt() {
+		return createdAt;
 	}
 }

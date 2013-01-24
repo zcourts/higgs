@@ -1,7 +1,7 @@
 package com.fillta.higgs.queueingStrategies;
 
 import com.fillta.functional.Tuple;
-import com.fillta.higgs.MessageTopicFactory;
+import com.fillta.higgs.DecodedMessage;
 import io.netty.channel.ChannelHandlerContext;
 
 import java.util.concurrent.LinkedBlockingQueue;
@@ -11,12 +11,10 @@ import java.util.concurrent.ThreadPoolExecutor;
  * @author Courtney Robinson <courtney@crlog.info>
  */
 public class LinkedBlockingQueueStrategy<T, IM> extends QueueingStrategy<T, IM> {
-	private LinkedBlockingQueue<Tuple<ChannelHandlerContext, IM>> queue = new LinkedBlockingQueue<>();
+	private LinkedBlockingQueue<Tuple<ChannelHandlerContext, DecodedMessage<T, IM>>> queue = new LinkedBlockingQueue<>();
 	private final ThreadPoolExecutor threadPool;
 
-	public LinkedBlockingQueueStrategy(final ThreadPoolExecutor threadPool,
-	                                   final MessageTopicFactory<T, IM> topicFactory) {
-		super(topicFactory);
+	public LinkedBlockingQueueStrategy(final ThreadPoolExecutor threadPool) {
 		this.threadPool = threadPool;
 	}
 
@@ -28,8 +26,8 @@ public class LinkedBlockingQueueStrategy<T, IM> extends QueueingStrategy<T, IM> 
 	 * @param msg the message to queue
 	 */
 	@Override
-	public void enqueue(ChannelHandlerContext ctx, IM msg) {
-		queue.add(new Tuple(ctx, msg));
+	public void enqueue(ChannelHandlerContext ctx, DecodedMessage<T, IM> msg) {
+		queue.add(new Tuple<>(ctx, msg));
 		processMessage();
 	}
 
@@ -38,7 +36,7 @@ public class LinkedBlockingQueueStrategy<T, IM> extends QueueingStrategy<T, IM> 
 			public void run() {
 				while (!threadPool.isShutdown()) {
 					try {
-						Tuple<ChannelHandlerContext, IM> tuple = queue.take();
+						Tuple<ChannelHandlerContext, DecodedMessage<T, IM>> tuple = queue.take();
 						if (tuple != null) {
 							invokeListeners(tuple.key, tuple.value);
 						}

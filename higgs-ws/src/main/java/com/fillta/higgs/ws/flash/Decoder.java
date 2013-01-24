@@ -8,7 +8,7 @@ import io.netty.handler.codec.http.websocketx.TextWebSocketFrame;
 /**
  * @author Courtney Robinson <courtney@crlog.info>
  */
-public class Decoder extends ByteToMessageDecoder<TextWebSocketFrame> {
+public class Decoder extends ByteToMessageDecoder {
 	protected TextWebSocketFrame decode(final ChannelHandlerContext context, final ByteBuf buf) throws Exception {
 		//next 4 bytes is the message size
 		//everything after is the string payload

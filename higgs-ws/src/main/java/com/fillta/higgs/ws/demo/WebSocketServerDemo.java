@@ -2,7 +2,6 @@ package com.fillta.higgs.ws.demo;
 
 import com.fillta.functional.Function1;
 import com.fillta.higgs.events.ChannelMessage;
-import com.fillta.higgs.events.HiggsEvent;
 import com.fillta.higgs.events.listeners.ChannelEventListener;
 import com.fillta.higgs.ws.JsonRequestEvent;
 import com.fillta.higgs.ws.WebSocketServer;
@@ -21,7 +20,7 @@ public class WebSocketServerDemo {
 	public static void main(String... args) {
 		Logger.getLogger(AbstractTemplateResolver.class).setLevel(Level.DEBUG);
 		WebSocketServer server = new WebSocketServer(3535);
-		server.on(HiggsEvent.EXCEPTION_CAUGHT, new ChannelEventListener() {
+		server.onException(new ChannelEventListener() {
 			public void triggered(final ChannelHandlerContext ctx, final Optional<Throwable> ex) {
 				ex.get().printStackTrace();
 			}

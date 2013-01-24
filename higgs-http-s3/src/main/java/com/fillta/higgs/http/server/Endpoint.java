@@ -458,6 +458,16 @@ public class Endpoint {
 			this.cookieParam = cookieParam;
 		}
 
-
+		public String toString() {
+			return "MethodParam{" +
+					"methodClass=" + methodClass.getName() +
+					", name='" + name + '\'' +
+					", queryParam=" + queryParam +
+					", pathParam=" + pathParam +
+					", formParam=" + formParam +
+					", headerParam=" + headerParam +
+					", cookieParam=" + cookieParam +
+					'}';
+		}
 	}
 }

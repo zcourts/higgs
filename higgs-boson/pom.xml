@@ -16,6 +16,11 @@
     </parent>
     <dependencies>
         <dependency>
+            <groupId>io.netty</groupId>
+            <artifactId>netty-metrics-yammer</artifactId>
+            <version>4.0.0.Beta1-SNAPSHOT</version>
+        </dependency>
+        <dependency>
             <groupId>com.fillta</groupId>
             <artifactId>higgs-core</artifactId>
             <version>0.0.1-SNAPSHOT</version>

@@ -1,6 +1,8 @@
 package com.fillta.higgs.http.server;
 
 import com.fillta.higgs.http.server.params.HttpCookie;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 import io.netty.handler.codec.http.*;
 
 import java.util.ArrayList;
@@ -10,8 +12,12 @@ import java.util.Map;
 /**
  * @author Courtney Robinson <courtney@crlog.info>
  */
-public class HttpResponse extends DefaultHttpResponse {
+public class HttpResponse extends DefaultFullHttpResponse {
 	private Map<String, HttpCookie> cookies = new HashMap<>();
+
+	public HttpResponse(HttpVersion version, HttpResponseStatus status, ByteBuf content) {
+		super(version, status, content);
+	}
 
 	/**
 	 * Creates a new instance.
@@ -20,11 +26,11 @@ public class HttpResponse extends DefaultHttpResponse {
 	 * @param status  the status of this response
 	 */
 	public HttpResponse(HttpVersion version, HttpResponseStatus status) {
-		super(version, status);
+		this(version, status, Unpooled.buffer());
 	}
 
 	public HttpResponse(HttpResponseStatus status) {
-		super(HttpVersion.HTTP_1_1, status);
+		this(HttpVersion.HTTP_1_1, status);
 	}
 
 	/**
@@ -34,12 +40,14 @@ public class HttpResponse extends DefaultHttpResponse {
 	 * @param message
 	 */
 	public HttpResponse(final HttpRequest message) {
-		this(message.getProtocolVersion(), HttpStatus.OK);
-		String conn = message.getHeader(HttpHeaders.Names.CONNECTION);
-		if (conn == null) {
-			conn = HttpHeaders.Values.CLOSE;
+		this(message == null ? HttpVersion.HTTP_1_1 : message.protocolVersion(), HttpStatus.OK);
+		if (message != null) {
+			String conn = message.headers().get(HttpHeaders.Names.CONNECTION);
+			if (conn == null) {
+				conn = HttpHeaders.Values.CLOSE;
+			}
+			headers().set(HttpHeaders.Names.CONNECTION, conn);
 		}
-		setHeader(HttpHeaders.Names.CONNECTION, conn);
 	}
 
 	/**
@@ -47,6 +55,10 @@ public class HttpResponse extends DefaultHttpResponse {
 	 */
 	public HttpResponse() {
 		this(HttpResponseStatus.OK);
+	}
+
+	public HttpResponse(final ByteBuf buffer) {
+		this(HttpVersion.HTTP_1_1, HttpStatus.OK, buffer);
 	}
 
 	public void setCookies(final Map<String, HttpCookie> cookies) {
@@ -71,7 +83,7 @@ public class HttpResponse extends DefaultHttpResponse {
 
 	public void clearHeaders() {
 		cookies.clear();
-		super.clearHeaders();
+		headers().clear();
 	}
 	//todo
 //	public void setHeader(String name, Object value) {
@@ -86,7 +98,7 @@ public class HttpResponse extends DefaultHttpResponse {
 	 * sets any overridden headers
 	 */
 	protected void finalizeCustomHeaders() {
-		setHeader(HttpHeaders.Names.SET_COOKIE,
+		headers().set(HttpHeaders.Names.SET_COOKIE,
 				ServerCookieEncoder.encode(new ArrayList<Cookie>(cookies.values())));
 
 	}

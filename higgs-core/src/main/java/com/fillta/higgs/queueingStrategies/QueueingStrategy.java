@@ -1,7 +1,7 @@
 package com.fillta.higgs.queueingStrategies;
 
 import com.fillta.functional.Function1;
-import com.fillta.higgs.MessageTopicFactory;
+import com.fillta.higgs.DecodedMessage;
 import com.fillta.higgs.events.ChannelMessage;
 import io.netty.channel.ChannelHandlerContext;
 import org.slf4j.Logger;
@@ -67,13 +67,8 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public abstract class QueueingStrategy<T, IM> {
 	protected final ConcurrentHashMap<T, Set<Function1<ChannelMessage<IM>>>> messageSubscribers = new ConcurrentHashMap<>();
-	protected final Set<Function1<ChannelMessage<IM>>> allMessageSubscribers = Collections.newSetFromMap(new ConcurrentHashMap());
-	protected MessageTopicFactory<T, IM> topicFactory;
+	protected final Set<Function1<ChannelMessage<IM>>> allMessageSubscribers = Collections.newSetFromMap(new ConcurrentHashMap<Function1<ChannelMessage<IM>>, Boolean>());
 	protected Logger log = LoggerFactory.getLogger(getClass());
-
-	public QueueingStrategy(MessageTopicFactory<T, IM> topicFactory) {
-		this.topicFactory = topicFactory;
-	}
 
 	/**
 	 * Invoked when a message is received.
@@ -86,7 +81,7 @@ public abstract class QueueingStrategy<T, IM> {
 	 * @param ctx the channel context
 	 * @param msg the message to queue
 	 */
-	public abstract void enqueue(ChannelHandlerContext ctx, IM msg);
+	public abstract void enqueue(ChannelHandlerContext ctx, DecodedMessage<T, IM> msg);
 
 	/**
 	 * Subscribes a function/callback to the given topic
@@ -98,7 +93,7 @@ public abstract class QueueingStrategy<T, IM> {
 		Set<Function1<ChannelMessage<IM>>> set = messageSubscribers.get(topic);
 		if (set == null) {
 			//set must be backed by concurrent hash map to be thread safe
-			set = Collections.newSetFromMap(new ConcurrentHashMap());
+			set = Collections.newSetFromMap(new ConcurrentHashMap<Function1<ChannelMessage<IM>>, Boolean>());
 			messageSubscribers.put(topic, set);
 		}
 		set.add(function);
@@ -129,9 +124,9 @@ public abstract class QueueingStrategy<T, IM> {
 	 * @param ctx
 	 * @param msg
 	 */
-	public void invokeListeners(ChannelHandlerContext ctx, IM msg) {
-		T topic = topicFactory.extract(msg);
-		ChannelMessage a = new ChannelMessage(ctx, msg);
+	public void invokeListeners(ChannelHandlerContext ctx, DecodedMessage<T, IM> msg) {
+		T topic = msg.getTopic();
+		ChannelMessage<IM> a = new ChannelMessage<>(ctx, msg.getMessage());
 		//functions subscribed to "all" messages (note: new ArrayList(collection) copies)
 		List<Function1<ChannelMessage<IM>>> listeners = new ArrayList<>(allMessageSubscribers);
 		for (Function1<ChannelMessage<IM>> function : listeners) {

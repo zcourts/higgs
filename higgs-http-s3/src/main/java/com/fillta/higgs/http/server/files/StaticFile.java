@@ -29,6 +29,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
 
 import static io.netty.handler.codec.http.HttpHeaders.Names.*;
+import static io.netty.handler.codec.http.HttpHeaders.isKeepAlive;
 import static io.netty.handler.codec.http.HttpHeaders.setContentLength;
 
 /**
@@ -101,54 +102,55 @@ public class StaticFile {
 	}
 
 	public Function sendFile(final ChannelMessage<HttpRequest> req) {
-		try {
-			MimetypesFileTypeMap mimeTypesMap = new MimetypesFileTypeMap();
-			String contentType = mimeTypesMap.getContentType(file.getPath());
-			final RandomAccessFile raf = new RandomAccessFile(file, "r");
-			final long fileLength = raf.length();
-			final HttpResponse response = new HttpResponse();
-			setContentLength(response, fileLength);
-			//if its a supported text file then set to text mime type
-			for (final String ext : formats.keySet()) {
-				if (file.getName().endsWith(ext)) {
-					contentType = formats.get(ext);
-					break;
+		return new Function() {
+			public void apply() {
+				MimetypesFileTypeMap mimeTypesMap = new MimetypesFileTypeMap();
+				String contentType = mimeTypesMap.getContentType(file.getPath());
+				final RandomAccessFile raf;
+				try {
+					raf = new RandomAccessFile(file, "r");
+				} catch (FileNotFoundException fnfe) {
+					//return null for 404
+					server.respond(req.channel, new HttpResponse(HttpStatus.NOT_FOUND));
+					return;
+				}
+				final long fileLength;
+				try {
+					fileLength = raf.length();
+				} catch (IOException e) {
+					log.warn("Error reading file", e);
+					server.respond(req.channel, new HttpResponse(HttpStatus.INTERNAL_SERVER_ERROR));
+					return;
+				}
+				HttpResponse response = new HttpResponse(HttpStatus.OK);
+				setContentLength(response, fileLength);
+				//if its a supported text file then set to text mime type
+				for (final String ext : formats.keySet()) {
+					if (file.getName().endsWith(ext)) {
+						contentType = formats.get(ext);
+						break;
+					}
+				}
+				response.headers().set(CONTENT_TYPE, contentType);
+				setDateAndCacheHeaders(response, file);
+				if (isKeepAlive(req.message)) {
+					response.headers().set(CONNECTION, HttpHeaders.Values.KEEP_ALIVE);
+				}
+				// Write the initial line and the header via the server's standard respond method
+				server.respond(req.channel, response);
+				try {
+					ChannelFuture writeFuture = req.channel.write
+							(new ChunkedFile
+									(raf, 0, fileLength, server.getConfig().files.chunk_size));
+					if (!isKeepAlive(req.message)) {
+						writeFuture.addListener(ChannelFutureListener.CLOSE);
+					}
+				} catch (IOException e) {
+					log.warn("Error writing chunk", e);
+					server.respond(req.channel, new HttpResponse(HttpStatus.INTERNAL_SERVER_ERROR));
 				}
 			}
-			//set mime type
-			response.setHeader(CONTENT_TYPE, contentType);
-			setDateAndCacheHeaders(response, file);
-			HttpHeaders.setKeepAlive(response, false);
-			//if (isKeepAlive(req.message)) {
-			//	response.setHeader(CONNECTION, HttpHeaders.Values.KEEP_ALIVE);
-			//}
-			return new Function() {
-				public void apply() {
-					// Write the initial line and the header via the server's standard respond method
-					server.respond(req.channel,response);
-					// Write the content.
-					ChannelFuture writeFuture = null;
-					try {
-						writeFuture = req.channel.write
-								(new ChunkedFile
-										(raf, 0, fileLength, server.getConfig().files.chunk_size));
-					} catch (IOException e) {
-						log.warn("Error writing chunk", e);
-					}
-					// Decide whether to close the connection or not.
-					//if (!isKeepAlive(req.message)) {
-					// Close the connection when the whole content is written out.
-					writeFuture.addListener(ChannelFutureListener.CLOSE);
-					//}
-				}
-			};
-		} catch (FileNotFoundException fnfe) {
-			//return null for 404
-			return null;
-		} catch (IOException e) {
-			log.warn("Error reading file", e);
-			return null;
-		}
+		};
 	}
 
 	private void setDateAndCacheHeaders(HttpResponse response, File fileToCache) {
@@ -157,13 +159,13 @@ public class StaticFile {
 
 		// Date header
 		Calendar time = new GregorianCalendar();
-		response.setHeader(DATE, dateFormatter.format(time.getTime()));
+		response.headers().set(DATE, dateFormatter.format(time.getTime()));
 
 		// Add cache headers
 		time.add(Calendar.SECOND, HTTP_CACHE_SECONDS);
-		response.setHeader(EXPIRES, dateFormatter.format(time.getTime()));
-		response.setHeader(CACHE_CONTROL, "private, max-age=" + HTTP_CACHE_SECONDS);
-		response.setHeader(
+		response.headers().set(EXPIRES, dateFormatter.format(time.getTime()));
+		response.headers().set(CACHE_CONTROL, "private, max-age=" + HTTP_CACHE_SECONDS);
+		response.headers().set(
 				LAST_MODIFIED, dateFormatter.format(new Date(fileToCache.lastModified())));
 	}
 
@@ -177,13 +179,10 @@ public class StaticFile {
 		dateFormatter.setTimeZone(TimeZone.getTimeZone(HTTP_DATE_GMT_TIMEZONE));
 
 		Calendar time = new GregorianCalendar();
-		response.setHeader(DATE, dateFormatter.format(time.getTime()));
+		response.headers().set(DATE, dateFormatter.format(time.getTime()));
 	}
 
 	private HttpResponse sendListing(File dir) {
-		HttpResponse response = new HttpResponse();
-		response.setHeader(CONTENT_TYPE, "text/html; charset=UTF-8");
-
 		StringBuilder buf = new StringBuilder();
 		String dirPath = dir.getPath();
 
@@ -219,7 +218,8 @@ public class StaticFile {
 
 		buf.append("</ul></body></html>\r\n");
 		ByteBuf buffer = Unpooled.copiedBuffer(buf, CharsetUtil.UTF_8);
-		response.setContent(buffer);
+		HttpResponse response = new HttpResponse(buffer);
+		response.headers().set(CONTENT_TYPE, "text/html; charset=UTF-8");
 		HttpHeaders.setContentLength(response, buffer.writerIndex());
 		HttpHeaders.setKeepAlive(response, false);
 		return response;

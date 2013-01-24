@@ -3,7 +3,6 @@ package com.fillta.higgs.sniffing;
 import com.fillta.functional.res.Function1;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelPipeline;
 
 /**
  * A protocol detector allows a server to create dynamic pipelines. Automatically adding
@@ -13,7 +12,7 @@ import io.netty.channel.ChannelPipeline;
  *
  * @author Courtney Robinson <courtney@crlog.info>
  */
-public abstract class ProtocolDetector implements Function1<Boolean, ByteBuf> {
+public interface ProtocolDetector extends Function1<Boolean, ByteBuf> {
 	/**
 	 * Detects a protocol from the given buffer.
 	 * If SSL or GZip is required they would have already been applied.

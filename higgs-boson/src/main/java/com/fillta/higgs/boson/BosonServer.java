@@ -1,8 +1,8 @@
 package com.fillta.higgs.boson;
 
-import com.fillta.higgs.MessageConverter;
-import com.fillta.higgs.MessageTopicFactory;
 import com.fillta.higgs.RPCServer;
+import com.fillta.higgs.boson.serialization.BosonDecoder;
+import com.fillta.higgs.boson.serialization.BosonEncoder;
 import com.fillta.higgs.boson.serialization.v1.BosonReader;
 import com.fillta.higgs.boson.serialization.v1.BosonWriter;
 import com.fillta.higgs.events.ChannelMessage;
@@ -10,8 +10,7 @@ import com.google.common.base.Optional;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelInitializer;
-import io.netty.channel.socket.SocketChannel;
+import io.netty.channel.ChannelPipeline;
 
 /**
  * @author Courtney Robinson <courtney@crlog.info>
@@ -22,6 +21,7 @@ public class BosonServer extends RPCServer<BosonMessage, BosonMessage, ByteBuf> 
 
 	public BosonServer(int port) {
 		this(port, false);
+		setEnableProtocolSniffing(false);
 	}
 
 	public BosonServer(int port, boolean compression) {
@@ -56,30 +56,24 @@ public class BosonServer extends RPCServer<BosonMessage, BosonMessage, ByteBuf> 
 	}
 
 	@Override
-	public ChannelInitializer<SocketChannel> initializer() {
-		return new BosonInitializer(this, compression, compression, ssl);
+	public ByteBuf serialize(final Channel ctx, final BosonMessage msg) {
+		return new BosonWriter(msg).serialize();
 	}
-
 
 	@Override
-	public MessageConverter<BosonMessage, BosonMessage, ByteBuf> serializer() {
-		return new MessageConverter<BosonMessage, BosonMessage, ByteBuf>() {
-			public ByteBuf serialize(Channel chan, BosonMessage msg) {
-				return new BosonWriter(msg).serialize();
-			}
-
-			public BosonMessage deserialize(ChannelHandlerContext ctx, ByteBuf msg) {
-				return new BosonReader(msg).deSerialize();
-			}
-		};
+	public BosonMessage deserialize(final ChannelHandlerContext ctx, final ByteBuf msg) {
+		return new BosonReader(msg).deSerialize();
 	}
 
-	public MessageTopicFactory<String, BosonMessage> topicFactory() {
-		return new MessageTopicFactory<String, BosonMessage>() {
-			public String extract(BosonMessage msg) {
-				return msg.method;
-			}
-		};
+	@Override
+	public String getTopic(final BosonMessage msg) {
+		return msg.method;
 	}
 
+	@Override
+	protected boolean setupPipeline(final ChannelPipeline pipeline) {
+		pipeline.addLast("decoder", new BosonDecoder());
+		pipeline.addLast("encoder", new BosonEncoder());
+		return true;//auto add handler
+	}
 }

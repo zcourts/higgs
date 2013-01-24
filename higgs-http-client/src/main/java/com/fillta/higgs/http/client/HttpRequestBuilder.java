@@ -1,14 +1,21 @@
 package com.fillta.higgs.http.client;
 
 import com.fillta.functional.Function1;
+import com.google.common.base.Optional;
 import io.netty.handler.codec.http.HttpHeaders;
 import io.netty.handler.codec.http.HttpMethod;
 import io.netty.handler.codec.http.HttpVersion;
 import io.netty.handler.codec.http.multipart.DiskAttribute;
 import io.netty.handler.codec.http.multipart.DiskFileUpload;
+import org.scribe.builder.ServiceBuilder;
+import org.scribe.builder.api.Api;
+import org.scribe.oauth.OAuthService;
 
+import javax.xml.bind.DatatypeConverter;
+import java.io.OutputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -24,8 +31,8 @@ public class HttpRequestBuilder {
 	 * EventProcessor uses a thread pool to process requests/responses
 	 * so its more efficient to only use one.
 	 */
-	public static RequestProcessor getRequester() {
-		return RequestProcessor.getInstance();
+	public static HttpClient getRequester() {
+		return HttpClient.getInstance();
 	}
 
 	private URL requestURL;
@@ -62,6 +69,7 @@ public class HttpRequestBuilder {
 	private String headerAcceptEncoding = HttpHeaders.Values.GZIP + ',' + HttpHeaders.Values.DEFLATE;
 	private String headerAcceptCharset = "ISO-8859-1,utf-8;q=0.7,*;q=0.7";
 	private String headerAcceptLang = "en";
+	private boolean reconnectEnabled;
 	//attributes used in generating the request or processing the response but aren't
 	//exactly configurable as such
 	private boolean useSSL = false;
@@ -244,7 +252,7 @@ public class HttpRequestBuilder {
 		try {
 			this.requestURL = new URL(url);
 		} catch (MalformedURLException e) {
-
+			throw new IllegalArgumentException("Invalid URL", e);
 		}
 		return this;
 	}
@@ -528,6 +536,55 @@ public class HttpRequestBuilder {
 		return this;
 	}
 
+	protected OAuthService authService;
+
+	public boolean isOAuth() {
+		return authService != null;
+	}
+
+	public OAuthService getAuthService() {
+		return authService;
+	}
+
+	public <A extends Api> HttpRequestBuilder oAuth(Class<A> api, String apiKey, String secret) {
+		Optional<String> noURL = Optional.absent();
+		return oAuth(api, apiKey, secret, noURL);
+	}
+
+	public <A extends Api> HttpRequestBuilder oAuth(Class<A> api, String apiKey, String secret,
+	                                                Optional<String> callbackURL) {
+		Optional<String> noScope = Optional.absent();
+		return oAuth(api, apiKey, secret, callbackURL, noScope);
+	}
+
+	public <A extends Api> HttpRequestBuilder oAuth(Class<A> api, String apiKey, String secret,
+	                                                Optional<String> callbackURL,
+	                                                Optional<String> scope) {
+		Optional<OutputStream> noStream = Optional.absent();
+		return oAuth(api, apiKey, secret, callbackURL, scope, noStream);
+	}
+
+	public <A extends Api> HttpRequestBuilder oAuth(Class<A> api, String apiKey, String secret,
+	                                                Optional<String> callbackURL,
+	                                                Optional<String> scope,
+	                                                Optional<OutputStream> debugStream) {
+		ServiceBuilder builder = new ServiceBuilder();
+		builder.provider(api)
+				.apiKey(apiKey)
+				.apiSecret(secret);
+		if (scope.isPresent()) {
+			builder.scope(scope.get());
+		}
+		if (callbackURL.isPresent()) {
+			builder.callback(callbackURL.get());
+		}
+		if (debugStream.isPresent()) {
+			builder.debugStream(debugStream.get());
+		}
+		authService = builder.build();
+		return this;
+	}
+
 	/**
 	 * Perform an HTTP request using the parameters configured in this builder.
 	 *
@@ -550,4 +607,13 @@ public class HttpRequestBuilder {
 	}
 
 
+	public HttpRequestBuilder basicAuth(String username, String password) {
+		String auth = DatatypeConverter.printBase64Binary((username + ":" + password).getBytes(Charset.forName("UTF-8")));
+		header("Authorization", "Basic " + auth);
+		return this;
+	}
+
+	public boolean isReconnectEnabled() {
+		return reconnectEnabled;
+	}
 }

@@ -1,8 +1,8 @@
 package com.fillta.higgs.ws;
 
 import com.fillta.higgs.HiggsInterceptor;
+import com.fillta.higgs.http.server.HttpRequest;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.handler.codec.http.HttpRequest;
 import io.netty.handler.codec.http.websocketx.*;
 import io.netty.util.AttributeKey;
 import org.slf4j.Logger;
@@ -31,7 +31,7 @@ public class WebSocketInterceptor implements HiggsInterceptor {
 	public boolean matches(Object msg) {
 		if (msg instanceof HttpRequest) {
 			//if it's an HttpRequest then return true if one of the paths match
-			String uri = ((HttpRequest) msg).getUri();
+			String uri = ((HttpRequest) msg).uri();
 			for (String path : paths) {
 				if (path.equalsIgnoreCase(uri)) {
 					return true;
@@ -63,7 +63,7 @@ public class WebSocketInterceptor implements HiggsInterceptor {
 			return true;
 		}
 		if (frame instanceof PingWebSocketFrame) {
-			ctx.channel().write(new PongWebSocketFrame(frame.getBinaryData()));
+			ctx.channel().write(new PongWebSocketFrame(frame.data()));
 			ctx.flush();
 			return true;
 		}
@@ -78,7 +78,7 @@ public class WebSocketInterceptor implements HiggsInterceptor {
 
 	private boolean canPerformHandShake(ChannelHandlerContext ctx, HttpRequest req) {
 		for (String path : paths) {
-			if (path.equalsIgnoreCase(req.getUri())) {
+			if (path.equalsIgnoreCase(req.uri())) {
 				String wsPath = getWebSocketLocation(req, path);
 				try {
 					// Handshake
@@ -111,7 +111,7 @@ public class WebSocketInterceptor implements HiggsInterceptor {
 	 * @return
 	 */
 	private String getWebSocketLocation(HttpRequest req, String path) {
-		return "ws://" + req.getHeader(HOST) + path;
+		return "ws://" + req.headers().get(HOST) + path;
 	}
 
 	/**

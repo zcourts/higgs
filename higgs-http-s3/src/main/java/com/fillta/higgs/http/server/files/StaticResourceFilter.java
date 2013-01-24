@@ -42,10 +42,10 @@ public class StaticResourceFilter implements ResourceFilter {
 
 	@Override
 	public Endpoint getEndpoint(final HttpRequest request) {
-		if (!request.getMethod().getName().equalsIgnoreCase(HttpMethod.GET.getName()))
+		if (!request.method().name().equalsIgnoreCase(HttpMethod.GET.name()))
 			return null;
 		String base_dir = server.getConfig().files.public_directory;
-		String uri = request.getUri();
+		String uri = request.uri();
 		//remove query string from path
 		if (uri.indexOf("?") != -1) {
 			uri = uri.substring(0, uri.indexOf("?"));
@@ -126,7 +126,7 @@ public class StaticResourceFilter implements ResourceFilter {
 		if (!file.isFile())
 			return null;
 		// Cache Validation
-		String ifModifiedSince = request.getHeader(IF_MODIFIED_SINCE);
+		String ifModifiedSince = request.headers().get(IF_MODIFIED_SINCE);
 		//disable modified since - currently broken
 		if (false == true && ifModifiedSince != null && !ifModifiedSince.isEmpty()) {
 			SimpleDateFormat dateFormatter = new SimpleDateFormat(HTTP_DATE_FORMAT, Locale.US);

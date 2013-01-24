@@ -1,7 +1,6 @@
 package com.fillta.higgs.boson.demo;
 
 import com.fillta.higgs.boson.BosonServer;
-import com.fillta.higgs.events.HiggsEvent;
 import com.fillta.higgs.events.listeners.ChannelEventListener;
 import com.google.common.base.Optional;
 import io.netty.channel.ChannelHandlerContext;
@@ -12,9 +11,7 @@ import io.netty.channel.ChannelHandlerContext;
 public class DemoServer {
 	public static void main(String... args) {
 		BosonServer server = new BosonServer(8080);
-//		server.setQueueingStrategyAsBlockingQueue();
-		server.setQueueingStrategyAsCircularBuffer();
-		server.on(HiggsEvent.EXCEPTION_CAUGHT, new ChannelEventListener() {
+		server.onException(new ChannelEventListener() {
 			public void triggered(ChannelHandlerContext ctx, Optional<Throwable> ex) {
 				ex.get().printStackTrace();
 			}

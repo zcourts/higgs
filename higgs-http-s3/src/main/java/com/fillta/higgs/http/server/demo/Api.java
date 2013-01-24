@@ -68,6 +68,8 @@ public class Api {
 		assert path != null;
 		count += 1;
 		System.out.println("test:" + count);
+		//set something in the session
+		session.put("count", count);
 		return new ObjectMapper().writeValueAsString(this);
 	}
 

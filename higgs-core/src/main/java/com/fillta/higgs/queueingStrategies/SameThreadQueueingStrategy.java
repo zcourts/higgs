@@ -1,15 +1,14 @@
 package com.fillta.higgs.queueingStrategies;
 
-import com.fillta.higgs.MessageTopicFactory;
 import com.fillta.functional.Function1;
+import com.fillta.higgs.DecodedMessage;
 import io.netty.channel.ChannelHandlerContext;
 
 /**
  * @author Courtney Robinson <courtney@crlog.info>
  */
 public class SameThreadQueueingStrategy<T, IM> extends QueueingStrategy<T, IM> {
-	public SameThreadQueueingStrategy(MessageTopicFactory<T, IM> topicFactory) {
-		super(topicFactory);
+	public SameThreadQueueingStrategy() {
 	}
 
 	/**
@@ -20,7 +19,7 @@ public class SameThreadQueueingStrategy<T, IM> extends QueueingStrategy<T, IM> {
 	 * @param msg the message to queue
 	 */
 	@Override
-	public void enqueue(ChannelHandlerContext ctx, IM msg) {
+	public void enqueue(ChannelHandlerContext ctx, DecodedMessage<T, IM> msg) {
 		invokeListeners(ctx, msg);
 	}
 }

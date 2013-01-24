@@ -8,12 +8,14 @@ import com.fillta.higgs.queueingStrategies.CircularBufferQueueingStrategy;
 import com.fillta.higgs.queueingStrategies.LinkedBlockingQueueStrategy;
 import com.fillta.higgs.queueingStrategies.QueueingStrategy;
 import com.fillta.higgs.queueingStrategies.SameThreadQueueingStrategy;
+import com.fillta.higgs.ssl.SSLConfigFactory;
+import com.fillta.higgs.ssl.SSLContextFactory;
 import com.google.common.base.Optional;
-import io.netty.channel.Channel;
-import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.*;
+import io.netty.channel.socket.SocketChannel;
 import io.netty.handler.codec.http.HttpRequest;
 import io.netty.handler.codec.http.websocketx.TextWebSocketFrame;
+import io.netty.handler.ssl.SslHandler;
 import io.netty.logging.InternalLoggerFactory;
 import io.netty.logging.Slf4JLoggerFactory;
 import io.netty.util.Attribute;
@@ -21,6 +23,7 @@ import io.netty.util.AttributeKey;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.net.ssl.SSLEngine;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
@@ -28,7 +31,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static com.fillta.higgs.events.HiggsEvent.EXCEPTION_CAUGHT;
+import static com.fillta.higgs.events.HiggsEvent.*;
 
 /**
  * @param <T>  Type of the topic this event processor is for
@@ -38,13 +41,14 @@ import static com.fillta.higgs.events.HiggsEvent.EXCEPTION_CAUGHT;
  *             {@link io.netty.buffer.ByteBuf} since byte[] gets converted to it anyway...
  * @author Courtney Robinson <courtney@crlog.info>
  */
-public abstract class EventProcessor<T, OM, IM, SM> {
+@ChannelHandler.Sharable
+public abstract class EventProcessor<T, OM, IM, SM> extends ChannelInboundMessageHandlerAdapter<SM> {
 	static {
 		InternalLoggerFactory.setDefaultFactory(new Slf4JLoggerFactory());
 	}
 
 	protected Logger log = LoggerFactory.getLogger(getClass());
-	private static final AttributeKey<Object> REQUEST_KEY = new AttributeKey<>("request-key");
+	public static final AttributeKey<Object> REQUEST_KEY = new AttributeKey<>("event-processor-request-key");
 	/**
 	 * One of the worse errors/bugs to have is a thread terminating because of an uncaught exception.
 	 * It leaves no indication of what happened and sometimes the error happens on a thread you don't
@@ -96,7 +100,7 @@ public abstract class EventProcessor<T, OM, IM, SM> {
 				public Thread newThread(final Runnable r) {
 					Thread thread = new Thread(r, getClass().getName() + "-higgs-" + totalThreads.getAndIncrement());
 					thread.setDaemon(daemonThreadPool.get());
-					thread.setDefaultUncaughtExceptionHandler(unhandledExceptionHandler);
+					Thread.setDefaultUncaughtExceptionHandler(unhandledExceptionHandler);
 					return thread;
 				}
 			});
@@ -112,10 +116,12 @@ public abstract class EventProcessor<T, OM, IM, SM> {
 	 * thread.
 	 *
 	 * @param threadPool A configured thread pool for the message queue to use if required.
-	 * @return
+	 * @return the queueing strategy used to process events
 	 */
-	protected QueueingStrategy<T, IM> messageQueue(ExecutorService threadPool) {
-		return new SameThreadQueueingStrategy(topicFactory());
+	protected QueueingStrategy<T, IM> messageQueue(@SuppressWarnings("UnusedParameters")
+	                                               ExecutorService threadPool) {
+		//noinspection unchecked
+		return new SameThreadQueueingStrategy();
 	}
 
 	/**
@@ -124,6 +130,7 @@ public abstract class EventProcessor<T, OM, IM, SM> {
 	 *
 	 * @param strategy the strategy to use.
 	 */
+	@SuppressWarnings("UnusedDeclaration")
 	public void setQueueingStrategy(QueueingStrategy<T, IM> strategy) {
 		messageQueue = strategy;
 	}
@@ -131,15 +138,17 @@ public abstract class EventProcessor<T, OM, IM, SM> {
 	/**
 	 * Set the queueing strategy to use a {@link com.fillta.higgs.buffer.CircularBuffer}
 	 */
+	@SuppressWarnings("UnusedDeclaration")
 	public void setQueueingStrategyAsCircularBuffer() {
-		messageQueue = new CircularBufferQueueingStrategy<T, IM>(threadPool(), topicFactory());
+		messageQueue = new CircularBufferQueueingStrategy<>(threadPool());
 	}
 
 	/**
 	 * Set the queueing strategy to use a {@link java.util.concurrent.LinkedBlockingQueue}
 	 */
+	@SuppressWarnings("UnusedDeclaration")
 	public void setQueueingStrategyAsBlockingQueue() {
-		messageQueue = new LinkedBlockingQueueStrategy<T, IM>(threadPool(), topicFactory());
+		messageQueue = new LinkedBlockingQueueStrategy<>(threadPool());
 	}
 
 	public void emit(HiggsEvent event, ChannelHandlerContext context, Optional<Throwable> ex) {
@@ -168,7 +177,8 @@ public abstract class EventProcessor<T, OM, IM, SM> {
 			IM imsg = deserialize(ctx, msg);
 			//if de-serializer returns null then do not queue
 			if (imsg != null) {
-				messageQueue.enqueue(ctx, imsg);
+				T topic = getTopic(imsg);
+				messageQueue.enqueue(ctx, new DecodedMessage<>(topic, imsg));
 			}
 		}
 	}
@@ -179,16 +189,16 @@ public abstract class EventProcessor<T, OM, IM, SM> {
 	 * we can associate data with each channel. In this case they data associated is the request
 	 * object. To get the request you need to something similar to:
 	 * <pre>
-	 * {@code
+	 * <code>
 	 * EventProcessor.on(HiggsEvent.EXCEPTION_CAUGHT, new ChannelEventListener() {
 	 * 		public void triggered(final ChannelHandlerContext ctx, final Optional<Throwable> ex) {
 	 * 			Attribute<Object> request = ctx.channel().attr(EventProcessor.REQUEST_KEY);
 	 * 		    if(request.get()!=null && request instanceof MyRequestType){
 	 * 		        //do something clever
-	 * 		    }
+	 *             }
 	 *         }
 	 *     })
-	 * }
+	 * </code>
 	 * </pre>
 	 * The {@link EventProcessor} guarantees that it will always set the request object.
 	 * You must always check the type of the object returned.
@@ -208,7 +218,7 @@ public abstract class EventProcessor<T, OM, IM, SM> {
 	 * Registers an interceptor to this even processor
 	 *
 	 * @param interceptor the interceptor to add
-	 * @param <T>
+	 * @param <T>         any interceptor sub type
 	 */
 	public <T extends HiggsInterceptor> void addInterceptor(T interceptor) {
 		if (interceptor == null)
@@ -216,27 +226,12 @@ public abstract class EventProcessor<T, OM, IM, SM> {
 		interceptors.add(interceptor);
 	}
 
-	/**
-	 * De-Serialize a message
-	 *
-	 * @param msg the serialized message to be de-serialized
-	 * @return
-	 */
-	public IM deserialize(ChannelHandlerContext ctx, SM msg) {
-		return serializer().deserialize(ctx, msg);
+	@SuppressWarnings("UnusedDeclaration")
+	public void onException(ChannelEventListener listener) {
+		on(HiggsEvent.EXCEPTION_CAUGHT, listener);
 	}
 
-	/**
-	 * Serialize a message
-	 *
-	 * @param msg the outgoing message to be serialized
-	 * @return
-	 */
-	public SM serialize(Channel channel, OM msg) {
-		return serializer().serialize(channel, msg);
-	}
-
-	public void on(HiggsEvent event, ChannelEventListener listener) {
+	public <E extends ChannelEventListener> void on(HiggsEvent event, E listener) {
 
 		Set<ChannelEventListener> set = eventSubscribers.get(event);
 		if (set == null) {
@@ -273,10 +268,12 @@ public abstract class EventProcessor<T, OM, IM, SM> {
 	 *
 	 * @param function The function should return true if it uses the messages it receives
 	 */
+	@SuppressWarnings("UnusedDeclaration")
 	public void listen(Function1<ChannelMessage<IM>> function) {
 		messageQueue.listen(function);
 	}
 
+	@SuppressWarnings("UnusedDeclaration")
 	public void unsubscribeAll(T topic) {
 		messageQueue.removeAll(topic);
 	}
@@ -286,20 +283,155 @@ public abstract class EventProcessor<T, OM, IM, SM> {
 	}
 
 	/**
-	 * @param c
-	 * @param obj
+	 * @param c   the channel the response is written to
+	 * @param obj the response object
 	 * @return The write future. If you won't be writing any more and the connection won;t be needed
 	 *         use .addListener(ChannelFutureListener.CLOSE) to close the connection.
 	 */
 	public ChannelFuture respond(Channel c, OM obj) {
-		return c.write(serializer().serialize(c, obj));
+		return c.write(serialize(c, obj));
 	}
 
-	public abstract MessageConverter<IM, OM, SM> serializer();
+	/**
+	 * Convert a message from its outgoing message "OM" format
+	 * into its serialized message "SM" format
+	 *
+	 * @param ctx Netty's channel handler context
+	 * @param msg the message to be converted
+	 * @return the "serialized" form of the given message
+	 */
+	public abstract SM serialize(Channel ctx, OM msg);
 
-	public abstract MessageTopicFactory<T, IM> topicFactory();
+	/**
+	 * Convert a message from its serialized form into the incoming message, "IM" form.
+	 *
+	 * @param ctx The Netty channel context
+	 * @param msg the serialized message
+	 * @return The converted message  OR null if the message is not complete and
+	 *         should not be queued to pass to listeners yet
+	 */
+	public abstract IM deserialize(ChannelHandlerContext ctx, SM msg);
 
+	/**
+	 * Given an incoming message,extract the message's topic.
+	 * If used in a multi-threaded Queueing strategy this factory should not access un-synchronized
+	 * shared resources.
+	 */
+	public abstract T getTopic(IM msg);
+
+	@SuppressWarnings("UnusedDeclaration")
 	public void setDaemonThreadPool(final boolean daemonThreadPool) {
 		this.daemonThreadPool.set(daemonThreadPool);
+	}
+
+	/**
+	 * Create a new initializer for this {@link EventProcessor} to use to configure a pipeline
+	 *
+	 * @param ssl        if true then the initializer automatically adds "ssl" to the pipeline.
+	 * @param clientMode if true and the ssl parameter is true then the {@link SSLEngine}
+	 *                   is configure in client mode.
+	 * @return a new initializer
+	 */
+	protected ChannelInitializer<SocketChannel> newInitializer(final boolean ssl,
+	                                                           final boolean clientMode) {
+		return new ChannelInitializer<SocketChannel>() {
+			public void initChannel(final SocketChannel ch) throws Exception {
+				ChannelPipeline pipeline = ch.pipeline();
+				if (ssl) {
+					SSLEngine engine = newSSLEngine(clientMode);
+					pipeline.addLast("ssl", new SslHandler(engine));
+				}
+				beforeSetupPipeline(pipeline);
+				boolean addHandler = setupPipeline(pipeline);
+				afterSetupPipeline(pipeline);
+				if (pipeline.get("handler") == null && addHandler) {
+					pipeline.addLast("handler", EventProcessor.this);
+				}
+			}
+		};
+	}
+
+	/**
+	 * Provides a callback before {@link #setupPipeline(ChannelPipeline)} is called
+	 * allowing implementers to manipulate the pipeline before
+	 *
+	 * @param pipeline the pipeline to be configured
+	 */
+	protected void beforeSetupPipeline(final ChannelPipeline pipeline) {
+
+	}
+
+	/**
+	 * Provides a callback after {@link #setupPipeline(ChannelPipeline)} is called
+	 * allowing implementers to manipulate the pipeline before {@link #EventProcessor}
+	 * attempts to detect and add a "handler" to the pipeline
+	 *
+	 * @param pipeline the pipeline to be configured
+	 */
+	protected void afterSetupPipeline(final ChannelPipeline pipeline) {
+
+	}
+
+	/**
+	 * Create a new {@link SSLEngine} instance that will be used in the configuration of a pipeline
+	 *
+	 * @param clientMode if true then the {@link SSLEngine} is configure in client mode.
+	 * @return a new engine
+	 */
+	protected SSLEngine newSSLEngine(final boolean clientMode) {
+		SSLEngine engine = SSLContextFactory.getSSLSocket(SSLConfigFactory.sslConfiguration).createSSLEngine();
+		engine.setUseClientMode(clientMode);
+		return engine;
+	}
+
+	/**
+	 * This method should configure the pipeline on invocation.
+	 * SSL is automatically added if the {@link #newInitializer(boolean, boolean)} method
+	 * received ssl==true
+	 * During its configuration implementers may add a "handler" to the pipeline.
+	 * If no "handler" is added to the initializer one will be added automatically AT THE END of
+	 * the pipeline IF AND ONLY IF this method returns true.
+	 *
+	 * @return true if this event processor should be added as the handler for this pipeline,
+	 *         false otherwise. It is important to return the correct setting for e.g. if protocol sniffing
+	 *         is enabled then this should always return false because the protocol sniffer should add a handler
+	 *         if it doesn't and a handler is added at this stage it will be too early in the pipeline which will lead
+	 *         to unexpected results.
+	 */
+	protected abstract boolean setupPipeline(ChannelPipeline pipeline);
+
+	//netty related methods
+	private final Optional<Throwable> absentThrowable = Optional.absent();
+
+	@Override
+	public void messageReceived(ChannelHandlerContext ctx, SM msg) throws Exception {
+		emit(MESSAGE_RECEIVED, ctx, absentThrowable);
+		emitMessage(ctx, msg);
+	}
+
+	@Override
+	public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
+		emit(EXCEPTION_CAUGHT, ctx, Optional.of(cause));
+	}
+
+
+	@Override
+	public void channelRegistered(ChannelHandlerContext ctx) throws Exception {
+		emit(CHANNEL_REGISTERED, ctx, absentThrowable);
+	}
+
+	@Override
+	public void channelUnregistered(ChannelHandlerContext ctx) throws Exception {
+		emit(CHANNEL_UNREGISTERED, ctx, absentThrowable);
+	}
+
+	@Override
+	public void channelActive(ChannelHandlerContext ctx) throws Exception {
+		emit(CHANNEL_ACTIVE, ctx, absentThrowable);
+	}
+
+	@Override
+	public void channelInactive(ChannelHandlerContext ctx) throws Exception {
+		emit(CHANNEL_INACTIVE, ctx, absentThrowable);
 	}
 }

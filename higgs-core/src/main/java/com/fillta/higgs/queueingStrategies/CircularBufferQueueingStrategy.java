@@ -2,7 +2,7 @@ package com.fillta.higgs.queueingStrategies;
 
 import com.fillta.functional.Function1;
 import com.fillta.functional.Tuple;
-import com.fillta.higgs.MessageTopicFactory;
+import com.fillta.higgs.DecodedMessage;
 import com.fillta.higgs.buffer.CircularBuffer;
 import com.fillta.higgs.buffer.CircularBufferConsumer;
 import io.netty.channel.ChannelHandlerContext;
@@ -14,23 +14,20 @@ import java.util.concurrent.ExecutorService;
  */
 public class CircularBufferQueueingStrategy<T, IM> extends QueueingStrategy<T, IM> {
 	//use default buffer size of 1M
-	protected CircularBuffer<Tuple<ChannelHandlerContext, IM>> buffer = new CircularBuffer<>();
+	protected CircularBuffer<Tuple<ChannelHandlerContext, DecodedMessage<T, IM>>> buffer = new CircularBuffer<>();
 	protected ExecutorService threadPool;
-	CircularBufferConsumer<IM> consumer;
+	CircularBufferConsumer<Tuple<ChannelHandlerContext, DecodedMessage<T, IM>>> consumer;
 
-	public CircularBufferQueueingStrategy(ExecutorService threadPool,
-	                                      MessageTopicFactory<T, IM> topicFactory) {
-		super(topicFactory);
+	public CircularBufferQueueingStrategy(ExecutorService threadPool) {
 		this.threadPool = threadPool;
-		consumer = new CircularBufferConsumer(this.threadPool,
-				new Function1<Tuple<ChannelHandlerContext, IM>>() {
-					public void apply(Tuple<ChannelHandlerContext, IM> a) {
+		consumer = new CircularBufferConsumer<>(this.threadPool,
+				new Function1<Tuple<ChannelHandlerContext, DecodedMessage<T, IM>>>() {
+					public void apply(Tuple<ChannelHandlerContext, DecodedMessage<T, IM>> a) {
 						if (a != null) {
 							invokeListeners(a.key, a.value);
 						}
 					}
 				}, buffer);
-		//so easy to forget to do this,but its probably best left as a separate operation
 		consumer.start();
 	}
 
@@ -43,9 +40,8 @@ public class CircularBufferQueueingStrategy<T, IM> extends QueueingStrategy<T, I
 	 * @param msg the message to queue
 	 */
 	@Override
-	public void enqueue(ChannelHandlerContext ctx, IM msg) {
-		buffer.add(new Tuple(ctx, msg));
-		//let consumer know the buffer has been updated
+	public void enqueue(ChannelHandlerContext ctx, DecodedMessage<T, IM> msg) {
+		buffer.add(new Tuple<>(ctx, msg));
 		consumer.updated();
 	}
 }
