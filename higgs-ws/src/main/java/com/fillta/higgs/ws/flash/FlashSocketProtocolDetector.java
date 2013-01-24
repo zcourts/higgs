@@ -1,7 +1,6 @@
 package com.fillta.higgs.ws.flash;
 
 import com.fillta.higgs.EventProcessor;
-import com.fillta.higgs.HiggsEventHandlerProxy;
 import com.fillta.higgs.sniffing.ProtocolDetector;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
@@ -10,7 +9,7 @@ import io.netty.channel.ChannelPipeline;
 /**
  * @author Courtney Robinson <courtney@crlog.info>
  */
-public class FlashSocketProtocolDetector extends ProtocolDetector {
+public class FlashSocketProtocolDetector implements ProtocolDetector {
 	protected EventProcessor events;
 	protected final FlashPolicyFile policy;
 
@@ -26,7 +25,7 @@ public class FlashSocketProtocolDetector extends ProtocolDetector {
 		//HFS => Higgs Flash Socket (Header)
 		if (magic1 == Encoder.H && magic2 == Encoder.F && magic3 == Encoder.S) {
 			//advance the reader index by the 3 bytes for the header so that the decoder doesn't need to do it
-			in.readerIndex(in.readerIndex()+3);
+			in.readerIndex(in.readerIndex() + 3);
 			return true;
 		}
 		return false;
@@ -42,7 +41,7 @@ public class FlashSocketProtocolDetector extends ProtocolDetector {
 			pipeline.remove("handler");
 		pipeline.addLast("decoder", new Decoder());
 		pipeline.addLast("encoder", new Encoder());
-		pipeline.addLast("handler", new HiggsEventHandlerProxy(events));
+		pipeline.addLast("handler", events);
 		//protocol sniffer shouldn't remove itself from the pipeline
 		return false;
 	}

@@ -17,6 +17,7 @@ public class HttpCookie extends DefaultCookie {
 
 	public HttpCookie(String name, String value) {
 		super(name, value);
+		setPath("/");
 	}
 
 	public HttpCookie(Cookie cookie) {

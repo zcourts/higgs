@@ -8,6 +8,7 @@ The name shamelessly stolen from the almost mythical Higgs Boson http://en.wikip
 * __Boson__ - the name of the protocol
 
 Together with __Netty__ forms a pure JVM (NIO based) high performance, message oriented networking framework.
+TODO: add answer to question about describing as message oriented as opposed to rpc e.g. explanation http://www-scf.usc.edu/~shailesn/csci-555/mp_vs_rpc.html
 The project was started to remove the need I had for ZeroMQ (too many issues with native dependency in jzmq)
 The other protocols were added as the need arose. And it has since grown to be more robust than originally intended.
 

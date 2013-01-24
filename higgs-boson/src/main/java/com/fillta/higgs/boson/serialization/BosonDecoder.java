@@ -8,7 +8,7 @@ import io.netty.handler.codec.ByteToMessageDecoder;
 /**
  * @author Courtney Robinson <courtney@crlog.info>
  */
-public class BosonDecoder extends ByteToMessageDecoder<ByteBuf> {
+public class BosonDecoder extends ByteToMessageDecoder {
 	@Override
 	public ByteBuf decode(ChannelHandlerContext ctx, ByteBuf buffer) throws Exception {
 		// Wait until the protocol version and size of the message is available.

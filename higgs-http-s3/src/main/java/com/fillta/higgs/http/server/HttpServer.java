@@ -2,8 +2,6 @@ package com.fillta.higgs.http.server;
 
 import com.fillta.functional.Function1;
 import com.fillta.higgs.HiggsServer;
-import com.fillta.higgs.MessageConverter;
-import com.fillta.higgs.MessageTopicFactory;
 import com.fillta.higgs.events.ChannelMessage;
 import com.fillta.higgs.http.server.config.ServerConfig;
 import com.fillta.higgs.http.server.files.StaticResourceFilter;
@@ -12,19 +10,25 @@ import com.fillta.higgs.http.server.resource.*;
 import com.fillta.higgs.http.server.transformers.HttpErrorTransformer;
 import com.fillta.higgs.http.server.transformers.JsonTransformer;
 import com.fillta.higgs.http.server.transformers.ThymeleafTransformer;
+import com.fillta.higgs.sniffing.ProtocolSniffer;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelInitializer;
-import io.netty.channel.socket.SocketChannel;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelPipeline;
+import io.netty.handler.codec.http.HttpContentCompressor;
 import io.netty.handler.codec.http.HttpHeaders;
 import io.netty.handler.codec.http.multipart.DiskAttribute;
 import io.netty.handler.codec.http.multipart.DiskFileUpload;
+import io.netty.handler.stream.ChunkedWriteHandler;
 import org.yaml.snakeyaml.Yaml;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.net.SocketAddress;
-import java.util.*;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.atomic.AtomicReference;
@@ -45,19 +49,21 @@ import java.util.concurrent.atomic.AtomicReference;
  * @author Courtney Robinson <courtney@crlog.info>
  */
 public class HttpServer<C extends ServerConfig> extends HiggsServer<String, HttpResponse, HttpRequest, Object> {
-	private Map<String, HttpSession> sessions = new ConcurrentHashMap<String, HttpSession>();
-	private Set<Endpoint> get = Collections.newSetFromMap(new ConcurrentHashMap<Endpoint, Boolean>());
-	private Set<Endpoint> put = Collections.newSetFromMap(new ConcurrentHashMap<Endpoint, Boolean>());
-	private Set<Endpoint> post = Collections.newSetFromMap(new ConcurrentHashMap<Endpoint, Boolean>());
-	private Set<Endpoint> delete = Collections.newSetFromMap(new ConcurrentHashMap<Endpoint, Boolean>());
-	private Set<Endpoint> head = Collections.newSetFromMap(new ConcurrentHashMap<Endpoint, Boolean>());
-	private Set<Endpoint> options = Collections.newSetFromMap(new ConcurrentHashMap<Endpoint, Boolean>());
-	private final AtomicReference<ParamInjector> injector = new AtomicReference<>();
-	private final LinkedBlockingDeque<ResponseTransformer> transformers = new LinkedBlockingDeque<>();
-	private final LinkedBlockingDeque<ResourceFilter> filters = new LinkedBlockingDeque<>();
+	protected Map<String, HttpSession> sessions = new ConcurrentHashMap<String, HttpSession>();
+	protected Set<Endpoint> get = Collections.newSetFromMap(new ConcurrentHashMap<Endpoint, Boolean>());
+	protected Set<Endpoint> put = Collections.newSetFromMap(new ConcurrentHashMap<Endpoint, Boolean>());
+	protected Set<Endpoint> post = Collections.newSetFromMap(new ConcurrentHashMap<Endpoint, Boolean>());
+	protected Set<Endpoint> delete = Collections.newSetFromMap(new ConcurrentHashMap<Endpoint, Boolean>());
+	protected Set<Endpoint> head = Collections.newSetFromMap(new ConcurrentHashMap<Endpoint, Boolean>());
+	protected Set<Endpoint> options = Collections.newSetFromMap(new ConcurrentHashMap<Endpoint, Boolean>());
+	protected final AtomicReference<ParamInjector> injector = new AtomicReference<>();
+	protected final LinkedBlockingDeque<ResponseTransformer> transformers = new LinkedBlockingDeque<>();
+	protected final LinkedBlockingDeque<ResourceFilter> filters = new LinkedBlockingDeque<>();
 	//default settings
 	protected C config;
-	public static final String SID = "HS3SESSIONID";
+	public static final String SID = "HS3-SESSION-ID";
+	protected HttpConverter converter = new HttpConverter(this);
+
 
 	public HttpServer(final C config) {
 		super(8080);
@@ -85,6 +91,10 @@ public class HttpServer<C extends ServerConfig> extends HiggsServer<String, Http
 		}
 		setPort(config.port);
 		parseConfig();
+		setEnableProtocolSniffing(true);
+		addProtocolDetector(new HttpDetector(this));
+		setEnableGZip(false);
+//		new ProtocolSniffer()
 	}
 
 	public void register(Class<?> klass) {
@@ -203,35 +213,50 @@ public class HttpServer<C extends ServerConfig> extends HiggsServer<String, Http
 		return false;
 	}
 
-	public MessageTopicFactory<String, HttpRequest> topicFactory() {
-		return new MessageTopicFactory<String, HttpRequest>() {
-			//get URL from request and find method name
-			public String extract(final HttpRequest msg) {
-				Endpoint endpoint = null;
-				//note the order of the iterator is guaranteed to be LIFO as expected
-				Iterator<ResourceFilter> it = filters.descendingIterator();
-				while (it.hasNext()) {
-					ResourceFilter filter = it.next();
-					endpoint = filter.getEndpoint(msg);
-					if (endpoint != null)
-						break;
-				}
-				if (endpoint != null) {
-					//always set the endpoint the request matches
-					msg.setEndpoint(endpoint);
-					//if endpoint is unregistered and using default unregistered listener
-					if (endpoint.isUnregistered() && endpoint.useDefaultUnregisteredListener()) {
-						doListen(endpoint.getPath());
-					}
-					return endpoint.getPath();
-				}
-				if (!msg.isSupportedMethod()) {
-					throw new WebApplicationException(HttpStatus.METHOD_NOT_ALLOWED, msg);
-				}
-				//if endpoint is null then no resource is found.
-				throw new WebApplicationException(HttpStatus.NOT_FOUND, msg);
+	public Object serialize(final Channel ctx, final HttpResponse msg) {
+		return converter.serialize(ctx, msg);
+	}
+
+	public HttpRequest deserialize(final ChannelHandlerContext ctx, final Object msg) {
+		return converter.deserialize(ctx, msg);
+	}
+
+	public String getTopic(final HttpRequest msg) {
+		Endpoint endpoint = null;
+		//note the order of the iterator is guaranteed to be LIFO as expected
+		Iterator<ResourceFilter> it = filters.descendingIterator();
+		while (it.hasNext()) {
+			ResourceFilter filter = it.next();
+			endpoint = filter.getEndpoint(msg);
+			if (endpoint != null)
+				break;
+		}
+		if (endpoint != null) {
+			//always set the endpoint the request matches
+			msg.setEndpoint(endpoint);
+			//if endpoint is unregistered and using default unregistered listener
+			if (endpoint.isUnregistered() && endpoint.useDefaultUnregisteredListener()) {
+				doListen(endpoint.getPath());
 			}
-		};
+			return endpoint.getPath();
+		}
+		if (!msg.isSupportedMethod()) {
+			throw new WebApplicationException(HttpStatus.METHOD_NOT_ALLOWED, msg);
+		}
+		//if endpoint is null then no resource is found.
+		throw new WebApplicationException(HttpStatus.NOT_FOUND, msg);
+	}
+
+	protected boolean setupPipeline(final ChannelPipeline pipeline) {
+		if (!enableProtocolSniffing) {
+			//these are added dynamically and automatically if sniffing is enabled
+			pipeline.addLast("decoder", new HttpRequestDecoder());
+			pipeline.addLast("encoder", new HttpResponseEncoder());
+			pipeline.addLast("deflater", new HttpContentCompressor());
+			pipeline.addLast("chunkedWriter", new ChunkedWriteHandler());
+			return true;//add handler
+		}
+		return false;
 	}
 
 	public void addResponseTransformer(ResponseTransformer rt) {
@@ -286,12 +311,8 @@ public class HttpServer<C extends ServerConfig> extends HiggsServer<String, Http
 		options.remove(endpoint);
 	}
 
-	public ServerConfig getConfig() {
+	public C getConfig() {
 		return config;
-	}
-
-	public ChannelInitializer<SocketChannel> initializer() {
-		return new HttpServerInitializer(this, true, false);
 	}
 
 	public ResourceFilter getFilter() {
@@ -354,18 +375,7 @@ public class HttpServer<C extends ServerConfig> extends HiggsServer<String, Http
 			//status not acceptable by default unless a more suitable error is found from the error resolvers
 			throw new WebApplicationException(HttpStatus.NOT_ACCEPTABLE, a.message);
 		}
-		//always send session cookie ID
-		if (a.message.isNewSession()) {
-			response.setCookie(a.message.getCookie(SID));
-		}
-		response.finalizeCustomHeaders();
 		return response;
-	}
-
-	public MessageConverter<HttpRequest, HttpResponse, Object> serializer() {
-		//todo on post requests files can be split across multiple calls to de-serialize
-		//in such cases this can be optimized to return the same HttpConverter instance
-		return new HttpConverter(this);
 	}
 
 	private void parseConfig() {
@@ -409,20 +419,25 @@ public class HttpServer<C extends ServerConfig> extends HiggsServer<String, Http
 	}
 
 	public ChannelFuture respond(Channel channel, HttpResponse response) {
+		response.finalizeCustomHeaders();
 		Object obj = getRequest(channel);
-		if (obj instanceof io.netty.handler.codec.http.HttpRequest && config.log_requests) {
-			io.netty.handler.codec.http.HttpRequest request = (io.netty.handler.codec.http.HttpRequest) obj;
+		if (obj instanceof HttpRequest && config.log_requests) {
+			HttpRequest request = (HttpRequest) obj;
+			//always send session cookie ID
+			if (request.isNewSession()) {
+				response.setCookie(request.getSession());
+			}
 			SocketAddress address = channel.remoteAddress();
 			//going with the Apache format
 			//194.116.215.20 - [14/Nov/2005:22:28:57 +0000] “GET / HTTP/1.0″ 200 16440
 			log.info(String.format("%s - [%s] \"%s %s %s\" %s %s",
 					address,
-					HttpHeaders.getDate(request,new Date()),
-					request.getMethod().getName(),
-					request.getUri(),
-					request.getProtocolVersion(),
-					response.getStatus().getCode(),
-					response.getContent().writerIndex()
+					HttpHeaders.getDate(request, request.getCreatedAt().toDate()),
+					request.method().name(),
+					request.uri(),
+					request.protocolVersion(),
+					response.status().code(),
+					HttpHeaders.getContentLength(response)
 			));
 		}
 		return super.respond(channel, response);

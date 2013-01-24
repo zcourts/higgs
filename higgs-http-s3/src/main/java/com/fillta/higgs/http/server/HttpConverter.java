@@ -1,13 +1,14 @@
 package com.fillta.higgs.http.server;
 
-import com.fillta.higgs.MessageConverter;
 import com.fillta.higgs.http.server.params.HttpCookie;
 import com.fillta.higgs.http.server.params.HttpFile;
 import com.fillta.higgs.http.server.params.HttpSession;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.handler.codec.http.HttpChunk;
+import io.netty.handler.codec.http.HttpContent;
+import io.netty.handler.codec.http.HttpHeaders;
 import io.netty.handler.codec.http.HttpMethod;
+import io.netty.handler.codec.http.LastHttpContent;
 import io.netty.handler.codec.http.multipart.*;
 import io.netty.util.Attribute;
 import io.netty.util.AttributeKey;
@@ -25,10 +26,11 @@ import static java.lang.Integer.parseInt;
 /**
  * @author Courtney Robinson <courtney@crlog.info>
  */
-public class HttpConverter implements MessageConverter<HttpRequest, HttpResponse, Object> {
-	public final static AttributeKey<Boolean> attChunks = new AttributeKey("reading-chunks");
-	public final static AttributeKey<HttpPostRequestDecoder> attDecoder = new AttributeKey("files-decoder");
-	public final static AttributeKey<HttpRequest> attRequest = new AttributeKey("channel-request");
+public class HttpConverter {
+	public final static AttributeKey<Boolean> attChunks = new AttributeKey("http-server-reading-chunks");
+	public final static AttributeKey<HttpPostRequestDecoder> attDecoder = new AttributeKey("http-server-files-decoder");
+	public final static AttributeKey<HttpRequest> attRequest = new AttributeKey("http-channel-request");
+	public final static AttributeKey<Boolean> attSeen = new AttributeKey("http-server-converter-seen-request");
 	private static final HttpDataFactory factory = new DefaultHttpDataFactory(DefaultHttpDataFactory.MINSIZE); //Disk
 	private Logger log = LoggerFactory.getLogger(getClass());
 	private final HttpServer server;
@@ -52,43 +54,45 @@ public class HttpConverter implements MessageConverter<HttpRequest, HttpResponse
 	 * @return
 	 */
 	public HttpRequest deserialize(final ChannelHandlerContext ctx, final Object msg) {
+		Attribute<HttpRequest> requestAttribute = ctx.channel().attr(attRequest);
+		Attribute<Boolean> resSeen = ctx.channel().attr(attSeen);
+		resSeen.compareAndSet(null, false);
+		boolean seen = resSeen.get();
+		resSeen.set(true);
 		//in large post requests only the first object will be of type HttpRequest, others may be chunks
-		if (msg instanceof io.netty.handler.codec.http.HttpRequest) {
+		if (msg instanceof HttpRequest) {
 			//since we have the request see if we had one on the channel already, if not init session
-			io.netty.handler.codec.http.HttpRequest req = (io.netty.handler.codec.http.HttpRequest) msg;
-			Attribute<HttpRequest> requestAttribute = ctx.channel().attr(attRequest);
 			HttpRequest request = requestAttribute.get();
 			if (request == null) {
 				//associate a request with the channel if not already done
-				request = initHiggsRequest((io.netty.handler.codec.http.HttpRequest) msg);
+				request = initHiggsRequest((HttpRequest) msg);
 				requestAttribute.set(request);
 			}
-			if (!HttpMethod.POST.getName().equalsIgnoreCase(req.getMethod().getName()) &&
-					!HttpMethod.PUT.getName().equalsIgnoreCase(req.getMethod().getName())) {
+			if (!HttpMethod.POST.name().equalsIgnoreCase(request.method().name()) &&
+					!HttpMethod.PUT.name().equalsIgnoreCase(request.method().name())) {
 				//only post and put requests  are allowed to send form data so everything else just returns
-				return getAndCleanRequest(requestAttribute, request);
+				return request;
 			} else {
 				//if its a post or put request and a decoder doesn't exist then create one.
 				Attribute<HttpPostRequestDecoder> decoderAttribute = ctx.channel().attr(attDecoder);
 				if (decoderAttribute.get() == null) {
 					try {
-						HttpPostRequestDecoder decoder = new HttpPostRequestDecoder(factory, req);
+						HttpPostRequestDecoder decoder = new HttpPostRequestDecoder(factory, request);
 						decoderAttribute.set(decoder);
 					} catch (HttpPostRequestDecoder.ErrorDataDecoderException e1) {
 						log.warn("Unable to decode data", e1);
-						return null;
+						throw new WebApplicationException(HttpStatus.BAD_REQUEST, request);
 					} catch (HttpPostRequestDecoder.IncompatibleDataDecoderException e) {
 						log.warn("Incompatible request type", e);
-						return null;
+						throw new WebApplicationException(HttpStatus.BAD_REQUEST, request);
 					}
 				}
 				//decoder is created if it doesn't exist, can decode all if entire message received
 				Attribute<Boolean> chunksAtt = ctx.channel().attr(attChunks);
-				//if not set then its false
-				chunksAtt.compareAndSet(null, false);
+				chunksAtt.compareAndSet(null, HttpHeaders.isTransferEncodingChunked(request));
 				boolean readingChunks = chunksAtt.get();
 				if (!readingChunks) {
-					if (req.getTransferEncoding().isMultiple()) {
+					if (decoderAttribute.get().isMultipart()) {
 						//reading chunks... won't come here again
 						ctx.channel().attr(attChunks).set(true);
 					} else {
@@ -97,24 +101,28 @@ public class HttpConverter implements MessageConverter<HttpRequest, HttpResponse
 					}
 				}
 			}
-		} else {
-			//reading chunks, channel would have had decoder created already
-			HttpPostRequestDecoder decoder = ctx.channel().attr(attDecoder).get();
-			// New chunk is received
-			HttpChunk chunk = (HttpChunk) msg;
-			try {
-				decoder.offer(chunk);
-			} catch (HttpPostRequestDecoder.ErrorDataDecoderException e1) {
-				log.warn("Unable to decode HTTP chunk", e1);
-				return null;  //TODO throw WebApplicationException to return error to client and stop
-			}
-			//reading chunk by chunk (minimize memory usage due to use of Factory)
-			//readHttpDataChunkByChunk(ctx.channel());
-			// reading all only if at the end, until we have all data do nothing
-			if (chunk.isLast()) {
-				//no longer reading chunks
-				ctx.channel().attr(attChunks).set(false);
-				return readAllHttpDataReceived(ctx.channel());
+		}
+		if (msg instanceof HttpContent) {
+			if (!HttpMethod.POST.name().equalsIgnoreCase(requestAttribute.get().method().name()) &&
+					!HttpMethod.PUT.name().equalsIgnoreCase(requestAttribute.get().method().name())) {
+				cleanUp(requestAttribute, requestAttribute.get());
+				//only post and put requests have content
+				return null;
+			} else {
+				//reading chunks, channel would have had decoder created already
+				HttpPostRequestDecoder decoder = ctx.channel().attr(attDecoder).get();
+				// New chunk is received
+				HttpContent chunk = (HttpContent) msg;
+				try {
+					decoder.offer(chunk);
+				} catch (HttpPostRequestDecoder.ErrorDataDecoderException e1) {
+					log.warn("Unable to decode HTTP chunk", e1);
+					throw new WebApplicationException(HttpStatus.BAD_REQUEST, requestAttribute.get());
+				}
+				if (chunk instanceof LastHttpContent) {
+					ctx.channel().attr(attChunks).set(false);
+					return readAllHttpDataReceived(ctx.channel());
+				}
 			}
 		}
 		//not done receiving post or put request so return null
@@ -129,7 +137,7 @@ public class HttpConverter implements MessageConverter<HttpRequest, HttpResponse
 			data = decoder.getBodyHttpDatas();
 		} catch (HttpPostRequestDecoder.NotEnoughDataDecoderException e1) {
 			log.warn("Not enough data to decode", e1);
-			return null;
+			throw new WebApplicationException(HttpStatus.BAD_REQUEST, channel.attr(attRequest).get());
 		}
 		//called when all data is received, go over request data and separate form fields from files
 		Attribute<HttpRequest> requestAttribute = channel.attr(attRequest);
@@ -155,7 +163,7 @@ public class HttpConverter implements MessageConverter<HttpRequest, HttpResponse
 				}
 			}
 		}
-		return getAndCleanRequest(requestAttribute, request);
+		return cleanUp(requestAttribute, request);
 	}
 
 	/**
@@ -165,14 +173,14 @@ public class HttpConverter implements MessageConverter<HttpRequest, HttpResponse
 	 * @param request
 	 * @return
 	 */
-	private HttpRequest getAndCleanRequest(final Attribute<HttpRequest> attribute, final HttpRequest request) {
+	private HttpRequest cleanUp(final Attribute<HttpRequest> attribute, final HttpRequest request) {
 		attribute.set(null);
 		return request;
 	}
 
-	private HttpRequest initHiggsRequest(final io.netty.handler.codec.http.HttpRequest req) {
-		//convert Netty HttpRequest to a HiggsHttpRequest via copy constructor
-		HttpRequest request = new HttpRequest(req);
+	private HttpRequest initHiggsRequest(final HttpRequest request) {
+		//custom initialization that cannot be done in constructor because data is not known at the time
+		request.init();
 		//if the user has no session available then set one
 		if (!request.hasSessionID()) {
 			SecureRandom random = new SecureRandom();
@@ -197,8 +205,7 @@ public class HttpConverter implements MessageConverter<HttpRequest, HttpResponse
 				}
 				session.setPorts(ports);
 			}
-			request.setCookie(session);
-			request.setNewSession(true);
+			request.setNewSession(session);
 			server.getSessions().put(id, new HttpSession());
 		}
 		return request;

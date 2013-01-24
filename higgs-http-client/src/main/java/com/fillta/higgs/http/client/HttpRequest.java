@@ -1,13 +1,13 @@
 package com.fillta.higgs.http.client;
 
-import io.netty.handler.codec.http.DefaultHttpRequest;
+import io.netty.handler.codec.http.DefaultFullHttpRequest;
 import io.netty.handler.codec.http.HttpMethod;
 import io.netty.handler.codec.http.HttpVersion;
 
 /**
  * @author Courtney Robinson <courtney@crlog.info>
  */
-public class HttpRequest extends DefaultHttpRequest {
+public class HttpRequest extends DefaultFullHttpRequest {
 	private final HttpRequestBuilder req;
 	private final String id;
 
@@ -30,5 +30,13 @@ public class HttpRequest extends DefaultHttpRequest {
 
 	public String getId() {
 		return id;
+	}
+
+	public void setHeader(final String name, final String value) {
+		headers().setHeader(this, name, value);
+	}
+
+	public void setHeader(final String name, final Object value) {
+		headers().setHeader(this, name, value);
 	}
 }

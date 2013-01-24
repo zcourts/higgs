@@ -9,6 +9,7 @@ import com.fillta.higgs.http.server.transformers.thymeleaf.WebContext;
 import com.fillta.higgs.reflect.ReflectionUtil;
 import io.netty.buffer.Unpooled;
 import io.netty.handler.codec.http.HttpHeaders;
+import io.netty.handler.codec.http.HttpResponseStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.thymeleaf.TemplateEngine;
@@ -39,6 +40,9 @@ public class ThymeleafTransformer extends BaseTransformer {
 		if (!request.getEndpoint().hasTemplate()) {
 			return false;
 		}
+		if (request.getMediaTypes().isEmpty()) {
+			return true;//assume */*
+		}
 		for (MediaType type : request.getMediaTypes()) {
 			if (type.isCompatible(MediaType.WILDCARD_TYPE) ||
 					type.isCompatible(MediaType.TEXT_HTML_TYPE) ||
@@ -53,42 +57,53 @@ public class ThymeleafTransformer extends BaseTransformer {
 	public HttpResponse transform(final HttpServer server, Object returns, final HttpRequest request,
 	                              final Queue<ResponseTransformer> registeredTransformers) {
 		WebContext ctx = new WebContext();
-		return transform(ctx,server, returns, request, registeredTransformers,
+		return transform(ctx, server, returns, request, registeredTransformers,
 				request.getEndpoint().getTemplate());
 	}
 
 	public HttpResponse transform(WebContext ctx, HttpServer server, Object returns, HttpRequest request,
-	                              final Queue<ResponseTransformer> registeredTransformers, String template) {
-		HttpResponse response = new HttpResponse(request);
-		byte[] data = null;
+	                              final Queue<ResponseTransformer> registeredTransformers,
+	                              String template) {
+		return transform(ctx, server, returns, request, registeredTransformers, template, null);
+	}
+
+	public HttpResponse transform(WebContext ctx, HttpServer server, Object returns, HttpRequest request,
+	                              final Queue<ResponseTransformer> registeredTransformers,
+	                              String template, HttpResponseStatus status) {
 		if (returns == null) {
 			//if returns==null then the resource method returned void so return No Content
-			throw new WebApplicationException(HttpStatus.NO_CONTENT, request);
+			return new HttpResponse(HttpStatus.NO_CONTENT);
 		} else {
+			byte[] data = null;
 			try {
-				if (config.determine_language_from_accept_header) {
-					try {
-						ctx.setLocale(Locale.forLanguageTag(
-								request.getHeader(HttpHeaders.Names.ACCEPT_LANGUAGE)));
-					} catch (Throwable t) {
-						log.warn("Unable to set locale from accept header");
+				if (request != null) {
+					if (config.determine_language_from_accept_header) {
+						try {
+							ctx.setLocale(Locale.forLanguageTag(
+									request.headers().get(HttpHeaders.Names.ACCEPT_LANGUAGE)));
+						} catch (Throwable t) {
+							log.warn("Unable to set locale from accept header");
+						}
 					}
+					populateContext(ctx, server, returns, request);
 				}
-				populateContext(ctx, server, returns, request);
 				String content = tl.getTemplateEngine().process(template, ctx);
 				data = content.getBytes(Charset.forName(config.character_encoding));
 			} catch (Throwable e) {
 				log.warn("Unable to transform response to HTML using Thymeleaf transformer", e);
-				throw new WebApplicationException(HttpStatus.INTERNAL_SERVER_ERROR, request);
+				//todo use template to generate 500
+				return new HttpResponse(HttpStatus.INTERNAL_SERVER_ERROR);
+			}
+			if (data != null) {
+				HttpResponse response = new HttpResponse(request.protocolVersion(),
+						status == null ? HttpStatus.OK : status,
+						Unpooled.wrappedBuffer(data));
+				HttpHeaders.setContentLength(response, data.length);
+				return response;
+			} else {
+				return tryNextTransformer(server, returns, request, registeredTransformers);
 			}
 		}
-		if (data != null) {
-			response.setContent(Unpooled.wrappedBuffer(data));
-			HttpHeaders.setContentLength(response, data.length);
-		} else {
-			return tryNextTransformer(server, returns, request, registeredTransformers);
-		}
-		return response;
 	}
 
 	private void populateContext(final WebContext ctx, final HttpServer server, final Object response,

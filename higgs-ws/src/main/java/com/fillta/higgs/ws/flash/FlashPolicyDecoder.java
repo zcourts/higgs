@@ -9,7 +9,7 @@ import java.nio.charset.Charset;
 /**
  * @author Courtney Robinson <courtney@crlog.info>
  */
-public class FlashPolicyDecoder extends ByteToMessageDecoder<ByteBuf> {
+public class FlashPolicyDecoder extends ByteToMessageDecoder {
 	private final FlashPolicyFile flashPolicy;
 
 	public FlashPolicyDecoder(final FlashPolicyFile policy) {

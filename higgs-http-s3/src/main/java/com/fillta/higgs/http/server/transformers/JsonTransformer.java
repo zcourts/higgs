@@ -9,6 +9,7 @@ import com.fillta.higgs.http.server.*;
 import com.fillta.higgs.http.server.resource.MediaType;
 import io.netty.buffer.Unpooled;
 import io.netty.handler.codec.http.HttpHeaders;
+import io.netty.handler.codec.http.HttpResponseStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,8 +46,13 @@ public class JsonTransformer extends BaseTransformer {
 	@Override
 	public HttpResponse transform(HttpServer server, final Object returns, HttpRequest request,
 	                              Queue<ResponseTransformer> registeredTransformers) {
-		HttpResponse response = new HttpResponse(request);
-		byte[] data = null;
+		return transform(server, returns, request, registeredTransformers, null);
+	}
+
+	public HttpResponse transform(HttpServer server, Object returns, HttpRequest request,
+	                              Queue<ResponseTransformer> transformers,
+	                              HttpResponseStatus status) {
+		byte[] data;
 		if (returns == null) {
 			data = "{}".getBytes();
 		} else {
@@ -54,16 +60,18 @@ public class JsonTransformer extends BaseTransformer {
 				data = mapper.writeValueAsBytes(returns);
 			} catch (JsonProcessingException e) {
 				log.warn("Unable to transform response to JSON", e);
-				response.setStatus(HttpStatus.INTERNAL_SERVER_ERROR);
-				return response;
+				//todo use template for 500
+				return new HttpResponse(HttpStatus.INTERNAL_SERVER_ERROR);
 			}
 		}
 		if (data != null) {
-			response.setContent(Unpooled.wrappedBuffer(data));
+			HttpResponse response = new HttpResponse(request.protocolVersion(),
+					status == null ? HttpStatus.OK : status,
+					Unpooled.wrappedBuffer(data));
 			HttpHeaders.setContentLength(response, data.length);
+			return response;
 		} else {
-			return tryNextTransformer(server, returns, request, registeredTransformers);
+			return tryNextTransformer(server, returns, request, transformers);
 		}
-		return response;
 	}
 }

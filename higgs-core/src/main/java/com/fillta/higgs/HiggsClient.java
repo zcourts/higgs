@@ -1,163 +1,172 @@
 package com.fillta.higgs;
 
-import com.fillta.functional.Function1;
-import com.fillta.higgs.events.HiggsEvent;
 import com.fillta.higgs.events.listeners.ChannelEventListener;
 import com.google.common.base.Optional;
+import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.*;
+import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioSocketChannel;
+import io.netty.handler.codec.compression.ZlibCodecFactory;
+import io.netty.handler.codec.compression.ZlibWrapper;
 
 import java.io.IOException;
-import java.net.BindException;
 import java.net.ConnectException;
+import java.net.InetSocketAddress;
 import java.nio.channels.ClosedChannelException;
 
 /**
- * Clients are "builders" for {@link HiggsClientConnection}s.
- * A single client can be used to build several requests. These requests can and should be
- * completely independent but do not necessarily have to be.
  */
 public abstract class HiggsClient<T, OM, IM, SM> extends EventProcessor<T, OM, IM, SM> {
-
-	private final NioEventLoopGroup nioEventLoopGroup;
+	protected final NioEventLoopGroup nioEventLoopGroup;
+	protected long reconnectTimeout = 10000;
+	protected boolean enableGZip;
 
 	public HiggsClient() {
 		nioEventLoopGroup = new NioEventLoopGroup(maxThreads);
 	}
 
-	public <H extends HiggsClientConnection<T, OM, IM, SM>> HiggsClient<T, OM, IM, SM>
-	connect(final String serviceName, final String host, final int port, final boolean decompress,
-	        final boolean useSSL, final HiggsInitializer initializer, final Function1<H> function) {
-		final H request =
-				(H) newClientRequest(this, serviceName, host, port, decompress, useSSL, initializer);
-		return connect(request, function);
+	/**
+	 * ASynchronously connect to the given host:port
+	 *
+	 * @param serviceName the name of the service being connected to. Useful for debugging when multiple
+	 *                    connects mail fail, a human readable name makes logs easier to read
+	 * @param host        the host/ip to connect to
+	 * @param port        the port on the host
+	 * @param reconnect   if true then should connection fail it will automatically be re-attempted
+	 * @param ssl         If true then SSL will be added t the pipeline.
+	 * @return a future which notifies when the connection succeeds or fails
+	 */
+	public ConnectFuture connect(final String serviceName, final String host, final int port,
+	                             final boolean reconnect, final boolean ssl) {
+		return connect(serviceName, host, port, reconnect, ssl, null);
 	}
 
-	public <H extends HiggsClientConnection<T, OM, IM, SM>> HiggsClient<T, OM, IM, SM> connect(final H request, final Function1<H> function) {
-		if (request.getState() == HiggsClientConnection.State.CONNECTING) {
-			return this; //already connecting
+	protected ConnectFuture<T, OM, IM, SM> connect(final String serviceName, final String host, final int port,
+	                                               final boolean reconnect, final boolean ssl,
+	                                               ConnectFuture<T, OM, IM, SM> connFuture) {
+		if (connFuture != null &&
+				(connFuture.getState() == ConnectFuture.State.CONNECTING
+						|| connFuture.getState() == ConnectFuture.State.CONNECTED)) {
+			return connFuture;
 		}
-		request.setState(HiggsClientConnection.State.CONNECTING);
-		threadPool().submit(new Runnable() {
-			public void run() {
-				if (!request.isAddedReconnectListener() && request.isAutoReconnectEnabled()) {
-					addReconnectListener(request, function);
+		Bootstrap b = new Bootstrap();
+		ChannelInitializer<SocketChannel> initializer = newInitializer(ssl, true);
+		b.group(eventLoopGroup())
+				.channel(channelClass())
+				.handler(initializer)
+				.remoteAddress(new InetSocketAddress(host, port));
+		final ConnectFuture<T, OM, IM, SM> future = newConnectFuture(reconnect, connFuture);
+		future.setState(ConnectFuture.State.CONNECTING);
+		if (!future.isReconnectListenerAdded()) {
+			addReconnectListener(serviceName, host, port, reconnect, ssl, future);
+		}
+		ChannelFuture f = b.connect();
+		future.setFuture(f);
+		f.addListener(new ChannelFutureListener() {
+			public void operationComplete(ChannelFuture channelFuture) {
+				if (channelFuture.isSuccess()) {
+					future.setState(ConnectFuture.State.CONNECTED);
+					log.debug(String.format("Connected to %s", serviceName));
+				} else if (reconnect) {
+					try {
+						log.debug(String.format("Connecting to %s on %s:%s failed. Attempting to retry in" +
+								" %s milliseconds", serviceName, host, port, reconnectTimeout),
+								channelFuture.cause());
+						future.setState(ConnectFuture.State.DISCONNECTED);
+						Thread.sleep(reconnectTimeout);
+						connect(serviceName, host, port, reconnect, ssl, future);
+					} catch (InterruptedException e) {
+						//ignore
+					}
+				} else {
+					future.setState(ConnectFuture.State.DISCONNECTED);
+					log.debug(String.format("Connecting to %s on %s:%s failed. Auto-reconnect is disabled," +
+							" your must manually re-connect", serviceName, host, port), channelFuture.cause());
 				}
-				//use clean bootstrap and clean newInitializer on every connection
-				request.newBootstrap();
-				request.setInitializer(newInitializer(request.isDecompress(), request.isDecompress(),
-						request.isUseSSL()));
-				request.getBootstrap()
-						.group(group())
-						.channel(channelClass())
-						.remoteAddress(request.getHost(), request.getPort())
-						.handler(request.getInitializer());
-				// Make a new connection.
-				ChannelFuture f = request.getBootstrap().connect();
-				f.addListener(new ChannelFutureListener() {
-					public void operationComplete(ChannelFuture future) throws Exception {
-						if (future.isSuccess()) {
-							log.debug(String.format("Connected to %s", request.getServiceName()));
-							request.setChannel(future.channel());
-							request.setConnected(HiggsClientConnection.State.CONNECTED);
-							function.apply(request);
-						} else {
-							if (request.isAutoReconnectEnabled()) {
-								request.setState(HiggsClientConnection.State.DISCONNECTED);
-								log.debug(String.format("Connecting to %s failed. Attempting to retry in %s milliseconds", request.getHost(), request.getReconnectTimeout()), future.cause());
-								Thread.sleep(request.getReconnectTimeout());
-								connect(request, function);
-							} else {
-								log.debug(String.format("Connecting to %s failed. Auto-reconnect is disabled, your must manually re-connect", request.getHost()), future.cause());
-							}
-						}
-					}
-				});
-				f.channel().closeFuture().addListener(new ChannelFutureListener() {
-					public void operationComplete(final ChannelFuture future) throws Exception {
-						//can't shutdown, event loop group is shared and this shuts it down
-						//request.getBootstrap().shutdown();
-					}
-				});
 			}
 		});
-		return this;
+		return future;
 	}
 
-	private <H extends HiggsClientConnection<T, OM, IM, SM>> void addReconnectListener(final H request, final Function1<H> function) {
-		initReconnect(request, new Function1<HiggsClientConnection<T, OM, IM, SM>>() {
-			public void apply(final HiggsClientConnection<T, OM, IM, SM> req) {
-				//invoke the on connect callback
-				function.apply(request);
-				//send any unset/queued messages on a background thread
-				threadPool().submit(new Runnable() {
-					public void run() {
-						//send all messages that were buffered since disconnected on background thread
-						while (request.unsentMessages.size() > 0) {
-							OM msg = request.unsentMessages.poll();
-							if (msg != null) {
-								request.send(msg);
-							}
-						}
-					}
-				});
-			}
-		});
-	}
-
-	protected abstract <H extends HiggsClientConnection<T, OM, IM, SM>> H newClientRequest(
-			HiggsClient<T, OM, IM, SM> client, String serviceName,
-			String host, int port, boolean decompress, boolean useSSL,
-			HiggsInitializer initializer
-	);
-
-	public abstract <H extends HiggsInitializer<IM, OM>> H newInitializer(boolean inflate, boolean deflate, boolean ssl);
-
-	protected void initReconnect(final HiggsClientConnection<T, OM, IM, SM> connection, final Function1<HiggsClientConnection<T, OM, IM, SM>> function) {
-		//make sure we only add once
-		if (!connection.isAddedReconnectListener()) {
-			connection.setAddedReconnectListener(true);
-			on(HiggsEvent.EXCEPTION_CAUGHT, new ChannelEventListener() {
-				private void sleep(int time) {
+	protected void addReconnectListener(final String serviceName, final String host, final int port,
+	                                    final boolean reconnect, final boolean ssl,
+	                                    final ConnectFuture future) {
+		if (!future.isReconnectListenerAdded()) {
+			future.setReconnectListenerAdded(true);
+			onException(new ChannelEventListener() {
+				protected void sleep(long time) {
 					try {
 						Thread.sleep(time);
-					} catch (InterruptedException e) {
+					} catch (InterruptedException ignored) {
 					}
 				}
 
-				public void triggered(ChannelHandlerContext ctx, Optional<Throwable> ex) {
-					if (ex.isPresent()) {
-						if (ex.get() instanceof ConnectException) {
-							reconnect(String.format("Failed to connect to %s on %s:%s, attempting to retry", connection.getServiceName(), connection.getHost(), connection.getPort()));
-						} else if (ex.get() instanceof ClosedChannelException) {
-							reconnect(String.format("Client connection to %s on %s:%s socket closed", connection.getServiceName(), connection.getHost(), connection.getPort()));
-						} else if (ex.get() instanceof IOException) {
-							reconnect(String.format("Connection to %s on %s:%s, was forcibly closed, the server may be unavailable, attempting to reconnect", connection.getServiceName(), connection.getHost(), connection.getPort()));
-						} else if (ex.get() instanceof ChannelException) {
-							if (ex.isPresent() && ex.get() instanceof BindException) {
-								log.error(String.format("Cannot start service on localhost:%s address already in use", connection.getPort()), ex.get());
-								//start up error. should not continue
+				public void triggered(final ChannelHandlerContext ctx, final Optional<Throwable> ex) {
+					HiggsClient.this.threadPool().submit(new Runnable() {
+						public void run() {
+							if (ex.get() instanceof ConnectException) {
+								log.warn(String.format("Failed to connect to %s on %s:%s, attempting to retry", serviceName, host, port));
+								future.setState(ConnectFuture.State.DISCONNECTED);
+								sleep(reconnectTimeout);
+								connect(serviceName, host, port, reconnect, ssl,future);
+							} else if (ex.get() instanceof ClosedChannelException) {
+								log.warn(String.format("Client connection to %s on %s:%s socket closed", serviceName, host, port));
+								future.setState(ConnectFuture.State.DISCONNECTED);
+								sleep(reconnectTimeout);
+								connect(serviceName, host, port, reconnect, ssl,future);
+							} else if (ex.get() instanceof IOException) {
+								log.warn(String.format("Connection to %s on %s:%s, was forcibly closed, the server may be unavailable, attempting to reconnect", serviceName, host, port));
+								future.setState(ConnectFuture.State.DISCONNECTED);
+								sleep(reconnectTimeout);
+								connect(serviceName, host, port, reconnect, ssl,future);
+							} else if (ex.get() instanceof ChannelException) {
+								//todo
 							}
 						}
-					}
-				}
-
-				private void reconnect(String logMsg) {
-					connection.setConnected(HiggsClientConnection.State.DISCONNECTED);
-					log.warn(logMsg);
-					sleep(connection.getReconnectTimeout());
-					connect(connection, function);
+					});
 				}
 			});
 		}
 	}
 
-	public Class<? extends Channel> channelClass() {
-		return NioSocketChannel.class;
+	/**
+	 * Creates a new connect future from the given parameters.
+	 *
+	 * @param reconnect  if true then the connect request should be re-attempted on failure until cancelled
+	 * @param connFuture if a reconnect is being attempted this represents the existing connect future being passed
+	 *                   between connections. This will have the current state and should returned if this
+	 *                   param is not null
+	 * @return a new connect future if the connFuture param is null otherwise return the connFuture provided
+	 */
+	protected ConnectFuture<T, OM, IM, SM> newConnectFuture(boolean reconnect, ConnectFuture<T, OM, IM, SM> connFuture) {
+		return connFuture == null ? new ConnectFuture<>(this, reconnect) : connFuture;
 	}
 
-	protected EventLoopGroup group() {
+	protected void beforeSetupPipeline(ChannelPipeline pipeline) {
+		if (enableGZip) {
+			pipeline.addLast("deflater", ZlibCodecFactory.newZlibEncoder(ZlibWrapper.GZIP));
+			pipeline.addLast("inflater", ZlibCodecFactory.newZlibDecoder(ZlibWrapper.GZIP));
+		}
+	}
+
+	@SuppressWarnings("UnusedDeclaration")
+	public void setEnableGZip(boolean enableGZip) {
+		this.enableGZip = enableGZip;
+	}
+
+
+	/**
+	 * @return The event loop group to be used for connections.
+	 *         Ideally only once instance should be returned every time since each instance creates their own
+	 *         thread pools. However, allowing this to be overridden makes it possible to use other event loops
+	 *         such as UDP etc...
+	 */
+	public EventLoopGroup eventLoopGroup() {
 		return nioEventLoopGroup;
+	}
+
+	public Class<? extends Channel> channelClass() {
+		return NioSocketChannel.class;
 	}
 }

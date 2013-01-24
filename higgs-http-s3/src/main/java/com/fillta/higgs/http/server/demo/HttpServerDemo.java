@@ -1,6 +1,5 @@
 package com.fillta.higgs.http.server.demo;
 
-import com.fillta.higgs.events.HiggsEvent;
 import com.fillta.higgs.events.listeners.ChannelEventListener;
 import com.fillta.higgs.http.server.HttpServer;
 import com.fillta.higgs.http.server.config.ServerConfig;
@@ -15,15 +14,14 @@ import java.io.IOException;
  */
 public class HttpServerDemo {
 	public static void main(String... args) throws IOException, InterruptedException {
-		HttpServer server = new HttpServer(ServerConfig.class,"./config.yml");
-		server.on(HiggsEvent.EXCEPTION_CAUGHT, new ChannelEventListener() {
+		HttpServer server = new HttpServer(ServerConfig.class, "./config.yml");
+		server.onException(new ChannelEventListener() {
 			public void triggered(final ChannelHandlerContext ctx, final Optional<Throwable> ex) {
 				if (ex.isPresent()) {
 					LoggerFactory.getLogger(getClass()).warn("Error", ex.get());
 				}
 			}
 		});
-//		server.setQueueingStrategyAsCircularBuffer();
 		server.register(Api.class);
 		server.bind();
 	}

@@ -150,7 +150,7 @@ public class ResourcePath {
 	}
 
 	public boolean matches(final HttpRequest request) {
-		return matches(request.getUri(), request);
+		return matches(request.uri(), request);
 	}
 
 	public boolean matches(final String s) {

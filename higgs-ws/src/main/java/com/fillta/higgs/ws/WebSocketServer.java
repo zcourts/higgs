@@ -3,12 +3,11 @@ package com.fillta.higgs.ws;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fillta.higgs.HiggsInterceptor;
-import com.fillta.higgs.MessageConverter;
-import com.fillta.higgs.MessageTopicFactory;
 import com.fillta.higgs.RPCServer;
 import com.fillta.higgs.events.ChannelMessage;
 import com.fillta.higgs.events.HiggsEvent;
 import com.fillta.higgs.events.listeners.ChannelEventListener;
+import com.fillta.higgs.http.server.HttpDetector;
 import com.fillta.higgs.http.server.HttpServer;
 import com.fillta.higgs.http.server.config.ServerConfig;
 import com.fillta.higgs.sniffing.ProtocolSniffer;
@@ -16,6 +15,7 @@ import com.fillta.higgs.ws.flash.*;
 import com.google.common.base.Optional;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelPipeline;
 import io.netty.handler.codec.http.websocketx.TextWebSocketFrame;
 
 import java.io.IOException;
@@ -126,8 +126,8 @@ public class WebSocketServer<R extends JsonRequestEvent> extends RPCServer<JsonR
 		this.policy = policy;
 		interceptor = new WebSocketInterceptor(this);
 		addPath(path);
-		setSniffProtocol(true);
-		enableHTTPDetection(HTTP);
+		setEnableProtocolSniffing(true);
+		addProtocolDetector(new HttpDetector(HTTP));
 		//detects flash policy requests with 23 bytes
 		addProtocolDetector(new FlashSocketPolicyDetector(this, this.policy));
 		//detects the Higgs HFS protocol header with 3 bytes
@@ -200,36 +200,9 @@ public class WebSocketServer<R extends JsonRequestEvent> extends RPCServer<JsonR
 						mapper.createObjectNode().POJONode(returns));
 			}
 		}
-		return null;
-	}
-
-	public MessageConverter<R, JsonResponseEvent, TextWebSocketFrame> serializer() {
-		return new MessageConverter<R, JsonResponseEvent, TextWebSocketFrame>() {
-			public TextWebSocketFrame serialize(Channel ctx, JsonResponseEvent msg) {
-				try {
-					return new TextWebSocketFrame(mapper.writeValueAsString(msg));
-				} catch (JsonProcessingException e) {
-					throw new WebSocketException("Unable to serialize data to be sent", e);
-				}
-			}
-
-			public R deserialize(ChannelHandlerContext ctx, TextWebSocketFrame msg) {
-				try {
-					return mapper.readValue(msg.getText(), requestClass);
-				} catch (IOException e) {
-					//throw error so that it propagates and the error handler notifies the client
-					throw new WebSocketException("Unable to de-serialize message", e);
-				}
-			}
-		};
-	}
-
-	public MessageTopicFactory<String, R> topicFactory() {
-		return new MessageTopicFactory<String, R>() {
-			public String extract(JsonRequestEvent msg) {
-				return msg.getTopic();
-			}
-		};
+		//always return a JSON response and if value returned == null return an empty JSON object i.e. {}
+		return new JsonResponse(request.message.getCallback(),
+				returns.get() == null ? new HashMap<>() : returns.get());
 	}
 
 	/**
@@ -239,5 +212,34 @@ public class WebSocketServer<R extends JsonRequestEvent> extends RPCServer<JsonR
 	 */
 	public void setRequestClass(final Class<R> requestClass) {
 		this.requestClass = requestClass;
+	}
+
+	@Override
+	public TextWebSocketFrame serialize(final Channel ctx, final JsonResponseEvent msg) {
+		try {
+			return new TextWebSocketFrame(mapper.writeValueAsString(msg));
+		} catch (JsonProcessingException e) {
+			throw new WebSocketException("Unable to serialize data to be sent", e);
+		}
+	}
+
+	@Override
+	public R deserialize(final ChannelHandlerContext ctx, final TextWebSocketFrame msg) {
+		try {
+			return mapper.readValue(msg.text(), requestClass);
+		} catch (IOException e) {
+			//throw error so that it propagates and the error handler notifies the client
+			throw new WebSocketException("Unable to de-serialize message", e);
+		}
+	}
+
+	@Override
+	public String getTopic(final R msg) {
+		return msg.getTopic();
+	}
+
+	@Override
+	protected boolean setupPipeline(final ChannelPipeline pipeline) {
+		return false;//do not automatically add handler, sniffer is always enabled for WS
 	}
 }

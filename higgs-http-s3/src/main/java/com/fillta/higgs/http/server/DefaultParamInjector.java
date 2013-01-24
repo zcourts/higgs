@@ -128,25 +128,28 @@ public class DefaultParamInjector implements ParamInjector {
 	protected Object extractHeaderParam(Endpoint.MethodParam param, HttpRequest request) {
 		//header param can be a list or string, if neither set to null
 		if (List.class.isAssignableFrom(param.getMethodClass())) {
-			return request.getHeaders(param.getName());
+			return request.headers().getAll(param.getName());
 		} else if (String.class.isAssignableFrom(param.getMethodClass())) {
-			return request.getHeader(param.getName());
+			return request.headers().get(param.getName());
 		} else if (reflection.isNumeric(param.getMethodClass())) {
 			//if param is a number then try to handle with NumberType.parseType
-			return extractNumberParam(param, request.getHeader(param.getName()));
+			return extractNumberParam(param, request.headers().get(param.getName()));
 		} else {
 			return null;
 		}
 	}
 
 	protected Object extractCookieParam(Endpoint.MethodParam param, HttpRequest request) {
+		HttpCookie cookie = request.getCookie(param.getName());
+		if (cookie == null)
+			return null;
 		if (String.class.isAssignableFrom(param.getMethodClass())) {
-			return request.getCookie(param.getName()).getValue();
+			return cookie.getValue();
 		} else if (HttpCookie.class.isAssignableFrom(param.getMethodClass())) {
-			return request.getCookie(param.getName());
+			return cookie;
 		} else if (reflection.isNumeric(param.getMethodClass())) {
 			//if param is a number then try to handle with NumberType.parseType
-			return extractNumberParam(param, request.getCookie(param.getName()).getValue());
+			return extractNumberParam(param, cookie.getValue());
 		} else {
 			return null;
 		}

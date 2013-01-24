@@ -34,15 +34,22 @@ public class HttpErrorTransformer extends BaseTransformer {
 		thymeleaf = thymeleafTransformer;
 		this.server.on(HiggsEvent.EXCEPTION_CAUGHT, new ChannelEventListener() {
 			public void triggered(final ChannelHandlerContext ctx, final Optional<Throwable> ex) {
-				Object request = server.getRequest(ctx.channel());
-				//only if it's an HttpRequest should we attempt to respond to the client...
-				//could be an interceptor's type e.g. WebSocket intercepts HTTP requests
-				//in that case request would be an instanceof TextWebSocketFrame...
-				if (request instanceof HttpRequest) {
-					log.warn(String.format("Exception caught. \nMessage: %s ,\nCause: %s", ex.get().getMessage(),
-							ex.get().getCause() == null ? "null" : ex.get().getCause().getMessage()));
-					HttpResponse response = buildErrorResponse(ex.get(), null);
-					server.respond(ctx.channel(), response).addListener(ChannelFutureListener.CLOSE);
+				try {
+					Object request = server.getRequest(ctx.channel());
+					//only if it's an HttpRequest should we attempt to respond to the client...
+					//could be an interceptor's type e.g. WebSocket intercepts HTTP requests
+					//in that case request would be an instanceof TextWebSocketFrame...
+					if (request instanceof HttpRequest) {
+						log.warn(String.format("Exception caught. \nMessage: %s ,\nCause: %s", ex.get().getMessage(),
+								ex.get().getCause() == null ? "null" : ex.get().getCause().getMessage()));
+						HttpResponse response = buildErrorResponse(ex.get(), null);
+						server.respond(ctx.channel(), response).addListener(ChannelFutureListener.CLOSE);
+					}
+				} catch (Throwable t) {
+					//if any exception gets thrown in here we have no choice. Internal Server Error!
+					log.warn("Error occurred while generating error response", t);
+					HttpResponse response = new HttpResponse(HttpStatus.INTERNAL_SERVER_ERROR);
+					server.respond(ctx.channel(), response);
 				}
 			}
 		});
@@ -67,8 +74,6 @@ public class HttpErrorTransformer extends BaseTransformer {
 		WebContext ctx = new WebContext();
 		ctx.setVariable("status", 500);
 		ctx.setVariable("name", "Internal Server Error");
-		//error 500 by default
-		HttpResponse response = new HttpResponse(HttpStatus.INTERNAL_SERVER_ERROR);
 		//get template for 500 status, if null use default
 		String template = templates.get(500);
 		if (template == null) {
@@ -77,24 +82,27 @@ public class HttpErrorTransformer extends BaseTransformer {
 		//try to infer a better error type
 		if (throwable instanceof WebApplicationException) {
 			WebApplicationException e = (WebApplicationException) throwable;
-			response.setStatus(e.getStatus());
-			ctx.setVariable("status", e.getStatus().getCode());
-			ctx.setVariable("name", e.getStatus().getReasonPhrase());
+			ctx.setVariable("status", e.getStatus().code());
+			ctx.setVariable("name", e.getStatus().reasonPhrase());
 			if (e.hasRequest()) {
 				return handleWAE(ctx, template, e);
 			} else {
-				//todo handle WAE without request object
+				return returnGenericError(ctx, template, e.getStatus());
 			}
 		} else {
 			//not a web application exception...is request null?
 			if (request != null) {
 				return handleAnyThrowableWithRequest(ctx, template, request);
-
 			} else {
-				//todo handle arbitrary exception with no access to request object
+				return returnGenericError(ctx, template, HttpStatus.INTERNAL_SERVER_ERROR);
 			}
 		}
-		return response;
+	}
+
+	protected HttpResponse returnGenericError(final WebContext ctx, final String template, final HttpResponseStatus status) {
+		return thymeleaf.transform(ctx, server, "", null,
+				new LinkedBlockingQueue<ResponseTransformer>(), template,
+				status == null ? HttpStatus.INTERNAL_SERVER_ERROR : status);
 	}
 
 	protected HttpResponse handleAnyThrowableWithRequest(final WebContext ctx, String template, HttpRequest request) {
@@ -117,8 +125,9 @@ public class HttpErrorTransformer extends BaseTransformer {
 	}
 
 	protected HttpResponse handleWAE(final WebContext ctx, String template, final WebApplicationException e) {
+		HttpResponseStatus status = e.getStatus();
 		//get template for status, if null use default
-		template = templates.get(e.getStatus().getCode());
+		template = templates.get(status.code());
 		if (template == null) {
 			template = server.getConfig().default_error_template;
 		}
@@ -137,15 +146,15 @@ public class HttpErrorTransformer extends BaseTransformer {
 			//pass an empty string for response if null. don't want thymeleaf transformer to throw
 			//an exception, we're probably already in the exceptionCaught method for Netty
 			return thymeleaf.transform(ctx, server, e.getResponse() == null ? "" : e.getResponse(), e.getRequest(),
-					new LinkedBlockingQueue<ResponseTransformer>(), template);
+					new LinkedBlockingQueue<ResponseTransformer>(), template, status);
 		} else {
 			return json.transform(server, e.getResponse(), e.getRequest(),
-					new LinkedBlockingQueue<ResponseTransformer>());
+					new LinkedBlockingQueue<ResponseTransformer>(), status);
 		}
 	}
 
 	public void setErrorTemplate(HttpResponseStatus status, String template) {
-		setErrorTemplate(status.getCode(), template);
+		setErrorTemplate(status.code(), template);
 	}
 
 	public void setErrorTemplate(int status, String template) {

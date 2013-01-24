@@ -13,7 +13,7 @@ import java.util.regex.Pattern;
  */
 public class Transcriber extends DefaultResourceFilter {
 	//sort transcriptions by creation time ensuring FIFO
-	Set<Transcription> transcriptions = new TreeSet(new Comparator<Transcription>() {
+	Set<Transcription> transcriptions = new TreeSet<>(new Comparator<Transcription>() {
 		public int compare(final Transcription o1, final Transcription o2) {
 			if (o1.getCreatedAt() < o2.getCreatedAt())
 				return -1;
@@ -23,24 +23,24 @@ public class Transcriber extends DefaultResourceFilter {
 		}
 	});
 
-	public Transcriber(HttpServer<?> server) {
+	public Transcriber(HttpServer server) {
 		super(server);
 	}
 
 	public Endpoint getEndpoint(HttpRequest request) {
 		//apply any transcription
 		for (Transcription transcription : transcriptions) {
-			if (transcription.matches(request.getUri())) {
+			if (transcription.matches(request.uri())) {
 				if (transcription.isReplaceWholeRequest()) {
-					request.setUri(transcription.getReplacementPath());
+					request.uri(transcription.getReplacementPath());
 				} else {
 					String newPath;
 					if (transcription.isReplaceFirstOccurrence()) {
-						newPath = transcription.replaceFirstMatch(request.getUri());
+						newPath = transcription.replaceFirstMatch(request.uri());
 					} else {
-						newPath = transcription.replaceAllMatches(request.getUri());
+						newPath = transcription.replaceAllMatches(request.uri());
 					}
-					request.setUri(newPath);
+					request.uri(newPath);
 				}
 				break;
 			}
