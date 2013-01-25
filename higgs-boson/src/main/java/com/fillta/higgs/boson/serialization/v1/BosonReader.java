@@ -109,6 +109,9 @@ public class BosonReader {
 			verifyReadable();
 			//read size of type - how many bytes are in the string
 			int size = data.readInt();
+			if (size == 0) {
+				return "";
+			}
 			//read type's payload and de-serialize
 			ByteBuf buf = data.readBytes(size);
 			byte[] arr = new byte[buf.writerIndex()];
