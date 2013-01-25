@@ -10,7 +10,6 @@ import com.fillta.higgs.http.server.resource.*;
 import com.fillta.higgs.http.server.transformers.HttpErrorTransformer;
 import com.fillta.higgs.http.server.transformers.JsonTransformer;
 import com.fillta.higgs.http.server.transformers.ThymeleafTransformer;
-import com.fillta.higgs.sniffing.ProtocolSniffer;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandlerContext;
@@ -32,6 +31,8 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.atomic.AtomicReference;
+
+import static io.netty.handler.codec.http.HttpHeaders.getHeader;
 
 /**
  * Consider http://asm.ow2.org/ later for ByteCode transformations  as opposed to the current reflection
@@ -437,7 +438,8 @@ public class HttpServer<C extends ServerConfig> extends HiggsServer<String, Http
 					request.uri(),
 					request.protocolVersion(),
 					response.status().code(),
-					HttpHeaders.getContentLength(response)
+					getHeader(response, HttpHeaders.Names.CONTENT_LENGTH) == null ?
+							response.data().writerIndex() : HttpHeaders.getContentLength(response)
 			));
 		}
 		return super.respond(channel, response);
