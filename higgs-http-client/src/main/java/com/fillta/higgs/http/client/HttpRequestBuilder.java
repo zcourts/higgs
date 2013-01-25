@@ -1,6 +1,8 @@
 package com.fillta.higgs.http.client;
 
 import com.fillta.functional.Function1;
+import com.fillta.higgs.http.client.oauth.OAuth1Conf;
+import com.fillta.higgs.http.client.oauth.OAuthException;
 import com.google.common.base.Optional;
 import io.netty.handler.codec.http.HttpHeaders;
 import io.netty.handler.codec.http.HttpMethod;
@@ -8,8 +10,8 @@ import io.netty.handler.codec.http.HttpVersion;
 import io.netty.handler.codec.http.multipart.DiskAttribute;
 import io.netty.handler.codec.http.multipart.DiskFileUpload;
 import org.scribe.builder.ServiceBuilder;
-import org.scribe.builder.api.Api;
-import org.scribe.oauth.OAuthService;
+import org.scribe.builder.api.DefaultApi10a;
+import org.scribe.model.OAuthRequest;
 
 import javax.xml.bind.DatatypeConverter;
 import java.io.OutputStream;
@@ -37,27 +39,27 @@ public class HttpRequestBuilder {
 
 	private URL requestURL;
 	private HttpMethod requestMethod = HttpMethod.GET;
-	private Map<String, Object> urlParameters = new HashMap();
+	private Map<String, Object> urlParameters = new HashMap<String, Object>();
 	/**
 	 * A key value pair of form fields  to send in a POST or PUT request.
 	 * Values can be strings (numbers get .toString() automatically) NOT FILES
 	 */
-	private Map<String, Object> formParameters = new HashMap();
+	private Map<String, Object> formParameters = new HashMap<String, Object>();
 	/**
 	 * Set of files to upload
 	 */
-	private ArrayList<HttpFile> formFiles = new ArrayList();
+	private ArrayList<HttpFile> formFiles = new ArrayList<HttpFile>();
 	/**
 	 * Set of files to upload where 1 name/key has many files
 	 */
-	private Map<String, List<PartialHttpFile>> formMultiFiles = new HashMap();
+	private Map<String, List<PartialHttpFile>> formMultiFiles = new HashMap<String, List<PartialHttpFile>>();
 	/**
 	 * Defaults to true. If set to false and files are provided in a PUT or POST
 	 * request then only file names will be sent.
 	 */
 	private boolean multiPart = true;
-	private Map<String, Object> requestHeaders = new HashMap();
-	private Map<String, Object> requestCookies = new HashMap();
+	private Map<String, Object> requestHeaders = new HashMap<String, Object>();
+	private Map<String, Object> requestCookies = new HashMap<String, Object>();
 	private boolean compressionEnabled = true;
 	private boolean shutdownAfter = true;
 	private HttpVersion httpVersion = HttpVersion.HTTP_1_1;
@@ -536,42 +538,42 @@ public class HttpRequestBuilder {
 		return this;
 	}
 
-	protected OAuthService authService;
+	protected OAuth1Conf authService;
 
 	public boolean isOAuth() {
 		return authService != null;
 	}
 
-	public OAuthService getAuthService() {
+	public OAuth1Conf oAuth1Service() {
 		return authService;
 	}
 
-	public <A extends Api> HttpRequestBuilder oAuth(Class<A> api, String apiKey, String secret) {
+	public <A extends DefaultApi10a> HttpRequestBuilder oAuth1(Class<A> api, String apiKey, String secret) {
 		Optional<String> noURL = Optional.absent();
-		return oAuth(api, apiKey, secret, noURL);
+		return oAuth1(api, apiKey, secret, noURL);
 	}
 
-	public <A extends Api> HttpRequestBuilder oAuth(Class<A> api, String apiKey, String secret,
-	                                                Optional<String> callbackURL) {
+	public <A extends DefaultApi10a> HttpRequestBuilder oAuth1(Class<A> api, String apiKey, String secret,
+	                                                           Optional<String> callbackURL) {
 		Optional<String> noScope = Optional.absent();
-		return oAuth(api, apiKey, secret, callbackURL, noScope);
+		return oAuth1(api, apiKey, secret, callbackURL, noScope);
 	}
 
-	public <A extends Api> HttpRequestBuilder oAuth(Class<A> api, String apiKey, String secret,
-	                                                Optional<String> callbackURL,
-	                                                Optional<String> scope) {
+	public <A extends DefaultApi10a> HttpRequestBuilder oAuth1(Class<A> api, String apiKey, String secret,
+	                                                           Optional<String> callbackURL,
+	                                                           Optional<String> scope) {
 		Optional<OutputStream> noStream = Optional.absent();
-		return oAuth(api, apiKey, secret, callbackURL, scope, noStream);
+		return oAuth1(api, apiKey, secret, callbackURL, scope, noStream);
 	}
 
-	public <A extends Api> HttpRequestBuilder oAuth(Class<A> api, String apiKey, String secret,
-	                                                Optional<String> callbackURL,
-	                                                Optional<String> scope,
-	                                                Optional<OutputStream> debugStream) {
+	public <A extends DefaultApi10a> HttpRequestBuilder oAuth1(Class<A> api, String apiKey, String secret,
+	                                                           Optional<String> callbackURL,
+	                                                           Optional<String> scope,
+	                                                           Optional<OutputStream> debugStream) {
 		ServiceBuilder builder = new ServiceBuilder();
 		builder.provider(api)
 				.apiKey(apiKey)
-				.apiSecret(secret);
+				.apiSecret(secret).debug();
 		if (scope.isPresent()) {
 			builder.scope(scope.get());
 		}
@@ -581,7 +583,30 @@ public class HttpRequestBuilder {
 		if (debugStream.isPresent()) {
 			builder.debugStream(debugStream.get());
 		}
-		authService = builder.build();
+		try {
+			authService = new OAuth1Conf(api.newInstance(), apiKey, secret, callbackURL, scope, debugStream);
+		} catch (Throwable e) {
+			throw new OAuthException("Unable to create OAuth1 API instance", e);
+		}
+		return this;
+	}
+
+	public HttpRequestBuilder oAuth1Sign() {
+		if (authService == null)
+			throw new OAuthException("OAuth 1 service is not configured. Call one of the oAuth methods first", null);
+		OAuthRequest request = authService.request();
+		for (String name : request.getHeaders().keySet()) {
+			String value = request.getHeaders().get(name);
+			header(name, value);
+		}
+		return this;
+	}
+
+	public HttpRequestBuilder oAuth1RequestToken(Function1<HTTPResponse> callback) {
+		oAuth1Sign()
+				.POST()
+				.url(authService.request().getCompleteUrl().replace("http://", "https://")).build(callback);
+		System.out.println(authService.request().getCompleteUrl());
 		return this;
 	}
 
