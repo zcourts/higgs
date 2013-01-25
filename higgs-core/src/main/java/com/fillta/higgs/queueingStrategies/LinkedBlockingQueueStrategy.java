@@ -14,7 +14,8 @@ public class LinkedBlockingQueueStrategy<T, IM> extends QueueingStrategy<T, IM> 
 	private LinkedBlockingQueue<Tuple<ChannelHandlerContext, DecodedMessage<T, IM>>> queue = new LinkedBlockingQueue<>();
 	private final ThreadPoolExecutor threadPool;
 
-	public LinkedBlockingQueueStrategy(final ThreadPoolExecutor threadPool) {
+	public LinkedBlockingQueueStrategy(QueueingStrategy<T, IM> strategy, ThreadPoolExecutor threadPool) {
+		super(strategy);
 		this.threadPool = threadPool;
 	}
 
@@ -34,14 +35,10 @@ public class LinkedBlockingQueueStrategy<T, IM> extends QueueingStrategy<T, IM> 
 	private void processMessage() {
 		threadPool.execute(new Runnable() {
 			public void run() {
-				while (!threadPool.isShutdown()) {
-					try {
-						Tuple<ChannelHandlerContext, DecodedMessage<T, IM>> tuple = queue.take();
-						if (tuple != null) {
-							invokeListeners(tuple.key, tuple.value);
-						}
-					} catch (InterruptedException e) {
-
+				Tuple<ChannelHandlerContext, DecodedMessage<T, IM>> tuple;
+				while ((tuple = queue.poll()) != null && !threadPool.isShutdown()) {
+					if (tuple != null) {
+						invokeListeners(tuple.key, tuple.value);
 					}
 				}
 			}

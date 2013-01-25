@@ -8,7 +8,8 @@ import io.netty.channel.ChannelHandlerContext;
  * @author Courtney Robinson <courtney@crlog.info>
  */
 public class SameThreadQueueingStrategy<T, IM> extends QueueingStrategy<T, IM> {
-	public SameThreadQueueingStrategy() {
+	public SameThreadQueueingStrategy(QueueingStrategy<T, IM> strategy) {
+		super(strategy);
 	}
 
 	/**
