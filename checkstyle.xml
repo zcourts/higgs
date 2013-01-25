@@ -7,7 +7,7 @@
         "http://www.puppycrawl.com/dtds/configuration_1_2.dtd">
 <module name="Checker">
     <module name="FileTabCharacter"/>
-    <module name="JavadocPackage"/>
+    <!--<module name="JavadocPackage"/> will get back to this when time allows-->
     <module name="NewlineAtEndOfFile">
         <property name="lineSeparator" value="lf"/>
     </module>
@@ -19,11 +19,11 @@
     <!--<property name="message" value="missing copyright header"/>-->
     <!--</module>-->
     <!-- Unmaintainable Javadoc tags -->
-    <module name="RegexpSingleline">
-        <property name="format" value="(@(author|version)|\(non-Javadoc\))"/>
-        <property name="ignoreCase" value="true"/>
-        <property name="message" value="unmaintainable Javadoc tags: @author, @version, or (non-Javadoc)"/>
-    </module>
+    <!--<module name="RegexpSingleline">-->
+    <!--<property name="format" value="(@(author|version)|\(non-Javadoc\))"/>-->
+    <!--<property name="ignoreCase" value="true"/>-->
+    <!--<property name="message" value="unmaintainable Javadoc tags: @author, @version, or (non-Javadoc)"/>-->
+    <!--</module>-->
     <!-- Force UNIX line separator -->
     <module name="RegexpMultiline">
         <property name="format" value="\r"/>
@@ -72,7 +72,6 @@
         <module name="AvoidNestedBlocks">
             <property name="allowInSwitchCase" value="true"/>
         </module>
-        <module name="FinalClass"/>
         <module name="HideUtilityClassConstructor"/>
         <module name="CovariantEquals"/>
         <module name="DoubleCheckedLocking"/>

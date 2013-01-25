@@ -11,22 +11,22 @@ import java.lang.annotation.Target;
  * @author Courtney Robinson <courtney@crlog.info>
  */
 @Retention(RetentionPolicy.RUNTIME)
-@Target({ElementType.FIELD, ElementType.TYPE, ElementType.METHOD})
+@Target({ ElementType.FIELD, ElementType.TYPE, ElementType.METHOD })
 public @interface BosonProperty {
-	/**
-	 * Optionally provide a name for this field.
-	 * If no name is provided, by default the variable name is used
-	 *
-	 * @return
-	 */
-	public String value() default "";
+    /**
+     * Optionally provide a name for this field.
+     * If no name is provided, by default the variable name is used
+     *
+     * @return
+     */
+    String value() default "";
 
-	/**
-	 * Mark this field ignored, doing this causes the field not to be serialized
-	 *
-	 * @return
-	 */
-	public boolean ignore() default false;
+    /**
+     * Mark this field ignored, doing this causes the field not to be serialized
+     *
+     * @return
+     */
+    boolean ignore() default false;
 
-	public boolean ignoreInheritedFields() default false;
+    boolean ignoreInheritedFields() default false;
 }

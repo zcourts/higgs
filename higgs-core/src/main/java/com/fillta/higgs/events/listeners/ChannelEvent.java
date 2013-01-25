@@ -9,9 +9,9 @@ import io.netty.channel.ChannelHandlerContext;
  * @author Courtney Robinson <courtney@crlog.info>
  */
 public abstract class ChannelEvent extends ChannelEventListener {
-	public void triggered(final ChannelHandlerContext ctx, final Optional<Throwable> ex) {
-		triggered(ctx);
-	}
+    public void triggered(final ChannelHandlerContext ctx, final Optional<Throwable> ex) {
+        triggered(ctx);
+    }
 
-	public abstract void triggered(ChannelHandlerContext ctx);
+    public abstract void triggered(ChannelHandlerContext ctx);
 }

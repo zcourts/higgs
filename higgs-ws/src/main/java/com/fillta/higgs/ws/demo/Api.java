@@ -9,10 +9,10 @@ import com.fillta.higgs.http.server.resource.Path;
  */
 @Path("/")
 public class Api {
-	@Path(value = "/", template = "index")
-	@GET
-	@POST
-	public String test() {
-		return "{}";
-	}
+    @Path(value = "/", template = "index")
+    @GET
+    @POST
+    public String test() {
+        return "{}";
+    }
 }

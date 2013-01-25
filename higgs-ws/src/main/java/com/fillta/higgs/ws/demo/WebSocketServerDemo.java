@@ -15,23 +15,26 @@ import org.thymeleaf.templateresolver.AbstractTemplateResolver;
  * @author Courtney Robinson <courtney@crlog.info>
  */
 public class WebSocketServerDemo {
-	static int count = 0;
+    static int count;
 
-	public static void main(String... args) {
-		Logger.getLogger(AbstractTemplateResolver.class).setLevel(Level.DEBUG);
-		WebSocketServer server = new WebSocketServer(3535);
-		server.onException(new ChannelEventListener() {
-			public void triggered(final ChannelHandlerContext ctx, final Optional<Throwable> ex) {
-				ex.get().printStackTrace();
-			}
-		});
-		server.HTTP.getConfig().template_config.cacheable = false;
-		server.HTTP.register(Api.class);
-		server.listen("test", new Function1<ChannelMessage<JsonRequestEvent>>() {
-			public void apply(final ChannelMessage<JsonRequestEvent> a) {
-				System.out.println(++count + " : " + a.message);
-			}
-		});
-		server.bind();
-	}
+    protected WebSocketServerDemo() {
+    }
+
+    public static void main(String... args) {
+        Logger.getLogger(AbstractTemplateResolver.class).setLevel(Level.DEBUG);
+        WebSocketServer server = new WebSocketServer(3535);
+        server.onException(new ChannelEventListener() {
+            public void triggered(final ChannelHandlerContext ctx, final Optional<Throwable> ex) {
+                ex.get().printStackTrace();
+            }
+        });
+        server.HTTP.getConfig().template_config.cacheable = false;
+        server.HTTP.register(Api.class);
+        server.listen("test", new Function1<ChannelMessage<JsonRequestEvent>>() {
+            public void apply(final ChannelMessage<JsonRequestEvent> a) {
+                System.out.println(++count + " : " + a.message);
+            }
+        });
+        server.bind();
+    }
 }

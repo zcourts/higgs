@@ -1,7 +1,15 @@
 package com.fillta.higgs.http.server.files;
 
-import java.io.*;
-import java.util.*;
+import java.io.DataInputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.regex.Pattern;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
@@ -28,138 +36,138 @@ import java.util.zip.ZipFile;
  * list resources available from the classpath @ *
  */
 public class StaticClassPathCache {
-	//only .class files are cached
-	private final Map<String, CachedPath> cache;
+    //only .class files are cached
+    private final Map<String, CachedPath> cache;
 
-	public StaticClassPathCache() {
-		this(".*.class");
-	}
+    public StaticClassPathCache() {
+        this(".*.class");
+    }
 
-	public StaticClassPathCache(String pattern) {
-		this.cache = getResources(Pattern.compile(pattern));
-	}
+    public StaticClassPathCache(String pattern) {
+        this.cache = getResources(Pattern.compile(pattern));
+    }
 
-	public Map<String, CachedPath> get() {
-		return cache;
-	}
+    public Map<String, CachedPath> get() {
+        return cache;
+    }
 
-	/**
-	 * @param file the full path to the class including extension e.g.
-	 *             com/domain/product/MyClass.class
-	 * @return true if the file is on the class path
-	 */
-	public boolean contains(String file) {
-		return cache.containsKey(file);
-	}
+    /**
+     * @param file the full path to the class including extension e.g.
+     *             com/domain/product/MyClass.class
+     * @return true if the file is on the class path
+     */
+    public boolean contains(String file) {
+        return cache.containsKey(file);
+    }
 
-	public byte[] load(String klass) {
-		CachedPath el = cache.get(klass);
-		if (el != null) {
-			try {
-				File file = new File(el.getPath());
-				if (el.isJar()) {
-					ZipFile jar = new ZipFile(file);
-					ZipEntry entry = jar.getEntry(klass);
-					InputStream stream = jar.getInputStream(entry);
-					int size = stream.available();
-					byte[] buff = new byte[size];
-					DataInputStream in = new DataInputStream(stream);
-					// Reading the binary data
-					in.readFully(buff);
-					in.close();
-					return buff;
-				} else {
-					DataInputStream stream = new DataInputStream(new FileInputStream(file));
-					int size = stream.available();
-					byte[] buff = new byte[size];
-					DataInputStream in = new DataInputStream(stream);
-					// Reading the binary data
-					in.readFully(buff);
-					in.close();
-					return buff;
-				}
-			} catch (Exception e) {
-				//return empty byte array
-			}
-		}
-		return null;
-	}
+    public byte[] load(String klass) {
+        CachedPath el = cache.get(klass);
+        if (el != null) {
+            try {
+                File file = new File(el.getPath());
+                if (el.isJar()) {
+                    ZipFile jar = new ZipFile(file);
+                    ZipEntry entry = jar.getEntry(klass);
+                    InputStream stream = jar.getInputStream(entry);
+                    int size = stream.available();
+                    byte[] buff = new byte[size];
+                    DataInputStream in = new DataInputStream(stream);
+                    // Reading the binary data
+                    in.readFully(buff);
+                    in.close();
+                    return buff;
+                } else {
+                    DataInputStream stream = new DataInputStream(new FileInputStream(file));
+                    int size = stream.available();
+                    byte[] buff = new byte[size];
+                    DataInputStream in = new DataInputStream(stream);
+                    // Reading the binary data
+                    in.readFully(buff);
+                    in.close();
+                    return buff;
+                }
+            } catch (Exception e) {
+                //return empty byte array
+            }
+        }
+        return null;
+    }
 
-	/**
-	 * for all elements of java.class.path get a Collection of resources Pattern
-	 * pattern = Pattern.compile(".*"); gets all resources
-	 *
-	 * @param pattern the pattern to match
-	 * @return the resources in the order they are found
-	 */
-	public Map<String, CachedPath> getResources(Pattern pattern) {
-		Map<String, CachedPath> retval = new HashMap<>();
-		String classPath = System.getProperty("java.class.path", "");
-		String[] classPathElements = classPath.split(System.getProperty("path.separator"));
-		for (String element : classPathElements) {
-			retval.putAll(getResources(element, pattern));
-		}
-		return retval;
-	}
+    /**
+     * for all elements of java.class.path get a Collection of resources Pattern
+     * pattern = Pattern.compile(".*"); gets all resources
+     *
+     * @param pattern the pattern to match
+     * @return the resources in the order they are found
+     */
+    public Map<String, CachedPath> getResources(Pattern pattern) {
+        Map<String, CachedPath> retval = new HashMap<>();
+        String classPath = System.getProperty("java.class.path", "");
+        String[] classPathElements = classPath.split(System.getProperty("path.separator"));
+        for (String element : classPathElements) {
+            retval.putAll(getResources(element, pattern));
+        }
+        return retval;
+    }
 
-	public Map<String, CachedPath> getResources(String element, Pattern pattern) {
-		Map<String, CachedPath> retval = new HashMap<>();
-		File file = new File(element);
-		if (file.isDirectory()) {
-			List<String> rc = getResourcesFromDirectory(file, pattern);
-			for (String resource : rc) {
-				retval.put(resource, new CachedPath(resource, element, false));
-			}
-		} else {
-			if (file.isFile() && file.exists()) {
-				List<String> rc = getResourcesFromJarFile(file, pattern);
-				for (String resource : rc) {
-					retval.put(resource, new CachedPath(resource, element, true));
-				}
-			}
-		}
-		return retval;
-	}
+    public Map<String, CachedPath> getResources(String element, Pattern pattern) {
+        Map<String, CachedPath> retval = new HashMap<>();
+        File file = new File(element);
+        if (file.isDirectory()) {
+            List<String> rc = getResourcesFromDirectory(file, pattern);
+            for (String resource : rc) {
+                retval.put(resource, new CachedPath(resource, element, false));
+            }
+        } else {
+            if (file.isFile() && file.exists()) {
+                List<String> rc = getResourcesFromJarFile(file, pattern);
+                for (String resource : rc) {
+                    retval.put(resource, new CachedPath(resource, element, true));
+                }
+            }
+        }
+        return retval;
+    }
 
-	public List<String> getResourcesFromJarFile(File file, Pattern pattern) {
-		List<String> retval = new ArrayList<>();
-		try {
-			ZipFile zf = new ZipFile(file);
-			Enumeration<?> e = zf.entries();
-			while (e.hasMoreElements()) {
-				ZipEntry ze = (ZipEntry) e.nextElement();
-				String fileName = ze.getName();
-				boolean accept = pattern.matcher(fileName).matches();
-				if (accept) {
-					retval.add(fileName);
-				}
-			}
-			zf.close();
-			return retval;
-		} catch (IOException ioe) {
-			//log.warn("IO Exception", ioe);
-		}
-		return null;
-	}
+    public List<String> getResourcesFromJarFile(File file, Pattern pattern) {
+        List<String> retval = new ArrayList<>();
+        try {
+            ZipFile zf = new ZipFile(file);
+            Enumeration<?> e = zf.entries();
+            while (e.hasMoreElements()) {
+                ZipEntry ze = (ZipEntry) e.nextElement();
+                String fileName = ze.getName();
+                boolean accept = pattern.matcher(fileName).matches();
+                if (accept) {
+                    retval.add(fileName);
+                }
+            }
+            zf.close();
+            return retval;
+        } catch (IOException ioe) {
+            //log.warn("IO Exception", ioe);
+        }
+        return null;
+    }
 
-	public List<String> getResourcesFromDirectory(File directory, Pattern pattern) {
-		List<String> retval = new ArrayList<>();
-		File[] fileList = directory.listFiles();
-		for (File file : fileList) {
-			if (file.isDirectory()) {
-				retval.addAll(getResourcesFromDirectory(file, pattern));
-			} else {
-				try {
-					String fileName = file.getCanonicalPath();
-					boolean accept = pattern.matcher(fileName).matches();
-					if (accept) {
-						retval.add(fileName);
-					}
-				} catch (IOException ioe) {
-					//log.warn("IO Exception", ioe);
-				}
-			}
-		}
-		return retval;
-	}
+    public List<String> getResourcesFromDirectory(File directory, Pattern pattern) {
+        List<String> retval = new ArrayList<>();
+        File[] fileList = directory.listFiles();
+        for (File file : fileList) {
+            if (file.isDirectory()) {
+                retval.addAll(getResourcesFromDirectory(file, pattern));
+            } else {
+                try {
+                    String fileName = file.getCanonicalPath();
+                    boolean accept = pattern.matcher(fileName).matches();
+                    if (accept) {
+                        retval.add(fileName);
+                    }
+                } catch (IOException ioe) {
+                    //log.warn("IO Exception", ioe);
+                }
+            }
+        }
+        return retval;
+    }
 }

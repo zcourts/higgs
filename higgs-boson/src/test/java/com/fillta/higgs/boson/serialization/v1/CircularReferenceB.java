@@ -4,13 +4,13 @@ package com.fillta.higgs.boson.serialization.v1;
  * @author Courtney Robinson <courtney@crlog.info>
  */
 public class CircularReferenceB {
-	CircularReferenceA a;
+    CircularReferenceA a;
 
-	public void init() {
-		a = new CircularReferenceA(this);
-	}
+    public void init() {
+        a = new CircularReferenceA(this);
+    }
 
-	public String toString() {
-		return hashCode() + "-B";
-	}
+    public String toString() {
+        return hashCode() + "-B";
+    }
 }

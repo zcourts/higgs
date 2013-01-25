@@ -11,7 +11,13 @@ import com.fillta.higgs.http.server.HttpDetector;
 import com.fillta.higgs.http.server.HttpServer;
 import com.fillta.higgs.http.server.config.ServerConfig;
 import com.fillta.higgs.sniffing.ProtocolSniffer;
-import com.fillta.higgs.ws.flash.*;
+import com.fillta.higgs.ws.flash.Decoder;
+import com.fillta.higgs.ws.flash.Encoder;
+import com.fillta.higgs.ws.flash.FlashPolicyDecoder;
+import com.fillta.higgs.ws.flash.FlashPolicyEncoder;
+import com.fillta.higgs.ws.flash.FlashPolicyFile;
+import com.fillta.higgs.ws.flash.FlashSocketPolicyDetector;
+import com.fillta.higgs.ws.flash.FlashSocketProtocolDetector;
 import com.google.common.base.Optional;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
@@ -71,8 +77,8 @@ import java.util.Map;
  * <p/>
  * In the next phase, the user attempts to send a JSON string to the server. In order to detect
  * this and provide simple protocol the flash client must also prefix any string with a 7 byte header. The
- * value of the first three bytes are 72,83,70 this basically forms the start of the protocol's header and is effectively the
- * 3 characters HFS ('H'=72,'F'=83,'S'=70), short for Higgs Flash Socket.
+ * value of the first three bytes are 72,83,70 this basically forms the start of the protocol's header and is
+ * effectively the 3 characters HFS ('H'=72,'F'=83,'S'=70), short for Higgs Flash Socket.
  * <p/>
  * The value of the next 4 bytes is a 32 bit signed integer which tells the server how many bytes are in
  * the message to come. These 7 bytes together for the protocol header.
@@ -99,147 +105,156 @@ import java.util.Map;
  * @author Courtney Robinson <courtney@crlog.info>
  */
 public class WebSocketServer<R extends JsonRequestEvent> extends RPCServer<JsonResponseEvent, R, TextWebSocketFrame> {
-	public final static ObjectMapper mapper = new ObjectMapper();
-	/**
-	 * This server is never bound to a port BY DEFAULT. An already bound instance of an
-	 * {@link HttpServer} can be provided via {@link #WebSocketServer(HttpServer, FlashPolicyFile, String, int)}
-	 * By default it shares the same port as this {@link WebSocketServer} and is used to
-	 * handle HTTP requests on the WebSocket port.
-	 */
-	public final HttpServer HTTP;
-	protected final WebSocketInterceptor interceptor;
-	private final FlashPolicyFile policy;
-	private Class<R> requestClass = (Class<R>) JsonRequest.class;
+    public static final ObjectMapper mapper = new ObjectMapper();
+    /**
+     * This server is never bound to a port BY DEFAULT. An already bound instance of an
+     * {@link HttpServer} can be provided via {@link #WebSocketServer(HttpServer, FlashPolicyFile, String, int)}
+     * By default it shares the same port as this {@link WebSocketServer} and is used to
+     * handle HTTP requests on the WebSocket port.
+     */
+    public final HttpServer HTTP;
+    protected final WebSocketInterceptor interceptor;
+    private final FlashPolicyFile policy;
+    private Class<R> requestClass = (Class<R>) JsonRequest.class;
 
-	/**
-	 * Creates a web socket server whose only path is set to /
-	 *
-	 * @param port
-	 */
-	public WebSocketServer(int port) {
-		this(new HttpServer(new ServerConfig()), new FlashPolicyFile(), "/", port);
-	}
+    /**
+     * Creates a web socket server whose only path is set to /
+     *
+     * @param port
+     */
+    public WebSocketServer(int port) {
+        this(new HttpServer(new ServerConfig()), new FlashPolicyFile(), "/", port);
+    }
 
-	public WebSocketServer(HttpServer http, FlashPolicyFile policy, String path, int port) {
-		super(port);
-		HTTP = http;
-		this.policy = policy;
-		interceptor = new WebSocketInterceptor(this);
-		addPath(path);
-		setEnableProtocolSniffing(true);
-		addProtocolDetector(new HttpDetector(HTTP));
-		//detects flash policy requests with 23 bytes
-		addProtocolDetector(new FlashSocketPolicyDetector(this, this.policy));
-		//detects the Higgs HFS protocol header with 3 bytes
-		addProtocolDetector(new FlashSocketProtocolDetector(this, this.policy));
-		//must add interceptor to HTTP requests
-		HTTP.addInterceptor(interceptor);
-		addErrorListener();
-	}
+    public WebSocketServer(HttpServer http, FlashPolicyFile policy, String path, int port) {
+        super(port);
+        HTTP = http;
+        this.policy = policy;
+        interceptor = new WebSocketInterceptor(this);
+        addPath(path);
+        setEnableProtocolSniffing(true);
+        addProtocolDetector(new HttpDetector(HTTP));
+        //detects flash policy requests with 23 bytes
+        addProtocolDetector(new FlashSocketPolicyDetector(this, this.policy));
+        //detects the Higgs HFS protocol header with 3 bytes
+        addProtocolDetector(new FlashSocketProtocolDetector(this, this.policy));
+        //must add interceptor to HTTP requests
+        HTTP.addInterceptor(interceptor);
+        addErrorListener();
+    }
 
-	private void addErrorListener() {
-		final WebSocketServer me = this;
-		ChannelEventListener errorHandler = new ChannelEventListener() {
-			public void triggered(ChannelHandlerContext ctx, Optional<Throwable> ex) {
-				Object request = me.getRequest(ctx.channel());
-				if (request instanceof TextWebSocketFrame) {
-					Map<String, String> returns = new HashMap<>();
-					returns.put("error", ex.get().getMessage());
-					returns.put("cause", ex.get().getCause() == null ? null : ex.get().getCause().getMessage());
-					me.respond(ctx.channel(), new JsonResponse("error", returns));
-					log.warn("An error occurred handling a WebSocket/JSON request", ex.get());
-				}
-			}
-		};
-		//add the error handler to both event processors
-		on(HiggsEvent.EXCEPTION_CAUGHT, errorHandler);
-		HTTP.on(HiggsEvent.EXCEPTION_CAUGHT, errorHandler);
-	}
+    private void addErrorListener() {
+        final WebSocketServer me = this;
+        ChannelEventListener errorHandler = new ChannelEventListener() {
+            public void triggered(ChannelHandlerContext ctx, Optional<Throwable> ex) {
+                Object request = me.getRequest(ctx.channel());
+                if (request instanceof TextWebSocketFrame) {
+                    Map<String, String> returns = new HashMap<>();
+                    returns.put("error", ex.get().getMessage());
+                    returns.put("cause", ex.get().getCause() == null ? null : ex.get().getCause().getMessage());
+                    me.respond(ctx.channel(), new JsonResponse("error", returns));
+                    log.warn("An error occurred handling a WebSocket/JSON request", ex.get());
+                }
+            }
+        };
+        //add the error handler to both event processors
+        on(HiggsEvent.EXCEPTION_CAUGHT, errorHandler);
+        HTTP.on(HiggsEvent.EXCEPTION_CAUGHT, errorHandler);
+    }
 
-	public void addPath(String path) {
-		interceptor.addPath(path);
-	}
+    public void addPath(String path) {
+        interceptor.addPath(path);
+    }
 
-	public Object[] getArguments(Class<?>[] argTypes, ChannelMessage<R> request) {
-		if (argTypes.length == 0)
-			return new Object[0];
-		Object[] args = new Object[argTypes.length];
-		for (int i = 0; i < argTypes.length; i++) {
-			if (JsonRequestEvent.class.isAssignableFrom(argTypes[i]))
-				args[i] = request.message;
-			else if (argTypes[i].isAssignableFrom(ChannelMessage.class))
-				args[i] = request;
-			else if (argTypes[i].isAssignableFrom(Channel.class))
-				args[i] = request.channel;
-			else if (argTypes[i].isAssignableFrom(ChannelHandlerContext.class))
-				args[i] = request.context;
-			else {
-				//if the parameter is not a supported type, try to convert the message to that type
-				Object obj = request.message.as(argTypes[i]);
-				if (obj != null) {
-					args[i] = obj;
-				} else {
-					log.warn(String.format("Unsupported parameter type found %s and the message could " +
-							"not be converted to the type", argTypes[i].getName()));
-				}
-			}
-		}
-		return args;
-	}
+    public Object[] getArguments(Class<?>[] argTypes, ChannelMessage<R> request) {
+        if (argTypes.length == 0) {
+            return new Object[0];
+        }
+        Object[] args = new Object[argTypes.length];
+        for (int i = 0; i < argTypes.length; i++) {
+            if (JsonRequestEvent.class.isAssignableFrom(argTypes[i])) {
+                args[i] = request.message;
+            } else {
+                if (argTypes[i].isAssignableFrom(ChannelMessage.class)) {
+                    args[i] = request;
+                } else {
+                    if (argTypes[i].isAssignableFrom(Channel.class)) {
+                        args[i] = request.channel;
+                    } else {
+                        if (argTypes[i].isAssignableFrom(ChannelHandlerContext.class)) {
+                            args[i] = request.context;
+                        } else {
+                            //if the parameter is not a supported type, try to convert the message to that type
+                            Object obj = request.message.as(argTypes[i]);
+                            if (obj != null) {
+                                args[i] = obj;
+                            } else {
+                                log.warn(String.format("Unsupported parameter type found %s and the message could " +
+                                        "not be converted to the type", argTypes[i].getName()));
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return args;
+    }
 
-	protected JsonResponseEvent newResponse(String methodName, ChannelMessage<R> request,
-	                                        Optional<Object> returns, Optional<Throwable> error) {
-		if (returns.isPresent()) {
-			if (returns.get() instanceof JsonResponseEvent) {
-				return (JsonResponseEvent) returns.get();
-			} else if (returns.get() instanceof JsonRequestEvent) {
-				JsonRequestEvent event = (JsonRequestEvent) returns.get();
-				return new JsonResponse(event, event.getMessage());
-			} else {
-				return new JsonResponse(request.message.getCallback(),
-						mapper.createObjectNode().POJONode(returns));
-			}
-		}
-		//always return a JSON response and if value returned == null return an empty JSON object i.e. {}
-		return new JsonResponse(request.message.getCallback(),
-				returns.get() == null ? new HashMap<>() : returns.get());
-	}
+    protected JsonResponseEvent newResponse(String methodName, ChannelMessage<R> request,
+                                            Optional<Object> returns, Optional<Throwable> error) {
+        if (returns.isPresent()) {
+            if (returns.get() instanceof JsonResponseEvent) {
+                return (JsonResponseEvent) returns.get();
+            } else {
+                if (returns.get() instanceof JsonRequestEvent) {
+                    JsonRequestEvent event = (JsonRequestEvent) returns.get();
+                    return new JsonResponse(event, event.getMessage());
+                } else {
+                    return new JsonResponse(request.message.getCallback(),
+                            mapper.createObjectNode().POJONode(returns));
+                }
+            }
+        }
+        //always return a JSON response and if value returned == null return an empty JSON object i.e. {}
+        return new JsonResponse(request.message.getCallback(),
+                returns.get() == null ? new HashMap<>() : returns.get());
+    }
 
-	/**
-	 * Set the class that all requests should be de-serialized as.
-	 *
-	 * @param requestClass
-	 */
-	public void setRequestClass(final Class<R> requestClass) {
-		this.requestClass = requestClass;
-	}
+    /**
+     * Set the class that all requests should be de-serialized as.
+     *
+     * @param requestClass
+     */
+    public void setRequestClass(final Class<R> requestClass) {
+        this.requestClass = requestClass;
+    }
 
-	@Override
-	public TextWebSocketFrame serialize(final Channel ctx, final JsonResponseEvent msg) {
-		try {
-			return new TextWebSocketFrame(mapper.writeValueAsString(msg));
-		} catch (JsonProcessingException e) {
-			throw new WebSocketException("Unable to serialize data to be sent", e);
-		}
-	}
+    @Override
+    public TextWebSocketFrame serialize(final Channel ctx, final JsonResponseEvent msg) {
+        try {
+            return new TextWebSocketFrame(mapper.writeValueAsString(msg));
+        } catch (JsonProcessingException e) {
+            throw new WebSocketException("Unable to serialize data to be sent", e);
+        }
+    }
 
-	@Override
-	public R deserialize(final ChannelHandlerContext ctx, final TextWebSocketFrame msg) {
-		try {
-			return mapper.readValue(msg.text(), requestClass);
-		} catch (IOException e) {
-			//throw error so that it propagates and the error handler notifies the client
-			throw new WebSocketException("Unable to de-serialize message", e);
-		}
-	}
+    @Override
+    public R deserialize(final ChannelHandlerContext ctx, final TextWebSocketFrame msg) {
+        try {
+            return mapper.readValue(msg.text(), requestClass);
+        } catch (IOException e) {
+            //throw error so that it propagates and the error handler notifies the client
+            throw new WebSocketException("Unable to de-serialize message", e);
+        }
+    }
 
-	@Override
-	public String getTopic(final R msg) {
-		return msg.getTopic();
-	}
+    @Override
+    public String getTopic(final R msg) {
+        return msg.getTopic();
+    }
 
-	@Override
-	protected boolean setupPipeline(final ChannelPipeline pipeline) {
-		return false;//do not automatically add handler, sniffer is always enabled for WS
-	}
+    @Override
+    protected boolean setupPipeline(final ChannelPipeline pipeline) {
+        return false; //do not automatically add handler, sniffer is always enabled for WS
+    }
 }

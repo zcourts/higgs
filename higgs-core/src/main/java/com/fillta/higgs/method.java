@@ -14,22 +14,22 @@ import java.lang.annotation.Target;
  * @author Courtney Robinson <courtney@crlog.info>
  */
 @Retention(RetentionPolicy.RUNTIME)
-@Target({ElementType.METHOD, ElementType.TYPE})
+@Target({ ElementType.METHOD, ElementType.TYPE })
 public @interface method {
-	/**
-	 * Optionally provide a name for the "topic" to which a method is subscribed.
-	 * If no name is provided, by default and preferably, the fully qualified name of the
-	 * method is used i.e. com.domain.class.method
-	 *
-	 * @return
-	 */
-	public String value() default "";
+    /**
+     * Optionally provide a name for the "topic" to which a method is subscribed.
+     * If no name is provided, by default and preferably, the fully qualified name of the
+     * method is used i.e. com.domain.class.method
+     *
+     * @return
+     */
+    String value() default "";
 
-	/**
-	 * If provided the method this is applied to will NOT be registered to receive messages.
-	 * NOTE: Applying this at class level is meaningless and is ignored. Only applies to methods
-	 *
-	 * @return
-	 */
-	public boolean optout() default false;
+    /**
+     * If provided the method this is applied to will NOT be registered to receive messages.
+     * NOTE: Applying this at class level is meaningless and is ignored. Only applies to methods
+     *
+     * @return
+     */
+    boolean optout() default false;
 }

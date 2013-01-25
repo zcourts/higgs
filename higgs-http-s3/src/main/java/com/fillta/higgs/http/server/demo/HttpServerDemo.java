@@ -13,16 +13,19 @@ import java.io.IOException;
  * @author Courtney Robinson <courtney@crlog.info>
  */
 public class HttpServerDemo {
-	public static void main(String... args) throws IOException, InterruptedException {
-		HttpServer server = new HttpServer(ServerConfig.class, "./config.yml");
-		server.onException(new ChannelEventListener() {
-			public void triggered(final ChannelHandlerContext ctx, final Optional<Throwable> ex) {
-				if (ex.isPresent()) {
-					LoggerFactory.getLogger(getClass()).warn("Error", ex.get());
-				}
-			}
-		});
-		server.register(Api.class);
-		server.bind();
-	}
+    protected HttpServerDemo() {
+    }
+
+    public static void main(String... args) throws IOException, InterruptedException {
+        HttpServer server = new HttpServer(ServerConfig.class, "./config.yml");
+        server.onException(new ChannelEventListener() {
+            public void triggered(final ChannelHandlerContext ctx, final Optional<Throwable> ex) {
+                if (ex.isPresent()) {
+                    LoggerFactory.getLogger(getClass()).warn("Error", ex.get());
+                }
+            }
+        });
+        server.register(Api.class);
+        server.bind();
+    }
 }
