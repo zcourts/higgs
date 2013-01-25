@@ -99,6 +99,49 @@
                     </includes>
                 </configuration>
             </plugin>
+            <plugin>
+                <artifactId>maven-checkstyle-plugin</artifactId>
+                <version>2.9.1</version>
+                <executions>
+                    <execution>
+                        <id>check-style</id>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                        <phase>validate</phase>
+                        <configuration>
+                            <consoleOutput>true</consoleOutput>
+                            <logViolationsToConsole>true</logViolationsToConsole>
+                            <failsOnError>true</failsOnError>
+                            <failOnViolation>true</failOnViolation>
+                            <configLocation>checkstyle.xml</configLocation>
+                        </configuration>
+                    </execution>
+                </executions>
+                <dependencies>
+                    <dependency>
+                        <groupId>com.puppycrawl.tools</groupId>
+                        <artifactId>checkstyle</artifactId>
+                        <version>5.5</version>
+                    </dependency>
+                </dependencies>
+            </plugin>
+            <!--<plugin>-->
+            <!--<groupId>org.apache.maven.plugins</groupId>-->
+            <!--<artifactId>maven-checkstyle-plugin</artifactId>-->
+            <!--<version>2.9.1</version>-->
+            <!--<configuration>-->
+
+            <!--<enableRulesSummary>false</enableRulesSummary>-->
+            <!--<consoleOutput>true</consoleOutput>-->
+            <!--<failOnViolation>true</failOnViolation>-->
+            <!--<format>sun</format>-->
+            <!--<indentSize>4</indentSize>-->
+            <!--<lineLength>120</lineLength>-->
+            <!--<linkXRef>true</linkXRef>-->
+            <!--<logViolationsToConsole>true</logViolationsToConsole>-->
+            <!--</configuration>-->
+            <!--</plugin>-->
         </plugins>
     </build>
 </project>
