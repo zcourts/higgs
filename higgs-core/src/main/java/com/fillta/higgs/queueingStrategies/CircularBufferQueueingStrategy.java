@@ -18,7 +18,8 @@ public class CircularBufferQueueingStrategy<T, IM> extends QueueingStrategy<T, I
 	protected ExecutorService threadPool;
 	CircularBufferConsumer<Tuple<ChannelHandlerContext, DecodedMessage<T, IM>>> consumer;
 
-	public CircularBufferQueueingStrategy(ExecutorService threadPool) {
+	public CircularBufferQueueingStrategy(QueueingStrategy<T, IM> strategy, ExecutorService threadPool) {
+		super(strategy);
 		this.threadPool = threadPool;
 		consumer = new CircularBufferConsumer<>(this.threadPool,
 				new Function1<Tuple<ChannelHandlerContext, DecodedMessage<T, IM>>>() {

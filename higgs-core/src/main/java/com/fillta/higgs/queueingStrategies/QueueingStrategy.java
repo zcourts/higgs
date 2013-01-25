@@ -66,9 +66,27 @@ import java.util.concurrent.ConcurrentHashMap;
  * @author Courtney Robinson <courtney@crlog.info>
  */
 public abstract class QueueingStrategy<T, IM> {
-	protected final ConcurrentHashMap<T, Set<Function1<ChannelMessage<IM>>>> messageSubscribers = new ConcurrentHashMap<>();
-	protected final Set<Function1<ChannelMessage<IM>>> allMessageSubscribers = Collections.newSetFromMap(new ConcurrentHashMap<Function1<ChannelMessage<IM>>, Boolean>());
+	protected final ConcurrentHashMap<T, Set<Function1<ChannelMessage<IM>>>> messageSubscribers;
+	protected final Set<Function1<ChannelMessage<IM>>> allMessageSubscribers;
 	protected Logger log = LoggerFactory.getLogger(getClass());
+
+	/**
+	 * Copy const.takes all subscribers from the given strategy and add them to this one
+	 *
+	 * @param strategy the strategy to copy subscribers from
+	 */
+	public QueueingStrategy(QueueingStrategy<T, IM> strategy) {
+		messageSubscribers = new ConcurrentHashMap<>();
+		allMessageSubscribers = Collections.newSetFromMap(new ConcurrentHashMap<Function1<ChannelMessage<IM>>, Boolean>());
+		copy(strategy);
+	}
+
+	public void copy(QueueingStrategy<T, IM> strategy) {
+		if (strategy != null) {
+			messageSubscribers.putAll(strategy.messageSubscribers);
+			allMessageSubscribers.addAll(strategy.allMessageSubscribers);
+		}
+	}
 
 	/**
 	 * Invoked when a message is received.

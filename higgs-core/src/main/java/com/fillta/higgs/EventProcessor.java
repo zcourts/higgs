@@ -48,6 +48,7 @@ public abstract class EventProcessor<T, OM, IM, SM> extends ChannelInboundMessag
 	}
 
 	protected Logger log = LoggerFactory.getLogger(getClass());
+	protected Logger errorLogger = LoggerFactory.getLogger("exceptions");
 	public static final AttributeKey<Object> REQUEST_KEY = new AttributeKey<>("event-processor-request-key");
 	/**
 	 * One of the worse errors/bugs to have is a thread terminating because of an uncaught exception.
@@ -72,13 +73,14 @@ public abstract class EventProcessor<T, OM, IM, SM> extends ChannelInboundMessag
 	 * NOTE: used by multiple threads so the set's backing Map must be thread safe
 	 */
 	protected Map<HiggsEvent, Set<ChannelEventListener>> eventSubscribers = new ConcurrentHashMap<>();
-	protected QueueingStrategy<T, IM> messageQueue;
+	protected QueueingStrategy<T, IM> queueingStrategy;
 	private AtomicBoolean daemonThreadPool = new AtomicBoolean();
 	protected final Set<HiggsInterceptor> interceptors =
 			Collections.newSetFromMap(new ConcurrentHashMap<HiggsInterceptor, Boolean>());
+	private boolean errorLoggerEnabled = true;
 
 	public EventProcessor() {
-		messageQueue = messageQueue(threadPool);
+		queueingStrategy = messageQueue(threadPool);
 		Thread.setDefaultUncaughtExceptionHandler(unhandledExceptionHandler);
 	}
 
@@ -121,7 +123,7 @@ public abstract class EventProcessor<T, OM, IM, SM> extends ChannelInboundMessag
 	protected QueueingStrategy<T, IM> messageQueue(@SuppressWarnings("UnusedParameters")
 	                                               ExecutorService threadPool) {
 		//noinspection unchecked
-		return new SameThreadQueueingStrategy();
+		return new SameThreadQueueingStrategy(queueingStrategy);
 	}
 
 	/**
@@ -129,10 +131,17 @@ public abstract class EventProcessor<T, OM, IM, SM> extends ChannelInboundMessag
 	 * For a detailed explanation see the documentation of {@link QueueingStrategy}
 	 *
 	 * @param strategy the strategy to use.
+	 * @param copy     If true then existing subscribers from {@link #queueingStrategy} is copied to
+	 *                 the given strategy before it is replaced
 	 */
 	@SuppressWarnings("UnusedDeclaration")
-	public void setQueueingStrategy(QueueingStrategy<T, IM> strategy) {
-		messageQueue = strategy;
+	public void setQueueingStrategy(QueueingStrategy<T, IM> strategy, boolean copy) {
+		if (strategy != null) {
+			if (copy) {
+				strategy.copy(queueingStrategy);
+			}
+			queueingStrategy = strategy;
+		}
 	}
 
 	/**
@@ -140,7 +149,7 @@ public abstract class EventProcessor<T, OM, IM, SM> extends ChannelInboundMessag
 	 */
 	@SuppressWarnings("UnusedDeclaration")
 	public void setQueueingStrategyAsCircularBuffer() {
-		messageQueue = new CircularBufferQueueingStrategy<>(threadPool());
+		queueingStrategy = new CircularBufferQueueingStrategy<>(queueingStrategy, threadPool());
 	}
 
 	/**
@@ -148,7 +157,7 @@ public abstract class EventProcessor<T, OM, IM, SM> extends ChannelInboundMessag
 	 */
 	@SuppressWarnings("UnusedDeclaration")
 	public void setQueueingStrategyAsBlockingQueue() {
-		messageQueue = new LinkedBlockingQueueStrategy<>(threadPool());
+		queueingStrategy = new LinkedBlockingQueueStrategy<>(queueingStrategy, threadPool());
 	}
 
 	public void emit(HiggsEvent event, ChannelHandlerContext context, Optional<Throwable> ex) {
@@ -178,7 +187,7 @@ public abstract class EventProcessor<T, OM, IM, SM> extends ChannelInboundMessag
 			//if de-serializer returns null then do not queue
 			if (imsg != null) {
 				T topic = getTopic(imsg);
-				messageQueue.enqueue(ctx, new DecodedMessage<>(topic, imsg));
+				queueingStrategy.enqueue(ctx, new DecodedMessage<>(topic, imsg));
 			}
 		}
 	}
@@ -250,7 +259,7 @@ public abstract class EventProcessor<T, OM, IM, SM> extends ChannelInboundMessag
 	 * @param function The function to be invoked when a message for the given topic is received
 	 */
 	public void listen(T topic, final Function1<ChannelMessage<IM>> function) {
-		messageQueue.listen(topic, function);
+		queueingStrategy.listen(topic, function);
 	}
 
 	/**
@@ -260,7 +269,7 @@ public abstract class EventProcessor<T, OM, IM, SM> extends ChannelInboundMessag
 	 * @param function the function to be removed
 	 */
 	public void unsubscribe(T topic, Function1<ChannelMessage<IM>> function) {
-		messageQueue.remove(topic, function);
+		queueingStrategy.remove(topic, function);
 	}
 
 	/**
@@ -270,16 +279,16 @@ public abstract class EventProcessor<T, OM, IM, SM> extends ChannelInboundMessag
 	 */
 	@SuppressWarnings("UnusedDeclaration")
 	public void listen(Function1<ChannelMessage<IM>> function) {
-		messageQueue.listen(function);
+		queueingStrategy.listen(function);
 	}
 
 	@SuppressWarnings("UnusedDeclaration")
 	public void unsubscribeAll(T topic) {
-		messageQueue.removeAll(topic);
+		queueingStrategy.removeAll(topic);
 	}
 
 	public boolean listening(T topic) {
-		return messageQueue.listening(topic);
+		return queueingStrategy.listening(topic);
 	}
 
 	/**
@@ -400,6 +409,14 @@ public abstract class EventProcessor<T, OM, IM, SM> extends ChannelInboundMessag
 	 */
 	protected abstract boolean setupPipeline(ChannelPipeline pipeline);
 
+	public boolean isErrorLoggerEnabled() {
+		return errorLoggerEnabled;
+	}
+
+	public void setErrorLoggerEnabled(final boolean errorLoggerEnabled) {
+		this.errorLoggerEnabled = errorLoggerEnabled;
+	}
+
 	//netty related methods
 	private final Optional<Throwable> absentThrowable = Optional.absent();
 
@@ -411,6 +428,9 @@ public abstract class EventProcessor<T, OM, IM, SM> extends ChannelInboundMessag
 
 	@Override
 	public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
+		if (errorLoggerEnabled) {
+			errorLogger.info("Uncaught exception", cause);
+		}
 		emit(EXCEPTION_CAUGHT, ctx, Optional.of(cause));
 	}
 
