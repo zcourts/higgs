@@ -10,6 +10,7 @@ import com.fillta.higgs.reflect.ReflectionUtil;
 import io.netty.buffer.Unpooled;
 import io.netty.handler.codec.http.HttpHeaders;
 import io.netty.handler.codec.http.HttpResponseStatus;
+import io.netty.handler.codec.http.HttpVersion;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.thymeleaf.TemplateEngine;
@@ -74,7 +75,7 @@ public class ThymeleafTransformer extends BaseTransformer {
 			//if returns==null then the resource method returned void so return No Content
 			return new HttpResponse(HttpStatus.NO_CONTENT);
 		} else {
-			byte[] data = null;
+			byte[] data;
 			try {
 				if (request != null) {
 					if (config.determine_language_from_accept_header) {
@@ -95,7 +96,8 @@ public class ThymeleafTransformer extends BaseTransformer {
 				return new HttpResponse(HttpStatus.INTERNAL_SERVER_ERROR);
 			}
 			if (data != null) {
-				HttpResponse response = new HttpResponse(request.protocolVersion(),
+				HttpResponse response = new HttpResponse(
+						request == null ? HttpVersion.HTTP_1_1 : request.protocolVersion(),
 						status == null ? HttpStatus.OK : status,
 						Unpooled.wrappedBuffer(data));
 				HttpHeaders.setContentLength(response, data.length);
