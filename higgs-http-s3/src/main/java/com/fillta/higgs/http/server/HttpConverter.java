@@ -31,19 +31,19 @@ import static java.lang.Integer.parseInt;
  * @author Courtney Robinson <courtney@crlog.info>
  */
 public class HttpConverter {
-    public static final AttributeKey<Boolean> attChunks = new AttributeKey("http-server-reading-chunks");
-    public static final AttributeKey<HttpPostRequestDecoder> attDecoder = new AttributeKey("http-server-files-decoder");
-    public static final AttributeKey<HttpRequest> attRequest = new AttributeKey("http-channel-request");
-    public static final AttributeKey<Boolean> attSeen = new AttributeKey("http-server-converter-seen-request");
-    private static final HttpDataFactory factory = new DefaultHttpDataFactory(DefaultHttpDataFactory.MINSIZE); //Disk
+    public static AttributeKey<Boolean> attChunks = new AttributeKey<>("http-server-reading-chunks");
+    public static AttributeKey<HttpPostRequestDecoder> attDecoder = new AttributeKey<>("http-server-files-decoder");
+    public static AttributeKey<HttpRequest> attRequest = new AttributeKey<>("http-channel-request");
+    public static AttributeKey<Boolean> attSeen = new AttributeKey<>("http-server-converter-seen-request");
+    private static HttpDataFactory factory = new DefaultHttpDataFactory(DefaultHttpDataFactory.MINSIZE); //Disk
     private Logger log = LoggerFactory.getLogger(getClass());
-    private final HttpServer server;
+    private HttpServer server;
 
-    public HttpConverter(final HttpServer server) {
+    public HttpConverter(HttpServer server) {
         this.server = server;
     }
 
-    public HttpResponse serialize(final Channel ctx, final HttpResponse msg) {
+    public HttpResponse serialize(Channel ctx, HttpResponse msg) {
         return msg;
     }
 
@@ -55,13 +55,13 @@ public class HttpConverter {
      *
      * @param ctx The Netty channel context
      * @param msg the serialized message
-     * @return
+     * @return the de-serialized request
      */
-    public HttpRequest deserialize(final ChannelHandlerContext ctx, final Object msg) {
+    public HttpRequest deserialize(ChannelHandlerContext ctx, Object msg) {
         Attribute<HttpRequest> requestAttribute = ctx.channel().attr(attRequest);
         Attribute<Boolean> resSeen = ctx.channel().attr(attSeen);
         resSeen.compareAndSet(null, false);
-        boolean seen = resSeen.get();
+        //boolean seen = resSeen.get();
         resSeen.set(true);
         //in large post requests only the first object will be of type HttpRequest, others may be chunks
         if (msg instanceof HttpRequest) {
@@ -109,7 +109,7 @@ public class HttpConverter {
         if (msg instanceof HttpContent) {
             if (!HttpMethod.POST.name().equalsIgnoreCase(requestAttribute.get().method().name()) &&
                     !HttpMethod.PUT.name().equalsIgnoreCase(requestAttribute.get().method().name())) {
-                cleanUp(requestAttribute, requestAttribute.get());
+                requestAttribute.set(null);
                 //only post and put requests have content
                 return null;
             } else {
@@ -133,7 +133,7 @@ public class HttpConverter {
         return null;
     }
 
-    private HttpRequest readAllHttpDataReceived(final Channel channel) {
+    private HttpRequest readAllHttpDataReceived(Channel channel) {
         //entire message/request received
         HttpPostRequestDecoder decoder = channel.attr(attDecoder).get();
         List<InterfaceHttpData> data;
@@ -163,28 +163,17 @@ public class HttpConverter {
                     request.addFormFile(new HttpFile((FileUpload) httpData));
                 } else {
                     if (httpData != null) {
-                        log.warn(String.format("Unknown form type encountered Class: %s,data type:%s,name:%",
+                        log.warn(String.format("Unknown form type encountered Class: %s,data type:%s,name:%s",
                                 httpData.getClass().getName(), httpData.getHttpDataType().name(), httpData.getName()));
                     }
                 }
             }
         }
-        return cleanUp(requestAttribute, request);
-    }
-
-    /**
-     * sets the given attribute to null and return the given request
-     *
-     * @param attribute
-     * @param request
-     * @return
-     */
-    private HttpRequest cleanUp(final Attribute<HttpRequest> attribute, final HttpRequest request) {
-        attribute.set(null);
+        requestAttribute.set(null);
         return request;
     }
 
-    private HttpRequest initHiggsRequest(final HttpRequest request) {
+    private HttpRequest initHiggsRequest(HttpRequest request) {
         //custom initialization that cannot be done in constructor because data is not known at the time
         request.init();
         //if the user has no session available then set one
