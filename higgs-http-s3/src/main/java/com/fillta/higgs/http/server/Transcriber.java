@@ -32,7 +32,7 @@ public class Transcriber extends DefaultResourceFilter {
 		for (Transcription transcription : transcriptions) {
 			if (transcription.matches(request.uri())) {
 				if (transcription.isReplaceWholeRequest()) {
-					request.uri(transcription.getReplacementPath());
+					request.updateUri(transcription.getReplacementPath());
 				} else {
 					String newPath;
 					if (transcription.isReplaceFirstOccurrence()) {
@@ -40,7 +40,7 @@ public class Transcriber extends DefaultResourceFilter {
 					} else {
 						newPath = transcription.replaceAllMatches(request.uri());
 					}
-					request.uri(newPath);
+					request.updateUri(newPath);
 				}
 				break;
 			}
