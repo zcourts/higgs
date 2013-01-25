@@ -146,4 +146,8 @@ public class ConnectFuture<T, OM, IM, SM> implements Future {
 	public void setState(State state) {
 		this.state = state;
 	}
+
+	public HiggsClient<T, OM, IM, SM> client() {
+		return client;
+	}
 }
