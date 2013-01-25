@@ -7,10 +7,11 @@ import java.lang.annotation.Target;
 
 /**
  * Associate a method parameter with a query string value
+ *
  * @author Courtney Robinson <courtney@crlog.info>
  */
 @Retention(RetentionPolicy.RUNTIME)
-@Target({ElementType.PARAMETER})
+@Target({ ElementType.PARAMETER })
 public @interface QueryParam {
-	public String value();
+    String value();
 }

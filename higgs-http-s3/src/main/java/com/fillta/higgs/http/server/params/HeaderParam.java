@@ -9,7 +9,7 @@ import java.lang.annotation.Target;
  * @author Courtney Robinson <courtney@crlog.info>
  */
 @Retention(RetentionPolicy.RUNTIME)
-@Target({ElementType.PARAMETER})
+@Target({ ElementType.PARAMETER })
 public @interface HeaderParam {
-	public String value();
+    String value();
 }

@@ -8,11 +8,11 @@ package com.fillta.higgs.http.server;
  */
 public interface ResourceFilter {
 
-	/**
-	 * check this request to see if it matches any registered endpoint
-	 *
-	 * @param request
-	 * @return an end point or null if no endpoint is found
-	 */
-	public Endpoint getEndpoint(HttpRequest request);
+    /**
+     * check this request to see if it matches any registered endpoint
+     *
+     * @param request
+     * @return an end point or null if no endpoint is found
+     */
+    Endpoint getEndpoint(HttpRequest request);
 }

@@ -10,5 +10,5 @@ package com.fillta.higgs.http.server.resource;
  * as specified by RFC 2616.
  */
 public @interface Consumes {
-	public String[] value() default MediaType.WILDCARD;
+    String[] value() default MediaType.WILDCARD;
 }

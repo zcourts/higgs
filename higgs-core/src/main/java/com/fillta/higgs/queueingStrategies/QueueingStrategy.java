@@ -36,22 +36,24 @@ import java.util.concurrent.ConcurrentHashMap;
  * <p/>
  * {@link CircularBufferQueueingStrategy} uses our {@link com.fillta.higgs.buffer.CircularBuffer} implementation.
  * See <a href="http://en.wikipedia.org/wiki/Circular_buffer">http://en.wikipedia.org/wiki/Circular_buffer</a>
- * for an overview and <a href="http://www.youtube.com/watch?v=DCdGlxBbKU4">http://www.youtube.com/watch?v=DCdGlxBbKU4</a>
+ * for an overview and
+ * <a href="http://www.youtube.com/watch?v=DCdGlxBbKU4">http://www.youtube.com/watch?v=DCdGlxBbKU4</a>
  * for the basis of our implementation.
  * <p/>
- * So, the biggest risk with using the circular buffer is the possibility of losing messages. A circular buffer by its nature
- * writes stuff into its backing array until it is full. Once full, it starts overwriting the oldest items in the buffer.
+ * So, the biggest risk with using the circular buffer is the possibility of losing messages. A circular buffer by its
+ * nature writes stuff into its backing array until it is full. Once full, it starts overwriting the oldest items in the
+ * buffer.
  * By default {@link com.fillta.higgs.buffer.CircularBuffer} initializes its backing array to 1 million. This should
  * be enough for most cases and results in about 20MB of memory being used just for the empty array;
  * <p/>
- * The advantage, the {@link java.util.concurrent.ForkJoinPool} can be used with a {@link java.util.concurrent.RecursiveAction}
- * with little to no read contention by multiple processing threads. This significantly speeds up message processing
- * as the buffer does not lock, so the processing threads do not contend when fetching items from the buffer.
- * If memory is not an issue the circular buffer can easily have its backing array size increased. However, if an application
- * is having 1M messages queued in memory chances are increasing the array size won't do much good since you're just going
- * to hit that larger size anyway, optimization is probably needed in the application itself. Or simply increasing
- * the number of message processing threads. Not too much, or it'll just lead to too much context switching, that
- * in itself being counter productive and becoming somewhat of a bottleneck.
+ * The advantage, the {@link java.util.concurrent.ForkJoinPool} can be used with a
+ * {@link java.util.concurrent.RecursiveAction} with little to no read contention by multiple processing threads.
+ * This significantly speeds up message processing as the buffer does not lock, so the processing threads do not contend
+ * when fetching items from the buffer. If memory is not an issue the circular buffer can easily have its backing array
+ * size increased. However, if an application is having 1M messages queued in memory chances are increasing the array
+ * size won't do much good since you're just going to hit that larger size anyway, optimization is probably needed in
+ * the application itself. Or simply increasing the number of message processing threads. Not too much, or it'll just
+ * lead to too much context switching, that in itself being counter productive and becoming somewhat of a bottleneck.
  * <p/>
  * <p/>
  * A queueing strategy allows different {@link com.fillta.higgs.EventProcessor}s to handle messages in different ways.
@@ -66,128 +68,129 @@ import java.util.concurrent.ConcurrentHashMap;
  * @author Courtney Robinson <courtney@crlog.info>
  */
 public abstract class QueueingStrategy<T, IM> {
-	protected final ConcurrentHashMap<T, Set<Function1<ChannelMessage<IM>>>> messageSubscribers;
-	protected final Set<Function1<ChannelMessage<IM>>> allMessageSubscribers;
-	protected Logger log = LoggerFactory.getLogger(getClass());
+    protected final ConcurrentHashMap<T, Set<Function1<ChannelMessage<IM>>>> messageSubscribers;
+    protected final Set<Function1<ChannelMessage<IM>>> allMessageSubscribers;
+    protected Logger log = LoggerFactory.getLogger(getClass());
 
-	/**
-	 * Copy const.takes all subscribers from the given strategy and add them to this one
-	 *
-	 * @param strategy the strategy to copy subscribers from
-	 */
-	public QueueingStrategy(QueueingStrategy<T, IM> strategy) {
-		messageSubscribers = new ConcurrentHashMap<>();
-		allMessageSubscribers = Collections.newSetFromMap(new ConcurrentHashMap<Function1<ChannelMessage<IM>>, Boolean>());
-		copy(strategy);
-	}
+    /**
+     * Copy const.takes all subscribers from the given strategy and add them to this one
+     *
+     * @param strategy the strategy to copy subscribers from
+     */
+    public QueueingStrategy(QueueingStrategy<T, IM> strategy) {
+        messageSubscribers = new ConcurrentHashMap<>();
+        allMessageSubscribers =
+                Collections.newSetFromMap(new ConcurrentHashMap<Function1<ChannelMessage<IM>>, Boolean>());
+        copy(strategy);
+    }
 
-	public void copy(QueueingStrategy<T, IM> strategy) {
-		if (strategy != null) {
-			messageSubscribers.putAll(strategy.messageSubscribers);
-			allMessageSubscribers.addAll(strategy.allMessageSubscribers);
-		}
-	}
+    public void copy(QueueingStrategy<T, IM> strategy) {
+        if (strategy != null) {
+            messageSubscribers.putAll(strategy.messageSubscribers);
+            allMessageSubscribers.addAll(strategy.allMessageSubscribers);
+        }
+    }
 
-	/**
-	 * Invoked when a message is received.
-	 * Implementations are expected to take the message,
-	 * 1) queue it if necessary,
-	 * 2) get the topic from the message
-	 * 3) invoke the message subscribers for the topic that are registered in the
-	 * associated {@link com.fillta.higgs.EventProcessor}.
-	 *
-	 * @param ctx the channel context
-	 * @param msg the message to queue
-	 */
-	public abstract void enqueue(ChannelHandlerContext ctx, DecodedMessage<T, IM> msg);
+    /**
+     * Invoked when a message is received.
+     * Implementations are expected to take the message,
+     * 1) queue it if necessary,
+     * 2) get the topic from the message
+     * 3) invoke the message subscribers for the topic that are registered in the
+     * associated {@link com.fillta.higgs.EventProcessor}.
+     *
+     * @param ctx the channel context
+     * @param msg the message to queue
+     */
+    public abstract void enqueue(ChannelHandlerContext ctx, DecodedMessage<T, IM> msg);
 
-	/**
-	 * Subscribes a function/callback to the given topic
-	 *
-	 * @param topic    the topic to listen to
-	 * @param function the callback to be invoked
-	 */
-	public void listen(T topic, Function1<ChannelMessage<IM>> function) {
-		Set<Function1<ChannelMessage<IM>>> set = messageSubscribers.get(topic);
-		if (set == null) {
-			//set must be backed by concurrent hash map to be thread safe
-			set = Collections.newSetFromMap(new ConcurrentHashMap<Function1<ChannelMessage<IM>>, Boolean>());
-			messageSubscribers.put(topic, set);
-		}
-		set.add(function);
-	}
+    /**
+     * Subscribes a function/callback to the given topic
+     *
+     * @param topic    the topic to listen to
+     * @param function the callback to be invoked
+     */
+    public void listen(T topic, Function1<ChannelMessage<IM>> function) {
+        Set<Function1<ChannelMessage<IM>>> set = messageSubscribers.get(topic);
+        if (set == null) {
+            //set must be backed by concurrent hash map to be thread safe
+            set = Collections.newSetFromMap(new ConcurrentHashMap<Function1<ChannelMessage<IM>>, Boolean>());
+            messageSubscribers.put(topic, set);
+        }
+        set.add(function);
+    }
 
-	/**
-	 * Subscribes the given function to <em>all</em> messages/events.
-	 *
-	 * @param function
-	 */
-	public void listen(Function1<ChannelMessage<IM>> function) {
-		allMessageSubscribers.add(function);
-	}
+    /**
+     * Subscribes the given function to <em>all</em> messages/events.
+     *
+     * @param function
+     */
+    public void listen(Function1<ChannelMessage<IM>> function) {
+        allMessageSubscribers.add(function);
+    }
 
-	/**
-	 * @param topic the topic to check
-	 * @return true if at least one function is subscribed to the given topic
-	 */
-	public boolean listening(T topic) {
-		synchronized (messageSubscribers) {
-			return messageSubscribers.containsKey(topic);
-		}
-	}
+    /**
+     * @param topic the topic to check
+     * @return true if at least one function is subscribed to the given topic
+     */
+    public boolean listening(T topic) {
+        synchronized (messageSubscribers) {
+            return messageSubscribers.containsKey(topic);
+        }
+    }
 
-	/**
-	 * Invoke all listeners to the given message on the current thread.
-	 *
-	 * @param ctx
-	 * @param msg
-	 */
-	public void invokeListeners(ChannelHandlerContext ctx, DecodedMessage<T, IM> msg) {
-		T topic = msg.getTopic();
-		ChannelMessage<IM> a = new ChannelMessage<>(ctx, msg.getMessage());
-		//functions subscribed to "all" messages (note: new ArrayList(collection) copies)
-		List<Function1<ChannelMessage<IM>>> listeners = new ArrayList<>(allMessageSubscribers);
-		for (Function1<ChannelMessage<IM>> function : listeners) {
-			function.apply(a);
-		}
-		//now process functions subscribed only to this message's topic
-		Set<Function1<ChannelMessage<IM>>> set = messageSubscribers.get(topic);
-		if (set == null) {
-			listeners = new ArrayList<>();
-		} else {
-			listeners = new ArrayList<>(set);
-		}
-		for (Function1<ChannelMessage<IM>> function : listeners) {
-			function.apply(a);
-		}
-		//only incoming messages count
-		if (listeners.size() == 0 && !a.isOutGoing) {
-			log.warn(String.format("Message received and decoded but no listeners found. Topic:%s", topic));
-		}
-	}
+    /**
+     * Invoke all listeners to the given message on the current thread.
+     *
+     * @param ctx
+     * @param msg
+     */
+    public void invokeListeners(ChannelHandlerContext ctx, DecodedMessage<T, IM> msg) {
+        T topic = msg.getTopic();
+        ChannelMessage<IM> a = new ChannelMessage<>(ctx, msg.getMessage());
+        //functions subscribed to "all" messages (note: new ArrayList(collection) copies)
+        List<Function1<ChannelMessage<IM>>> listeners = new ArrayList<>(allMessageSubscribers);
+        for (Function1<ChannelMessage<IM>> function : listeners) {
+            function.apply(a);
+        }
+        //now process functions subscribed only to this message's topic
+        Set<Function1<ChannelMessage<IM>>> set = messageSubscribers.get(topic);
+        if (set == null) {
+            listeners = new ArrayList<>();
+        } else {
+            listeners = new ArrayList<>(set);
+        }
+        for (Function1<ChannelMessage<IM>> function : listeners) {
+            function.apply(a);
+        }
+        //only incoming messages count
+        if (listeners.size() == 0 && !a.isOutGoing) {
+            log.warn(String.format("Message received and decoded but no listeners found. Topic:%s", topic));
+        }
+    }
 
-	/**
-	 * @param topic Removes all functions subscribed to the given topic
-	 */
-	public void removeAll(T topic) {
-		Set<Function1<ChannelMessage<IM>>> set = messageSubscribers.get(topic);
-		if (set != null) {
-			set.clear();
-		}
-	}
+    /**
+     * @param topic Removes all functions subscribed to the given topic
+     */
+    public void removeAll(T topic) {
+        Set<Function1<ChannelMessage<IM>>> set = messageSubscribers.get(topic);
+        if (set != null) {
+            set.clear();
+        }
+    }
 
-	/**
-	 * Un-subscribe the given function under the given topic
-	 *
-	 * @param topic    the topic the function is subscribed to
-	 * @param function the function to be removed
-	 */
-	public void remove(T topic, Function1<ChannelMessage<IM>> function) {
-		synchronized (messageSubscribers) {
-			Set<Function1<ChannelMessage<IM>>> listeners = messageSubscribers.get(topic);
-			if (listeners != null) {
-				listeners.remove(function);
-			}
-		}
-	}
+    /**
+     * Un-subscribe the given function under the given topic
+     *
+     * @param topic    the topic the function is subscribed to
+     * @param function the function to be removed
+     */
+    public void remove(T topic, Function1<ChannelMessage<IM>> function) {
+        synchronized (messageSubscribers) {
+            Set<Function1<ChannelMessage<IM>>> listeners = messageSubscribers.get(topic);
+            if (listeners != null) {
+                listeners.remove(function);
+            }
+        }
+    }
 }

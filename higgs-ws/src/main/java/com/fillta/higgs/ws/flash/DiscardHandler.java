@@ -11,8 +11,8 @@ import java.nio.charset.Charset;
  * @author Courtney Robinson <courtney@crlog.info>
  */
 public class DiscardHandler extends ChannelInboundMessageHandlerAdapter<ByteBuf> {
-	protected void messageReceived(final ChannelHandlerContext context, final ByteBuf buf) throws Exception {
-		LoggerFactory.getLogger(getClass())
-				.debug("Discarding flash policy request:" + buf.toString(Charset.forName("utf-8")));
-	}
+    protected void messageReceived(final ChannelHandlerContext context, final ByteBuf buf) throws Exception {
+        LoggerFactory.getLogger(getClass())
+                .debug("Discarding flash policy request:" + buf.toString(Charset.forName("utf-8")));
+    }
 }

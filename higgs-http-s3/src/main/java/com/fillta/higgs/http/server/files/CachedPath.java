@@ -4,45 +4,45 @@ package com.fillta.higgs.http.server.files;
  * @author Courtney Robinson <courtney@crlog.info>
  */
 class CachedPath {
-	private String filename, path;
-	private boolean isJar;
+    private String filename, path;
+    private boolean isJar;
 
-	CachedPath(final String filename, final String path, final boolean jar) {
-		this.filename = filename;
-		this.path = path;
-		isJar = jar;
-	}
+    CachedPath(final String filename, final String path, final boolean jar) {
+        this.filename = filename;
+        this.path = path;
+        isJar = jar;
+    }
 
-	public String getFilename() {
-		return filename;
-	}
+    public String getFilename() {
+        return filename;
+    }
 
-	public void setFilename(final String filename) {
-		this.filename = filename;
-	}
+    public void setFilename(final String filename) {
+        this.filename = filename;
+    }
 
-	public String getPath() {
-		return path;
-	}
+    public String getPath() {
+        return path;
+    }
 
-	public void setPath(final String path) {
-		this.path = path;
-	}
+    public void setPath(final String path) {
+        this.path = path;
+    }
 
-	public boolean isJar() {
-		return isJar;
-	}
+    public boolean isJar() {
+        return isJar;
+    }
 
-	public void setJar(final boolean jar) {
-		isJar = jar;
-	}
+    public void setJar(final boolean jar) {
+        isJar = jar;
+    }
 
-	@Override
-	public String toString() {
-		return "CachedPath{" +
-				"filename='" + filename + '\'' +
-				", path='" + path + '\'' +
-				", isJar=" + isJar +
-				'}';
-	}
+    @Override
+    public String toString() {
+        return "CachedPath{" +
+                "filename='" + filename + '\'' +
+                ", path='" + path + '\'' +
+                ", isJar=" + isJar +
+                '}';
+    }
 }

@@ -13,11 +13,11 @@ import com.fillta.higgs.ws.flash.FlashPolicyFile;
  * @author Courtney Robinson <courtney@crlog.info>
  */
 public class DefaultWebSocketServer extends WebSocketServer<JsonRequest> {
-	public DefaultWebSocketServer(int port) {
-		super(port);
-	}
+    public DefaultWebSocketServer(int port) {
+        super(port);
+    }
 
-	public DefaultWebSocketServer(HttpServer http, FlashPolicyFile policy, String path, int port) {
-		super(http, policy, path, port);
-	}
+    public DefaultWebSocketServer(HttpServer http, FlashPolicyFile policy, String path, int port) {
+        super(http, policy, path, port);
+    }
 }

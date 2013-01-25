@@ -9,20 +9,21 @@ import java.util.List;
  * @author Courtney Robinson <courtney@crlog.info>
  */
 public class QueryParams extends HashMap<String, List<String>> {
-	/**
-	 * Gets the first value of the query string parameter with the given name
-	 *
-	 * @param name the name of the query string parameter to get
-	 * @return the value of the parameter or null if it doesn't exist
-	 */
-	public String getFirst(String name) {
-		List<String> vals = get(name);
-		if (vals == null)
-			return null;
-		return vals.get(0);
-	}
+    /**
+     * Gets the first value of the query string parameter with the given name
+     *
+     * @param name the name of the query string parameter to get
+     * @return the value of the parameter or null if it doesn't exist
+     */
+    public String getFirst(String name) {
+        List<String> vals = get(name);
+        if (vals == null) {
+            return null;
+        }
+        return vals.get(0);
+    }
 
-	public int getSize() {
-		return size();
-	}
+    public int getSize() {
+        return size();
+    }
 }

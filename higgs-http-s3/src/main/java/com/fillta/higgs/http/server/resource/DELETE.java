@@ -9,6 +9,6 @@ import java.lang.annotation.Target;
  * @author Courtney Robinson <courtney@crlog.info>
  */
 @Retention(RetentionPolicy.RUNTIME)
-@Target({ElementType.METHOD})
+@Target({ ElementType.METHOD })
 public @interface DELETE {
 }

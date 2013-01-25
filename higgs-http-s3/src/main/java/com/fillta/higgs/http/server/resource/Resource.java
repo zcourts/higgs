@@ -12,14 +12,14 @@ import java.lang.annotation.Target;
  * @author Courtney Robinson <courtney@crlog.info>
  */
 @Retention(RetentionPolicy.RUNTIME)
-@Target({ElementType.TYPE})
+@Target({ ElementType.TYPE })
 public @interface Resource {
-	/**
-	 * If true a single instance of the annotated class is used to handle all requests matching the class's methods
-	 * If false then a new instance is created per request
-	 *
-	 * @return
-	 */
-	public boolean singleton() default false;
+    /**
+     * If true a single instance of the annotated class is used to handle all requests matching the class's methods
+     * If false then a new instance is created per request
+     *
+     * @return
+     */
+    boolean singleton() default false;
 
 }
