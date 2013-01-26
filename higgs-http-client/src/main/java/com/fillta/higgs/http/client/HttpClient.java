@@ -91,6 +91,9 @@ public class HttpClient extends HiggsClient<String, HttpRequest, HTTPResponse, O
             }
             boolean ssl = "https".equalsIgnoreCase(scheme);
             final HttpRequest request = createRequest(req);
+            if (log.isDebugEnabled()) {
+                log.debug(request.toString());
+            }
             listen(request.getId(), new Function1<ChannelMessage<HTTPResponse>>() {
                 public void apply(ChannelMessage<HTTPResponse> a) {
                     if (!a.message.isChunked()) {
@@ -162,6 +165,12 @@ public class HttpClient extends HiggsClient<String, HttpRequest, HTTPResponse, O
                 encoder.addBodyFileUploads(name, arrFiles, arrContentType, arrIsText);
             }
             encoder.finalizeRequest();
+            if (HttpHeaders.getContentLength(request) == -1) {
+                request.headers().set(HttpHeaders.Names.CONTENT_LENGTH, String.valueOf(0));
+            }
+            if (log.isDebugEnabled()) {
+                log.debug(request.toString());
+            }
             listen(request.getId(), new Function1<ChannelMessage<HTTPResponse>>() {
                 public void apply(ChannelMessage<HTTPResponse> a) {
                     if (!a.message.isChunked()) {
@@ -205,7 +214,13 @@ public class HttpClient extends HiggsClient<String, HttpRequest, HTTPResponse, O
         }
         URI uriGet = new URI(encoder.toString());
         HttpRequest request = new HttpRequest(req, req.getHttpVersion(), req.getRequestMethod(),
-                uriGet.toASCIIString());
+                uriGet.toString());
+        for (String name : req.getRequestHeaders().keySet()) {
+            Object value = req.getRequestHeaders().get(name);
+            if (name != null) {
+                request.setHeader(name, value);
+            }
+        }
         if (req.isAddDefaultHeaders()) {
             request.setHeader(HttpHeaders.Names.HOST, req.url().getHost());
             request.setHeader(HttpHeaders.Names.CONNECTION, req.getHeaderConnectionValue());
@@ -216,24 +231,20 @@ public class HttpClient extends HiggsClient<String, HttpRequest, HTTPResponse, O
             request.setHeader(HttpHeaders.Names.USER_AGENT, req.getUserAgent());
             request.setHeader(HttpHeaders.Names.ACCEPT, req.getRequestContentType());
         }
-        for (String name : req.getRequestHeaders().keySet()) {
-            Object value = req.getRequestHeaders().get(name);
-            if (name != null) {
-                request.setHeader(name, value);
+        if (req.getRequestCookies().size() > 0) {
+            DefaultCookie[] cookieList = new DefaultCookie[req.getRequestCookies().size()];
+            int i = 0;
+            for (String name : req.getRequestCookies().keySet()) {
+                Object value = req.getRequestCookies().get(name);
+                if (value != null) {
+                    cookieList[i++] = new DefaultCookie(name, value.toString());
+                }
             }
+            //set cookies
+            request.setHeader(HttpHeaders.Names.COOKIE,
+                    //we can safely cast an array list of default cookies to Iterable<Cookie>
+                    ClientCookieEncoder.encode(cookieList));
         }
-        DefaultCookie[] cookieList = new DefaultCookie[req.getRequestCookies().size()];
-        int i = 0;
-        for (String name : req.getRequestCookies().keySet()) {
-            Object value = req.getRequestCookies().get(name);
-            if (value != null) {
-                cookieList[i++] = new DefaultCookie(name, value.toString());
-            }
-        }
-        //set cookies
-        request.setHeader(HttpHeaders.Names.COOKIE,
-                //we can safely cast an array list of default cookies to Iterable<Cookie>
-                ClientCookieEncoder.encode(cookieList));
         return request;
     }
 

@@ -16,6 +16,7 @@ public class HttpMessageConverter {
     public static final AttributeKey<String> attTopic = new AttributeKey<>("http-message-converter-topic");
     public static final AttributeKey<HTTPResponse> attResponse = new AttributeKey<>("http-message-converter-response");
     public static final AttributeKey<Boolean> attSeen = new AttributeKey<>("http-message-converter-seen-request");
+    public static final AttributeKey<Long> attLength = new AttributeKey<>("http-message-converter-response-length");
     //protected Logger log = LoggerFactory.getLogger(getClass());
 
     public Object serialize(Channel channel, HttpRequest msg) {
@@ -35,6 +36,8 @@ public class HttpMessageConverter {
         resSeen.compareAndSet(null, false);
         boolean seen = resSeen.get();
         resSeen.set(true);
+        Attribute<Long> resLength = ctx.channel().attr(attLength);
+        resLength.compareAndSet(null, -1L);
         if (msg instanceof HttpResponse) {
             HttpResponse res = (HttpResponse) msg;
             response.setStatus(res.status());
@@ -42,6 +45,12 @@ public class HttpMessageConverter {
             response.setChunkedTransferEncoding(HttpHeaders.isTransferEncodingChunked(res));
             if (!res.headers().isEmpty()) {
                 for (String name : res.headers().names()) {
+                    if (HttpHeaders.Names.CONTENT_LENGTH.equalsIgnoreCase(name)) {
+                        String length = res.headers().get(name);
+                        if (length != null) {
+                            resLength.set(Long.parseLong(length));
+                        }
+                    }
                     for (String value : res.headers().getAll(name)) {
                         response.putHeader(name, value);
                     }
@@ -51,7 +60,9 @@ public class HttpMessageConverter {
         if (msg instanceof HttpContent) {
             HttpContent content = (HttpContent) msg;
             response.write(content.data());
-            if (content instanceof LastHttpContent) {
+            if (content instanceof LastHttpContent
+                    //bug???, Netty doesn't always send LastHttpContent try to infer end of content
+                    || (response.getBuffer().writerIndex() >= resLength.get() && resLength.get() > -1)) {
                 //mark the stream as ended
                 response.streamEnded();
                 cleanUp(ctx);
