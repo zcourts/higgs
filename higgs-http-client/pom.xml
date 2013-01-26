@@ -31,5 +31,22 @@
             <version>4.0.0.Beta1-SNAPSHOT</version>
         </dependency>
     </dependencies>
-
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <configuration>
+                    <mainClass>com.fillta.higgs.http.client.demo.Demo</mainClass>
+                    <includePluginDependencies>false</includePluginDependencies>
+                    <systemProperties>
+                        <property>
+                            <key>java.util.logging.config.file</key>
+                            <value>logging.properties</value>
+                        </property>
+                    </systemProperties>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
 </project>

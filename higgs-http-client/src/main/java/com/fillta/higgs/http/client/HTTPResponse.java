@@ -148,6 +148,10 @@ public class HTTPResponse {
         this.protocolVersion = protocolVersion;
     }
 
+    public int status() {
+        return status.code();
+    }
+
     public HttpResponseStatus getStatus() {
         return status;
     }

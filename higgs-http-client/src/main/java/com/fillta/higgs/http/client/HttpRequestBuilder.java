@@ -1,20 +1,14 @@
 package com.fillta.higgs.http.client;
 
 import com.fillta.functional.Function1;
-import com.fillta.higgs.http.client.oauth.OAuth1Conf;
-import com.fillta.higgs.http.client.oauth.OAuthException;
-import com.google.common.base.Optional;
+import com.fillta.higgs.http.client.oauth.v1.OAuth1RequestBuilder;
 import io.netty.handler.codec.http.HttpHeaders;
 import io.netty.handler.codec.http.HttpMethod;
 import io.netty.handler.codec.http.HttpVersion;
 import io.netty.handler.codec.http.multipart.DiskAttribute;
 import io.netty.handler.codec.http.multipart.DiskFileUpload;
-import org.scribe.builder.ServiceBuilder;
-import org.scribe.builder.api.DefaultApi10a;
-import org.scribe.model.OAuthRequest;
 
 import javax.xml.bind.DatatypeConverter;
-import java.io.OutputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.charset.Charset;
@@ -87,6 +81,12 @@ public class HttpRequestBuilder {
         DiskFileUpload.baseDirectory = null;
         DiskAttribute.deleteOnExitTemporaryFile = true;
         DiskAttribute.baseDirectory = null;
+    }
+
+    protected OAuth1RequestBuilder oauth1=new OAuth1RequestBuilder(this);
+
+    public OAuth1RequestBuilder oauth1() {
+        return oauth1;
     }
 
     public boolean isMultiPart() {
@@ -535,79 +535,6 @@ public class HttpRequestBuilder {
         return this;
     }
 
-    protected OAuth1Conf authService;
-
-    public boolean isOAuth() {
-        return authService != null;
-    }
-
-    public OAuth1Conf oAuth1Service() {
-        return authService;
-    }
-
-    public <A extends DefaultApi10a> HttpRequestBuilder oAuth1(Class<A> api, String apiKey, String secret) {
-        Optional<String> noURL = Optional.absent();
-        return oAuth1(api, apiKey, secret, noURL);
-    }
-
-    public <A extends DefaultApi10a> HttpRequestBuilder oAuth1(Class<A> api, String apiKey, String secret,
-                                                               Optional<String> callbackURL) {
-        Optional<String> noScope = Optional.absent();
-        return oAuth1(api, apiKey, secret, callbackURL, noScope);
-    }
-
-    public <A extends DefaultApi10a> HttpRequestBuilder oAuth1(Class<A> api, String apiKey, String secret,
-                                                               Optional<String> callbackURL,
-                                                               Optional<String> scope) {
-        Optional<OutputStream> noStream = Optional.absent();
-        return oAuth1(api, apiKey, secret, callbackURL, scope, noStream);
-    }
-
-    public <A extends DefaultApi10a> HttpRequestBuilder oAuth1(Class<A> api, String apiKey, String secret,
-                                                               Optional<String> callbackURL,
-                                                               Optional<String> scope,
-                                                               Optional<OutputStream> debugStream) {
-        ServiceBuilder builder = new ServiceBuilder();
-        builder.provider(api)
-                .apiKey(apiKey)
-                .apiSecret(secret).debug();
-        if (scope.isPresent()) {
-            builder.scope(scope.get());
-        }
-        if (callbackURL.isPresent()) {
-            builder.callback(callbackURL.get());
-        }
-        if (debugStream.isPresent()) {
-            builder.debugStream(debugStream.get());
-        }
-        try {
-            authService = new OAuth1Conf(api.newInstance(), apiKey, secret, callbackURL, scope, debugStream);
-        } catch (Throwable e) {
-            throw new OAuthException("Unable to create OAuth1 API instance", e);
-        }
-        return this;
-    }
-
-    public HttpRequestBuilder oAuth1Sign() {
-        if (authService == null) {
-            throw new OAuthException("OAuth 1 service is not configured. Call one of the oAuth methods first", null);
-        }
-        OAuthRequest request = authService.request();
-        for (String name : request.getHeaders().keySet()) {
-            String value = request.getHeaders().get(name);
-            header(name, value);
-        }
-        return this;
-    }
-
-    public HttpRequestBuilder oAuth1RequestToken(Function1<HTTPResponse> callback) {
-        oAuth1Sign()
-                .POST()
-                .url(authService.request().getCompleteUrl().replace("http://", "https://")).build(callback);
-        System.out.println(authService.request().getCompleteUrl());
-        return this;
-    }
-
     /**
      * Perform an HTTP request using the parameters configured in this builder.
      *
@@ -617,19 +544,15 @@ public class HttpRequestBuilder {
     public HttpRequestBuilder build(Function1<HTTPResponse> callback) {
         if (requestMethod == HttpMethod.GET) {
             getRequester().getOrDelete(this, callback);
-        } else {
-            if (requestMethod == HttpMethod.DELETE) {
-                getRequester().getOrDelete(this, callback);
-            } else {
-                if (requestMethod == HttpMethod.POST) {
-                    getRequester().postOrPut(this, callback);
+        } else if (requestMethod == HttpMethod.DELETE) {
+            getRequester().getOrDelete(this, callback);
+        } else if (requestMethod == HttpMethod.POST) {
+            getRequester().postOrPut(this, callback);
 //        } else if (requestMethod == HttpMethod.PUT) {
 //            getRequester().postOrPut(this, callback);
-                } else {
-                    throw new UnsupportedOperationException(String.format("HTTP method \"%s\" not supported",
-                            requestMethod));
-                }
-            }
+        } else {
+            throw new UnsupportedOperationException(String.format("HTTP method \"%s\" not supported",
+                    requestMethod));
         }
         return this;
     }
