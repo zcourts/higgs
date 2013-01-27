@@ -27,7 +27,7 @@ public class OAuth1RequestToken {
      * @return The URL users should be redirected to in order to authorize the request
      */
     public String authorizationUrl() {
-        return requestBuilder.authService.api().getAuthorizationUrl(new Token(oauthToken, oauthTokenSecret));
+        return requestBuilder.authService.api.getAuthorizationUrl(new Token(oauthToken, oauthTokenSecret));
     }
 
     public OAuth1RequestBuilder getRequestBuilder() {

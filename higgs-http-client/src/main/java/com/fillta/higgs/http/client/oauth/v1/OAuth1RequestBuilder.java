@@ -6,11 +6,17 @@ import com.fillta.higgs.http.client.HttpRequestBuilder;
 import com.fillta.higgs.http.client.oauth.OAuthException;
 import com.fillta.higgs.http.client.oauth.OAuthResponseException;
 import io.netty.handler.codec.http.HttpMethod;
+import io.netty.handler.codec.http.QueryStringDecoder;
 import org.scribe.builder.api.DefaultApi10a;
+import org.scribe.model.OAuthConfig;
 import org.scribe.model.OAuthConstants;
 import org.scribe.model.OAuthRequest;
 import org.scribe.model.SignatureType;
+import org.scribe.model.Token;
 import org.scribe.model.Verb;
+
+import java.util.List;
+import java.util.Map;
 
 import static org.scribe.model.SignatureType.Header;
 
@@ -18,7 +24,7 @@ import static org.scribe.model.SignatureType.Header;
  * @author Courtney Robinson <courtney@crlog.info>
  */
 public class OAuth1RequestBuilder {
-    protected OAuth1Conf authService;
+    protected OAuth10aServiceImplHiggs authService;
     protected HttpRequestBuilder requestBuilder;
     protected SignatureType signature = Header;
 
@@ -39,7 +45,14 @@ public class OAuth1RequestBuilder {
                                                                  String callbackURL,
                                                                  String scope) {
         try {
-            authService = new OAuth1Conf(api.newInstance(), apiKey, secret, callbackURL, scope);
+            authService = new OAuth10aServiceImplHiggs(api.newInstance(), new OAuthConfig(
+                    apiKey,
+                    secret,
+                    callbackURL,
+                    signature,
+                    scope,
+                    System.out
+            ));
         } catch (Throwable e) {
             throw new OAuthException("Unable to create OAuth1 API instance", e);
         }
@@ -49,14 +62,6 @@ public class OAuth1RequestBuilder {
     public OAuth1RequestBuilder signature(SignatureType type) {
         signature = type;
         return this;
-    }
-
-    public OAuthRequest getRequest(Verb verb, String url) {
-        if (authService == null) {
-            throw new OAuthException("OAuth 1 service is not configured. Call one of the oAuth methods first", null);
-        }
-        OAuthRequest request = authService.createRequest(verb, url);
-        return request;
     }
 
     public void configureHiggsRequest(OAuthRequest request) {
@@ -123,13 +128,9 @@ public class OAuth1RequestBuilder {
      * @return this builder
      */
     public OAuth1RequestBuilder requestToken(final Function1<OAuth1RequestToken> callback) {
-        String url = authService.api().getRequestTokenEndpoint();
-        OAuthRequest request = getRequest(authService.api().getRequestTokenVerb(), url);
-        request.addOAuthParameter(OAuthConstants.CALLBACK, authService.callback());
-        authService.addOAuthParams(request);
-        authService.appendSignature(signature, request);
+        OAuthRequest request = authService.getRequestTokenHiggs();
         configureHiggsRequest(request);
-        verbFromScribeToHiggs(authService.api().getRequestTokenVerb());
+        verbFromScribeToHiggs(authService.api.getRequestTokenVerb());
         requestBuilder.build(new Function1<HTTPResponse>() {
             public void apply(final HTTPResponse a) {
                 checkStatus(a);
@@ -153,18 +154,12 @@ public class OAuth1RequestBuilder {
      * @param callback invoked when an access token is successfully retrieved
      */
     public void accessToken(OAuth1RequestToken token, String verifier, final Function1<OAuth1AccessToken> callback) {
-        String url = authService.api().getAccessTokenEndpoint();
-        OAuthRequest request = getRequest(authService.api().getAccessTokenVerb(), url);
-
-        request.addOAuthParameter(OAuthConstants.TOKEN, token.getRequestToken());
-        request.addOAuthParameter(OAuthConstants.VERIFIER, verifier);
-
-        authService.addOAuthParams(request);
-        authService.appendSignature(signature, request);
-
+        OAuthRequest request = authService.getAccessTokenHiggs(
+                new Token(token.getRequestToken(), token.getOauthTokenSecret()),
+                verifier
+        );
         configureHiggsRequest(request);
-        verbFromScribeToHiggs(authService.api().getAccessTokenVerb());
-
+        verbFromScribeToHiggs(authService.api.getAccessTokenVerb());
         requestBuilder.build(new Function1<HTTPResponse>() {
             public void apply(HTTPResponse response) {
                 response.readAll(new Function1<String>() {
@@ -176,8 +171,8 @@ public class OAuth1RequestBuilder {
         });
     }
 
-    public HttpRequestBuilder signRequest(OAuth1AccessToken token) {
-        return signRequest(token.oAuthToken(), token.oAuthTokenSecret());
+    public HttpRequestBuilder signRequest(OAuth1AccessToken token, Function1<HTTPResponse> callback) {
+        return signRequest(token.oAuthToken(), token.oAuthTokenSecret(), callback);
     }
 
     /**
@@ -188,26 +183,41 @@ public class OAuth1RequestBuilder {
      * @param token       the access token to sign the request for...
      * @param tokenSecret the token secret for the given access token
      */
-    public HttpRequestBuilder signRequest(String token, String tokenSecret) {
+    public HttpRequestBuilder signRequest(String token, String tokenSecret, Function1<HTTPResponse> callback) {
         if (token == null) {
             throw new IllegalArgumentException("Access token cannot be null");
         }
-        OAuthRequest request = getRequest(verbFromHiggsToScribe(requestBuilder.getRequestMethod()),
+        OAuthRequest request = new OAuthRequest(verbFromHiggsToScribe(requestBuilder.getRequestMethod()),
                 requestBuilder.url().toExternalForm());
-//        new ServiceBuilder()
-//                .provider(authService.api())
-//                .apiKey(authService.apiKey)
-//                .apiSecret(authService.apiSecret)
-//                .build().signRequest(new Token(token, tokenSecret), request);
-
-        if (!token.isEmpty()) {
-            request.addOAuthParameter(OAuthConstants.TOKEN, token);
-            authService.addOAuthParams(request, tokenSecret);
-        } else {
-            authService.addOAuthParams(request);
+        Map<String, List<String>> params = new QueryStringDecoder(requestBuilder.url().toExternalForm()).parameters();
+        for (String name : params.keySet()) {
+            List<String> values = params.get(name);
+            String value = values == null || values.size() == 0 ? "" : values.get(0);
+            request.addQuerystringParameter(name, value);
         }
-        authService.appendSignature(signature, request);
+        //http://hueniverse.com/oauth/guide/authentication/
+        //only parameters included in a single-part 'application/x-www-form-urlencoded' are used in signing
+        //if it is a post or put request.
+        HttpMethod method = requestBuilder.getRequestMethod();
+        if (method.equals(HttpMethod.POST) || method.equals(HttpMethod.PUT)) {
+            Map<String, Object> form = requestBuilder.getFormParameters();
+            for (String name : form.keySet()) {
+                Object v = form.get(name);
+                String value = v == null ? "" : v.toString();
+                request.addBodyParameter(name, value);
+            }
+        }
+        authService.signRequest(new Token(token, tokenSecret), request);
+        System.out.println(request.send().getBody());
+//        if (!token.isEmpty()) {
+//            request.addOAuthParameter(OAuthConstants.TOKEN, token);
+//            authService.addOAuthParams(request, tokenSecret);
+//        } else {
+//            authService.addOAuthParams(request);
+//        }
+//        authService.appendSignature(signature, request);
         configureHiggsRequest(request);
+        requestBuilder.build(callback);
         return requestBuilder;
     }
 }
