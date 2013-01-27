@@ -19,4 +19,10 @@ public class OAuthResponseException extends RuntimeException {
     public HTTPResponse response() {
         return response;
     }
+
+    public String toString() {
+        return "OAuthResponseException{" +
+                "response=\n" + response +
+                '}';
+    }
 }
