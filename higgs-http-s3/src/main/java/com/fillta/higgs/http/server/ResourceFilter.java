@@ -6,7 +6,7 @@ package com.fillta.higgs.http.server;
  *
  * @author Courtney Robinson <courtney@crlog.info>
  */
-public interface ResourceFilter {
+public interface ResourceFilter extends Comparable<ResourceFilter>, Sortable {
 
     /**
      * check this request to see if it matches any registered endpoint

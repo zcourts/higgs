@@ -32,17 +32,17 @@ public class Transcriber extends DefaultResourceFilter {
     public Endpoint getEndpoint(HttpRequest request) {
         //apply any transcription
         for (Transcription transcription : transcriptions) {
-            if (transcription.matches(request.uri())) {
+            if (transcription.matches(request.getUri())) {
                 if (transcription.isReplaceWholeRequest()) {
-                    request.updateUri(transcription.getReplacementPath());
+                    request.setUri(transcription.getReplacementPath());
                 } else {
                     String newPath;
                     if (transcription.isReplaceFirstOccurrence()) {
-                        newPath = transcription.replaceFirstMatch(request.uri());
+                        newPath = transcription.replaceFirstMatch(request.getUri());
                     } else {
-                        newPath = transcription.replaceAllMatches(request.uri());
+                        newPath = transcription.replaceAllMatches(request.getUri());
                     }
-                    request.updateUri(newPath);
+                    request.setUri(newPath);
                 }
                 break;
             }
@@ -211,5 +211,10 @@ public class Transcriber extends DefaultResourceFilter {
             result = 31 * result + (replaceFirstOccurrence ? 1 : 0);
             return result;
         }
+    }
+
+    @Override
+    public int priority() {
+        return 10000;
     }
 }

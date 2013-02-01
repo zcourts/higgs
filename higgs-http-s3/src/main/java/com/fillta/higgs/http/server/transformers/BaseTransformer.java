@@ -5,22 +5,22 @@ import com.fillta.higgs.http.server.HttpResponse;
 import com.fillta.higgs.http.server.HttpServer;
 import com.fillta.higgs.http.server.ResponseTransformer;
 
-import java.util.Iterator;
-import java.util.Queue;
-import java.util.concurrent.LinkedBlockingDeque;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.concurrent.PriorityBlockingQueue;
 
 /**
  * @author Courtney Robinson <courtney@crlog.info>
  */
 public abstract class BaseTransformer implements ResponseTransformer {
     public HttpResponse tryNextTransformer(final HttpServer server, Object returns, HttpRequest request,
-                                           final Queue<ResponseTransformer> transformers) {
+                                           final PriorityBlockingQueue<ResponseTransformer> transformers) {
         //copy the transformer queue so removing an item doesn't remove it from the server
-        LinkedBlockingDeque<ResponseTransformer> copied = new LinkedBlockingDeque<>(transformers);
+        PriorityBlockingQueue<ResponseTransformer> copied = new PriorityBlockingQueue<>(transformers);
         copied.remove(this);
-        Iterator<ResponseTransformer> it = copied.descendingIterator();
-        while (it.hasNext()) {
-            ResponseTransformer transformer = it.next();
+        ArrayList<ResponseTransformer> arr = new ArrayList<>(copied);
+        Collections.sort(arr, copied.comparator());
+        for (ResponseTransformer transformer : arr) {
             if (transformer != this && transformer.canTransform(returns, request)) {
                 transformer.transform(server, returns, request, copied);
             }
@@ -28,4 +28,8 @@ public abstract class BaseTransformer implements ResponseTransformer {
         return null;
     }
 
+    @Override
+    public int compareTo(ResponseTransformer that) {
+        return this.priority() - that.priority();
+    }
 }

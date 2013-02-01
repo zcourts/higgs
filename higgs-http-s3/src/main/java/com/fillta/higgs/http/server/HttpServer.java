@@ -29,12 +29,14 @@ import org.yaml.snakeyaml.Yaml;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.net.SocketAddress;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.LinkedBlockingDeque;
+import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static io.netty.handler.codec.http.HttpHeaders.getHeader;
@@ -64,8 +66,20 @@ public class HttpServer<C extends ServerConfig> extends HiggsServer<String, Http
     protected Set<Endpoint> head = Collections.newSetFromMap(new ConcurrentHashMap<Endpoint, Boolean>());
     protected Set<Endpoint> options = Collections.newSetFromMap(new ConcurrentHashMap<Endpoint, Boolean>());
     protected final AtomicReference<ParamInjector> injector = new AtomicReference<>();
-    protected final LinkedBlockingDeque<ResponseTransformer> transformers = new LinkedBlockingDeque<>();
-    protected final LinkedBlockingDeque<ResourceFilter> filters = new LinkedBlockingDeque<>();
+    protected final PriorityBlockingQueue<ResponseTransformer> transformers =
+            new PriorityBlockingQueue<>(10, new Comparator<ResponseTransformer>() {
+                @Override
+                public int compare(ResponseTransformer o1, ResponseTransformer o2) {
+                    return o2.priority() < o1.priority() ? -1 : (o2.priority() == o1.priority() ? 0 : 1);
+                }
+            });
+    protected final PriorityBlockingQueue<ResourceFilter> filters =
+            new PriorityBlockingQueue<>(10, new Comparator<ResourceFilter>() {
+                @Override
+                public int compare(ResourceFilter o1, ResourceFilter o2) {
+                    return o2.priority() < o1.priority() ? -1 : (o2.priority() == o1.priority() ? 0 : 1);
+                }
+            });
     protected C config;
     public static final String SID = "HS3-SESSION-ID";
     protected HttpConverter converter = new HttpConverter(this);
@@ -140,6 +154,7 @@ public class HttpServer<C extends ServerConfig> extends HiggsServer<String, Http
         if (endpoint == null) {
             throw new NullPointerException("Endpoint is null. Cannot register a null endpoint");
         }
+        log.info(String.format("REGISTERED > %1$-20s", endpoint));
         boolean doListen = false;
         //allow one method to handle more than 1 request type
         if (endpoint.isGet()) {
@@ -229,10 +244,9 @@ public class HttpServer<C extends ServerConfig> extends HiggsServer<String, Http
 
     public String getTopic(final HttpRequest msg) {
         Endpoint endpoint = null;
-        //note the order of the iterator is guaranteed to be LIFO as expected
-        Iterator<ResourceFilter> it = filters.descendingIterator();
-        while (it.hasNext()) {
-            ResourceFilter filter = it.next();
+        ArrayList<ResourceFilter> arr = new ArrayList<>(filters);
+        Collections.sort(arr, filters.comparator());
+        for (ResourceFilter filter : arr) {
             endpoint = filter.getEndpoint(msg);
             if (endpoint != null) {
                 break;
@@ -294,7 +308,7 @@ public class HttpServer<C extends ServerConfig> extends HiggsServer<String, Http
      * @return
      */
     public <T extends ResponseTransformer> T getResponseTransformer(Class<T> rtc) {
-        Iterator<ResponseTransformer> it = transformers.descendingIterator();
+        Iterator<ResponseTransformer> it = transformers.iterator();
         while (it.hasNext()) {
             ResponseTransformer rt = it.next();
             if (rtc.isAssignableFrom(rt.getClass())) {
@@ -369,12 +383,11 @@ public class HttpServer<C extends ServerConfig> extends HiggsServer<String, Http
                                         Endpoint endpoint) {
         HttpResponse response = null;
         //note the order of the iterator is guaranteed to be LIFO as expected
-        Iterator<ResponseTransformer> it = transformers.descendingIterator();
-        while (it.hasNext()) {
-            ResponseTransformer transformer = it.next();
+        ArrayList<ResponseTransformer> arr = new ArrayList<>(transformers);
+        Collections.sort(arr, transformers.comparator());
+        for (ResponseTransformer transformer : arr) {
             if (transformer.canTransform(returns, a.message)) {
-                response = transformer.transform(this, returns, a.message,
-                        transformers);
+                response = transformer.transform(this, returns, a.message, transformers);
                 if (response != null) {
                     break;
                 }
@@ -428,27 +441,31 @@ public class HttpServer<C extends ServerConfig> extends HiggsServer<String, Http
     }
 
     public ChannelFuture respond(Channel channel, HttpResponse response) {
-        response.finalizeCustomHeaders();
         Object obj = getRequest(channel);
-        if (obj instanceof HttpRequest && config.log_requests) {
+        if (obj instanceof HttpRequest) {
             HttpRequest request = (HttpRequest) obj;
             //always send session cookie ID
             if (request.isNewSession()) {
                 response.setCookie(request.getSession());
             }
-            SocketAddress address = channel.remoteAddress();
-            //going with the Apache format
-            //194.116.215.20 - [14/Nov/2005:22:28:57 +0000] “GET / HTTP/1.0″ 200 16440
-            log.info(String.format("%s - [%s] \"%s %s %s\" %s %s",
-                    address,
-                    HttpHeaders.getDate(request, request.getCreatedAt().toDate()),
-                    request.method().name(),
-                    request.uri(),
-                    request.protocolVersion(),
-                    response.status().code(),
-                    getHeader(response, HttpHeaders.Names.CONTENT_LENGTH) == null ?
-                            response.data().writerIndex() : HttpHeaders.getContentLength(response)
-            ));
+            response.finalizeCustomHeaders();
+            if (config.log_requests) {
+                SocketAddress address = channel.remoteAddress();
+                //going with the Apache format
+                //194.116.215.20 - [14/Nov/2005:22:28:57 +0000] “GET / HTTP/1.0″ 200 16440
+                log.info(String.format("%s - [%s] \"%s %s %s\" %s %s",
+                        address,
+                        HttpHeaders.getDate(request, request.getCreatedAt().toDate()),
+                        request.getMethod().name(),
+                        request.getUri(),
+                        request.getProtocolVersion(),
+                        response.getStatus().code(),
+                        getHeader(response, HttpHeaders.Names.CONTENT_LENGTH) == null ?
+                                response.data().writerIndex() : HttpHeaders.getContentLength(response)
+                ));
+            }
+        } else {
+            response.finalizeCustomHeaders();
         }
         return super.respond(channel, response);
     }

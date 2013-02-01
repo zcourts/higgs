@@ -1,9 +1,9 @@
 package com.fillta.higgs.http.server.files;
 
+import com.fillta.higgs.http.server.DefaultResourceFilter;
 import com.fillta.higgs.http.server.Endpoint;
 import com.fillta.higgs.http.server.HttpRequest;
 import com.fillta.higgs.http.server.HttpServer;
-import com.fillta.higgs.http.server.ResourceFilter;
 import io.netty.handler.codec.http.HttpMethod;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -11,6 +11,7 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLDecoder;
 import java.nio.file.DirectoryStream;
@@ -23,27 +24,56 @@ import java.util.regex.Pattern;
  *
  * @author Courtney Robinson <courtney@crlog.info>
  */
-public class StaticResourceFilter implements ResourceFilter {
+public class StaticResourceFilter extends DefaultResourceFilter {
     private static final Pattern INSECURE_URI = Pattern.compile(".*[<>&\"].*");
     public static final String HTTP_DATE_FORMAT = "EEE, dd MMM yyyy HH:mm:ss zzz";
     public static final String HTTP_DATE_GMT_TIMEZONE = "GMT";
     public static final int HTTP_CACHE_SECONDS = 60;
+    private File base;
+    private boolean canServe = true;
     private HttpServer server;
     private Logger log = LoggerFactory.getLogger(getClass());
 
     public StaticResourceFilter(final HttpServer server) {
+        super(server);
         this.server = server;
+        URL uri = Thread.currentThread().getContextClassLoader().getResource(
+                server.getConfig().files.public_directory
+        );
+        String msg = "Public files directory that is configured does not exist. Will not serve static files";
+        if (uri != null) {
+            try {
+                base = new File(uri.toURI());
+                if (!base.exists()) {
+                    canServe = false;
+                    log.warn(msg);
+                }
+            } catch (URISyntaxException e) {
+                log.info("", e);
+            }
+        }
+        if (base == null) {
+            base = new File(server.getConfig().files.public_directory);
+            if (!base.exists()) {
+                canServe = false;
+                log.warn(msg);
+            }
+        }
     }
 
     @Override
     public Endpoint getEndpoint(final HttpRequest request) {
-        if (!request.method().name().equalsIgnoreCase(HttpMethod.GET.name())) {
+        //three main conditions need to be met to serve a static file
+        //is this a GET request?
+        //does the base directory exist?
+        //is the URL a subdirectory of the base?
+        if (!canServe || !request.getMethod().name().equalsIgnoreCase(HttpMethod.GET.name())) {
             return null;
         }
         String base_dir = server.getConfig().files.public_directory;
-        String uri = request.uri();
+        String uri = request.getUri();
         //remove query string from path
-        if (uri.indexOf("?") != -1) {
+        if (uri.contains("?")) {
             uri = uri.substring(0, uri.indexOf("?"));
         }
         if (uri.equals("/") && server.getConfig().files.serve_index_file) {
@@ -85,19 +115,14 @@ public class StaticResourceFilter implements ResourceFilter {
         }
         //if we couldn't load it from the class path then try to get it from disk
         if (file == null) {
-            File base = new File(base_dir);
-            if (!base.exists()) {
-                log.warn("Public files directory that is configured does not exist. Will not serve static files");
-                return null;
-            }
             file = new File(uri);
-            if (file.isHidden() || !file.exists()) {
+            if (!file.isDirectory() && (file.isHidden() || !file.exists())) {
                 return null;
             }
-            //if its not a sub directory tell them no!
-            if (!isSubDirectory(base, file)) {
-                return null;
-            }
+        }
+        //if its not a sub directory tell them no!
+        if (!isSubDirectory(base, file)) {
+            return null;
         }
         if (file.isDirectory()) {
             //get list of files, if index/default found then send it instead of listing directory
@@ -225,5 +250,10 @@ public class StaticResourceFilter implements ResourceFilter {
             return null;
         }
         return uri;
+    }
+
+    @Override
+    public int priority() {
+        return 0;
     }
 }

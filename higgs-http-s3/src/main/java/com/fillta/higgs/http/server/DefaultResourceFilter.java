@@ -6,6 +6,7 @@ import java.util.Set;
 
 public class DefaultResourceFilter implements ResourceFilter {
     private final HttpServer server;
+    private final long id = Double.doubleToLongBits(Math.random());
 
     public DefaultResourceFilter(final HttpServer server) {
         this.server = server;
@@ -69,5 +70,33 @@ public class DefaultResourceFilter implements ResourceFilter {
             }
         }
         return null;
+    }
+
+    @Override
+    public int compareTo(ResourceFilter that) {
+        return this.priority() < that.priority() ? -1 :
+                (this.priority() == that.priority() ? 0 : 1);
+    }
+
+    @Override
+    public int priority() {
+        return 1; //static resource priority is 0 so this is used before it
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (!(o instanceof DefaultResourceFilter)) {
+            return false;
+        }
+        DefaultResourceFilter that = (DefaultResourceFilter) o;
+        if (Double.compare(that.id, id) != 0) {
+            return false;
+        }
+        return true;
+    }
+
+    @Override
+    public int hashCode() {
+        return (int) (id ^ (id >>> 32));
     }
 }

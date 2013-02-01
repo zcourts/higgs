@@ -25,8 +25,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Queue;
 import java.util.Set;
+import java.util.concurrent.PriorityBlockingQueue;
 
 /**
  * See {@link Path#template()} for a list of types that will be injected by default
@@ -66,20 +66,20 @@ public class ThymeleafTransformer extends BaseTransformer {
 
     @Override
     public HttpResponse transform(final HttpServer server, Object returns, final HttpRequest request,
-                                  final Queue<ResponseTransformer> registeredTransformers) {
+                                  final PriorityBlockingQueue<ResponseTransformer> registeredTransformers) {
         WebContext ctx = new WebContext();
         return transform(ctx, server, returns, request, registeredTransformers,
                 request.getEndpoint().getTemplate());
     }
 
     public HttpResponse transform(WebContext ctx, HttpServer server, Object returns, HttpRequest request,
-                                  final Queue<ResponseTransformer> registeredTransformers,
+                                  final PriorityBlockingQueue<ResponseTransformer> registeredTransformers,
                                   String template) {
         return transform(ctx, server, returns, request, registeredTransformers, template, null);
     }
 
     public HttpResponse transform(WebContext ctx, HttpServer server, Object returns, HttpRequest request,
-                                  final Queue<ResponseTransformer> registeredTransformers,
+                                  final PriorityBlockingQueue<ResponseTransformer> registeredTransformers,
                                   String template, HttpResponseStatus status) {
         if (returns == null) {
             //if returns==null then the resource method returned void so return No Content
@@ -107,7 +107,7 @@ public class ThymeleafTransformer extends BaseTransformer {
             }
             if (data != null) {
                 HttpResponse response = new HttpResponse(
-                        request == null ? HttpVersion.HTTP_1_1 : request.protocolVersion(),
+                        request == null ? HttpVersion.HTTP_1_1 : request.getProtocolVersion(),
                         status == null ? HttpStatus.OK : status,
                         Unpooled.wrappedBuffer(data));
                 HttpHeaders.setContentLength(response, data.length);
@@ -169,5 +169,10 @@ public class ThymeleafTransformer extends BaseTransformer {
      */
     public TemplateEngine getTemplateEngine() {
         return tl.getTemplateEngine();
+    }
+
+    @Override
+    public int priority() {
+        return 1;
     }
 }

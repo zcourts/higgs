@@ -17,7 +17,7 @@ import io.netty.handler.codec.http.HttpResponseStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Queue;
+import java.util.concurrent.PriorityBlockingQueue;
 
 /**
  * @author Courtney Robinson <courtney@crlog.info>
@@ -40,8 +40,8 @@ public class JsonTransformer extends BaseTransformer {
     @Override
     public boolean canTransform(Object response, HttpRequest request) {
         for (MediaType type : request.getMediaTypes()) {
-            if (type.isCompatible(MediaType.TEXT_PLAIN_TYPE) ||
-                    type.isCompatible(MediaType.APPLICATION_JSON_TYPE)) {
+            if (type.isCompatible(MediaType.APPLICATION_JSON_TYPE)
+                    || type.isCompatible(MediaType.TEXT_PLAIN_TYPE)) {
                 return true;
             }
         }
@@ -50,12 +50,12 @@ public class JsonTransformer extends BaseTransformer {
 
     @Override
     public HttpResponse transform(HttpServer server, final Object returns, HttpRequest request,
-                                  Queue<ResponseTransformer> registeredTransformers) {
+                                  PriorityBlockingQueue<ResponseTransformer> registeredTransformers) {
         return transform(server, returns, request, registeredTransformers, null);
     }
 
     public HttpResponse transform(HttpServer server, Object returns, HttpRequest request,
-                                  Queue<ResponseTransformer> transformers,
+                                  PriorityBlockingQueue<ResponseTransformer> transformers,
                                   HttpResponseStatus status) {
         byte[] data;
         if (returns == null) {
@@ -70,7 +70,7 @@ public class JsonTransformer extends BaseTransformer {
             }
         }
         if (data != null) {
-            HttpResponse response = new HttpResponse(request.protocolVersion(),
+            HttpResponse response = new HttpResponse(request.getProtocolVersion(),
                     status == null ? HttpStatus.OK : status,
                     Unpooled.wrappedBuffer(data));
             HttpHeaders.setContentLength(response, data.length);
@@ -78,5 +78,12 @@ public class JsonTransformer extends BaseTransformer {
         } else {
             return tryNextTransformer(server, returns, request, transformers);
         }
+    }
+
+    @Override
+    public int priority() {
+        //goes after the thymeleaf transformer so that wild card requests are assumed to handle HTML if
+        //the end  point as a template
+        return 0;
     }
 }
