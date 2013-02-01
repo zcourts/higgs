@@ -54,7 +54,7 @@ public class ProtocolSniffer extends ChannelInboundByteHandlerAdapter {
             } else {
                 boolean foundProtocol = false;
                 if (log.isDebugEnabled()) {
-                    log.debug(new String(in.toString(Charset.forName("utf-8"))));
+                    log.debug(in.toString(Charset.forName("utf-8")));
                 }
                 for (ProtocolDetector fn : detectors) {
                     if (in.readableBytes() < fn.bytesRequired()) {
@@ -65,7 +65,7 @@ public class ProtocolSniffer extends ChannelInboundByteHandlerAdapter {
                     if (foundProtocol) {
                         boolean removeSelf = fn.setupPipeline(ctx);
                         if (removeSelf) {
-                            ctx.pipeline().remove(this);
+                            ctx.pipeline().removeAndForward(this);
                         }
                         break;
                     }
@@ -85,18 +85,12 @@ public class ProtocolSniffer extends ChannelInboundByteHandlerAdapter {
     }
 
     private boolean isSsl(ByteBuf buf) {
-        if (detectSsl) {
-            return SslHandler.isEncrypted(buf);
-        }
-        return false;
+        return detectSsl && SslHandler.isEncrypted(buf);
     }
 
     private boolean isGzip(int magic1, int magic2) {
-        if (detectGzip) {
-            //see http://www.gzip.org/zlib/rfc-gzip.html#header-trailer for the magic number definitions
-            return magic1 == 31 && magic2 == 139;
-        }
-        return false;
+        //see http://www.gzip.org/zlib/rfc-gzip.html#header-trailer for the magic number definitions
+        return detectGzip && magic1 == 31 && magic2 == 139;
     }
 
     private void enableSsl(ChannelHandlerContext ctx) {
@@ -106,7 +100,7 @@ public class ProtocolSniffer extends ChannelInboundByteHandlerAdapter {
 
         p.addLast("ssl", new SslHandler(engine));
         p.addLast("unificationA", new ProtocolSniffer(detectors, events, false, detectGzip));
-        p.remove(this);
+        p.removeAndForward(this);
     }
 
     private void enableGzip(ChannelHandlerContext ctx) {
@@ -114,6 +108,6 @@ public class ProtocolSniffer extends ChannelInboundByteHandlerAdapter {
         p.addLast("gzipdeflater", ZlibCodecFactory.newZlibEncoder(ZlibWrapper.GZIP));
         p.addLast("gzipinflater", ZlibCodecFactory.newZlibDecoder(ZlibWrapper.GZIP));
         p.addLast("unificationB", new ProtocolSniffer(detectors, events, detectSsl, false));
-        p.remove(this);
+        p.removeAndForward(this);
     }
 }
