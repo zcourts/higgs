@@ -14,6 +14,7 @@ import org.scribe.model.SignatureType;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.util.Date;
 
 public class OAuth1Demo {
     protected OAuth1Demo() {
@@ -45,17 +46,17 @@ public class OAuth1Demo {
             System.out.println("Enter a non-empty verifier");
         }
         builder.oauth1().accessToken(requestToken[0], verifier, new Function1<OAuth1AccessToken>() {
-            public void apply(OAuth1AccessToken a) {
-                System.out.println("Access token:\n" + a);
+            public void apply(OAuth1AccessToken accessToken) {
+                System.out.println("Access token:\n" + accessToken);
                 builder
-                        .GET()
-                        .url("https://api.twitter.com/1.1/statuses/home_timeline.json")
-//                        .form("status", "Testing the API " + new Date())
+                        .POST()
+                        .url("https://api.twitter.com/1.1/statuses/update.json")
+                        .form("status", "Testing the API " + new Date())
                                 //switch to OAuth Builder ONLY AFTER YOU'VE FINISHED ADDING PARAMS TO THE REQUEST
                                 //all added params will be included in the signing process
                         .oauth1()
                         .signature(SignatureType.Header) //optional, can be header (default) or query string
-                        .signRequest(a, new Function1<HTTPResponse>() {
+                        .signRequest(accessToken, new Function1<HTTPResponse>() {
                             public void apply(HTTPResponse a) {
                                 a.readAll(new Function1<String>() {
                                     public void apply(String response) {

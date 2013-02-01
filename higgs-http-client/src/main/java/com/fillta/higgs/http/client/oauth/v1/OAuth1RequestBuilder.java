@@ -14,6 +14,8 @@ import org.scribe.model.OAuthRequest;
 import org.scribe.model.SignatureType;
 import org.scribe.model.Token;
 import org.scribe.model.Verb;
+import org.scribe.model.Verifier;
+import org.scribe.oauth.OAuth10aServiceImpl;
 
 import java.util.List;
 import java.util.Map;
@@ -24,7 +26,7 @@ import static org.scribe.model.SignatureType.Header;
  * @author Courtney Robinson <courtney@crlog.info>
  */
 public class OAuth1RequestBuilder {
-    protected OAuth10aServiceImplHiggs authService;
+    protected OAuth10aServiceImpl authService;
     protected HttpRequestBuilder requestBuilder;
     protected SignatureType signature = Header;
 
@@ -45,7 +47,7 @@ public class OAuth1RequestBuilder {
                                                                  String callbackURL,
                                                                  String scope) {
         try {
-            authService = new OAuth10aServiceImplHiggs(api.newInstance(), new OAuthConfig(
+            authService = new OAuth10aServiceImpl(api.newInstance(), new OAuthConfig(
                     apiKey,
                     secret,
                     callbackURL,
@@ -128,21 +130,23 @@ public class OAuth1RequestBuilder {
      * @return this builder
      */
     public OAuth1RequestBuilder requestToken(final Function1<OAuth1RequestToken> callback) {
-        OAuthRequest request = authService.getRequestTokenHiggs();
-        configureHiggsRequest(request);
-        verbFromScribeToHiggs(authService.api.getRequestTokenVerb());
-        requestBuilder.build(new Function1<HTTPResponse>() {
-            public void apply(final HTTPResponse a) {
-                checkStatus(a);
-                a.readAll(new Function1<String>() {
-                    public void apply(String a) {
-                        if (a != null) {
-                            callback.apply(new OAuth1RequestToken(OAuth1RequestBuilder.this, a));
-                        }
-                    }
-                });
-            }
-        });
+//        OAuthRequest request = authService.getRequestTokenHiggs();
+//        configureHiggsRequest(request);
+//        verbFromScribeToHiggs(authService.api.getRequestTokenVerb());
+//        requestBuilder.build(new Function1<HTTPResponse>() {
+//            public void apply(final HTTPResponse a) {
+//                checkStatus(a);
+//                a.readAll(new Function1<String>() {
+//                    public void apply(String a) {
+//                        if (a != null) {
+//                            callback.apply(new OAuth1RequestToken(OAuth1RequestBuilder.this, a));
+//                        }
+//                    }
+//                });
+//            }
+//        });
+         Token token = authService.getRequestToken();
+        callback.apply(new OAuth1RequestToken(this, token));
         return this;
     }
 
@@ -154,21 +158,27 @@ public class OAuth1RequestBuilder {
      * @param callback invoked when an access token is successfully retrieved
      */
     public void accessToken(OAuth1RequestToken token, String verifier, final Function1<OAuth1AccessToken> callback) {
-        OAuthRequest request = authService.getAccessTokenHiggs(
-                new Token(token.getRequestToken(), token.getOauthTokenSecret()),
-                verifier
-        );
-        configureHiggsRequest(request);
-        verbFromScribeToHiggs(authService.api.getAccessTokenVerb());
-        requestBuilder.build(new Function1<HTTPResponse>() {
-            public void apply(HTTPResponse response) {
-                response.readAll(new Function1<String>() {
-                    public void apply(String a) {
-                        callback.apply(new OAuth1AccessToken(OAuth1RequestBuilder.this, a));
-                    }
-                });
-            }
-        });
+//        OAuthRequest request = authService.getAccessTokenHiggs(
+//                new Token(token.getRequestToken(), token.getOauthTokenSecret()),
+//                verifier
+//        );
+//        configureHiggsRequest(request);
+//        verbFromScribeToHiggs(authService.api.getAccessTokenVerb());
+//        requestBuilder.build(new Function1<HTTPResponse>() {
+//            public void apply(HTTPResponse response) {
+//                response.readAll(new Function1<String>() {
+//                    public void apply(String a) {
+//                        callback.apply(new OAuth1AccessToken(OAuth1RequestBuilder.this, a));
+//                    }
+//                });
+//            }
+//        });
+        callback.apply(new OAuth1AccessToken(this,
+                authService.getAccessToken(
+                        new Token(token.getRequestToken(), token.getOauthTokenSecret()),
+                        new Verifier(verifier)
+                )
+        ));
     }
 
     public HttpRequestBuilder signRequest(OAuth1AccessToken token, Function1<HTTPResponse> callback) {

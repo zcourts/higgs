@@ -83,7 +83,7 @@ public class HttpRequestBuilder {
         DiskAttribute.baseDirectory = null;
     }
 
-    protected OAuth1RequestBuilder oauth1=new OAuth1RequestBuilder(this);
+    protected OAuth1RequestBuilder oauth1 = new OAuth1RequestBuilder(this);
 
     public OAuth1RequestBuilder oauth1() {
         return oauth1;
