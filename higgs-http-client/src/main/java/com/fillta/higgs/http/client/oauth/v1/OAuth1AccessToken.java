@@ -1,6 +1,7 @@
 package com.fillta.higgs.http.client.oauth.v1;
 
 import io.netty.handler.codec.http.QueryStringDecoder;
+import org.scribe.model.Token;
 
 import java.util.List;
 import java.util.Map;
@@ -15,6 +16,10 @@ public class OAuth1AccessToken {
     public OAuth1AccessToken(OAuth1RequestBuilder oAuth1RequestBuilder, String response) {
         requestBuilder = oAuth1RequestBuilder;
         params = new QueryStringDecoder("?" + response).parameters();
+    }
+
+    public OAuth1AccessToken(OAuth1RequestBuilder builder, Token token) {
+        this(builder, token.getRawResponse());
     }
 
     /**

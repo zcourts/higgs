@@ -23,11 +23,16 @@ public class OAuth1RequestToken {
         oauthCallbackConfirmed = Boolean.parseBoolean(params.get("oauth_callback_confirmed").get(0));
     }
 
+    public OAuth1RequestToken(OAuth1RequestBuilder builder, Token token) {
+        this(builder, token.getRawResponse());
+    }
+
     /**
      * @return The URL users should be redirected to in order to authorize the request
      */
     public String authorizationUrl() {
-        return requestBuilder.authService.api.getAuthorizationUrl(new Token(oauthToken, oauthTokenSecret));
+//        return requestBuilder.authService.api.getAuthorizationUrl(new Token(oauthToken, oauthTokenSecret));
+        return requestBuilder.authService.getAuthorizationUrl(new Token(oauthToken, oauthTokenSecret));
     }
 
     public OAuth1RequestBuilder getRequestBuilder() {
