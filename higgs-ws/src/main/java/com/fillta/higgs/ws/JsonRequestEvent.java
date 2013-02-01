@@ -44,4 +44,8 @@ public interface JsonRequestEvent {
     Object getMessage();
 
     void setMessage(Object o);
+
+    void setRawString(String rawString);
+
+    String getRawString();
 }
