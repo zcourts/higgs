@@ -184,6 +184,10 @@ public abstract class EventProcessor<T, OM, IM, SM> extends ChannelInboundMessag
                     l.triggered(context, ex);
                 }
             }
+        } else {
+            if (ex.isPresent()) {
+                log.warn("Unhandled exception and no exception handlers registered", ex.get());
+            }
         }
     }
 
