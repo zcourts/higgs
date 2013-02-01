@@ -24,7 +24,7 @@ public class HTTPResponse {
     protected boolean chunked;
     protected HttpVersion protocolVersion;
     protected HttpResponseStatus status;
-    protected Map<String, List<String>> headers = new HashMap();
+    protected Map<String, List<String>> headers = new HashMap<>();
     protected ByteBuf buffer = Unpooled.buffer();
     protected ByteBufInputStream data = new ByteBufInputStream(buffer);
     protected boolean streamEnded;

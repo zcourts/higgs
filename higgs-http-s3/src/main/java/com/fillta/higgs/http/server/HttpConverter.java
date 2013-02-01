@@ -67,13 +67,18 @@ public class HttpConverter {
         if (msg instanceof HttpRequest) {
             //since we have the request see if we had one on the channel already, if not init session
             HttpRequest request = requestAttribute.get();
-            if (request == null) {
-                //associate a request with the channel if not already done
-                request = initHiggsRequest((HttpRequest) msg);
-                requestAttribute.set(request);
+            if (request != null) {
+                //multiple requests can be made via the same channel. Chrome for e.g.
+                //keeps a socket open and sends multiple requests on it, so always remove previously
+                //associated request
+                requestAttribute.set(null);
+                request = null;
             }
-            if (!HttpMethod.POST.name().equalsIgnoreCase(request.method().name()) &&
-                    !HttpMethod.PUT.name().equalsIgnoreCase(request.method().name())) {
+            //associate a request with the channel if not already done
+            request = initHiggsRequest((HttpRequest) msg);
+            requestAttribute.set(request);
+            if (!HttpMethod.POST.name().equalsIgnoreCase(request.getMethod().name()) &&
+                    !HttpMethod.PUT.name().equalsIgnoreCase(request.getMethod().name())) {
                 //only post and put requests  are allowed to send form data so everything else just returns
                 return request;
             } else {
@@ -107,9 +112,11 @@ public class HttpConverter {
             }
         }
         if (msg instanceof HttpContent) {
-            if (!HttpMethod.POST.name().equalsIgnoreCase(requestAttribute.get().method().name()) &&
-                    !HttpMethod.PUT.name().equalsIgnoreCase(requestAttribute.get().method().name())) {
-                requestAttribute.set(null);
+            if (requestAttribute.get() == null) {
+                return null;
+            }
+            if (!HttpMethod.POST.name().equalsIgnoreCase(requestAttribute.get().getMethod().name()) &&
+                    !HttpMethod.PUT.name().equalsIgnoreCase(requestAttribute.get().getMethod().name())) {
                 //only post and put requests have content
                 return null;
             } else {
@@ -177,7 +184,9 @@ public class HttpConverter {
         //custom initialization that cannot be done in constructor because data is not known at the time
         request.init();
         //if the user has no session available then set one
-        if (!request.hasSessionID()) {
+        if (!request.hasSessionID()
+                //if session cookie exists but the server was restarted or doesn't have the session for some reason
+                || server.getSession(request.getSessionId()) == null) {
             SecureRandom random = new SecureRandom();
             String id = new BigInteger(130, random).toString(32);
             HttpCookie session = new HttpCookie(HttpServer.SID, id);
