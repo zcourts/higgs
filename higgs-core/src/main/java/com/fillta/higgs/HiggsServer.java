@@ -8,6 +8,7 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.EventLoopGroup;
+import io.netty.channel.ServerChannel;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
@@ -127,7 +128,7 @@ public abstract class HiggsServer<T, OM, IM, SM> extends EventProcessor<T, OM, I
         return new NioEventLoopGroup();
     }
 
-    public Class<? extends Channel> channelClass() {
+    public Class<? extends ServerChannel> channelClass() {
         return NioServerSocketChannel.class;
     }
 }
