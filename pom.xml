@@ -53,11 +53,6 @@
             <artifactId>netty</artifactId>
             <version>4.0.0.Beta1-SNAPSHOT</version>
         </dependency>
-        <dependency>
-            <groupId>io.netty</groupId>
-            <artifactId>netty-metrics-yammer</artifactId>
-            <version>4.0.0.Beta1-SNAPSHOT</version>
-        </dependency>
         <!-- Test -->
         <dependency>
             <groupId>junit</groupId>

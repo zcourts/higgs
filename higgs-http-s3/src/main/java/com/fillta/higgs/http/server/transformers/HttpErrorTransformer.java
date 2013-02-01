@@ -19,8 +19,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Queue;
-import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.PriorityBlockingQueue;
 
 /**
  * @author Courtney Robinson <courtney@crlog.info>
@@ -68,7 +67,7 @@ public class HttpErrorTransformer extends BaseTransformer {
     }
 
     public HttpResponse transform(HttpServer ignore, Object response, HttpRequest request,
-                                  Queue<ResponseTransformer> registeredTransformers) {
+                                  PriorityBlockingQueue<ResponseTransformer> registeredTransformers) {
         if (response instanceof Throwable) {
             return buildErrorResponse((Throwable) response, request);
         }
@@ -106,7 +105,7 @@ public class HttpErrorTransformer extends BaseTransformer {
 
     protected HttpResponse returnGenericError(WebContext ctx, String template, HttpResponseStatus status) {
         return thymeleaf.transform(ctx, server, "", null,
-                new LinkedBlockingQueue<ResponseTransformer>(), template,
+                new PriorityBlockingQueue<ResponseTransformer>(), template,
                 status == null ? HttpStatus.INTERNAL_SERVER_ERROR : status);
     }
 
@@ -122,10 +121,10 @@ public class HttpErrorTransformer extends BaseTransformer {
         }
         if (thymeleafMediaType) {
             return thymeleaf.transform(ctx, server, "", request,
-                    new LinkedBlockingQueue<ResponseTransformer>(), template);
+                    new PriorityBlockingQueue<ResponseTransformer>(), template);
         } else {
             return json.transform(server, null, request,
-                    new LinkedBlockingQueue<ResponseTransformer>());
+                    new PriorityBlockingQueue<ResponseTransformer>());
         }
     }
 
@@ -151,10 +150,10 @@ public class HttpErrorTransformer extends BaseTransformer {
             //pass an empty string for response if null. don't want thymeleaf transformer to throw
             //an exception, we're probably already in the exceptionCaught method for Netty
             return thymeleaf.transform(ctx, server, e.getResponse() == null ? "" : e.getResponse(), e.getRequest(),
-                    new LinkedBlockingQueue<ResponseTransformer>(), template, status);
+                    new PriorityBlockingQueue<ResponseTransformer>(), template, status);
         } else {
             return json.transform(server, e.getResponse(), e.getRequest(),
-                    new LinkedBlockingQueue<ResponseTransformer>(), status);
+                    new PriorityBlockingQueue<ResponseTransformer>(), status);
         }
     }
 
@@ -166,5 +165,10 @@ public class HttpErrorTransformer extends BaseTransformer {
         if (template != null) {
             templates.put(status, template);
         }
+    }
+
+    @Override
+    public int priority() {
+        return -1;
     }
 }
