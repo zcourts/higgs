@@ -115,7 +115,7 @@ public class WebSocketServer<R extends JsonRequestEvent> extends RPCServer<JsonR
     public final HttpServer HTTP;
     protected final WebSocketInterceptor interceptor;
     private final FlashPolicyFile policy;
-    private Class<R> requestClass = (Class<R>) JsonRequest.class;
+    protected Class<R> requestClass = (Class<R>) JsonRequest.class;
 
     /**
      * Creates a web socket server whose only path is set to /
@@ -241,7 +241,10 @@ public class WebSocketServer<R extends JsonRequestEvent> extends RPCServer<JsonR
     @Override
     public R deserialize(final ChannelHandlerContext ctx, final TextWebSocketFrame msg) {
         try {
-            return mapper.readValue(msg.text(), requestClass);
+            String str = msg.text();
+            R req = mapper.readValue(str, requestClass);
+            req.setRawString(str);
+            return req;
         } catch (IOException e) {
             //throw error so that it propagates and the error handler notifies the client
             throw new WebSocketException("Unable to de-serialize message", e);

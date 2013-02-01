@@ -18,6 +18,8 @@ import java.io.IOException;
 public class JsonRequest implements JsonRequestEvent {
     @JsonIgnore
     protected final Logger log = LoggerFactory.getLogger(getClass());
+    @JsonIgnore
+    protected String rawString;
     @JsonProperty
     protected JsonNode message;
     @JsonProperty
@@ -31,6 +33,7 @@ public class JsonRequest implements JsonRequestEvent {
     }
 
     public JsonRequest() {
+        this("", null);
     }
 
     public String getTopic() {
@@ -57,6 +60,14 @@ public class JsonRequest implements JsonRequestEvent {
         message = data;
     }
 
+    public String getRawString() {
+        return rawString;
+    }
+
+    public void setRawString(String rawString) {
+        this.rawString = rawString;
+    }
+
     public String getCallback() {
         return callback;
     }
@@ -78,7 +89,11 @@ public class JsonRequest implements JsonRequestEvent {
             return null;
         }
         try {
-            return WebSocketServer.mapper.readValue(message.traverse(), klass);
+            if (rawString == null) {
+                return WebSocketServer.mapper.readValue(message.traverse(), klass);
+            } else {
+                return WebSocketServer.mapper.readValue(rawString, klass);
+            }
         } catch (IOException e) {
             log.warn(String.format("Unable to decode message to type. Type : %s\n Message string : %s",
                     klass.getName(), message.toString()), e);
