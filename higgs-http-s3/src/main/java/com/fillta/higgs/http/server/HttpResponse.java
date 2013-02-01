@@ -45,7 +45,7 @@ public class HttpResponse extends DefaultFullHttpResponse {
      * @param message
      */
     public HttpResponse(final HttpRequest message) {
-        this(message == null ? HttpVersion.HTTP_1_1 : message.protocolVersion(), HttpStatus.OK);
+        this(message == null ? HttpVersion.HTTP_1_1 : message.getProtocolVersion(), HttpStatus.OK);
         if (message != null) {
             String conn = message.headers().get(HttpHeaders.Names.CONNECTION);
             if (conn == null) {

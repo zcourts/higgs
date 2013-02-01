@@ -40,8 +40,8 @@ public class HttpMessageConverter {
         resLength.compareAndSet(null, -1L);
         if (msg instanceof HttpResponse) {
             HttpResponse res = (HttpResponse) msg;
-            response.setStatus(res.status());
-            response.setProtocolVersion(res.protocolVersion());
+            response.setStatus(res.getStatus());
+            response.setProtocolVersion(res.getProtocolVersion());
             response.setChunkedTransferEncoding(HttpHeaders.isTransferEncodingChunked(res));
             if (!res.headers().isEmpty()) {
                 for (String name : res.headers().names()) {

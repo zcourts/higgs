@@ -62,7 +62,7 @@ public class HttpRequest extends DefaultFullHttpRequest {
      * @param request
      */
     public HttpRequest(io.netty.handler.codec.http.HttpRequest request) {
-        this(request.protocolVersion(), request.method(), request.uri());
+        this(request.getProtocolVersion(), request.getMethod(), request.getUri());
         List<Field> fields = reflection.getAllFields(new ArrayList<Field>(), DefaultHttpRequest.class, 10);
         for (Field field : fields) {
             try {
@@ -89,8 +89,15 @@ public class HttpRequest extends DefaultFullHttpRequest {
                 cookies.put(c.getName(), new HttpCookie(c));
             }
         }
-        QueryStringDecoder decoderQuery = new QueryStringDecoder(uri());
+        QueryStringDecoder decoderQuery = new QueryStringDecoder(getUri());
         queryParams.putAll(decoderQuery.parameters());
+        initSession();
+    }
+
+    public void initSession() {
+        if (session == null) {
+            session = getCookie(HttpServer.SID);
+        }
     }
 
     public List<MediaType> getMediaTypes() {
@@ -106,27 +113,27 @@ public class HttpRequest extends DefaultFullHttpRequest {
     }
 
     public boolean isGet() {
-        return HttpMethod.GET.name().equalsIgnoreCase(method().name());
+        return HttpMethod.GET.name().equalsIgnoreCase(getMethod().name());
     }
 
     public boolean isPost() {
-        return HttpMethod.POST.name().equalsIgnoreCase(method().name());
+        return HttpMethod.POST.name().equalsIgnoreCase(getMethod().name());
     }
 
     public boolean isPut() {
-        return HttpMethod.PUT.name().equalsIgnoreCase(method().name());
+        return HttpMethod.PUT.name().equalsIgnoreCase(getMethod().name());
     }
 
     public boolean isDelete() {
-        return HttpMethod.DELETE.name().equalsIgnoreCase(method().name());
+        return HttpMethod.DELETE.name().equalsIgnoreCase(getMethod().name());
     }
 
     public boolean isHead() {
-        return HttpMethod.HEAD.name().equalsIgnoreCase(method().name());
+        return HttpMethod.HEAD.name().equalsIgnoreCase(getMethod().name());
     }
 
     public boolean isOptions() {
-        return HttpMethod.OPTIONS.name().equalsIgnoreCase(method().name());
+        return HttpMethod.OPTIONS.name().equalsIgnoreCase(getMethod().name());
     }
 
     public void setEndpoint(final Endpoint endpoint) {
@@ -183,6 +190,7 @@ public class HttpRequest extends DefaultFullHttpRequest {
     }
 
     public HttpCookie getSession() {
+        initSession();
         return session;
     }
 
@@ -222,15 +230,7 @@ public class HttpRequest extends DefaultFullHttpRequest {
     }
 
     public String getSessionId() {
-        return session.getValue();
-    }
-
-    public HttpMethod getMethod() {
-        return method();
-    }
-
-    public String getUri() {
-        return uri();
+        return getSession().getValue();
     }
 
     @Override

@@ -55,41 +55,25 @@ public class DefaultParamInjector implements ParamInjector {
                                   ResourcePath path, ResourcePath.Component[] components) {
         if (HttpRequest.class.isAssignableFrom(param.getMethodClass())) {
             return event.message;
+        } else if (FormFiles.class.isAssignableFrom(param.getMethodClass())) {
+            return event.message.getFormFiles();
+        } else if (FormParams.class.isAssignableFrom(param.getMethodClass())) {
+            return event.message.getFormParam();
+        } else if (HttpCookies.class.isAssignableFrom(param.getMethodClass())) {
+            return event.message.getCookies();
+        } else if (QueryParams.class.isAssignableFrom(param.getMethodClass())) {
+            return event.message.getQueryParams();
+        } else if (HttpSession.class.isAssignableFrom(param.getMethodClass())) {
+            return server.getSession(event.message.getSessionId());
+        } else if (ResourcePath.class.isAssignableFrom(param.getMethodClass())) {
+            return path;
+        } else if (HttpServer.class.isAssignableFrom(param.getMethodClass())) {
+            return server;
+        } else if (ChannelMessage.class.isAssignableFrom(param.getMethodClass())) {
+            return event;
         } else {
-            if (FormFiles.class.isAssignableFrom(param.getMethodClass())) {
-                return event.message.getFormFiles();
-            } else {
-                if (FormParams.class.isAssignableFrom(param.getMethodClass())) {
-                    return event.message.getFormParam();
-                } else {
-                    if (HttpCookies.class.isAssignableFrom(param.getMethodClass())) {
-                        return event.message.getCookies();
-                    } else {
-                        if (QueryParams.class.isAssignableFrom(param.getMethodClass())) {
-                            return event.message.getQueryParams();
-                        } else {
-                            if (HttpSession.class.isAssignableFrom(param.getMethodClass())) {
-                                return server.getSession(event.message.getSessionId());
-                            } else {
-                                if (ResourcePath.class.isAssignableFrom(param.getMethodClass())) {
-                                    return path;
-                                } else {
-                                    if (HttpServer.class.isAssignableFrom(param.getMethodClass())) {
-                                        return server;
-                                    } else {
-                                        if (ChannelMessage.class.isAssignableFrom(param.getMethodClass())) {
-                                            return event;
-                                        } else {
 //todo add support for custom parameter provider (i.e. allow anything to be injected if registered)
-                                            return null;
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
+            return null;
         }
     }
 
@@ -99,22 +83,14 @@ public class DefaultParamInjector implements ParamInjector {
         HttpRequest request = event.message;
         if (param.isCookieParam()) {
             return extractCookieParam(param, request);
-        } else {
-            if (param.isHeaderParam()) {
-                return extractHeaderParam(param, request);
-            } else {
-                if (param.isFormParam()) {
-                    return extractFormParam(param, request);
-                } else {
-                    if (param.isQueryParam()) {
-                        return extractQueryParam(param, request);
-                    } else {
-                        if (param.isPathParam()) {
-                            return extractPathParam(param, path);
-                        }
-                    }
-                }
-            }
+        } else if (param.isHeaderParam()) {
+            return extractHeaderParam(param, request);
+        } else if (param.isFormParam()) {
+            return extractFormParam(param, request);
+        } else if (param.isQueryParam()) {
+            return extractQueryParam(param, request);
+        } else if (param.isPathParam()) {
+            return extractPathParam(param, path);
         }
         return null;
     }
@@ -138,16 +114,14 @@ public class DefaultParamInjector implements ParamInjector {
         //query string param can be a list or string, if neither set to null
         if (List.class.isAssignableFrom(param.getMethodClass())) {
             return request.getQueryParams().get(param.getName());
+        } else if (String.class.isAssignableFrom(param.getMethodClass())) {
+            return request.getQueryParams().getFirst(param.getName());
         } else {
-            if (String.class.isAssignableFrom(param.getMethodClass())) {
-                return request.getQueryParams().getFirst(param.getName());
+            if (reflection.isNumeric(param.getMethodClass())) {
+                //if param is a number then try to handle with NumberType.parseType
+                return extractNumberParam(param, request.getQueryParams().getFirst(param.getName()));
             } else {
-                if (reflection.isNumeric(param.getMethodClass())) {
-                    //if param is a number then try to handle with NumberType.parseType
-                    return extractNumberParam(param, request.getQueryParams().getFirst(param.getName()));
-                } else {
-                    return null;
-                }
+                return null;
             }
         }
     }
@@ -193,13 +167,11 @@ public class DefaultParamInjector implements ParamInjector {
         } else {
             if (HttpCookie.class.isAssignableFrom(param.getMethodClass())) {
                 return cookie;
+            } else if (reflection.isNumeric(param.getMethodClass())) {
+                //if param is a number then try to handle with NumberType.parseType
+                return extractNumberParam(param, cookie.getValue());
             } else {
-                if (reflection.isNumeric(param.getMethodClass())) {
-                    //if param is a number then try to handle with NumberType.parseType
-                    return extractNumberParam(param, cookie.getValue());
-                } else {
-                    return null;
-                }
+                return null;
             }
         }
     }
@@ -224,77 +196,55 @@ public class DefaultParamInjector implements ParamInjector {
                     //return null for class numeric types
                     return null;
                 }
-            } else {
-                if (Long.class.isAssignableFrom(param.getMethodClass())) {
-                    try {
-                        return Long.parseLong(value);
-                    } catch (NumberFormatException nfe) {
-                        //return null for class numeric types
-                        return null;
-                    }
-                } else {
-                    if (Float.class.isAssignableFrom(param.getMethodClass())) {
-                        try {
-                            return Float.parseFloat(value);
-                        } catch (NumberFormatException nfe) {
-                            //return null for class numeric types
-                            return null;
-                        }
-                    } else {
-                        if (Double.class.isAssignableFrom(param.getMethodClass())) {
-                            try {
-                                return Double.parseDouble(value);
-                            } catch (NumberFormatException nfe) {
-                                //return null for class numeric types
-                                return null;
-                            }
-                        } else {
-                            if (Short.class.isAssignableFrom(param.getMethodClass())) {
-                                try {
-                                    return Short.parseShort(value);
-                                } catch (NumberFormatException nfe) {
-                                    //return null for class numeric types
-                                    return null;
-                                }
-                            } else {
-                                if (Byte.class.isAssignableFrom(param.getMethodClass())) {
-                                    try {
-                                        return Byte.parseByte(value);
-                                    } catch (NumberFormatException nfe) {
-                                        //return null for class numeric types
-                                        return null;
-                                    }
-                                } else {
-                                    if (int.class.isAssignableFrom(param.getMethodClass())) {
-                                        return Integer.parseInt(value);
-                                    } else {
-                                        if (long.class.isAssignableFrom(param.getMethodClass())) {
-                                            return Long.parseLong(value);
-                                        } else {
-                                            if (float.class.isAssignableFrom(param.getMethodClass())) {
-                                                return Float.parseFloat(value);
-                                            } else {
-                                                if (double.class.isAssignableFrom(param.getMethodClass())) {
-                                                    return Double.parseDouble(value);
-                                                } else {
-                                                    if (short.class.isAssignableFrom(param.getMethodClass())) {
-                                                        return Short.parseShort(value);
-                                                    } else {
-                                                        if (byte.class.isAssignableFrom(param.getMethodClass())) {
-                                                            return Byte.parseByte(value);
-                                                        } else {
-                                                            return 0;
-                                                        }
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
+            } else if (Long.class.isAssignableFrom(param.getMethodClass())) {
+                try {
+                    return Long.parseLong(value);
+                } catch (NumberFormatException nfe) {
+                    //return null for class numeric types
+                    return null;
                 }
+            } else if (Float.class.isAssignableFrom(param.getMethodClass())) {
+                try {
+                    return Float.parseFloat(value);
+                } catch (NumberFormatException nfe) {
+                    //return null for class numeric types
+                    return null;
+                }
+            } else if (Double.class.isAssignableFrom(param.getMethodClass())) {
+                try {
+                    return Double.parseDouble(value);
+                } catch (NumberFormatException nfe) {
+                    //return null for class numeric types
+                    return null;
+                }
+            } else if (Short.class.isAssignableFrom(param.getMethodClass())) {
+                try {
+                    return Short.parseShort(value);
+                } catch (NumberFormatException nfe) {
+                    //return null for class numeric types
+                    return null;
+                }
+            } else if (Byte.class.isAssignableFrom(param.getMethodClass())) {
+                try {
+                    return Byte.parseByte(value);
+                } catch (NumberFormatException nfe) {
+                    //return null for class numeric types
+                    return null;
+                }
+            } else if (int.class.isAssignableFrom(param.getMethodClass())) {
+                return Integer.parseInt(value);
+            } else if (long.class.isAssignableFrom(param.getMethodClass())) {
+                return Long.parseLong(value);
+            } else if (float.class.isAssignableFrom(param.getMethodClass())) {
+                return Float.parseFloat(value);
+            } else if (double.class.isAssignableFrom(param.getMethodClass())) {
+                return Double.parseDouble(value);
+            } else if (short.class.isAssignableFrom(param.getMethodClass())) {
+                return Short.parseShort(value);
+            } else if (byte.class.isAssignableFrom(param.getMethodClass())) {
+                return Byte.parseByte(value);
+            } else {
+                return 0;
             }
         } catch (NumberFormatException nfe) {
             //return 0 for primitive numeric types

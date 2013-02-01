@@ -144,18 +144,18 @@ public class ResourcePath {
             //if we get here then the path component matched the component value
             //so the path's runtime component value should be the extracted component
             pathComponent.setRuntimeValue(component);
-            if (request != null) {
-                //must set path that matched so that path params and such can be extracted for injection
-                request.setPath(this);
-            }
             i++;
+        }
+        if (request != null) {
+            //must set path that matched so that path params and such can be extracted for injection
+            request.setPath(this);
         }
         //if we get here all the components matched
         return true;
     }
 
     public boolean matches(final HttpRequest request) {
-        return matches(request.uri(), request);
+        return matches(request.getUri(), request);
     }
 
     public boolean matches(final String s) {
@@ -181,7 +181,7 @@ public class ResourcePath {
     public String toString() {
         StringBuilder b = new StringBuilder();
         for (Component c : components) {
-            b.append(c.getRuntimeValue()).append("/");
+            b.append(c.getComponentValue()).append("/");
         }
         return "ResourcePath{" +
                 "uri='" + b.toString() + '\'' +

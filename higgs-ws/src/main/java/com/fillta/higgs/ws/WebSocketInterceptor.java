@@ -38,7 +38,7 @@ public class WebSocketInterceptor implements HiggsInterceptor {
     public boolean matches(Object msg) {
         if (msg instanceof HttpRequest) {
             //if it's an HttpRequest then return true if one of the paths match
-            String uri = ((HttpRequest) msg).uri();
+            String uri = ((HttpRequest) msg).getUri();
             for (String path : paths) {
                 if (path.equalsIgnoreCase(uri)) {
                     return true;
@@ -88,7 +88,7 @@ public class WebSocketInterceptor implements HiggsInterceptor {
 
     private boolean canPerformHandShake(ChannelHandlerContext ctx, HttpRequest req) {
         for (String path : paths) {
-            if (path.equalsIgnoreCase(req.uri())) {
+            if (path.equalsIgnoreCase(req.getUri())) {
                 String wsPath = getWebSocketLocation(req, path);
                 try {
                     // Handshake
