@@ -243,7 +243,6 @@ public class WebSocketServer<R extends JsonRequestEvent> extends RPCServer<JsonR
         try {
             String str = msg.text();
             R req = mapper.readValue(str, requestClass);
-            req.setRawString(str);
             return req;
         } catch (IOException e) {
             //throw error so that it propagates and the error handler notifies the client

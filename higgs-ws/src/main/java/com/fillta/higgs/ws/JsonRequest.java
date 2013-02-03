@@ -48,24 +48,8 @@ public class JsonRequest implements JsonRequestEvent {
         return message;
     }
 
-    public void setMessage(final Object o) {
-        if (o instanceof JsonNode) {
-            setMessage((JsonNode) o);
-        } else {
-            setMessage(WebSocketServer.mapper.createObjectNode().POJONode(o));
-        }
-    }
-
     public void setMessage(JsonNode data) {
         message = data;
-    }
-
-    public String getRawString() {
-        return rawString;
-    }
-
-    public void setRawString(String rawString) {
-        this.rawString = rawString;
     }
 
     public String getCallback() {
@@ -89,11 +73,8 @@ public class JsonRequest implements JsonRequestEvent {
             return null;
         }
         try {
-            if (rawString == null) {
-                return WebSocketServer.mapper.readValue(message.traverse(), klass);
-            } else {
-                return WebSocketServer.mapper.readValue(rawString, klass);
-            }
+            return WebSocketServer.mapper.treeToValue(message, klass);
+//            return WebSocketServer.mapper.reader(klass).readValue(message.traverse());
         } catch (IOException e) {
             log.warn(String.format("Unable to decode message to type. Type : %s\n Message string : %s",
                     klass.getName(), message.toString()), e);
