@@ -1,5 +1,6 @@
 package com.fillta.higgs.ws;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fillta.higgs.method;
 
 /**
@@ -41,11 +42,7 @@ public interface JsonRequestEvent {
      */
     String getTopic();
 
-    Object getMessage();
+    JsonNode getMessage();
 
-    void setMessage(Object o);
-
-    void setRawString(String rawString);
-
-    String getRawString();
+    void setMessage(JsonNode o);
 }
