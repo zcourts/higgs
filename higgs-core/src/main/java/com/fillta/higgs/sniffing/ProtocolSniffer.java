@@ -79,9 +79,6 @@ public class ProtocolSniffer extends ChannelInboundByteHandlerAdapter {
                 }
             }
         }
-        // Forward the current read buffer as is to the new handlers.
-        ctx.nextInboundByteBuffer().writeBytes(in);
-        ctx.fireInboundBufferUpdated();
     }
 
     private boolean isSsl(ByteBuf buf) {
