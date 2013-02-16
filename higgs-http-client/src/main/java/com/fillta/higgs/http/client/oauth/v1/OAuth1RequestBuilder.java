@@ -145,7 +145,7 @@ public class OAuth1RequestBuilder {
 //                });
 //            }
 //        });
-         Token token = authService.getRequestToken();
+        Token token = authService.getRequestToken();
         callback.apply(new OAuth1RequestToken(this, token));
         return this;
     }

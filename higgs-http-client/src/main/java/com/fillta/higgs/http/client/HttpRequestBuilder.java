@@ -2,13 +2,14 @@ package com.fillta.higgs.http.client;
 
 import com.fillta.functional.Function1;
 import com.fillta.higgs.http.client.oauth.v1.OAuth1RequestBuilder;
+import io.netty.buffer.Unpooled;
+import io.netty.handler.codec.base64.Base64;
 import io.netty.handler.codec.http.HttpHeaders;
 import io.netty.handler.codec.http.HttpMethod;
 import io.netty.handler.codec.http.HttpVersion;
 import io.netty.handler.codec.http.multipart.DiskAttribute;
 import io.netty.handler.codec.http.multipart.DiskFileUpload;
 
-import javax.xml.bind.DatatypeConverter;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.charset.Charset;
@@ -558,7 +559,9 @@ public class HttpRequestBuilder {
     }
 
     public HttpRequestBuilder basicAuth(String user, String password) {
-        String auth = DatatypeConverter.printBase64Binary((user + ":" + password).getBytes(Charset.forName("UTF-8")));
+        Charset utf8 = Charset.forName("UTF-8");
+        byte[] arr = (user + ":" + password).getBytes(utf8);
+        String auth = Base64.encode(Unpooled.wrappedBuffer(arr)).toString(utf8);
         header("Authorization", "Basic " + auth);
         return this;
     }

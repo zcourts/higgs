@@ -74,12 +74,12 @@ public class HTTPResponse {
         if (lineReader != null) {
             String line;
             try {
-                //while ((line = data.readLine()) != null)
                 while ((line = data.readLine()) != null) {
                     lineReader.apply(line);
                 }
+                buffer.discardReadBytes();
             } catch (IOException e) {
-                //hmmm, what to do...?
+                //todo hmmm, what to do...?
             }
         }
     }

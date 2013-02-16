@@ -23,8 +23,6 @@ public interface ResponseTransformer extends Comparable<ResponseTransformer>, So
     /**
      * Given the response object transform it into one of the accepted media types
      *
-     *
-     *
      * @param response               the response object to be transformed
      * @param request                the request which generated the response
      * @param registeredTransformers a queue of all transformers registered with the server.
