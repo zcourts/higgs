@@ -29,6 +29,8 @@
     <properties>
         <maven.compiler.source>1.7</maven.compiler.source>
         <maven.compiler.target>1.7</maven.compiler.target>
+        <netty.version>4.0.0.Beta2-SNAPSHOT</netty.version>
+        <netty.group>io.netty</netty.group>
         <encoding>UTF-8</encoding>
     </properties>
 
@@ -48,10 +50,21 @@
             <artifactId>guava</artifactId>
             <version>13.0.1</version>
         </dependency>
+
         <dependency>
-            <groupId>io.netty</groupId>
-            <artifactId>netty</artifactId>
-            <version>4.0.0.Beta1-SNAPSHOT</version>
+            <groupId>${netty.group}</groupId>
+            <version>${netty.version}</version>
+            <artifactId>netty-transport</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>${netty.group}</groupId>
+            <version>${netty.version}</version>
+            <artifactId>netty-handler</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>${netty.group}</groupId>
+            <version>${netty.version}</version>
+            <artifactId>netty-codec-http</artifactId>
         </dependency>
         <!-- Test -->
         <dependency>

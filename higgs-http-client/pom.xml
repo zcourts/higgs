@@ -25,11 +25,11 @@
             <artifactId>scribe</artifactId>
             <version>1.3.2</version>
         </dependency>
-        <dependency>
-            <groupId>io.netty</groupId>
-            <artifactId>netty-example</artifactId>
-            <version>4.0.0.Beta1-SNAPSHOT</version>
-        </dependency>
+        <!--<dependency>-->
+            <!--<groupId>io.netty</groupId>-->
+            <!--<artifactId>netty-example</artifactId>-->
+            <!--<version>4.0.0.Beta1-SNAPSHOT</version>-->
+        <!--</dependency>-->
     </dependencies>
     <build>
         <plugins>
