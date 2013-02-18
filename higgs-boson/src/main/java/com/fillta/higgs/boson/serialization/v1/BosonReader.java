@@ -69,7 +69,7 @@ public class BosonReader {
         //move reader index forward by 4
         msgSize = data.readInt();
         //so read until the reader index == obj.length
-        while (data.readable()) {
+        while (data.isReadable()) {
             //read request/response types
             int type = data.readByte();
 
@@ -110,7 +110,7 @@ public class BosonReader {
      * @throws InvalidDataException if buffer is not readable
      */
     public void verifyReadable() {
-        if (!data.readable()) {
+        if (!data.isReadable()) {
             throw new InvalidDataException("BosonReader tried to read additional data from an unreadable buffer. " +
                     "Possible data corruption.", null);
         }

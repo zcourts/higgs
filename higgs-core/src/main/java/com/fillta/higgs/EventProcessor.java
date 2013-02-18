@@ -22,10 +22,10 @@ import io.netty.channel.socket.SocketChannel;
 import io.netty.handler.codec.http.HttpRequest;
 import io.netty.handler.codec.http.websocketx.TextWebSocketFrame;
 import io.netty.handler.ssl.SslHandler;
-import io.netty.logging.InternalLoggerFactory;
-import io.netty.logging.Slf4JLoggerFactory;
 import io.netty.util.Attribute;
 import io.netty.util.AttributeKey;
+import io.netty.util.internal.InternalLoggerFactory;
+import io.netty.util.internal.Slf4JLoggerFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
