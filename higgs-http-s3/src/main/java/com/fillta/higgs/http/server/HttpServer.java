@@ -26,9 +26,11 @@ import io.netty.handler.codec.http.multipart.DiskFileUpload;
 import io.netty.handler.stream.ChunkedWriteHandler;
 import org.yaml.snakeyaml.Yaml;
 
+import java.io.FileInputStream;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.net.SocketAddress;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -101,9 +103,7 @@ public class HttpServer<C extends ServerConfig> extends HiggsServer<String, Http
         }
         Yaml yaml = new Yaml();
         try {
-            config = yaml.loadAs(Thread.currentThread().getContextClassLoader()
-                    .getResourceAsStream(configFile)
-                    , klass);
+            config = yaml.loadAs(new FileInputStream(Paths.get(configFile).toFile()), klass);
         } catch (Throwable e) {
             log.error(String.format("The server cannot be started, unable to load config (%s)", configFile), e);
             //start up error. should not continue

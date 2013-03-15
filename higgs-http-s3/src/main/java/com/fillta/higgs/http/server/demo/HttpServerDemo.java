@@ -17,7 +17,7 @@ public class HttpServerDemo {
     }
 
     public static void main(String... args) throws IOException, InterruptedException {
-        HttpServer server = new HttpServer(ServerConfig.class, "./config.yml");
+        HttpServer server = new HttpServer(ServerConfig.class, args.length == 0 ? "./config.yml" : args[0]);
         server.onException(new ChannelEventListener() {
             public void triggered(final ChannelHandlerContext ctx, final Optional<Throwable> ex) {
                 if (ex.isPresent()) {
