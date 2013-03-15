@@ -2,8 +2,15 @@ package com.fillta.higgs.boson.serialization.v1;
 
 import com.fillta.higgs.boson.BosonMessage;
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 import org.junit.Test;
 
+import java.util.HashMap;
+import java.util.Map;
+
+import static com.fillta.higgs.boson.BosonType.MAP;
+import static com.fillta.higgs.boson.BosonType.STRING;
+import static junit.framework.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
@@ -110,7 +117,65 @@ public class BosonWriterTest {
 
     @Test
     public void testWriteMap() throws Exception {
+        BosonWriter writer = new BosonWriter(new BosonMessage());
+        String intStr = "int";
+        Map<String, Map<String, Object>> map = new HashMap<>();
+        Map intMap = new HashMap<>();
+        Map longMap = new HashMap<>();
+        Map stringMap = new HashMap<>();
+        //
+        map.put("int", intMap);
+        map.put("long", longMap);
+        map.put("string", stringMap);
+        //
+        intMap.put("a", 1);
+        intMap.put("b", 2);
+        longMap.put("a", 1L);
+        longMap.put("b", 2L);
+        longMap.put("c", 3L);
+        stringMap.put("a", "a");
+        stringMap.put("b", "ab");
+        stringMap.put("c", "abc");
+        ByteBuf buf = Unpooled.buffer();
+        writer.writeMap(buf, map);
+        assertEquals(MAP, buf.readByte());
+        assertEquals(3, buf.readInt());    //we added 3 items (int,long and string)
+        assertEquals(STRING, buf.readByte()); //"int" type
+        assertEquals(intStr.getBytes().length, buf.readInt());
+        byte[] tmp = new byte[intStr.getBytes().length];
+        buf.readBytes(tmp);
+        assertEquals(intStr, new String(tmp));
+        assertEquals(MAP, buf.readByte()); //value = intMap
+        assertEquals(2, buf.readInt());  //two ints added
+        assertEquals(STRING, buf.readByte()); //first int  a -> 1
+        assertEquals(1, buf.readInt()); //size
+        //todo to be continued until entire nested map is deconstructed...
+    }
 
+    @Test
+    public void testWriteReadMap() throws Exception {
+        String intStr = "int";
+        Map<String, Map<String, Object>> map = new HashMap<>();
+        Map intMap = new HashMap<>();
+        Map longMap = new HashMap<>();
+        Map stringMap = new HashMap<>();
+        //
+        map.put("int", intMap);
+        map.put("long", longMap);
+        map.put("string", stringMap);
+        //
+        intMap.put("a", 1);
+        intMap.put("b", 2);
+        longMap.put("a", 1L);
+        longMap.put("b", 2L);
+        longMap.put("c", 3L);
+        stringMap.put("a", "a");
+        stringMap.put("b", "ab");
+        stringMap.put("c", "abc");
+        BosonWriter writer = new BosonWriter(new BosonMessage(new Object[]{ map }, "test"));
+        BosonReader r = new BosonReader(writer.serialize());
+        BosonMessage m = r.deSerialize();
+        assertEquals(map, m.arguments[0]);
     }
 
     @Test
