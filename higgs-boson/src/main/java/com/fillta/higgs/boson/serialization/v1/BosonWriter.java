@@ -15,6 +15,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static com.fillta.higgs.boson.BosonType.ARRAY;
@@ -35,6 +36,7 @@ import static com.fillta.higgs.boson.BosonType.REQUEST_METHOD_NAME;
 import static com.fillta.higgs.boson.BosonType.REQUEST_PARAMETERS;
 import static com.fillta.higgs.boson.BosonType.RESPONSE_METHOD_NAME;
 import static com.fillta.higgs.boson.BosonType.RESPONSE_PARAMETERS;
+import static com.fillta.higgs.boson.BosonType.SET;
 import static com.fillta.higgs.boson.BosonType.SHORT;
 import static com.fillta.higgs.boson.BosonType.STRING;
 
@@ -158,6 +160,18 @@ public class BosonWriter {
 
     public void writeList(ByteBuf buffer, List<Object> value) {
         buffer.writeByte(LIST); //type
+        buffer.writeInt(value.size()); //size
+        for (Object param : value) {
+            if (param == null) {
+                writeNull(buffer);
+            } else {
+                validateAndWriteType(buffer, param); //payload
+            }
+        }
+    }
+
+    public void writeSet(ByteBuf buffer, Set<Object> value) {
+        buffer.writeByte(SET); //type
         buffer.writeInt(value.size()); //size
         for (Object param : value) {
             if (param == null) {
@@ -385,6 +399,8 @@ public class BosonWriter {
                 writeString(buffer, (String) param);
             } else if (param instanceof List || List.class.isAssignableFrom(param.getClass())) {
                 writeList(buffer, (List<Object>) param);
+            } else if (param instanceof Set || Set.class.isAssignableFrom(param.getClass())) {
+                writeSet(buffer, (Set<Object>) param);
             } else if (param instanceof Map || Map.class.isAssignableFrom(param.getClass())) {
                 writeMap(buffer, (Map<Object, Object>) param);
             } else if (param.getClass().isArray()) {
