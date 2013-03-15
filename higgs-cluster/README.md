@@ -1,15 +1,17 @@
 # Higgs Cluster
 
-A cluster is a set of Higgs servers which communicate via through a de-centralized pubsub style environment.
+A cluster is a set of Higgs servers which communicate via a de-centralized pubsub style environment.
+
 A gossip protocol is used to communicate the state of Nodes within the cluster.
+
 All communication between Nodes is done using the Boson protocol, this enables Nodes to be written in any
-language. As long as the Node can serialize/deserialize the boson protocol and has understands the gossip protocol
+language. As long as the Node can serialize/deserialize the boson protocol and understands the gossip protocol;
 it can be a member of the cluster.
 
 # Joining a cluster
 
 Server or Node requires a "seed" Node to join a cluster. If no seed Node is available then it is assumed
-to be the only Node in the cluster.
+to be the only Node in the cluster. A Node can have multiple seed Nodes.
 
 A seed Node is just another Node within the cluster, it has no control over the node about to join. It's
 main purpose is to help the new Node bootstrap by sending it the state of the cluster.
@@ -72,7 +74,7 @@ Periodically (configurable but maybe every second or two) every Node should emit
 The state event has a set of parameters. Amongst the parameters is a merkle tree.
 All cluster related events are emitted under the "cluster" namespace.
 
-Whereever consistency needs to be verified in the cluster the merkle tree is used. The merkle tree is a snapshot
+Where ever consistency needs to be verified in the cluster the merkle tree is used. The merkle tree is a snapshot
 view of the entire cluster according to a Node at any given point.
 
 The hierarchy represented by the merkle tree is similar to:
@@ -122,13 +124,16 @@ The hierarchy represented by the merkle tree is similar to:
  +----------------------------+
  </pre>
  Awesome ASCII diagram created with http://www.asciiflow.com/ (https://github.com/lewish/asciiflow)
+
  NOTE: The diagram is not a complete view of the merkle tree to be sent, just an example of typical Nodes
  so there may be more branches
 
 For example, one obvious dataset that needs to be checked regularly is the set of Nodes in the cluster and information about each Node.
 A merkle tree in this case is used to represent a Node's view of the cluster, as shown in the diagram above.
+
 The state event emitted by every Node should contain a merkle tree describing the cluster as it is known to the
 emitting Node. When this merkle tree is received it is checked and compared to a local merkle tree.
+
 If the local and remote views of the cluster differs then the information required to update is sent to the
 node with the older, incorrect view. Thus preventing the entire view of the cluster from being sent every time.
 
