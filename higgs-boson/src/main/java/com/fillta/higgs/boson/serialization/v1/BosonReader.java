@@ -14,9 +14,11 @@ import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import static com.fillta.higgs.boson.BosonType.ARRAY;
 import static com.fillta.higgs.boson.BosonType.BOOLEAN;
@@ -36,6 +38,7 @@ import static com.fillta.higgs.boson.BosonType.REQUEST_METHOD_NAME;
 import static com.fillta.higgs.boson.BosonType.REQUEST_PARAMETERS;
 import static com.fillta.higgs.boson.BosonType.RESPONSE_METHOD_NAME;
 import static com.fillta.higgs.boson.BosonType.RESPONSE_PARAMETERS;
+import static com.fillta.higgs.boson.BosonType.SET;
 import static com.fillta.higgs.boson.BosonType.SHORT;
 import static com.fillta.higgs.boson.BosonType.STRING;
 
@@ -373,6 +376,27 @@ public class BosonReader {
         }
     }
 
+    public Set<Object> readSet(boolean verified, int verifiedType) {
+        int type = verifiedType;
+        if (!verified) {
+            type = data.readByte();
+        }
+        if (SET == type) {
+            //read number of elements in the array
+            int size = data.readInt();
+            Set<Object> set = new HashSet<>();
+            for (int i = 0; i < size; i++) {
+                verifyReadable();
+                //get type of this element in the array
+                type = data.readByte();
+                //at this stage only basic data types are allowed
+                set.add(readType(type));
+            }
+            return set;
+        } else {
+            throw new UnsupportedBosonTypeException(String.format("type %s is not a Boson SET", type), null);
+        }
+    }
     /**
      * Read a map (list of key -> value pairs) from the buffer
      *
@@ -569,6 +593,8 @@ public class BosonReader {
                 return readArray(true, type);
             case LIST:
                 return readList(true, type);
+            case SET:
+                return readSet(true, type);
             case MAP:
                 return readMap(true, type);
             case POLO:

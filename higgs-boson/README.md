@@ -27,7 +27,8 @@ See [Java datatypes](http://docs.oracle.com/javase/tutorial/java/nutsandbolts/da
 # Structures
 
 + __array__ => An ordered set of items, the items can be any valid Boson data type
-+ __list__ => An un-ordered set of items, the items can be any valid Boson data type
++ __list__ => An un-ordered group of items, the items can be any valid Boson data type
++ __set__ => An un-ordered group of __unique__ items, the items can be any valid Boson data type
 + __map__ => A set of key value pairs, both keys and values can be any valid Boson data type, including map itself
 + __POLO__ => __P__lain __O__ld __L__anguage __O__bject - A POLO is any object whose fields are valid Boson types.
 
@@ -81,6 +82,7 @@ To indicate a type use a single byte which corresponds to the following data typ
 + __map__ => 13
 + __POLO__ => 14
 + __REFERENCE__ => 15
++ __set__ => 16
 
 ### Indicating size
 
@@ -102,6 +104,7 @@ of the message.
 				chars in the string __NOT__ the number of chars but the size of all the chars when converted to bytes
 + __array__ => 4 bytes  - This is __not the total bytes__ it is a __count/sum__ of how many items are in the array
 + __list__ => 4 bytes  - This is __not the total bytes__ it is a __count/sum__ of how many items are in the list
++ __set__ => 4 bytes  - This is __not the total bytes__ it is a __count/sum__ of how many items are in the set
 + __map__ => 4 bytes  - This is __not the total bytes__ it is a __count/sum__ of how many items are in the map
 + __POLO__ => 4 bytes - This is __not the total bytes of the object__, it is a __count/sum__ of how many fields from the
 			object is serialized
@@ -122,6 +125,9 @@ If the component type of an array is a mixture, i.e. its not just an array of in
 
 ####  list
 The rules for a list are the same as an array , __EXCEPT__ Do not write component types and the order of elements does not matter
+
+#### set
+The rules for a set is the same as a list, __EXCEPT__ all items are unique according to .equals() - i.e. calling .equals on any two items should return false
 
 ####  map
 A map contains a __unordered__ set of tuples (key value pairs). Both keys and values can be any valid Boson data type.
