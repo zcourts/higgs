@@ -365,26 +365,29 @@ public class BosonWriter {
         if (param == null) {
             writeNull(buffer);
         } else {
-            Class<?> obj = param.getClass();
-            if (obj == Byte.class) {
+            if (param instanceof Byte || Byte.class.isAssignableFrom(param.getClass())) {
                 writeByte(buffer, (Byte) param);
-            } else if (obj == Short.class) {
+            } else if (param instanceof Short || Short.class.isAssignableFrom(param.getClass())) {
                 writeShort(buffer, (Short) param);
-            } else if (obj == Integer.class) {
+            } else if (param instanceof Integer || Integer.class.isAssignableFrom(param.getClass())) {
                 writeInt(buffer, (Integer) param);
-            } else if (obj == Long.class) {
+            } else if (param instanceof Long || Long.class.isAssignableFrom(param.getClass())) {
                 writeLong(buffer, (Long) param);
-            } else if (obj == Float.class) {
+            } else if (param instanceof Float || Float.class.isAssignableFrom(param.getClass())) {
                 writeFloat(buffer, (Float) param);
-            } else if (obj == Double.class) {
+            } else if (param instanceof Double || Double.class.isAssignableFrom(param.getClass())) {
                 writeDouble(buffer, (Double) param);
-            } else if (obj == Boolean.class) {
+            } else if (param instanceof Boolean || Boolean.class.isAssignableFrom(param.getClass())) {
                 writeBoolean(buffer, (Boolean) param);
-            } else if (obj == Character.class) {
+            } else if (param instanceof Character || Character.class.isAssignableFrom(param.getClass())) {
                 writeChar(buffer, (Character) param);
-            } else if (obj == String.class) {
+            } else if (param instanceof String || String.class.isAssignableFrom(param.getClass())) {
                 writeString(buffer, (String) param);
-            } else if (obj.isArray()) {
+            } else if (param instanceof List || List.class.isAssignableFrom(param.getClass())) {
+                writeList(buffer, (List<Object>) param);
+            } else if (param instanceof Map || Map.class.isAssignableFrom(param.getClass())) {
+                writeMap(buffer, (Map<Object, Object>) param);
+            } else if (param.getClass().isArray()) {
                 //array values can be reference types but not the arrays themselves
                 writeArray(buffer, (Object[]) param);
             } else {
@@ -398,22 +401,22 @@ public class BosonWriter {
                     references.put(param, ref);
                     //add param to list of references and discover all its dependencies
                     traverseObjectGraph(param);
-                    verifyReferenceAndWrite(buffer, param, obj, ref);
+                    verifyReferenceAndWrite(buffer, param, ref);
                 } else {
                     //if is not written then write it
-                    verifyReferenceAndWrite(buffer, param, obj, ref);
+                    verifyReferenceAndWrite(buffer, param, ref);
                 }
             }
         }
     }
 
-    private void verifyReferenceAndWrite(ByteBuf buffer, Object param, Class<?> obj, Integer ref) {
+    private void verifyReferenceAndWrite(ByteBuf buffer, Object param, Integer ref) {
         Integer writtenRef = referencesWritten.get(param);
         //if is not written then write it
         if (writtenRef == null) {
             writtenRef = ref;
             referencesWritten.put(param, writtenRef);
-            writeReferenceType(buffer, param, obj);
+            writeReferenceType(buffer, param);
         } else {
             //if already written then write a reference to the already written object
             writeReference(buffer, writtenRef);
@@ -426,7 +429,8 @@ public class BosonWriter {
         buffer.writeInt(ref);
     }
 
-    private void writeReferenceType(ByteBuf buffer, Object param, Class<?> obj) {
+    private void writeReferenceType(ByteBuf buffer, Object param) {
+        Class<?> obj = param.getClass();
         //only if they wouldn't create a circular reference do we write them
         if (List.class.isAssignableFrom(obj)) {
             writeList(buffer, (List<Object>) param);
