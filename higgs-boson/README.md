@@ -117,11 +117,8 @@ of the message.
  An array contains several items, each of which can be any supported Boson data type.
 
 1. To write an array first write the type
-2. Then write the component type of the array (or null if types not supported or is unavailable).
-The component type of an array is any supported boson data type, i.e. __1 byte__ represented as documented under "Indicating a type".
-If the component type of an array is a mixture, i.e. its not just an array of integers but have maps, lists or POLOs included then the component type should be written as a POLO.
-3. followed by the total number of elements in the array.
-4. Next, write each element according to the rules for each type, __in order__.
+2. followed by the total number of elements in the array.
+3. Next, write each element according to the rules for each type, __in order__.
 
 ####  list
 The rules for a list are the same as an array , __EXCEPT__ Do not write component types and the order of elements does not matter
@@ -143,13 +140,21 @@ Both key and value can be empty. If either are empty then a the boson type null,
 A POLO contains a __unordered__ set of fields. These fields have a name and a value.
 Field names are strings and values can be any valid Boson data type.
 In languages that are not type safe this is the same as a boson map. And the POLO flag __must not__ be used in those languages, instead the boson map data type should be used! The reason for this is that POLOs have a strict requirement for fully qualified class names to be provided.
+Every POLO is given a unique reference number. This is an integer value that will be used to refer to it later if it is used in multiple places.
 
 1. To write a POLO, first write the type
-2. Then write the fully qualified name of the POLO, e.g. com.domain.MyClass as a string using the rules for writing strings
-3. followed by the total number of elements in the POLO.
-4. Next, write each field name according to the rules for a __string__
-5. Immediately after each field name write the value according to the rules for its type
+2. Then write the integer reference number for the POLO. (Just write the 4 bytes for the int, no need for the boson in type prefix)
+3. Then write the fully qualified name of the POLO, e.g. com.domain.MyClass as a string using the rules for writing strings
+4. followed by the total number of elements in the POLO.
+5. Next, write each field name according to the rules for a __string__
+6. Immediately after each field name write the value according to the rules for its type
 __Values can be empty but not names__. If a field name is null, skip and do not serialize.
+
+
+The following is a simple flow chart of the above process
+
+![Boson POLO serialization](polo-serialization.png?raw=true)
+
 
 RPC Serialization
 ---
