@@ -12,6 +12,7 @@ import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.Array;
 import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -46,16 +47,16 @@ import static io.higgs.boson.BosonType.STRING;
  * @author Courtney Robinson <courtney@crlog.info>
  */
 public class BosonReader {
-    Logger log = LoggerFactory.getLogger(getClass());
-    ClassLoader loader = Thread.currentThread().getContextClassLoader();
-    // new BosonClassLoader(Thread.currentThread().getContextClassLoader())
-    BosonMessage msg = new BosonMessage();
-    ByteBuf data;
     /**
      * The maximum number of times methods can invoked themselves.
      */
     public static final int MAX_RECURSION_DEPTH = 10;
     private final ReflectionUtil reflection = new ReflectionUtil(MAX_RECURSION_DEPTH);
+    Logger log = LoggerFactory.getLogger(getClass());
+    ClassLoader loader = Thread.currentThread().getContextClassLoader();
+    // new BosonClassLoader(Thread.currentThread().getContextClassLoader())
+    BosonMessage msg = new BosonMessage();
+    ByteBuf data;
     private IdentityHashMap<Integer, Object> references = new IdentityHashMap<>();
     private int msgSize;
 
@@ -100,7 +101,9 @@ public class BosonReader {
                 default:
                     throw new InvalidRequestResponseTypeException(String.
                             format("The type %s does not match any of the supported" +
-                                    " response or request types (method,callback,parameter)", type), null);
+                                    " response or request types (method,callback,parameter)" +
+                                    "\n data: \n %s",
+                                    type, new String(data.array())), null);
             }
         }
         return msg;
@@ -331,8 +334,6 @@ public class BosonReader {
             type = data.readByte();
         }
         if (ARRAY == type) {
-            //  read component type (not used in Java but required in Scala)
-            data.readByte();
             //read number of elements in the array
             int size = data.readInt();
             Object[] arr = new Object[size];
@@ -435,8 +436,7 @@ public class BosonReader {
         }
         if (POLO == type) {
             verifyReadable();
-            //read reference flag
-            data.readByte();
+            //get reference
             int ref = data.readInt();
             //get class name
             String poloClassName = readString(false, -1);
@@ -456,19 +456,17 @@ public class BosonReader {
                             poloClassName), e);
                 }
                 Object instance = klass.newInstance();
-                //if ref > -1 then put the instance in the reference table
-                if (ref > -1) {
-                    references.put(ref, instance);
-                }
+                //Put the instance in the reference table
+                references.put(ref, instance);
                 //get ALL (public,private,protect,package) fields declared in the class - excludes inherited fields
                 List<Field> fields = reflection.getAllFields(new ArrayList<Field>(), klass, 0);
                 //create a map of fields names -> Field
                 Map<String, Field> fieldset = new HashMap<>();
                 for (Field field : fields) {
-//                  if (!Modifier.isFinal(field.getModifiers())) {
-                    //only add non-final fields
-                    fieldset.put(field.getName(), field);
-//                  }
+                    if (!Modifier.isFinal(field.getModifiers())) {
+                        //only add non-final fields
+                        fieldset.put(field.getName(), field);
+                    }
                 }
                 for (int i = 0; i < size; i++) {
                     verifyReadable();
@@ -478,67 +476,62 @@ public class BosonReader {
                     int valueType = data.readByte();
                     Object value = readType(valueType);
                     Field field = fieldset.get(key);
-                    if (field != null) {
+                    if (field != null && value != null) {
                         field.setAccessible(true);
                         //if field's type is an array  create an array of it's type
                         Class<?> fieldType = field.getType();
                         String cname = value == null ? "null" : value.getClass().getName();
                         if (fieldType.isArray()) {
-                            if (value == null) {
-                                log.warn(String.format("Field \":%s\" of class \"%s\" is an array but null", key,
-                                        klass.getName()));
-                            } else {
-                                if (value.getClass().isArray()) {
-                                    int length = Array.getLength(value);
-                                    //create an array of the expected type
-                                    Object arr = Array.newInstance(fieldType.getComponentType(), length);
-                                    for (int j = 0; j < length; j++) {
-                                        try {
-                                            //get current array value
-                                            Object arrayValue = Array.get(value, j);
-                                            Array.set(arr, j, arrayValue); //set the value at the current index, i
-                                        } catch (IllegalArgumentException iae) {
-                                            log.warn(String.format("Field \":%s\" of class \"%s\" is an array but " +
-                                                    "failed to set value at index \"%s\" - type \"%s\"",
-                                                    key, klass.getName(), j, cname));
-                                        }
-                                    }
+                            if (value.getClass().isArray()) {
+                                int length = Array.getLength(value);
+                                //create an array of the expected type
+                                Object arr = Array.newInstance(fieldType.getComponentType(), length);
+                                for (int j = 0; j < length; j++) {
                                     try {
-                                        field.set(instance, arr);
-                                    } catch (IllegalAccessException e) {
-                                        log.debug(String.format("Unable to access field \"%s\" of class \"%s\" ", key,
-                                                klass.getName()));
+                                        //get current array value
+                                        Object arrayValue = Array.get(value, j);
+                                        Array.set(arr, j, arrayValue); //set the value at the current index, i
+                                    } catch (IllegalArgumentException iae) {
+                                        log.warn(String.format("Field \":%s\" of class \"%s\" is an array but " +
+                                                "failed to set value at index \"%s\" - type \"%s\"",
+                                                key, klass.getName(), j, cname));
                                     }
-                                } else {
-                                    log.warn(String.format("Field \":%s\" of class \"%s\" is an array but value " +
-                                            "received is \"%s\" of type \"%s\"", key, klass.getName(), value, cname));
                                 }
+                                try {
+                                    field.set(instance, arr);
+                                } catch (IllegalAccessException e) {
+                                    log.debug(String.format("Unable to access field \"%s\" of class \"%s\" ", key,
+                                            klass.getName()));
+                                }
+                            } else {
+                                log.warn(String.format("Field \":%s\" of class \"%s\" is an array but value " +
+                                        "received is \"%s\" of type \"%s\"", key, klass.getName(), value, cname));
                             }
                         } else {
-                            if (value != null) {
-                                try {
-                                    field.set(instance, value);
-                                } catch (IllegalArgumentException iae) {
-                                    String vclass = value.getClass().getName();
-                                    log.warn(String.format("Field \"%s\" of class \"%s\" is of type %s " +
-                                            "but value received is \"%s\" of type \"%s\"",
-                                            key, klass.getName(), vclass, value, cname));
-                                } catch (IllegalAccessException e) {
-                                    log.debug(String.format("Unable to access field \"%s\" of class \"%s\" ",
-                                            key, klass.getName()));
-                                }
+                            try {
+                                field.set(instance, value);
+                            } catch (IllegalArgumentException iae) {
+                                String vclass = value.getClass().getName();
+                                log.warn(String.format("Field \"%s\" of class \"%s\" is of type %s " +
+                                        "but value received is \"%s\" of type \"%s\"",
+                                        key, klass.getName(), vclass, value, cname));
+                            } catch (IllegalAccessException e) {
+                                log.debug(String.format("Unable to access field \"%s\" of class \"%s\" ",
+                                        key, klass.getName()));
                             }
                         }
                     } else {
-                        log.warn(String.format("Field %s received with value %s but the " +
-                                "field does not exist in class %s", key, value, poloClassName));
+                        if (value != null) {
+                            log.warn(String.format("Field %s received with value %s but the " +
+                                    "field does not exist in class %s", key, value, poloClassName));
+                        }
                     }
                 }
                 return instance;
             } catch (InstantiationException e) {
                 log.warn("Unable to create an instance", e);
             } catch (IllegalAccessException e) {
-                log.debug("Unable to access field");
+                log.debug("Unable to access field", e);
             }
         } else {
             throw new UnsupportedBosonTypeException(String.format("type %s is not a Boson POLO", type), null);
@@ -557,7 +550,7 @@ public class BosonReader {
             obj = references.get(reference);
             return obj;
         } else {
-            throw new UnsupportedBosonTypeException(String.format("type %s is not a Boson POLO", type), null);
+            throw new UnsupportedBosonTypeException(String.format("type %s is not a Boson reference", type), null);
         }
     }
 
