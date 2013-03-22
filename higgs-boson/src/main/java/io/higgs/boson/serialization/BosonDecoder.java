@@ -1,7 +1,6 @@
 package io.higgs.boson.serialization;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.ByteToMessageDecoder;
 
@@ -27,7 +26,7 @@ public class BosonDecoder extends ByteToMessageDecoder {
         //from 0th byte to dataLength + 5 (1 byte = protocol, 4 bytes = size hence + 5)
         int readIndex = dataLength + 5;
         buffer.resetReaderIndex();
-        ByteBuf b = Unpooled.buffer(readIndex);
+        ByteBuf b = ctx.alloc().buffer(readIndex);
         buffer.readBytes(b, readIndex);
         return b;
     }
