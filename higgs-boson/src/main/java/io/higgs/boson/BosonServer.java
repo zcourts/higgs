@@ -4,6 +4,9 @@ import com.google.common.base.Optional;
 import io.higgs.RPCServer;
 import io.higgs.boson.serialization.BosonDecoder;
 import io.higgs.boson.serialization.BosonEncoder;
+import io.higgs.boson.serialization.mutators.ReadMutator;
+import io.higgs.boson.serialization.mutators.ReadWriteMutator;
+import io.higgs.boson.serialization.mutators.WriteMutator;
 import io.higgs.boson.serialization.v1.BosonReader;
 import io.higgs.boson.serialization.v1.BosonWriter;
 import io.higgs.events.ChannelMessage;
@@ -12,12 +15,17 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPipeline;
 
+import java.util.HashSet;
+import java.util.Set;
+
 /**
  * @author Courtney Robinson <courtney@crlog.info>
  */
 public class BosonServer extends RPCServer<BosonMessage, BosonMessage, ByteBuf> {
     protected boolean compression;
     protected boolean ssl;
+    protected Set<WriteMutator> writeMutators = new HashSet<>();
+    protected Set<ReadMutator> readMutators = new HashSet<>();
 
     public BosonServer(int port) {
         this(port, false);
@@ -57,12 +65,12 @@ public class BosonServer extends RPCServer<BosonMessage, BosonMessage, ByteBuf> 
 
     @Override
     public ByteBuf serialize(final Channel ctx, final BosonMessage msg) {
-        return new BosonWriter(msg).serialize();
+        return new BosonWriter(readMutators, msg).serialize();
     }
 
     @Override
     public BosonMessage deserialize(final ChannelHandlerContext ctx, final ByteBuf msg) {
-        return new BosonReader(msg).deSerialize();
+        return new BosonReader(writeMutators, msg).deSerialize();
     }
 
     @Override
@@ -75,5 +83,23 @@ public class BosonServer extends RPCServer<BosonMessage, BosonMessage, ByteBuf> 
         pipeline.addLast("decoder", new BosonDecoder());
         pipeline.addLast("encoder", new BosonEncoder());
         return true; //auto add handler
+    }
+
+    public boolean addWriteMutator(WriteMutator mutator) {
+        return mutator != null && writeMutators.add(mutator);
+    }
+
+    public boolean addReadMutator(ReadMutator mutator) {
+        return mutator != null && readMutators.add(mutator);
+    }
+
+    /**
+     * Add a mutator which can be used by both the serializer and de-serializer
+     *
+     * @param mutator the mutator to add
+     * @return true if not null and  successfully added
+     */
+    public boolean addReadWriteMutator(ReadWriteMutator mutator) {
+        return mutator != null && readMutators.add(mutator) && writeMutators.add(mutator);
     }
 }
