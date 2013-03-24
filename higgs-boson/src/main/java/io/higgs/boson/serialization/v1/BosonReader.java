@@ -4,6 +4,7 @@ import io.higgs.boson.BosonMessage;
 import io.higgs.boson.serialization.InvalidDataException;
 import io.higgs.boson.serialization.InvalidRequestResponseTypeException;
 import io.higgs.boson.serialization.UnsupportedBosonTypeException;
+import io.higgs.boson.serialization.mutators.WriteMutator;
 import io.higgs.reflect.ReflectionUtil;
 import io.higgs.util.StringUtil;
 import io.netty.buffer.ByteBuf;
@@ -51,17 +52,23 @@ public class BosonReader {
      * The maximum number of times methods can invoked themselves.
      */
     public static final int MAX_RECURSION_DEPTH = 10;
-    private final ReflectionUtil reflection = new ReflectionUtil(MAX_RECURSION_DEPTH);
-    Logger log = LoggerFactory.getLogger(getClass());
-    ClassLoader loader = Thread.currentThread().getContextClassLoader();
+    protected final ReflectionUtil reflection = new ReflectionUtil(MAX_RECURSION_DEPTH);
+    protected final Set<WriteMutator> mutators;
+    protected Logger log = LoggerFactory.getLogger(getClass());
+    protected ClassLoader loader = Thread.currentThread().getContextClassLoader();
     // new BosonClassLoader(Thread.currentThread().getContextClassLoader())
-    BosonMessage msg = new BosonMessage();
-    ByteBuf data;
-    private IdentityHashMap<Integer, Object> references = new IdentityHashMap<>();
-    private int msgSize;
+    protected BosonMessage msg = new BosonMessage();
+    protected ByteBuf data;
+    protected IdentityHashMap<Integer, Object> references = new IdentityHashMap<>();
+    protected int msgSize;
 
     public BosonReader(ByteBuf msg) {
-        data = msg;
+        this(new HashSet<WriteMutator>(), msg);
+    }
+
+    public BosonReader(Set<WriteMutator> mutators, ByteBuf msg) {
+        this.data = msg;
+        this.mutators = mutators;
     }
 
     public BosonMessage deSerialize() {
@@ -446,95 +453,126 @@ public class BosonReader {
             }
             //get number of fields serialized
             int size = data.readInt();
-            //try to load the class if available
-            try {
-                Class<?> klass;
-                try {
-                    klass = loader.loadClass(poloClassName);
-                } catch (ClassNotFoundException e) {
-                    throw new IllegalArgumentException(String.format("Cannot load the requested class %s",
-                            poloClassName), e);
+            WriteMutator mutator = null;
+            for (WriteMutator m : mutators) {
+                if (m.canCreate(poloClassName)) {
+                    mutator = m;
+                    break;
                 }
-                Object instance = klass.newInstance();
-                //Put the instance in the reference table
-                references.put(ref, instance);
-                //get ALL (public,private,protect,package) fields declared in the class - excludes inherited fields
-                List<Field> fields = reflection.getAllFields(new ArrayList<Field>(), klass, 0);
-                //create a map of fields names -> Field
-                Map<String, Field> fieldset = new HashMap<>();
-                for (Field field : fields) {
-                    if (!Modifier.isFinal(field.getModifiers())) {
-                        //only add non-final fields
-                        fieldset.put(field.getName(), field);
-                    }
-                }
-                for (int i = 0; i < size; i++) {
-                    verifyReadable();
-                    //polo keys are required to be strings
-                    String key = readString(false, 0);
-                    verifyReadable();
-                    int valueType = data.readByte();
-                    Object value = readType(valueType);
-                    Field field = fieldset.get(key);
-                    if (field != null && value != null) {
-                        field.setAccessible(true);
-                        //if field's type is an array  create an array of it's type
-                        Class<?> fieldType = field.getType();
-                        String cname = value == null ? "null" : value.getClass().getName();
-                        if (fieldType.isArray()) {
-                            if (value.getClass().isArray()) {
-                                int length = Array.getLength(value);
-                                //create an array of the expected type
-                                Object arr = Array.newInstance(fieldType.getComponentType(), length);
-                                for (int j = 0; j < length; j++) {
-                                    try {
-                                        //get current array value
-                                        Object arrayValue = Array.get(value, j);
-                                        Array.set(arr, j, arrayValue); //set the value at the current index, i
-                                    } catch (IllegalArgumentException iae) {
-                                        log.warn(String.format("Field \":%s\" of class \"%s\" is an array but " +
-                                                "failed to set value at index \"%s\" - type \"%s\"",
-                                                key, klass.getName(), j, cname));
-                                    }
-                                }
-                                try {
-                                    field.set(instance, arr);
-                                } catch (IllegalAccessException e) {
-                                    log.debug(String.format("Unable to access field \"%s\" of class \"%s\" ", key,
-                                            klass.getName()));
-                                }
-                            } else {
-                                log.warn(String.format("Field \":%s\" of class \"%s\" is an array but value " +
-                                        "received is \"%s\" of type \"%s\"", key, klass.getName(), value, cname));
-                            }
-                        } else {
-                            try {
-                                field.set(instance, value);
-                            } catch (IllegalArgumentException iae) {
-                                String vclass = value.getClass().getName();
-                                log.warn(String.format("Field \"%s\" of class \"%s\" is of type %s " +
-                                        "but value received is \"%s\" of type \"%s\"",
-                                        key, klass.getName(), vclass, value, cname));
-                            } catch (IllegalAccessException e) {
-                                log.debug(String.format("Unable to access field \"%s\" of class \"%s\" ",
-                                        key, klass.getName()));
-                            }
-                        }
-                    } else {
-                        if (value != null) {
-                            log.warn(String.format("Field %s received with value %s but the " +
-                                    "field does not exist in class %s", key, value, poloClassName));
-                        }
-                    }
-                }
-                return instance;
-            } catch (InstantiationException e) {
-                log.warn("Unable to create an instance", e);
-            } catch (IllegalAccessException e) {
-                log.debug("Unable to access field", e);
+            }
+            if (mutator != null) {
+                return readPoloMutator(mutator, poloClassName, ref, size);
+            } else {
+                return readPoloReflection(poloClassName, ref, size);
             }
         } else {
             throw new UnsupportedBosonTypeException(String.format("type %s is not a Boson POLO", type), null);
+        }
+    }
+
+    private Object readPoloMutator(WriteMutator mutator, String className, int ref, int size) {
+        Object instance = mutator.newInstance(className);
+        references.put(ref, instance);
+        for (int i = 0; i < size; i++) {
+            verifyReadable();
+            //polo keys are required to be strings
+            String key = readString(false, 0);
+            verifyReadable();
+            int valueType = data.readByte();
+            Object value = readType(valueType);
+            //TODO if false is returned try to set the field via reflection
+            mutator.set(instance, key, value);
+        }
+        return instance;
+    }
+
+    private Object readPoloReflection(String poloClassName, int ref, int size) {
+        //try to load the class if available
+        try {
+            Class<?> klass;
+            try {
+                klass = loader.loadClass(poloClassName);
+            } catch (ClassNotFoundException e) {
+                throw new IllegalArgumentException(String.format("Cannot load the requested class %s",
+                        poloClassName), e);
+            }
+            Object instance = klass.newInstance();
+            //Put the instance in the reference table
+            references.put(ref, instance);
+            //get ALL (public,private,protect,package) fields declared in the class - excludes inherited fields
+            List<Field> fields = reflection.getAllFields(new ArrayList<Field>(), klass, 0);
+            //create a map of fields names -> Field
+            Map<String, Field> fieldset = new HashMap<>();
+            for (Field field : fields) {
+                if (!Modifier.isFinal(field.getModifiers())) {
+                    //only add non-final fields
+                    fieldset.put(field.getName(), field);
+                }
+            }
+            for (int i = 0; i < size; i++) {
+                verifyReadable();
+                //polo keys are required to be strings
+                String key = readString(false, 0);
+                verifyReadable();
+                int valueType = data.readByte();
+                Object value = readType(valueType);
+                Field field = fieldset.get(key);
+                if (field != null && value != null) {
+                    field.setAccessible(true);
+                    //if field's type is an array  create an array of it's type
+                    Class<?> fieldType = field.getType();
+                    String cname = value == null ? "null" : value.getClass().getName();
+                    if (fieldType.isArray()) {
+                        if (value.getClass().isArray()) {
+                            int length = Array.getLength(value);
+                            //create an array of the expected type
+                            Object arr = Array.newInstance(fieldType.getComponentType(), length);
+                            for (int j = 0; j < length; j++) {
+                                try {
+                                    //get current array value
+                                    Object arrayValue = Array.get(value, j);
+                                    Array.set(arr, j, arrayValue); //set the value at the current index, i
+                                } catch (IllegalArgumentException iae) {
+                                    log.warn(String.format("Field \":%s\" of class \"%s\" is an array but " +
+                                            "failed to set value at index \"%s\" - type \"%s\"",
+                                            key, klass.getName(), j, cname));
+                                }
+                            }
+                            try {
+                                field.set(instance, arr);
+                            } catch (IllegalAccessException e) {
+                                log.debug(String.format("Unable to access field \"%s\" of class \"%s\" ", key,
+                                        klass.getName()));
+                            }
+                        } else {
+                            log.warn(String.format("Field \":%s\" of class \"%s\" is an array but value " +
+                                    "received is \"%s\" of type \"%s\"", key, klass.getName(), value, cname));
+                        }
+                    } else {
+                        try {
+                            field.set(instance, value);
+                        } catch (IllegalArgumentException iae) {
+                            String vclass = value.getClass().getName();
+                            log.warn(String.format("Field \"%s\" of class \"%s\" is of type %s " +
+                                    "but value received is \"%s\" of type \"%s\"",
+                                    key, klass.getName(), vclass, value, cname));
+                        } catch (IllegalAccessException e) {
+                            log.debug(String.format("Unable to access field \"%s\" of class \"%s\" ",
+                                    key, klass.getName()));
+                        }
+                    }
+                } else {
+                    if (value != null) {
+                        log.warn(String.format("Field %s received with value %s but the " +
+                                "field does not exist in class %s", key, value, poloClassName));
+                    }
+                }
+            }
+            return instance;
+        } catch (InstantiationException e) {
+            log.warn("Unable to create an instance", e);
+        } catch (IllegalAccessException e) {
+            log.debug("Unable to access field", e);
         }
         return null;
     }

@@ -2,6 +2,7 @@ package io.higgs.boson.serialization.v1;
 
 import io.higgs.boson.BosonMessage;
 import io.higgs.boson.serialization.BosonProperty;
+import io.higgs.boson.serialization.mutators.ReadMutator;
 import io.higgs.reflect.ReflectionUtil;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
@@ -13,6 +14,7 @@ import java.lang.reflect.Modifier;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -49,14 +51,20 @@ public class BosonWriter {
      */
     public static final int MAX_RECURSION_DEPTH = 10;
     public static final Charset utf8 = Charset.forName("utf-8");
-    final HashMap<Object, Integer> references = new HashMap<>();
-    final AtomicInteger reference = new AtomicInteger();
-    final BosonMessage msg;
-    private final ReflectionUtil reflection = new ReflectionUtil(MAX_RECURSION_DEPTH);
+    protected final HashMap<Object, Integer> references = new HashMap<>();
+    protected final AtomicInteger reference = new AtomicInteger();
+    protected final BosonMessage msg;
+    protected final ReflectionUtil reflection = new ReflectionUtil(MAX_RECURSION_DEPTH);
+    protected final Set<ReadMutator> mutators;
     private Logger log = LoggerFactory.getLogger(getClass());
 
     public BosonWriter(BosonMessage msg) {
+        this(new HashSet<ReadMutator>(), msg);
+    }
+
+    public BosonWriter(Set<ReadMutator> mutators, BosonMessage msg) {
         this.msg = msg;
+        this.mutators = mutators;
     }
 
     public ByteBuf serialize() {
@@ -220,9 +228,43 @@ public class BosonWriter {
             validateAndWriteType(buffer, obj);
             return;
         }
-        Class<BosonProperty> propertyClass = BosonProperty.class;
-        Class<?> klass = obj.getClass();
         Map<String, Object> data = new HashMap<>();
+        Class<?> klass = obj.getClass();
+        ReadMutator mutator = null;
+        for (ReadMutator m : mutators) {
+            if (m.canReadFields(klass, obj)) {
+                mutator = m;
+                break;
+            }
+        }
+        if (mutator != null) {
+            writePoloFieldsViaMutator(mutator, klass, obj, data);
+        } else {
+            writePoloFieldsViaReflection(klass, obj, data);
+        }
+        //if at least one field is allowed to be serialized
+        buffer.writeByte(POLO); //type
+        //write the POLO's reference number
+        buffer.writeInt(ref);
+        writeString(buffer, klass.getName()); //class name
+        buffer.writeInt(data.size()); //size
+        for (String key : data.keySet()) {
+            Object value = data.get(key);
+            writeString(buffer, key); //key payload must be a string
+            validateAndWriteType(buffer, value); //value payload
+        }
+    }
+
+    private void writePoloFieldsViaMutator(ReadMutator mutator, Class<?> klass, Object obj, Map<String, Object> data) {
+        List<String> fields = mutator.fields(klass, obj);
+        for (String field : fields) {
+            Object value = mutator.get(klass, obj, field);
+            data.put(field, value);
+        }
+    }
+
+    private void writePoloFieldsViaReflection(Class<?> klass, Object obj, Map<String, Object> data) {
+        Class<BosonProperty> propertyClass = BosonProperty.class;
         boolean ignoreInheritedFields = false;
         if (klass.isAnnotationPresent(propertyClass)) {
             ignoreInheritedFields = klass.getAnnotation(propertyClass).ignoreInheritedFields();
@@ -263,17 +305,6 @@ public class BosonWriter {
                             field.getDeclaringClass().getName()), e);
                 }
             }
-        }
-        //if at least one field is allowed to be serialized
-        buffer.writeByte(POLO); //type
-        //write the POLO's reference number
-        buffer.writeInt(ref);
-        writeString(buffer, klass.getName()); //class name
-        buffer.writeInt(data.size()); //size
-        for (String key : data.keySet()) {
-            Object value = data.get(key);
-            writeString(buffer, key); //key payload must be a string
-            validateAndWriteType(buffer, value); //value payload
         }
     }
 
