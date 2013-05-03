@@ -39,23 +39,23 @@ requests to save posts between them
 Any Server or Client can emit an event.
 When an event is emitted it can have parameters/data associated with it.
 The nodes that subscribe to the given event can choose to accept some or all of the parameters emitted.
-What parameters a subscriber accepts is determined by the data types of it's subscription method signature.
+What parameters a subscriber accepts is determined by the data types of it's subscription classMethod signature.
 Subscribers can also indicate a "strict" mode where a given parameters must be sent (using an annotation for e.g.)
 
 ## Data Transformers
 
 A Node registers what are called DataTransformers. A data transformer is capable of accepting data of different
-formats and converting them into a format suitable to pass as a parameter to a subscription method.
+formats and converting them into a format suitable to pass as a parameter to a subscription classMethod.
 A data transformer is registered once per node but multiple instances are used. If no data transformer is
 registered or the registered ones cannot convert a particular type then the parameter types of the subscription
-method must match the parameters being emitted by an event producer (another node or client).
+classMethod must match the parameters being emitted by an event producer (another node or client).
 For e.g.
 Given 2 Nodes, A and B.
 B subscribers to "save-post" and accepts parameters (String user_id,Post post)
 Node A wants to emit a "save-post" event but it has the data in a Map.
 One of the nodes, A or B must have a data transformer that accepts a Map and outputs a String and a Post type.
 If Node A has such a transformer then the conversion happens before emitting the event, if Node B has such a
-transformer then the Map is emitted and the conversion happens on Node B before invoking the subscribed method.
+transformer then the Map is emitted and the conversion happens on Node B before invoking the subscribed classMethod.
 
 Transformers from other nodes (not A or B) cannot be used for the conversion, even if they have such a transformer
 i.e. either Node that is involved in emitting or consuming the event can have the transformer but no one else.
@@ -65,7 +65,7 @@ i.e. either Node that is involved in emitting or consuming the event can have th
 If neither Node has the required transformer then the event producer should immediately be notified (thorwing an exception for e.g.)
 and nothing should be emitted.
 The decision to trigger an error should be based entirely on the data transformers registered and the param types
-of the subscription method. Doing so means no data needs to be sent to determine if a Node can handle a set of parameters
+of the subscription classMethod. Doing so means no data needs to be sent to determine if a Node can handle a set of parameters
 making the entire operation local to the Node producing the event and reducing overall network IO
 
 # Cluster state

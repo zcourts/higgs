@@ -1,6 +1,6 @@
 # Boson Protocol version 1
 
-Boson is a language independent binary protocol for object serialization and remote method invocation.
+Boson is a language independent binary protocol for object serialization and remote classMethod invocation.
 While the base types are based on Java's primitives, the bit size of data type is given
 to make it uniform across languages.
 
@@ -165,11 +165,11 @@ To allow for other data types to be added and be continuous both connection and 
 
 A connection has 3 components to it.
 
-1. __method__ => A remote method name, this is a __string__ of arbitrary length/content used to identify which method is invoked on the remote service.
+1. __method__ => A remote classMethod name, this is a __string__ of arbitrary length/content used to identify which classMethod is invoked on the remote service.
 2. __callback__ => A __string__ which contains the name of the function to be invoked on the client when a response is received for a given connection.
-3. __parameters__ => An __array__ of values, which can be any valid boson data type, these are the __ordered__ parameters that will be passed to the remote method.
+3. __parameters__ => An __array__ of values, which can be any valid boson data type, these are the __ordered__ parameters that will be passed to the remote classMethod.
 
-The order the method name, callback and parameters are sent in __must be (method,callback,parameters)__.
+The order the classMethod name, callback and parameters are sent in __must be (classMethod,callback,parameters)__.
 This will allow partial de-serialization and make de-serializing POLOs easier in statically typed languages
 
 ### Types/Flags
@@ -206,7 +206,7 @@ If the client callback only accept a single parameter (the response) then the cl
 1. Write the response type (-124,-123)
 2. Write the contents of the response type using the rules for that content's type ( e.g if its an int write int flag then the int)
 
-The order the method name and parameters are sent in __must be (method,parameters)__.
+The order the classMethod name and parameters are sent in __must be (classMethod,parameters)__.
 This will allow partial de-serialization and make de-serializing POLOs easier in statically typed languages
 
 Streaming (Protocol version 2)
