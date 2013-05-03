@@ -12,8 +12,11 @@ import org.yaml.snakeyaml.constructor.Constructor;
  * @author Courtney Robinson <courtney@crlog.info>
  */
 public class Demo {
+    private Demo() {
+    }
+
     public static void main(String... args) {
-        Constructor constructor = new Constructor(HttpConfig.class);//HttpConfig.class is root
+        Constructor constructor = new Constructor(HttpConfig.class); //HttpConfig.class is root
         TypeDescription errorDesc = new TypeDescription(ErrorConfig.class);
         errorDesc.putListPropertyType("templates", HttpTemplate.class);
         constructor.addTypeDescription(errorDesc);

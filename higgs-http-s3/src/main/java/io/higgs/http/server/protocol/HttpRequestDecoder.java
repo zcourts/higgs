@@ -19,7 +19,6 @@ import io.netty.handler.codec.http.HttpMessage;
 import io.netty.handler.codec.http.HttpMethod;
 import io.netty.handler.codec.http.HttpVersion;
 
-
 public class HttpRequestDecoder extends io.netty.handler.codec.http.HttpRequestDecoder {
 
     @Override

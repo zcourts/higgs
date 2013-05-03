@@ -2,12 +2,8 @@ package io.higgs.http.server.protocol;
 
 import io.higgs.core.ProtocolDetector;
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.MessageBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPipeline;
-import io.netty.handler.codec.MessageToMessageEncoder;
-import io.netty.handler.codec.http.DefaultHttpContent;
-import io.netty.handler.codec.http.HttpContentCompressor;
 import io.netty.handler.stream.ChunkedWriteHandler;
 
 /**

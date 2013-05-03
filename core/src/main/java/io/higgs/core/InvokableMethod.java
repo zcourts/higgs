@@ -1,9 +1,5 @@
-package io.higgs.core.api;
+package io.higgs.core;
 
-import io.higgs.core.Attr;
-import io.higgs.core.ObjectFactory;
-import io.higgs.core.Sortable;
-import io.higgs.method;
 import io.netty.channel.ChannelHandlerContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -169,17 +165,33 @@ public abstract class InvokableMethod implements Sortable<InvokableMethod> {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
 
         InvokableMethod that = (InvokableMethod) o;
 
-        if (attrs != null ? !attrs.equals(that.attrs) : that.attrs != null) return false;
-        if (classMethod != null ? !classMethod.equals(that.classMethod) : that.classMethod != null) return false;
-        if (factory != null ? !factory.equals(that.factory) : that.factory != null) return false;
-        if (klass != null ? !klass.equals(that.klass) : that.klass != null) return false;
-        if (path != null ? !path.equals(that.path) : that.path != null) return false;
-        if (!Arrays.equals(pathAttributes, that.pathAttributes)) return false;
+        if (attrs != null ? !attrs.equals(that.attrs) : that.attrs != null) {
+            return false;
+        }
+        if (classMethod != null ? !classMethod.equals(that.classMethod) : that.classMethod != null) {
+            return false;
+        }
+        if (factory != null ? !factory.equals(that.factory) : that.factory != null) {
+            return false;
+        }
+        if (klass != null ? !klass.equals(that.klass) : that.klass != null) {
+            return false;
+        }
+        if (path != null ? !path.equals(that.path) : that.path != null) {
+            return false;
+        }
+        if (!Arrays.equals(pathAttributes, that.pathAttributes)) {
+            return false;
+        }
 
         return true;
     }

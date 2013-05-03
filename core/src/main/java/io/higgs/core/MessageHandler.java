@@ -1,6 +1,5 @@
 package io.higgs.core;
 
-import io.higgs.core.api.InvokableMethod;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundMessageHandlerAdapter;
 import org.slf4j.Logger;
@@ -29,14 +28,14 @@ public abstract class MessageHandler<C extends ServerConfig, T> extends ChannelI
         this.methods = methods;
     }
 
-
     /**
      * Finds a method which matches the given path AND is an instance of the provided method class
      *
      * @param path        the path to match against
      * @param ctx         the context which the request belongs to
      * @param msg         the request/message
-     * @param methodClass the concrete implementation of {@link io.higgs.core.api.InvokableMethod} which must also match  @return the first method which matches or null if none
+     * @param methodClass the concrete implementation of {@link InvokableMethod} which must also match
+     * @return the first method which matches or null if none
      */
     public <M extends InvokableMethod> M findMethod(String path, ChannelHandlerContext ctx,
                                                     Object msg, Class<M> methodClass) {

@@ -1,6 +1,5 @@
 package io.higgs.core;
 
-import io.higgs.core.api.InvokableMethod;
 import io.higgs.core.ssl.SSLConfigFactory;
 import io.higgs.core.ssl.SSLContextFactory;
 import io.netty.buffer.ByteBuf;

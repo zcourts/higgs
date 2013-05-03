@@ -1,7 +1,5 @@
 package io.higgs.core;
 
-import io.higgs.core.api.InvokableMethod;
-
 import java.lang.reflect.Method;
 
 /**

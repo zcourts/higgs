@@ -1,9 +1,9 @@
 package io.higgs.boson;
 
-import java.io.IOException;
-
 import com.google.common.base.Preconditions;
 import io.netty.buffer.ByteBuf;
+
+import java.io.IOException;
 
 /**
  * <p>Encodes signed and unsigned values using a common variable-length

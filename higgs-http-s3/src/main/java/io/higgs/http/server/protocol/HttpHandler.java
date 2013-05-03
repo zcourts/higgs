@@ -1,8 +1,8 @@
 package io.higgs.http.server.protocol;
 
+import io.higgs.core.InvokableMethod;
 import io.higgs.core.MessageHandler;
 import io.higgs.core.SortableComparator;
-import io.higgs.core.api.InvokableMethod;
 import io.higgs.http.server.WebApplicationException;
 import io.higgs.http.server.config.HttpConfig;
 import io.higgs.http.server.params.HttpFile;
@@ -85,10 +85,13 @@ public class HttpHandler extends MessageHandler<HttpConfig, Object> {
         if (msg instanceof HttpRequest) {
             if (request != null) {
                 //browsers like chrome keep the connection open and make additional requests
-//                throw new IllegalStateException(String.format("HttpRequest instance received but request already set." +
+//                throw new IllegalStateException(String.format("HttpRequest instance received but request already
+// set." +
 //                        "Old request :\n%s \nNew request :\n%s", request, msg));
             }
             request = (HttpRequest) msg;
+            //apply transcriptions
+            protocolConfig.getTranscriber().transcribe(request);
             //must always set protocol config before anything uses the request
             request.setConfig(protocolConfig);
             //initialise request, setting cookies, media types etc
@@ -146,7 +149,6 @@ public class HttpHandler extends MessageHandler<HttpConfig, Object> {
                     allHttpDataReceived(ctx);
                 }
             }
-
         }
     }
 
@@ -185,7 +187,6 @@ public class HttpHandler extends MessageHandler<HttpConfig, Object> {
         }
         invoke(ctx);
     }
-
 
     private void invoke(ChannelHandlerContext ctx) {
         Object[] params = injector.injectParams(method, request, ctx);

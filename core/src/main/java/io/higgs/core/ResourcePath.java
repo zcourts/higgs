@@ -1,4 +1,4 @@
-package io.higgs.core.api;
+package io.higgs.core;
 
 import java.util.Arrays;
 import java.util.HashMap;

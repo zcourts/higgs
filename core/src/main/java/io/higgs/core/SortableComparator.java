@@ -9,6 +9,6 @@ public class SortableComparator<T> implements Comparator<Sortable<T>> {
 
     @Override
     public int compare(Sortable<T> a, Sortable<T> b) {
-        return (a.priority() > b.priority() ? -1 : (a.priority() == b.priority() ? 0 : 1));
+        return a.priority() > b.priority() ? -1 : (a.priority() == b.priority() ? 0 : 1);
     }
 }
