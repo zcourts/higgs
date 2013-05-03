@@ -28,15 +28,15 @@ template_config :
   cache_age_ms : 86400000
   #encoding used to read template files
   character_encoding : utf-8
-  #suffix appended to all templates so that index becomes index.html
+  #suffix appended to all templates so that index becomes defaultt.html
   suffix : .html
   #prefix prepended to all templates. can be directory or string...or both
   prefix : templates/
   #the resolvers determine how a template is loaded and in which order
   #if 1 then try to load templates from the class path first
-  classLoader_resolver_order : 1
+  classLoader_resolver_order : 2
   #try to load templates after class path if template not found
-  fileResolver_order : 2
+  fileResolver_order : 1
   url_resolver_order : 3
   #when a resource returns a map, should the map's keys become template variable names?
   convert_map_responses_to_key_value_pairs : true
@@ -72,9 +72,12 @@ files :
   #any file with one of these extensions is sent with the given content-type header
   custom_mime_types :
     htm,html : text/html
-    json : application/json
-    xml  : application/xml
-    png  : image/png
-    css  : text/css
-    js   : text/javascript
-
+    json     : application/json
+    xml      : application/xml
+    png      : image/png
+    css      : text/css
+    js       : text/javascript
+error_templates :
+  templates:
+  -  {code : 404, file: 404.html}
+  -  {code : 500, file: 500.html}

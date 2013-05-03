@@ -9,7 +9,7 @@ import java.lang.annotation.Target;
  * @author Courtney Robinson <courtney@crlog.info>
  */
 @Retention(RetentionPolicy.RUNTIME)
-@Target({ ElementType.PARAMETER, ElementType.TYPE })
+@Target({ElementType.METHOD,ElementType.TYPE})
 public @interface Produces {
-    String[] value() default MediaType.WILDCARD;
+    String[] value() default {MediaType.WILDCARD};
 }

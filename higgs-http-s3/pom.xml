@@ -1,22 +1,21 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
-    <groupId>com.fillta</groupId>
     <artifactId>higgs-http-s3</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <name>${project.artifactId}</name>
     <description>Higgs HTTP S3 (Single Site Server)</description>
     <packaging>jar</packaging>
     <parent>
-        <groupId>com.fillta</groupId>
+        <groupId>io.higgs</groupId>
         <artifactId>higgs</artifactId>
         <relativePath>../pom.xml</relativePath>
         <version>0.0.1-SNAPSHOT</version>
     </parent>
     <dependencies>
         <dependency>
-            <groupId>com.fillta</groupId>
-            <artifactId>higgs-core</artifactId>
+            <groupId>io.higgs</groupId>
+            <artifactId>core</artifactId>
             <version>0.0.1-SNAPSHOT</version>
         </dependency>
         <!--json support-->
@@ -30,12 +29,6 @@
             <groupId>org.thymeleaf</groupId>
             <artifactId>thymeleaf</artifactId>
             <version>2.0.15</version>
-        </dependency>
-        <!--yaml support - used to load config-->
-        <dependency>
-            <groupId>org.yaml</groupId>
-            <artifactId>snakeyaml</artifactId>
-            <version>1.11</version>
         </dependency>
         <dependency>
             <groupId>junit</groupId>

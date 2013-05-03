@@ -1,6 +1,6 @@
 package io.higgs.http.server.params;
 
-import io.higgs.reflect.ReflectionUtil;
+import io.higgs.core.reflect.ReflectionUtil;
 import io.netty.handler.codec.http.Cookie;
 import io.netty.handler.codec.http.DefaultCookie;
 import org.slf4j.Logger;
@@ -8,15 +8,15 @@ import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * @author Courtney Robinson <courtney@crlog.info>
  */
 public class HttpCookie extends DefaultCookie {
-    private ReflectionUtil reflection = new ReflectionUtil();
     protected Logger log = LoggerFactory.getLogger(getClass());
+    private ReflectionUtil reflection = new ReflectionUtil();
 
     public HttpCookie(String name, String value) {
         super(name, value);
@@ -25,7 +25,7 @@ public class HttpCookie extends DefaultCookie {
 
     public HttpCookie(Cookie cookie) {
         this(cookie.getName(), cookie.getValue());
-        List<Field> fields = reflection.getAllFields(new ArrayList<Field>(), DefaultCookie.class, 1);
+        Set<Field> fields = reflection.getAllFields(new HashSet<Field>(), DefaultCookie.class, 1);
         for (Field field : fields) {
             try {
                 if (!Modifier.isFinal(field.getModifiers())) {

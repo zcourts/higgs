@@ -5,19 +5,19 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.introspect.VisibilityChecker;
-import io.higgs.http.server.HttpRequest;
-import io.higgs.http.server.HttpResponse;
-import io.higgs.http.server.HttpServer;
-import io.higgs.http.server.HttpStatus;
-import io.higgs.http.server.ResponseTransformer;
+import io.higgs.http.server.protocol.HttpMethod;
+import io.higgs.http.server.protocol.HttpRequest;
+import io.higgs.http.server.protocol.HttpResponse;
+import io.higgs.http.server.protocol.HttpStatus;
 import io.higgs.http.server.resource.MediaType;
-import io.netty.buffer.Unpooled;
+import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.HttpHeaders;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.concurrent.PriorityBlockingQueue;
+import java.io.File;
+import java.io.InputStream;
 
 /**
  * @author Courtney Robinson <courtney@crlog.info>
@@ -38,31 +38,37 @@ public class JsonTransformer extends BaseTransformer {
     }
 
     @Override
-    public boolean canTransform(Object response, HttpRequest request) {
-        for (MediaType type : request.getMediaTypes()) {
-            if (type.isCompatible(MediaType.APPLICATION_JSON_TYPE)
-                    || type.isCompatible(MediaType.TEXT_PLAIN_TYPE)) {
-                return true;
+    public boolean canTransform(Object response, HttpRequest request, MediaType mediaType,
+                                HttpMethod method, ChannelHandlerContext ctx) {
+        if (response != null && !(response instanceof File || response instanceof InputStream)) {
+            for (MediaType type : request.getMediaTypes()) {
+                if (type.isCompatible(MediaType.APPLICATION_JSON_TYPE)) {
+                    return true;
+                }
             }
         }
         return false;
     }
 
     @Override
-    public HttpResponse transform(HttpServer server, final Object returns, HttpRequest request,
-                                  PriorityBlockingQueue<ResponseTransformer> registeredTransformers) {
-        return transform(server, returns, request, registeredTransformers, null);
+    public HttpResponse transform(Object response, HttpRequest request, MediaType mediaType, HttpMethod method,
+                                  ChannelHandlerContext ctx) {
+        return transform(response, request, mediaType, method, ctx, null);
     }
 
-    public HttpResponse transform(HttpServer server, Object returns, HttpRequest request,
-                                  PriorityBlockingQueue<ResponseTransformer> transformers,
-                                  HttpResponseStatus status) {
+    @Override
+    public JsonTransformer instance() {
+        return new JsonTransformer();
+    }
+
+    public HttpResponse transform(Object response, HttpRequest request, MediaType mediaType, HttpMethod method,
+                                  ChannelHandlerContext ctx, HttpResponseStatus status) {
         byte[] data;
-        if (returns == null) {
+        if (response == null) {
             data = "{}".getBytes();
         } else {
             try {
-                data = mapper.writeValueAsBytes(returns);
+                data = mapper.writeValueAsBytes(response);
             } catch (JsonProcessingException e) {
                 log.warn("Unable to transform response to JSON", e);
                 //todo use template for 500
@@ -70,14 +76,13 @@ public class JsonTransformer extends BaseTransformer {
             }
         }
         if (data != null) {
-            HttpResponse response = new HttpResponse(request.getProtocolVersion(),
+            HttpResponse httpResponse = new HttpResponse(request.getProtocolVersion(),
                     status == null ? HttpStatus.OK : status,
-                    Unpooled.wrappedBuffer(data));
-            HttpHeaders.setContentLength(response, data.length);
-            return response;
-        } else {
-            return tryNextTransformer(server, returns, request, transformers);
+                    ctx.alloc().buffer().writeBytes(data));
+            HttpHeaders.setContentLength(httpResponse, data.length);
+            return httpResponse;
         }
+        return null;
     }
 
     @Override

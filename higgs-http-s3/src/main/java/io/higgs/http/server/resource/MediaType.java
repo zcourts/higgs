@@ -1,11 +1,10 @@
 package io.higgs.http.server.resource;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
+import java.util.LinkedList;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
@@ -298,14 +297,15 @@ public class MediaType {
 
     /**
      * Creates a new instance of MediaType by parsing the supplied string.
+     * Order is implicit by definition
      *
      * @param mtype the media type string
      * @return the newly created MediaType
      * @throws IllegalArgumentException if the supplied string cannot be parsed
      *                                  or is null
      */
-    public static List<MediaType> valueOf(String mtype) {
-        ArrayList<MediaType> types = new ArrayList<>();
+    public static LinkedList<MediaType> valueOf(String mtype) {
+        LinkedList<MediaType> types = new LinkedList<>();
         if (mtype == null) {
             return types;
         }

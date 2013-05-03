@@ -8,7 +8,7 @@ produces:
 S3 is a simple way for you to deploy self contained web services and applications.
 The below example creates the Api resource and serves its endpoints based on the annotations.
 The default config also serves static files from /public
-Access test method at: http://localhost:3434/api/test/a/12345?a=v&c=x,d,s
+Access test classMethod at: http://localhost:3434/api/test/a/12345?a=v&c=x,d,s
 Query string etc are random but gives some data to populate the HTML page generated
 
 ```java
