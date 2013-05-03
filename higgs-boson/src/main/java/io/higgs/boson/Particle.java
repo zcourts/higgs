@@ -7,6 +7,5 @@ package io.higgs.boson;
  */
 public class Particle {
     public Particle() {
-
     }
 }

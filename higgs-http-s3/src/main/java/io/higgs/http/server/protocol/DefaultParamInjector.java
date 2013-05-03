@@ -1,6 +1,6 @@
 package io.higgs.http.server.protocol;
 
-import io.higgs.core.api.ResourcePath;
+import io.higgs.core.ResourcePath;
 import io.higgs.core.reflect.ReflectionUtil;
 import io.higgs.http.server.params.FormFiles;
 import io.higgs.http.server.params.FormParams;

@@ -96,7 +96,6 @@ public class StaticFileTransformer extends BaseTransformer {
         return res;
     }
 
-
     private void writeResponseFromStream(InputStream response, HttpResponse res, HttpRequest request,
                                          MediaType mediaType, HttpMethod method, ChannelHandlerContext ctx) {
         int b;

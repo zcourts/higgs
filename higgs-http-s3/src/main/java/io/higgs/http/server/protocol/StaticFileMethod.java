@@ -47,7 +47,6 @@ public class StaticFileMethod extends HttpMethod {
     private InputStream zipStream;
     private File matchedFile;
 
-
     public StaticFileMethod(HttpProtocolConfiguration protocolConfig) {
         super(StaticFileMethod.class, METHOD);
         this.config = protocolConfig;
@@ -89,7 +88,8 @@ public class StaticFileMethod extends HttpMethod {
         //is this a GET request?
         //does the base directory exist?
         //is the URL a subdirectory of the base?
-        if (!canServe || !request.getMethod().name().equalsIgnoreCase(io.netty.handler.codec.http.HttpMethod.GET.name())) {
+        if (!canServe || !request.getMethod().name().equalsIgnoreCase(
+                io.netty.handler.codec.http.HttpMethod.GET.name())) {
             return false;
         }
         String base_dir = config.getServer().getConfig().files.public_directory;

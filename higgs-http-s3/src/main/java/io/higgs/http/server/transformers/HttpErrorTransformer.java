@@ -44,7 +44,6 @@ public class HttpErrorTransformer extends BaseTransformer {
         return null;
     }
 
-
     private HttpResponse buildErrorResponse(Throwable throwable, HttpRequest request, MediaType mediaType,
                                             HttpMethod method, ChannelHandlerContext ctx) {
         WebContext webContext = new WebContext();
@@ -97,7 +96,6 @@ public class HttpErrorTransformer extends BaseTransformer {
             return json.transform(null, request, mediaType, method, ctx);
         }
     }
-
 
     protected HttpResponse handleWAE(WebApplicationException e, WebContext webContext,
                                      HttpRequest request, MediaType mediaType, HttpMethod method,

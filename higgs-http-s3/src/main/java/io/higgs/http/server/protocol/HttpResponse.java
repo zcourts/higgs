@@ -118,7 +118,6 @@ public class HttpResponse extends DefaultFullHttpResponse {
                 ServerCookieEncoder.encode(new ArrayList<Cookie>(cookies.values())));
     }
 
-
     public void postWrite(ChannelFuture future) {
         if (postWriteOp != null && !postWriteOp.isDone()) {
             postWriteOp.apply();

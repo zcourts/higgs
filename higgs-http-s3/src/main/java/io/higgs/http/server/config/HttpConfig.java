@@ -15,5 +15,4 @@ public class HttpConfig extends ServerConfig {
 
     public HttpConfig() {
     }
-
 }

@@ -1,8 +1,8 @@
 package io.higgs.http.server.protocol;
 
+import io.higgs.core.InvokableMethod;
 import io.higgs.core.ObjectFactory;
-import io.higgs.core.api.InvokableMethod;
-import io.higgs.core.api.ResourcePath;
+import io.higgs.core.ResourcePath;
 import io.higgs.http.server.resource.MediaType;
 import io.higgs.http.server.resource.Produces;
 import io.netty.channel.ChannelHandlerContext;
@@ -37,11 +37,11 @@ public class HttpMethod extends InvokableMethod {
         if (klass.isAnnotationPresent(Produces.class)) {
             Produces produces = klass.getAnnotation(Produces.class);
             classProduces = produces.value() != null ?
-                    produces.value() : new String[]{MediaType.WILDCARD};
+                    produces.value() : new String[]{ MediaType.WILDCARD };
         }
         if (classMethod.isAnnotationPresent(Produces.class)) {
             Produces path = classMethod.getAnnotation(Produces.class);
-            methodProduces = path.value() != null ? path.value() : new String[]{MediaType.WILDCARD};
+            methodProduces = path.value() != null ? path.value() : new String[]{ MediaType.WILDCARD };
         }
         String[] mTypes = new String[classProduces.length + methodProduces.length];
         System.arraycopy(classProduces, 0, mTypes, 0, classProduces.length);

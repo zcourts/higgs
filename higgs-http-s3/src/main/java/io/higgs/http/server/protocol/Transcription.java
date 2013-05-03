@@ -67,7 +67,6 @@ public class Transcription implements Sortable<Transcription> {
         this(Pattern.compile(regex), replaceWith, true, false);
     }
 
-
     public Transcription(Pattern pattern, String replaceWith) {
         this(pattern, replaceWith, true, false);
     }

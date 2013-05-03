@@ -49,5 +49,5 @@ public interface ResponseTransformer extends Sortable<ResponseTransformer> {
      * @return If a transformer maintains state then this method should return a new instance every time.
      *         If not then this should be returned.
      */
-    public ResponseTransformer instance();
+    ResponseTransformer instance();
 }

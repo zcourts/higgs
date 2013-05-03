@@ -1,4 +1,4 @@
-package io.higgs;
+package io.higgs.core;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -14,7 +14,7 @@ import java.lang.annotation.Target;
  * @author Courtney Robinson <courtney@crlog.info>
  */
 @Retention(RetentionPolicy.RUNTIME)
-@Target({ElementType.METHOD, ElementType.TYPE})
+@Target({ ElementType.METHOD, ElementType.TYPE })
 public @interface method {
     /**
      * Optionally provide a name for the "topic" to which a method is subscribed.
@@ -36,5 +36,5 @@ public @interface method {
     /**
      * Set of attributes for this method
      */
-    String[] attr() default {};
+    String[] attr() default { };
 }

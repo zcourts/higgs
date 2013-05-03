@@ -1,7 +1,6 @@
 package io.higgs.http.server.protocol;
 
-import io.higgs.core.api.ResourcePath;
-import io.higgs.http.server.HttpUtil;
+import io.higgs.core.ResourcePath;
 import io.higgs.http.server.params.FormFiles;
 import io.higgs.http.server.params.FormParams;
 import io.higgs.http.server.params.HttpCookie;
@@ -47,6 +46,7 @@ public class HttpRequest extends DefaultFullHttpRequest {
     private HttpProtocolConfiguration config;
     private boolean multipart;
     private boolean chunked;
+    public static final String SID = "HS3-ID";
 
     /**
      * Creates a new instance.
@@ -58,7 +58,6 @@ public class HttpRequest extends DefaultFullHttpRequest {
     public HttpRequest(HttpVersion httpVersion, HttpMethod method, String uri) {
         super(httpVersion, method, uri);
     }
-
 
     /**
      * Because some custom fields depend on headers not set on construction this method
@@ -81,7 +80,7 @@ public class HttpRequest extends DefaultFullHttpRequest {
 
     public void initSession() {
         if (sessionId == null || config.getSessions().get(sessionId) == null) {
-            HttpCookie cookie = getCookie(HttpUtil.SID);
+            HttpCookie cookie = getCookie(SID);
             HttpSession s = config.getSessions().get(sessionId);
             if (s == null && cookie != null) {
                 //server may have crashed, session cookie exists on client but not in memory, could be spoofed as well
@@ -93,7 +92,7 @@ public class HttpRequest extends DefaultFullHttpRequest {
                 SecureRandom random = new SecureRandom();
                 sessionId = new BigInteger(130, random).toString(32);
 
-                HttpCookie session = new HttpCookie(HttpUtil.SID, sessionId);
+                HttpCookie session = new HttpCookie(SID, sessionId);
                 setCookie(session); //set the session id cookie
 
                 session.setPath(config.getServer().getConfig().session_path);

@@ -3,10 +3,9 @@ package io.higgs.http.server.demo;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Function;
-import com.sun.net.httpserver.HttpServer;
 import io.higgs.core.ObjectFactory;
-import io.higgs.core.api.ResourcePath;
-import io.higgs.http.server.HttpUtil;
+import io.higgs.core.ResourcePath;
+import io.higgs.core.method;
 import io.higgs.http.server.params.CookieParam;
 import io.higgs.http.server.params.FormFiles;
 import io.higgs.http.server.params.FormParam;
@@ -18,19 +17,18 @@ import io.higgs.http.server.params.HttpSession;
 import io.higgs.http.server.params.PathParam;
 import io.higgs.http.server.params.QueryParam;
 import io.higgs.http.server.params.QueryParams;
+import io.higgs.http.server.protocol.HttpRequest;
 import io.higgs.http.server.resource.GET;
 import io.higgs.http.server.resource.MediaType;
 import io.higgs.http.server.resource.POST;
 import io.higgs.http.server.resource.Produces;
 import io.higgs.http.server.resource.template;
-import io.higgs.method;
-import io.netty.handler.codec.http.HttpRequest;
 
 /**
  * @author Courtney Robinson <courtney@crlog.info>
  */
 @method("/api")
-@Produces({MediaType.TEXT_HTML})
+@Produces({ MediaType.TEXT_HTML })
 public class Api implements ObjectFactory {
     String a = "a";
     int b = 023343;
@@ -56,8 +54,8 @@ public class Api implements ObjectFactory {
     public Object test(
             //inject these named parameters
             //for cookies, values can be a cookie String or a HttpCookie
-            @CookieParam(HttpUtil.SID) String sessionid, //gets HttpCookie.getValue()
-            @CookieParam(HttpUtil.SID) HttpCookie sessionidAsCookie, //gets HttpCookie
+            @CookieParam(HttpRequest.SID) String sessionid, //gets HttpCookie.getValue()
+            @CookieParam(HttpRequest.SID) HttpCookie sessionidAsCookie, //gets HttpCookie
             //will be null in get requests
             @FormParam("textline") String text,
             @HeaderParam("Connection") String keepAlive,

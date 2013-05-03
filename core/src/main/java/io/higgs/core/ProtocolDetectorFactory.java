@@ -6,7 +6,7 @@ package io.higgs.core;
  *
  * @author Courtney Robinson <courtney@crlog.info>
  */
-public interface ProtocolDetectorFactory extends Sortable<ProtocolDetectorFactory>{
+public interface ProtocolDetectorFactory extends Sortable<ProtocolDetectorFactory> {
 
     /**
      * Provide a new instance of the {@link ProtocolDetector} this codec represents
