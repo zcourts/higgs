@@ -1,5 +1,7 @@
 package io.higgs.http.server;
 
+import io.higgs.http.server.protocol.HttpRequest;
+import io.higgs.http.server.protocol.HttpStatus;
 import io.netty.handler.codec.http.HttpResponseStatus;
 
 /**
@@ -41,6 +43,12 @@ public class WebApplicationException extends RuntimeException {
 
     public WebApplicationException(final HttpResponseStatus status, final String template) {
         this(status, template, null);
+    }
+
+    public WebApplicationException(HttpResponseStatus status, HttpRequest request, Throwable cause) {
+        super(cause);
+        this.status = status;
+        this.request = request;
     }
 
     public HttpRequest getRequest() {
@@ -85,7 +93,7 @@ public class WebApplicationException extends RuntimeException {
                 "status=" + status +
                 ", template='" + template + '\'' +
                 ", response=" + response +
-                ", path=" + request == null ? "null" : request.getUri() +
+                ", path=" + (request == null ? "null" : request.getUri()) +
                 '}';
     }
 }

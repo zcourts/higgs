@@ -2,13 +2,11 @@ package io.higgs.http.server.demo;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.higgs.events.ChannelMessage;
-import io.higgs.functional.Function;
-import io.higgs.http.server.HttpRequest;
-import io.higgs.http.server.HttpResponse;
-import io.higgs.http.server.HttpServer;
-import io.higgs.http.server.HttpStatus;
-import io.higgs.http.server.WebApplicationException;
+import com.google.common.base.Function;
+import com.sun.net.httpserver.HttpServer;
+import io.higgs.core.ObjectFactory;
+import io.higgs.core.api.ResourcePath;
+import io.higgs.http.server.HttpUtil;
 import io.higgs.http.server.params.CookieParam;
 import io.higgs.http.server.params.FormFiles;
 import io.higgs.http.server.params.FormParam;
@@ -20,17 +18,20 @@ import io.higgs.http.server.params.HttpSession;
 import io.higgs.http.server.params.PathParam;
 import io.higgs.http.server.params.QueryParam;
 import io.higgs.http.server.params.QueryParams;
-import io.higgs.http.server.params.ResourcePath;
 import io.higgs.http.server.resource.GET;
+import io.higgs.http.server.resource.MediaType;
 import io.higgs.http.server.resource.POST;
-import io.higgs.http.server.resource.Path;
-import io.netty.channel.ChannelFutureListener;
+import io.higgs.http.server.resource.Produces;
+import io.higgs.http.server.resource.template;
+import io.higgs.method;
+import io.netty.handler.codec.http.HttpRequest;
 
 /**
  * @author Courtney Robinson <courtney@crlog.info>
  */
-@Path("/api")
-public class Api {
+@method("/api")
+@Produces({MediaType.TEXT_HTML})
+public class Api implements ObjectFactory {
     String a = "a";
     int b = 023343;
     long c = 999999999;
@@ -38,6 +39,7 @@ public class Api {
     static int count;
 
     @GET
+    @method
     public String index() {
         System.out.println("index");
         return "yes index";
@@ -47,14 +49,15 @@ public class Api {
     //template is the name of the HTML template to use, if no template is provided then another resource
     //transformer is used on the response, if no transformer can convert the response a Not Acceptable status
     // is returned
-    @Path(value = "test/{string:[a-z0-9]+}/{num:[0-9]+}", template = "api")
+    @method("test/{string:[a-z0-9]+}/{num:[0-9]+}")
+    @template("api")
     @GET
     @POST
     public Object test(
             //inject these named parameters
-            //for cookies, values can be a cookie object or a HiggsHttpCookie
-            @CookieParam(HttpServer.SID) String sessionid, //gets HiggsHttpCookie.getValue()
-            @CookieParam(HttpServer.SID) HttpCookie sessionidAsCookie, //gets HiggsHttpCookie
+            //for cookies, values can be a cookie String or a HttpCookie
+            @CookieParam(HttpUtil.SID) String sessionid, //gets HttpCookie.getValue()
+            @CookieParam(HttpUtil.SID) HttpCookie sessionidAsCookie, //gets HttpCookie
             //will be null in get requests
             @FormParam("textline") String text,
             @HeaderParam("Connection") String keepAlive,
@@ -66,15 +69,11 @@ public class Api {
             @PathParam("some-random-name") Integer randomInt,
             @QueryParam("a") String a,
             //all these unnamed parameters can be injected and should never be null
-            HttpServer server,
-            ChannelMessage<HttpRequest> message,
             HttpRequest request, FormFiles files,
             FormParams form, HttpCookies cookies,
             QueryParams query, HttpSession session,
             ResourcePath path
     ) throws JsonProcessingException {
-        assert server != null;
-        assert message != null;
         assert request != null;
         assert files != null;
         assert form != null;
@@ -89,29 +88,31 @@ public class Api {
         return new ObjectMapper().writeValueAsString(this);
     }
 
-    @Path("boom1")
+    @method(value = "boom1")
     @GET
     public void boom1(HttpRequest request) {
-        throw new WebApplicationException(HttpStatus.NOT_IMPLEMENTED, null, request, "error/default");
+        //throw new WebApplicationException(HttpStatus.NOT_IMPLEMENTED, null, request, "error/default");
     }
 
-    @Path("boom2")
+    @method("boom2")
     @GET
     public Object boom2() {
         //you can, and SHOULD return WebApplicationException
         //if a wae is returned wae.setRequest() is automatically called
-        return new WebApplicationException(HttpStatus.NOT_IMPLEMENTED, "error/default");
+        //return new WebApplicationException(HttpStatus.NOT_IMPLEMENTED, "error/default");
+        return null;
     }
 
-    @Path("manual")
+    @method("manual")
     @GET
-    public Object manual(final ChannelMessage<HttpRequest> message) {
+    public Object manual() {
         //if a Function is returned then we must write the response manual
         return new Function() {
-            public void apply() {
-                message.channel.write(new HttpResponse(HttpStatus.FOUND));
+            public Object apply(Object o) {
+                // message.channel.write(new HttpResponse(HttpStatus.FOUND));
                 //close as soon as its written
-                message.channel.closeFuture().addListener(ChannelFutureListener.CLOSE);
+                // message.channel.closeFuture().addListener(ChannelFutureListener.CLOSE);
+                return null;
             }
         };
     }
@@ -134,5 +135,10 @@ public class Api {
 
     public double getD() {
         return d;
+    }
+
+    @Override
+    public Object newInstance() {
+        return new Api();
     }
 }
