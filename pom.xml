@@ -3,7 +3,7 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
                              http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
-    <groupId>com.fillta</groupId>
+    <groupId>io.higgs</groupId>
     <artifactId>higgs</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <name>${project.artifactId}</name>
@@ -19,7 +19,7 @@
     </scm>
 
     <modules>
-        <module>higgs-core</module>
+        <module>core</module>
         <module>higgs-boson</module>
         <module>higgs-http-client</module>
         <module>higgs-http-s3</module>
@@ -30,7 +30,7 @@
     <properties>
         <maven.compiler.source>1.7</maven.compiler.source>
         <maven.compiler.target>1.7</maven.compiler.target>
-        <netty.version>4.0.1.CR1-SNAPSHOT</netty.version>
+        <netty.version>4.0.0.CR2-SNAPSHOT</netty.version>
         <netty.group>io.netty</netty.group>
         <encoding>UTF-8</encoding>
     </properties>
@@ -55,8 +55,17 @@
         <dependency>
             <groupId>io.netty</groupId>
             <artifactId>netty-all</artifactId>
-            <version>4.0.0.CR1-SNAPSHOT</version>
+            <version>${netty.version}</version>
         </dependency>
+
+        <dependency>
+            <groupId>org.javassist</groupId>
+            <artifactId>javassist</artifactId>
+            <version>3.17.1-GA</version>
+            <scope>compile</scope>
+            <optional>true</optional>
+        </dependency>
+
         <!-- Test -->
         <dependency>
             <groupId>junit</groupId>

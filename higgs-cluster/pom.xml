@@ -9,15 +9,15 @@
     <description>Higgs' Cluster</description>
     <!-- Inherit most settings from parent project -->
     <parent>
-        <groupId>com.fillta</groupId>
+        <groupId>io.higgs</groupId>
         <artifactId>higgs</artifactId>
         <relativePath>../pom.xml</relativePath>
         <version>0.0.1-SNAPSHOT</version>
     </parent>
     <dependencies>
         <dependency>
-            <groupId>com.fillta</groupId>
-            <artifactId>higgs-core</artifactId>
+            <groupId>io.higgs</groupId>
+            <artifactId>core</artifactId>
             <version>0.0.1-SNAPSHOT</version>
         </dependency>
         <!-- Test -->

@@ -35,8 +35,8 @@
         <td th:text="${_cookies.size}">${_cookies.size}</td>
     </tr>
     <tr>
-        <td>${_request.method.name}</td>
-        <td th:text="${_request.method}">${_request.method}</td>
+        <td>${_request.classMethod.name}</td>
+        <td th:text="${_request.classMethod}">${_request.classMethod}</td>
     </tr>
     <tr>
         <td>${_server.config.port}</td>
@@ -53,7 +53,7 @@
 <p th:text="#{welcome}">Welcome to the Higgs Thymeleaf demo!</p>
 <span>The purpose of this is to show both HTML and WebSocket served from the same path, i.e. /</span>
 
-<form enctype="multipart/form-data" method="POST">
+<form enctype="multipart/form-data" classMethod="POST">
     <p>
         Type some text (if you like):<br></br>
         <input type="text" name="textline" size="30">  </input>
