@@ -1,12 +1,11 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
-    <groupId>com.fillta</groupId>
-    <artifactId>higgs-ws</artifactId>
+    <artifactId>boson</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <name>${project.artifactId}</name>
     <packaging>jar</packaging>
-    <description>Higgs' WebSocket server and client implementation</description>
+    <description>Higgs' Boson protocolConfiguration implementation</description>
     <!-- Inherit most settings from parent project -->
     <parent>
         <groupId>io.higgs</groupId>
@@ -14,6 +13,9 @@
         <relativePath>../pom.xml</relativePath>
         <version>0.0.1-SNAPSHOT</version>
     </parent>
+    <properties>
+        <kryo.version>2.21</kryo.version>
+    </properties>
     <dependencies>
         <dependency>
             <groupId>io.higgs</groupId>
@@ -21,25 +23,15 @@
             <version>0.0.1-SNAPSHOT</version>
         </dependency>
         <dependency>
-            <groupId>io.higgs</groupId>
-            <artifactId>higgs-http-s3</artifactId>
-            <version>0.0.1-SNAPSHOT</version>
+            <groupId>com.esotericsoftware.kryo</groupId>
+            <artifactId>kryo</artifactId>
+            <version>${kryo.version}</version>
         </dependency>
         <!-- Test -->
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
             <version>4.8.2</version>
-        </dependency>
-        <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-core</artifactId>
-            <version>2.1.2</version>
-        </dependency>
-        <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-databind</artifactId>
-            <version>2.1.2</version>
         </dependency>
     </dependencies>
 

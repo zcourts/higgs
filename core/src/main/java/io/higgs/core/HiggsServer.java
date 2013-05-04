@@ -183,10 +183,6 @@ public class HiggsServer<C extends ServerConfig> {
         registerMethods(c, null);
     }
 
-    public void registerObject(ObjectFactory f) {
-        registerMethods(null, f);
-    }
-
     /**
      * Register a class's methods
      *

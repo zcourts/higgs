@@ -1,12 +1,11 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
-    <groupId>io.higgs</groupId>
-    <artifactId>higgs-boson</artifactId>
+    <artifactId>cluster</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <name>${project.artifactId}</name>
     <packaging>jar</packaging>
-    <description>Higgs' Boson protocolConfiguration implementation</description>
+    <description>Higgs' Cluster</description>
     <!-- Inherit most settings from parent project -->
     <parent>
         <groupId>io.higgs</groupId>
@@ -14,19 +13,11 @@
         <relativePath>../pom.xml</relativePath>
         <version>0.0.1-SNAPSHOT</version>
     </parent>
-    <properties>
-        <kryo.version>2.21</kryo.version>
-    </properties>
     <dependencies>
         <dependency>
             <groupId>io.higgs</groupId>
             <artifactId>core</artifactId>
             <version>0.0.1-SNAPSHOT</version>
-        </dependency>
-        <dependency>
-            <groupId>com.esotericsoftware.kryo</groupId>
-            <artifactId>kryo</artifactId>
-            <version>${kryo.version}</version>
         </dependency>
         <!-- Test -->
         <dependency>
