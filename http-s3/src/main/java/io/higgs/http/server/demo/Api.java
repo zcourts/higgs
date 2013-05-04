@@ -3,9 +3,10 @@ package io.higgs.http.server.demo;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Function;
-import io.higgs.core.ObjectFactory;
 import io.higgs.core.ResourcePath;
 import io.higgs.core.method;
+import io.higgs.http.server.HttpRequest;
+import io.higgs.http.server.HttpStatus;
 import io.higgs.http.server.WebApplicationException;
 import io.higgs.http.server.params.CookieParam;
 import io.higgs.http.server.params.FormFiles;
@@ -18,8 +19,6 @@ import io.higgs.http.server.params.HttpSession;
 import io.higgs.http.server.params.PathParam;
 import io.higgs.http.server.params.QueryParam;
 import io.higgs.http.server.params.QueryParams;
-import io.higgs.http.server.HttpRequest;
-import io.higgs.http.server.HttpStatus;
 import io.higgs.http.server.resource.GET;
 import io.higgs.http.server.resource.MediaType;
 import io.higgs.http.server.resource.POST;
@@ -34,7 +33,7 @@ import java.util.Map;
  */
 @method("/api")
 @Produces({ MediaType.TEXT_HTML })
-public class Api implements ObjectFactory {
+public class Api {
     String a = "a";
     int b = 023343;
     long c = 999999999;
@@ -142,10 +141,5 @@ public class Api implements ObjectFactory {
 
     public double getD() {
         return d;
-    }
-
-    @Override
-    public Object newInstance() {
-        return new Api();
     }
 }

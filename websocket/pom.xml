@@ -21,7 +21,7 @@
         </dependency>
         <dependency>
             <groupId>io.higgs</groupId>
-            <artifactId>higgs-http-s3</artifactId>
+            <artifactId>http-s3</artifactId>
             <version>0.0.1-SNAPSHOT</version>
         </dependency>
         <!-- Test -->

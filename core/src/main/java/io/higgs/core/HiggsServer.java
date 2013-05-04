@@ -29,6 +29,7 @@ import org.yaml.snakeyaml.Yaml;
 import org.yaml.snakeyaml.constructor.Constructor;
 
 import java.io.FileInputStream;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -46,13 +47,14 @@ public class HiggsServer<C extends ServerConfig> {
     private final int port;
     private final Set<MethodProcessor> methodProcessors = new HashSet<>();
     private final Queue<ProtocolDetectorFactory> detectors = new ConcurrentLinkedDeque<>();
-    protected final Set<HiggsInterceptor> interceptors =
-            Collections.newSetFromMap(new ConcurrentHashMap<HiggsInterceptor, Boolean>());
+    protected final Set<ProtocolConfiguration> protocolConfigurations =
+            Collections.newSetFromMap(new ConcurrentHashMap<ProtocolConfiguration, Boolean>());
 
     /**
      * A sorted set of methods. Methods are sorted in descending order of priority.
      */
     private Queue<InvokableMethod> methods = new ConcurrentLinkedDeque<>();
+    private Queue<ObjectFactory> factories = new ConcurrentLinkedDeque<>();
     private EventLoopGroup bossGroup = new NioEventLoopGroup();
     private EventLoopGroup workerGroup = new NioEventLoopGroup();
     private ServerBootstrap bootstrap = new ServerBootstrap();
@@ -87,14 +89,6 @@ public class HiggsServer<C extends ServerConfig> {
                     configPath), e);
         }
         this.port = config.port;
-
-//        detectors = new TreeSet<>(new Comparator<ProtocolDetectorFactory>() {
-//            public int compare(ProtocolDetectorFactory o1, ProtocolDetectorFactory o2) {
-//                //http://docs.oracle.com/javase/tutorial/collections/interfaces/order.html
-//                return (o2.priority() < o1.priority() ? -1 :
-//                        (o2.priority() == o1.priority() ? 0 : 1));
-//            }
-//        });
     }
 
     /**
@@ -123,8 +117,8 @@ public class HiggsServer<C extends ServerConfig> {
     }
 
     public void stop() {
-        bossGroup.shutdown();
-        workerGroup.shutdown();
+        bossGroup.shutdownGracefully();
+        workerGroup.shutdownGracefully();
     }
 
     public void setDetectSsl(boolean detectSsl) {
@@ -146,6 +140,7 @@ public class HiggsServer<C extends ServerConfig> {
     }
 
     public void registerProtocol(ProtocolConfiguration protocolConfiguration) {
+        protocolConfigurations.add(protocolConfiguration);
         protocolConfiguration.initialise(this);
         registerProtocolDetectorFactory(protocolConfiguration.getProtocol());
         registerMethodProcessor(protocolConfiguration.getMethodProcessor());
@@ -161,7 +156,7 @@ public class HiggsServer<C extends ServerConfig> {
     /**
      * Registers a new protocol for the server to detect and handle
      *
-     * @param factory the detector factory
+     * @param factory the detector factories
      */
     public void registerProtocolDetectorFactory(ProtocolDetectorFactory factory) {
         detectors.add(factory);
@@ -174,31 +169,46 @@ public class HiggsServer<C extends ServerConfig> {
     public void registerPackage(String name) {
         for (Class<?> c : PackageScanner.get(name)) {
             if (ObjectFactory.class.isAssignableFrom(c)) {
-                registerClass((Class<ObjectFactory>) c);
+                registerObjectFactory((Class<ObjectFactory>) c);
+            } else {
+                registerClass(c);
             }
         }
     }
 
-    public <C extends ObjectFactory> void registerClass(Class<C> c) {
-        registerMethods(c, null);
+    public void registerObjectFactory(Class<ObjectFactory> c) {
+        try {
+            ObjectFactory factory = c.
+                    getConstructor(HiggsServer.class, Set.class)
+                    .newInstance(this, protocolConfigurations);
+            registerObjectFactory(factory);
+        } catch (InstantiationException | NoSuchMethodException | InvocationTargetException e) {
+            log.warn(String.format("Unable to create instance of ObjectFactory %s", c.getName()), e);
+        } catch (IllegalAccessException e) {
+            log.warn(String.format("Unable to access ObjectFactory %s", c.getName()), e);
+        }
+    }
+
+    public void registerObjectFactory(ObjectFactory factory) {
+        if (factory == null) {
+            throw new IllegalArgumentException("Cannot register a null object factories");
+        }
+        factories.add(factory);
+    }
+
+    public void registerClass(Class<?> c) {
+        registerMethods(c);
     }
 
     /**
      * Register a class's methods
      *
-     * @param klass   the class to register or null if factory is set
-     * @param factory a factory that is used if klass is null
-     * @throws IllegalStateException if both class and factory are null
+     * @param klass the class to register or null if factories is set
+     * @throws IllegalStateException if the class is null
      */
-    protected void registerMethods(Class<?> klass, ObjectFactory factory) {
-        if (klass == null && factory == null) {
-            throw new IllegalStateException("Attempting to register null class and factory");
-        }
-        if (klass != null && factory != null) {
-            log.warn("Cannot use both Class<?> object and ObjectFactory to register methods, using ObjectFactory");
-        }
-        if (factory != null) {
-            klass = factory.newInstance().getClass();
+    public void registerMethods(Class<?> klass) {
+        if (klass == null) {
+            throw new IllegalArgumentException("Attempting to register null class");
         }
         //is the annotation applied to the whole class or not?
         boolean registerAllMethods = !klass.isAnnotationPresent(methodClass);
@@ -209,7 +219,7 @@ public class HiggsServer<C extends ServerConfig> {
             }
             InvokableMethod im = null;
             for (MethodProcessor mp : methodProcessors) {
-                im = mp.process(method, klass, factory);
+                im = mp.process(method, klass, factories);
                 if (im != null) {
                     break;
                 }
@@ -246,5 +256,12 @@ public class HiggsServer<C extends ServerConfig> {
 
     public C getConfig() {
         return config;
+    }
+
+    /**
+     * @return The set of registered object factories
+     */
+    public Queue<ObjectFactory> getFactories() {
+        return factories;
     }
 }
