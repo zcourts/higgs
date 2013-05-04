@@ -3,7 +3,6 @@ package io.higgs.ws.demo;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Function;
-import io.higgs.core.ObjectFactory;
 import io.higgs.core.ResourcePath;
 import io.higgs.core.method;
 import io.higgs.http.server.HttpRequest;
@@ -34,7 +33,7 @@ import java.util.Map;
  */
 @method("/api")
 @Produces({ MediaType.TEXT_HTML })
-public class Api implements ObjectFactory {
+public class Api {
     String a = "a";
     int b = 023343;
     long c = 999999999;
@@ -144,8 +143,4 @@ public class Api implements ObjectFactory {
         return d;
     }
 
-    @Override
-    public Object newInstance() {
-        return new Api();
-    }
 }

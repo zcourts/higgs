@@ -7,6 +7,7 @@ import org.slf4j.LoggerFactory;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Arrays;
+import java.util.Queue;
 
 /**
  * @author Courtney Robinson <courtney@crlog.info>
@@ -14,33 +15,18 @@ import java.util.Arrays;
 public abstract class InvokableMethod implements Sortable<InvokableMethod> {
     protected Logger log = LoggerFactory.getLogger(getClass());
     protected final Method classMethod;
-    protected final ObjectFactory factory;
+    protected final Queue<ObjectFactory> factories;
     protected final Class<?> klass;
     protected String[] pathAttributes;
     protected final String path;
     protected Attr attrs = new Attr();
 
-    public InvokableMethod(ObjectFactory factory, Method classMethod) {
-        this(factory, null, classMethod);
-    }
-
-    public InvokableMethod(Class<?> klass, Method classMethod) {
-        this(null, klass, classMethod);
-    }
-
-    public InvokableMethod(ObjectFactory factory, Class<?> klass, Method classMethod) {
-        if (factory == null && klass == null) {
-            throw new IllegalStateException("Cannot create an InvokableMethod with a null factory AND class");
+    public InvokableMethod(Queue<ObjectFactory> factories, Class<?> klass, Method classMethod) {
+        if (factories == null || klass == null || classMethod == null) {
+            throw new IllegalStateException("Cannot create an InvokableMethod with a null factories, class OR method");
         }
-        if (classMethod == null) {
-            throw new IllegalStateException("Cannot create an InvokableMethod with a null classMethod");
-        }
-        if (klass == null) {
-            this.klass = factory.newInstance().getClass();
-        } else {
-            this.klass = klass;
-        }
-        this.factory = factory;
+        this.klass = klass;
+        this.factories = factories;
         this.classMethod = classMethod;
         path = parsePath();
     }
@@ -87,10 +73,14 @@ public abstract class InvokableMethod implements Sortable<InvokableMethod> {
      */
     public Object invoke(ChannelHandlerContext ctx, String path, Object msg, Object[] params)
             throws InvocationTargetException, IllegalAccessException, InstantiationException {
-        Object instance;
-        if (factory != null) {
-            instance = factory.newInstance();
-        } else {
+        Object instance = null;
+        for (ObjectFactory factory : factories) {
+            if (factory.canCreateInstanceOf(klass)) {
+                instance = factory.newInstance(klass);
+                break;
+            }
+        }
+        if (instance == null) {
             instance = klass.newInstance();
         }
         return classMethod.invoke(instance, params);
@@ -158,7 +148,7 @@ public abstract class InvokableMethod implements Sortable<InvokableMethod> {
                 ",\n pathAttributes=" + Arrays.toString(pathAttributes) +
                 ",\n attrs=" + attrs +
                 ",\n classMethod=" + classMethod +
-                ",\n factory=" + factory +
+                ",\n factories=" + factories +
                 ",\n klass=" + klass.getName() +
                 '}';
     }
@@ -180,7 +170,7 @@ public abstract class InvokableMethod implements Sortable<InvokableMethod> {
         if (classMethod != null ? !classMethod.equals(that.classMethod) : that.classMethod != null) {
             return false;
         }
-        if (factory != null ? !factory.equals(that.factory) : that.factory != null) {
+        if (factories != null ? !factories.equals(that.factories) : that.factories != null) {
             return false;
         }
         if (klass != null ? !klass.equals(that.klass) : that.klass != null) {
@@ -199,7 +189,7 @@ public abstract class InvokableMethod implements Sortable<InvokableMethod> {
     @Override
     public int hashCode() {
         int result = classMethod != null ? classMethod.hashCode() : 0;
-        result = 31 * result + (factory != null ? factory.hashCode() : 0);
+        result = 31 * result + (factories != null ? factories.hashCode() : 0);
         result = 31 * result + (klass != null ? klass.hashCode() : 0);
         result = 31 * result + (pathAttributes != null ? Arrays.hashCode(pathAttributes) : 0);
         result = 31 * result + (path != null ? path.hashCode() : 0);

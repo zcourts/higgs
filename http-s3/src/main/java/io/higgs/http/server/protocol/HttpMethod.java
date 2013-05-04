@@ -14,6 +14,7 @@ import io.netty.handler.codec.http.HttpResponseStatus;
 import java.lang.reflect.Method;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Queue;
 
 public class HttpMethod extends InvokableMethod {
     private MethodParam[] params = new MethodParam[0];
@@ -23,16 +24,8 @@ public class HttpMethod extends InvokableMethod {
      */
     private String template;
 
-    public HttpMethod(ObjectFactory factory, Method classMethod) {
-        this(factory, null, classMethod);
-    }
-
-    public HttpMethod(Class<?> klass, Method classMethod) {
-        this(null, klass, classMethod);
-    }
-
-    public HttpMethod(ObjectFactory factory, Class<?> klass, Method classMethod) {
-        super(factory, klass, classMethod);
+    public HttpMethod(Queue<ObjectFactory> factories, Class<?> klass, Method classMethod) {
+        super(factories, klass, classMethod);
         parseMediaTypes();
     }
 

@@ -2,7 +2,7 @@ package io.higgs.core;
 
 /**
  * To support shared state encoders, decoders and {@link ProtocolDetector}s a {@link ProtocolDetectorFactory}
- * is used as a factory to create new instances of each for every channel.
+ * is used as a factories to create new instances of each for every channel.
  *
  * @author Courtney Robinson <courtney@crlog.info>
  */

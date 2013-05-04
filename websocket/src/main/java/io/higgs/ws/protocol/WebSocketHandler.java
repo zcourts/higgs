@@ -1,5 +1,6 @@
 package io.higgs.ws.protocol;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.net.HttpHeaders;
 import io.higgs.http.server.HttpRequest;
 import io.higgs.http.server.protocol.HttpHandler;
@@ -41,6 +42,7 @@ public class WebSocketHandler extends HttpHandler {
     private final WebSocketEventHandler eventHandler;
     private final String WEBSOCKET_PATH;
     private WebSocketServerHandshaker handshaker;
+    public static final ObjectMapper mapper = new ObjectMapper();
 
     public WebSocketHandler(WebSocketConfiguration config) {
         super(config);

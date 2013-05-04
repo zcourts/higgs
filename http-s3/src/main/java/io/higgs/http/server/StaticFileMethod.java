@@ -1,5 +1,6 @@
 package io.higgs.http.server;
 
+import io.higgs.core.ObjectFactory;
 import io.higgs.http.server.protocol.HttpMethod;
 import io.higgs.http.server.protocol.HttpProtocolConfiguration;
 import io.netty.channel.ChannelHandlerContext;
@@ -19,6 +20,7 @@ import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Enumeration;
+import java.util.Queue;
 import java.util.regex.Pattern;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
@@ -49,8 +51,8 @@ public class StaticFileMethod extends HttpMethod {
     private InputStream zipStream;
     private File matchedFile;
 
-    public StaticFileMethod(HttpProtocolConfiguration protocolConfig) {
-        super(StaticFileMethod.class, METHOD);
+    public StaticFileMethod(Queue<ObjectFactory> factories, HttpProtocolConfiguration protocolConfig) {
+        super(factories, StaticFileMethod.class, METHOD);
         this.config = protocolConfig;
         base = baseUri(config.getServer().getConfig().files.public_directory);
         if (base != null) {

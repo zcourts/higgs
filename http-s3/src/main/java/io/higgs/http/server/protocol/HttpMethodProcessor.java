@@ -14,6 +14,7 @@ import org.slf4j.LoggerFactory;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
+import java.util.Queue;
 
 /**
  * @author Courtney Robinson <courtney@crlog.info>
@@ -27,13 +28,10 @@ public class HttpMethodProcessor implements MethodProcessor {
     }
 
     @Override
-    public HttpMethod process(Method method, Class<?> klass, ObjectFactory factory) {
-        HttpMethod im;
-        if (factory != null) {
-            im = new HttpMethod(factory, method);
-        } else {
-            im = new HttpMethod(klass, method);
-        }
+    public HttpMethod process(Method method, Class<?> klass, Queue<ObjectFactory> factories) {
+
+        HttpMethod im = new HttpMethod(factories, klass, method);
+
         boolean classHasTemplate = klass.isAnnotationPresent(template.class);
         String methodTemplate = null;
         //does the method have a template?

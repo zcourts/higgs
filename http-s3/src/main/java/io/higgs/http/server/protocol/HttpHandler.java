@@ -76,7 +76,8 @@ public class HttpHandler extends MessageHandler<HttpConfig, Object> {
                                                     Object msg, Class<M> methodClass) {
         M m = super.findMethod(path, ctx, msg, methodClass);
         if (m == null && config.add_static_resource_filter) {
-            StaticFileMethod fileMethod = new StaticFileMethod(protocolConfig);
+            StaticFileMethod fileMethod = new StaticFileMethod(protocolConfig.getServer().getFactories(),
+                    protocolConfig);
             if (fileMethod.matches(path, ctx, msg)) {
                 return (M) fileMethod;
             }
