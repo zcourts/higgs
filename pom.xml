@@ -20,11 +20,11 @@
 
     <modules>
         <module>core</module>
-        <module>higgs-boson</module>
-        <module>higgs-http-client</module>
-        <module>higgs-http-s3</module>
-        <module>higgs-ws</module>
-        <module>higgs-cluster</module>
+        <module>boson</module>
+        <module>http-client</module>
+        <module>http-s3</module>
+        <module>websocket</module>
+        <module>cluster</module>
     </modules>
 
     <properties>

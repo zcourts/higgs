@@ -3,6 +3,7 @@ package io.higgs.ws.protocol;
 import com.google.common.net.HttpHeaders;
 import io.higgs.http.server.HttpRequest;
 import io.higgs.http.server.protocol.HttpHandler;
+import io.higgs.ws.WebSocketEventHandler;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
@@ -37,6 +38,7 @@ import static io.netty.handler.codec.http.HttpVersion.HTTP_1_1;
  */
 public class WebSocketHandler extends HttpHandler {
     protected WebSocketConfiguration protocolConfig;
+    private final WebSocketEventHandler eventHandler;
     private final String WEBSOCKET_PATH;
     private WebSocketServerHandshaker handshaker;
 
@@ -44,6 +46,7 @@ public class WebSocketHandler extends HttpHandler {
         super(config);
         protocolConfig = config;
         WEBSOCKET_PATH = config.getWebsocketPath();
+        eventHandler = config.getWebSocketEventHandler();
     }
 
     @Override
@@ -112,7 +115,7 @@ public class WebSocketHandler extends HttpHandler {
 
         // Send the uppercase string back.
         String request = ((TextWebSocketFrame) frame).text();
-        log.debug(String.format("Channel %s received %s", ctx.channel().id(), request));
+        log.info(String.format("Channel %s received %s", ctx.channel().id(), request));
         ctx.channel().write(new TextWebSocketFrame(request.toUpperCase()));
     }
 
