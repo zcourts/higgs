@@ -192,7 +192,7 @@ public class HttpHandler extends MessageHandler<HttpConfig, Object> {
         invoke(ctx);
     }
 
-    private void invoke(ChannelHandlerContext ctx) {
+    protected void invoke(ChannelHandlerContext ctx) {
         Object[] params = injector.injectParams(method, request, ctx);
         try {
             Object response = method.invoke(ctx, request.getUri(), method, params);
@@ -204,7 +204,7 @@ public class HttpHandler extends MessageHandler<HttpConfig, Object> {
         }
     }
 
-    private void writeResponse(ChannelHandlerContext ctx, Object response, Queue<ResponseTransformer> t) {
+    protected void writeResponse(ChannelHandlerContext ctx, Object response, Queue<ResponseTransformer> t) {
         List<ResponseTransformer> ts = new FixedSortedList<>(t);
         HttpResponse httpResponse = null;
         if (response == null) {
@@ -225,7 +225,7 @@ public class HttpHandler extends MessageHandler<HttpConfig, Object> {
         doWrite(ctx, httpResponse);
     }
 
-    private void doWrite(ChannelHandlerContext ctx, HttpResponse response) {
+    protected void doWrite(ChannelHandlerContext ctx, HttpResponse response) {
         //apply request cookies to response, this includes the session id
         response.setCookies(request.getCookies());
         response.finalizeCustomHeaders();

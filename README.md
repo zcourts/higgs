@@ -16,7 +16,7 @@ The other protocols were added as the need arose. And it has since grown to be m
 
 1. HTTP/HTTPS (Client and Server)
 2. WebSocket  (Client and Server) - Compatible with Socket.io or any other WebSocket client (being ported from original Scala implementation)
-3. Boson - A language independent, topic oriented protocol for sending/receiving arbitrary data over the network and
+3. Boson - A language independent, path oriented protocol for sending/receiving arbitrary data over the network and
             performing remote method invocation (RMI/RPC).
 
 # Custom Protocols
@@ -249,9 +249,9 @@ public class WebSocketServerDemo {
 
 ```javascript
 
-1 : TextEvent{message='{}', topic='test'}
-2 : TextEvent{message='{}', topic='test'}
-3 : TextEvent{message='{}', topic='test'}
+1 : TextEvent{message='{}', path='test'}
+2 : TextEvent{message='{}', path='test'}
+3 : TextEvent{message='{}', path='test'}
 
 ```
 

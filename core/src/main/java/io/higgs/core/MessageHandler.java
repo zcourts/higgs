@@ -15,7 +15,7 @@ import java.util.Queue;
  */
 public abstract class MessageHandler<C extends ServerConfig, T> extends ChannelInboundMessageHandlerAdapter<T> {
 
-    private Queue<InvokableMethod> methods;
+    protected Queue<InvokableMethod> methods;
     protected Logger log = LoggerFactory.getLogger(getClass());
     protected final C config;
 

@@ -50,33 +50,35 @@ public class HttpMethod extends InvokableMethod {
     }
 
     @Override
-    public boolean matches(String path, ChannelHandlerContext ctx, Object msg) {
-        if (!(msg instanceof HttpRequest)) {
-            //only HttpRequests can match
-            return false;
-        }
-        HttpRequest request = (HttpRequest) msg;
-        ResourcePath p = path();
-        if (p.matches(path)) {
-            request.setPath(p);
-            //does the method or it's class have the @Produces annotation?
-            if (mediaTypes.size() > 0) {
-                //if so does this method produce a media type which matches what the client accepts
-                for (MediaType producesMediaType : mediaTypes) {
-                    for (MediaType acceptedMediaType : request.getMediaTypes()) {
-                        if (producesMediaType.isCompatible(acceptedMediaType)) {
-                            //set the matched media type to the type the class produces
-                            request.setMatchedMediaType(producesMediaType);
-                            return true;
+    public boolean matches(String requestPath, ChannelHandlerContext ctx, Object msg) {
+        ResourcePath resourcePath = path();
+        if (resourcePath.matches(requestPath)) {
+            if (!(msg instanceof HttpRequest)) {
+                //if not an HttpRequest but the path matches then return true
+                return true;
+            } else {
+                //if it is an http request the the media type must also match, if set
+                HttpRequest request = (HttpRequest) msg;
+                request.setPath(resourcePath);
+                //does the method or it's class have the @Produces annotation?
+                if (mediaTypes.size() > 0) {
+                    //if so does this method produce a media type which matches what the client accepts
+                    for (MediaType producesMediaType : mediaTypes) {
+                        for (MediaType acceptedMediaType : request.getMediaTypes()) {
+                            if (producesMediaType.isCompatible(acceptedMediaType)) {
+                                //set the matched media type to the type the class produces
+                                request.setMatchedMediaType(producesMediaType);
+                                return true;
+                            }
                         }
                     }
+                    //path matched but media type didn't
+                    log.debug(String.format("template %s matched %s but no compatible media types found",
+                            requestPath, resourcePath.getUri()));
+                    throw new WebApplicationException(HttpResponseStatus.NOT_ACCEPTABLE, request);
+                } else {
+                    return true;
                 }
-                //path matched but media type didn't
-                log.debug(String.format("template %s matched %s but no compatible media types found",
-                        path, p.getUri()));
-                throw new WebApplicationException(HttpResponseStatus.NOT_ACCEPTABLE, request);
-            } else {
-                return true;
             }
         }
         return false;
