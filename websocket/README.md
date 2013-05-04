@@ -28,9 +28,9 @@ public class WebSocketServerDemo {
 
 ```javascript
 
-1 : TextEvent{message='{}', topic='test'}
-2 : TextEvent{message='{}', topic='test'}
-3 : TextEvent{message='{}', topic='test'}
+1 : TextEvent{message='{}', path='test'}
+2 : TextEvent{message='{}', path='test'}
+3 : TextEvent{message='{}', path='test'}
 
 ```
 

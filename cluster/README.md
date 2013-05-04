@@ -27,7 +27,7 @@ When a new Node joins the cluster, it registers
 # Events/Topics
 
 Topics are namespaced under the Node's role
-e.g. database/save-post means the database server handles the save-post topic this means another
+e.g. database/save-post means the database server handles the save-post path this means another
 non-database Node, can subscribe to save-post and does something completely different without conflict
 
 Multiple servers can register the same role and topics, in such case

@@ -83,7 +83,7 @@ public class StaticFileMethod extends HttpMethod {
     }
 
     @Override
-    public boolean matches(String path, ChannelHandlerContext ctx, Object msg) {
+    public boolean matches(String requestPath, ChannelHandlerContext ctx, Object msg) {
         if (!(msg instanceof HttpRequest)) {
             return false;
         }
