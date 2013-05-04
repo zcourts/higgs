@@ -2,11 +2,11 @@ package io.higgs.http.server.transformers;
 
 import io.higgs.http.server.protocol.HttpMethod;
 import io.higgs.http.server.protocol.HttpProtocolConfiguration;
-import io.higgs.http.server.protocol.HttpRequest;
-import io.higgs.http.server.protocol.HttpResponse;
-import io.higgs.http.server.protocol.HttpStatus;
-import io.higgs.http.server.protocol.StaticFileMethod;
-import io.higgs.http.server.protocol.StaticFilePostWriteOperation;
+import io.higgs.http.server.HttpRequest;
+import io.higgs.http.server.HttpResponse;
+import io.higgs.http.server.HttpStatus;
+import io.higgs.http.server.StaticFileMethod;
+import io.higgs.http.server.StaticFilePostWriteOperation;
 import io.higgs.http.server.resource.MediaType;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
@@ -14,6 +14,7 @@ import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.HttpHeaders;
 import io.netty.handler.codec.http.HttpResponseStatus;
+import io.netty.handler.codec.http.LastHttpContent;
 import io.netty.handler.stream.ChunkedFile;
 import io.netty.util.CharsetUtil;
 import io.netty.util.concurrent.Future;
@@ -155,6 +156,8 @@ public class StaticFileTransformer extends BaseTransformer {
                                     config.getServer().getConfig().files.chunk_size));
                     writeFuture.addListener(new GenericFutureListener<Future<Void>>() {
                         public void operationComplete(Future<Void> future) throws Exception {
+                            //mark as done sending
+                            ctx.write(LastHttpContent.EMPTY_LAST_CONTENT);
                             done = true;
                             if (!isKeepAlive(request)) {
                                 writeFuture.channel().close();

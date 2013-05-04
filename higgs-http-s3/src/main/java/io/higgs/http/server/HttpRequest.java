@@ -1,4 +1,4 @@
-package io.higgs.http.server.protocol;
+package io.higgs.http.server;
 
 import io.higgs.core.ResourcePath;
 import io.higgs.http.server.params.FormFiles;
@@ -8,6 +8,7 @@ import io.higgs.http.server.params.HttpCookies;
 import io.higgs.http.server.params.HttpFile;
 import io.higgs.http.server.params.HttpSession;
 import io.higgs.http.server.params.QueryParams;
+import io.higgs.http.server.protocol.HttpProtocolConfiguration;
 import io.higgs.http.server.resource.MediaType;
 import io.netty.handler.codec.http.Cookie;
 import io.netty.handler.codec.http.CookieDecoder;
@@ -63,7 +64,7 @@ public class HttpRequest extends DefaultFullHttpRequest {
      * Because some custom fields depend on headers not set on construction this method
      * must be invoked after Netty populates the headers.
      */
-    void init() {
+    public void init() {
         String accept = headers().get(HttpHeaders.Names.ACCEPT);
         mediaTypes = MediaType.valueOf(accept);
         String cookiesStr = headers().get(HttpHeaders.Names.COOKIE);

@@ -1,7 +1,7 @@
 package io.higgs.http.server;
 
-import io.higgs.http.server.protocol.HttpRequest;
-import io.higgs.http.server.protocol.HttpStatus;
+import io.higgs.http.server.HttpRequest;
+import io.higgs.http.server.HttpStatus;
 import io.netty.handler.codec.http.HttpResponseStatus;
 
 /**

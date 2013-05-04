@@ -1,4 +1,4 @@
-package io.higgs.http.server.protocol;
+package io.higgs.http.server;
 
 import io.higgs.http.server.params.HttpCookie;
 import io.netty.buffer.ByteBuf;
@@ -24,14 +24,16 @@ import java.util.Map;
 public class HttpResponse extends DefaultFullHttpResponse {
     private Map<String, HttpCookie> cookies = new HashMap<>();
     private StaticFilePostWriteOperation postWriteOp;
-    private final ByteBuf content;
-    private HttpResponseStatus status;
+    private ByteBuf content = Unpooled.buffer();
+    private HttpResponseStatus status = HttpResponseStatus.OK;
     private HttpVersion version = HttpVersion.HTTP_1_1;
     private HttpHeaders headers = new DefaultHttpHeaders();
     private DecoderResult result;
 
     public HttpResponse(HttpVersion version, HttpResponseStatus status, ByteBuf content) {
         super(version, status);
+        this.version = version;
+        this.status = status;
         this.content = content;
     }
 
@@ -113,7 +115,7 @@ public class HttpResponse extends DefaultFullHttpResponse {
     /**
      * sets any overridden headers
      */
-    protected void finalizeCustomHeaders() {
+    public void finalizeCustomHeaders() {
         headers().set(HttpHeaders.Names.SET_COOKIE,
                 ServerCookieEncoder.encode(new ArrayList<Cookie>(cookies.values())));
     }

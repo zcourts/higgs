@@ -1,4 +1,4 @@
-package io.higgs.http.server.protocol;
+package io.higgs.http.server;
 
 import io.higgs.core.ResourcePath;
 import io.higgs.core.reflect.ReflectionUtil;
@@ -9,6 +9,7 @@ import io.higgs.http.server.params.HttpCookies;
 import io.higgs.http.server.params.HttpFile;
 import io.higgs.http.server.params.HttpSession;
 import io.higgs.http.server.params.QueryParams;
+import io.higgs.http.server.protocol.HttpMethod;
 import io.netty.channel.ChannelHandlerContext;
 
 import java.nio.channels.Channel;

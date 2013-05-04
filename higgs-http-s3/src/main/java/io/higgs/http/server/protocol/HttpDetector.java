@@ -1,6 +1,8 @@
 package io.higgs.http.server.protocol;
 
 import io.higgs.core.ProtocolDetector;
+import io.higgs.http.server.HttpRequestDecoder;
+import io.higgs.http.server.HttpResponseEncoder;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPipeline;
@@ -10,7 +12,7 @@ import io.netty.handler.stream.ChunkedWriteHandler;
  * @author Courtney Robinson <courtney@crlog.info>
  */
 public class HttpDetector implements ProtocolDetector {
-    private final HttpProtocolConfiguration config;
+    protected final HttpProtocolConfiguration config;
 
     public HttpDetector(HttpProtocolConfiguration config) {
         this.config = config;

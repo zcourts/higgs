@@ -2,8 +2,8 @@ package io.higgs.http.server.transformers;
 
 import io.higgs.core.Sortable;
 import io.higgs.http.server.protocol.HttpMethod;
-import io.higgs.http.server.protocol.HttpRequest;
-import io.higgs.http.server.protocol.HttpResponse;
+import io.higgs.http.server.HttpRequest;
+import io.higgs.http.server.HttpResponse;
 import io.higgs.http.server.resource.MediaType;
 import io.netty.channel.ChannelHandlerContext;
 

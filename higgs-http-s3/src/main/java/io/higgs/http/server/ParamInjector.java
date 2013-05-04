@@ -1,5 +1,6 @@
-package io.higgs.http.server.protocol;
+package io.higgs.http.server;
 
+import io.higgs.http.server.protocol.HttpMethod;
 import io.netty.channel.ChannelHandlerContext;
 
 /**

@@ -1,8 +1,13 @@
 package io.higgs.http.server.protocol;
 
+import io.higgs.core.FixedSortedList;
 import io.higgs.core.InvokableMethod;
 import io.higgs.core.MessageHandler;
-import io.higgs.core.SortableComparator;
+import io.higgs.http.server.HttpRequest;
+import io.higgs.http.server.HttpResponse;
+import io.higgs.http.server.HttpStatus;
+import io.higgs.http.server.ParamInjector;
+import io.higgs.http.server.StaticFileMethod;
 import io.higgs.http.server.WebApplicationException;
 import io.higgs.http.server.config.HttpConfig;
 import io.higgs.http.server.params.HttpFile;
@@ -24,8 +29,6 @@ import io.netty.handler.codec.http.multipart.InterfaceHttpData;
 
 import java.io.IOException;
 import java.net.SocketAddress;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Queue;
 
@@ -40,20 +43,20 @@ import static io.netty.handler.codec.http.HttpHeaders.setContentLength;
  * @author Courtney Robinson <courtney@crlog.info>
  */
 public class HttpHandler extends MessageHandler<HttpConfig, Object> {
-    private static final Class<HttpMethod> methodClass = HttpMethod.class;
+    protected static final Class<HttpMethod> methodClass = HttpMethod.class;
+    protected static HttpDataFactory factory = new DefaultHttpDataFactory(DefaultHttpDataFactory.MINSIZE); //Disk
     /**
      * The current HTTP request
      */
-    private HttpRequest request;
+    protected HttpRequest request;
     /**
      * The current HTTP method which matches the current {@link #request}.
      * If no method matches this will be null
      */
-    private HttpMethod method;
-    private final ParamInjector injector;
-    private final HttpProtocolConfiguration protocolConfig;
-    private static HttpDataFactory factory = new DefaultHttpDataFactory(DefaultHttpDataFactory.MINSIZE); //Disk
-    private HttpPostRequestDecoder decoder;
+    protected HttpMethod method;
+    protected ParamInjector injector;
+    protected HttpProtocolConfiguration protocolConfig;
+    protected HttpPostRequestDecoder decoder;
 
     public HttpHandler(HttpProtocolConfiguration config) {
         super(config.getServer().getConfig());
@@ -201,8 +204,7 @@ public class HttpHandler extends MessageHandler<HttpConfig, Object> {
     }
 
     private void writeResponse(ChannelHandlerContext ctx, Object response, Queue<ResponseTransformer> t) {
-        List<ResponseTransformer> ts = Arrays.asList(t.toArray(new ResponseTransformer[t.size()]));
-        Collections.sort(ts, new SortableComparator<ResponseTransformer>());
+        List<ResponseTransformer> ts = new FixedSortedList<>(t);
         HttpResponse httpResponse = null;
         if (response == null) {
             //method returned nothing

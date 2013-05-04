@@ -3,9 +3,13 @@ package io.higgs.http.server.protocol;
 import io.higgs.core.InvokableMethod;
 import io.higgs.core.ObjectFactory;
 import io.higgs.core.ResourcePath;
+import io.higgs.http.server.HttpRequest;
+import io.higgs.http.server.MethodParam;
+import io.higgs.http.server.WebApplicationException;
 import io.higgs.http.server.resource.MediaType;
 import io.higgs.http.server.resource.Produces;
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.handler.codec.http.HttpResponseStatus;
 
 import java.lang.reflect.Method;
 import java.util.LinkedList;
@@ -75,9 +79,9 @@ public class HttpMethod extends InvokableMethod {
                     }
                 }
                 //path matched but media type didn't
-                log.debug(String.format("template %s matched %s but media no compatible media types found",
+                log.debug(String.format("template %s matched %s but no compatible media types found",
                         path, p.getUri()));
-                return false;
+                throw new WebApplicationException(HttpResponseStatus.NOT_ACCEPTABLE, request);
             } else {
                 return true;
             }

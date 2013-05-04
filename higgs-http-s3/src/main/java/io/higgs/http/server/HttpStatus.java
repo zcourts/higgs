@@ -1,4 +1,4 @@
-package io.higgs.http.server.protocol;
+package io.higgs.http.server;
 
 import io.netty.handler.codec.http.HttpResponseStatus;
 
