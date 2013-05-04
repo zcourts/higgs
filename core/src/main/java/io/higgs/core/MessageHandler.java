@@ -7,7 +7,6 @@ import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.Method;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Queue;
 
@@ -39,9 +38,7 @@ public abstract class MessageHandler<C extends ServerConfig, T> extends ChannelI
      */
     public <M extends InvokableMethod> M findMethod(String path, ChannelHandlerContext ctx,
                                                     Object msg, Class<M> methodClass) {
-        List<InvokableMethod> sortedMethods = Arrays.asList(methods.toArray(new InvokableMethod[methods.size()]));
-        Collections.sort(sortedMethods, new SortableComparator<InvokableMethod>());
-
+        List<InvokableMethod> sortedMethods = new FixedSortedList<>(methods);
         for (InvokableMethod method : sortedMethods) {
             if (method.matches(path, ctx, msg)) {
                 if (method.getClass().isAssignableFrom(methodClass)) {
@@ -64,7 +61,11 @@ public abstract class MessageHandler<C extends ServerConfig, T> extends ChannelI
         expected += "]";
         String actual = "[";
         for (Object arg1 : args) {
-            actual += arg1.getClass().getName() + ",";
+            if (arg1 != null) {
+                actual += arg1.getClass().getName() + ",";
+            } else {
+                actual += "null,";
+            }
         }
         actual += "]";
         String argvalues = Arrays.deepToString(args);

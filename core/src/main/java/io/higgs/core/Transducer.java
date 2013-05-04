@@ -14,6 +14,7 @@ import org.slf4j.LoggerFactory;
 
 import javax.net.ssl.SSLEngine;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Queue;
 
 /**
@@ -54,7 +55,8 @@ public class Transducer extends ChannelInboundByteHandlerAdapter {
                 enableGzip(ctx);
             }
         }
-        Iterator<ProtocolDetectorFactory> it = factories.iterator();
+        List<ProtocolDetectorFactory> protocols = new FixedSortedList<>(factories);
+        Iterator<ProtocolDetectorFactory> it = protocols.iterator();
         boolean detectedProtocol = false;
         while (it.hasNext()) {
             ProtocolDetectorFactory codec = it.next();

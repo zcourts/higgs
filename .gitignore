@@ -11,3 +11,4 @@ syntax: glob
 target
 build
 build.log
+log/*
