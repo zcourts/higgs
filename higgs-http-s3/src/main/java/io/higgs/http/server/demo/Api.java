@@ -6,6 +6,7 @@ import com.google.common.base.Function;
 import io.higgs.core.ObjectFactory;
 import io.higgs.core.ResourcePath;
 import io.higgs.core.method;
+import io.higgs.http.server.WebApplicationException;
 import io.higgs.http.server.params.CookieParam;
 import io.higgs.http.server.params.FormFiles;
 import io.higgs.http.server.params.FormParam;
@@ -17,12 +18,16 @@ import io.higgs.http.server.params.HttpSession;
 import io.higgs.http.server.params.PathParam;
 import io.higgs.http.server.params.QueryParam;
 import io.higgs.http.server.params.QueryParams;
-import io.higgs.http.server.protocol.HttpRequest;
+import io.higgs.http.server.HttpRequest;
+import io.higgs.http.server.HttpStatus;
 import io.higgs.http.server.resource.GET;
 import io.higgs.http.server.resource.MediaType;
 import io.higgs.http.server.resource.POST;
 import io.higgs.http.server.resource.Produces;
 import io.higgs.http.server.resource.template;
+
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * @author Courtney Robinson <courtney@crlog.info>
@@ -86,19 +91,23 @@ public class Api implements ObjectFactory {
         return new ObjectMapper().writeValueAsString(this);
     }
 
-    @method(value = "boom1")
+    @method(value = "json")
+    @Produces(MediaType.APPLICATION_JSON)
     @GET
-    public void boom1(HttpRequest request) {
-        //throw new WebApplicationException(HttpStatus.NOT_IMPLEMENTED, null, request, "error/default");
+    public Map<Integer, Double> json(HttpRequest request) {
+        Map<Integer, Double> map = new HashMap<>();
+        for (int i = 0; i < 1000; i++) {
+            map.put(i, Math.random());
+        }
+        return map;
     }
 
-    @method("boom2")
+    @method("boom")
     @GET
     public Object boom2() {
         //you can, and SHOULD return WebApplicationException
         //if a wae is returned wae.setRequest() is automatically called
-        //return new WebApplicationException(HttpStatus.NOT_IMPLEMENTED, "error/default");
-        return null;
+        return new WebApplicationException(HttpStatus.NOT_IMPLEMENTED, "error/default");
     }
 
     @method("manual")

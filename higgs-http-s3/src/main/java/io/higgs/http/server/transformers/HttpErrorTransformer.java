@@ -3,8 +3,8 @@ package io.higgs.http.server.transformers;
 import io.higgs.http.server.WebApplicationException;
 import io.higgs.http.server.protocol.HttpMethod;
 import io.higgs.http.server.protocol.HttpProtocolConfiguration;
-import io.higgs.http.server.protocol.HttpRequest;
-import io.higgs.http.server.protocol.HttpResponse;
+import io.higgs.http.server.HttpRequest;
+import io.higgs.http.server.HttpResponse;
 import io.higgs.http.server.resource.MediaType;
 import io.higgs.http.server.transformers.thymeleaf.WebContext;
 import io.netty.channel.ChannelHandlerContext;
@@ -121,7 +121,7 @@ public class HttpErrorTransformer extends BaseTransformer {
             return thymeleaf.transform(webContext, templateName, e, request, mediaType, method,
                     ctx, status);
         } else {
-            return json.transform(null, request, mediaType, method, ctx);
+            return json.transform(null, request, mediaType, method, ctx, status);
         }
     }
 

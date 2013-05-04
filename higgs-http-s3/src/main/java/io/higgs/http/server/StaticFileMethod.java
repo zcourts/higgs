@@ -1,5 +1,7 @@
-package io.higgs.http.server.protocol;
+package io.higgs.http.server;
 
+import io.higgs.http.server.protocol.HttpMethod;
+import io.higgs.http.server.protocol.HttpProtocolConfiguration;
 import io.netty.channel.ChannelHandlerContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

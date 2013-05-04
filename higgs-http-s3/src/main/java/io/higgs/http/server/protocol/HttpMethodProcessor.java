@@ -2,6 +2,7 @@ package io.higgs.http.server.protocol;
 
 import io.higgs.core.MethodProcessor;
 import io.higgs.core.ObjectFactory;
+import io.higgs.http.server.MethodParam;
 import io.higgs.http.server.params.CookieParam;
 import io.higgs.http.server.params.FormParam;
 import io.higgs.http.server.params.HeaderParam;

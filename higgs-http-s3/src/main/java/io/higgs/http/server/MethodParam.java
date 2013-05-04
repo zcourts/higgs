@@ -1,4 +1,4 @@
-package io.higgs.http.server.protocol;
+package io.higgs.http.server;
 
 /**
  * @author Courtney Robinson <courtney@crlog.info>

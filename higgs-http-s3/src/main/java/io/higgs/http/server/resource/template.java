@@ -59,7 +59,7 @@ public @interface template {
      *         </tr>
      *         <tr>
      *             <td>${_request}</td>
-     *             <td>{@link io.higgs.http.server.protocol.HttpRequest}</td>
+     *             <td>{@link io.higgs.http.server.HttpRequest}</td>
      *         </tr>
      *         <tr>
      *             <td>${_response}</td>

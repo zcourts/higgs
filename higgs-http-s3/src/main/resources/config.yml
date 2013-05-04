@@ -77,7 +77,3 @@ files :
     png      : image/png
     css      : text/css
     js       : text/javascript
-error_templates :
-  templates:
-  -  {code : 404, file: 404.html}
-  -  {code : 500, file: 500.html}
