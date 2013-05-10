@@ -17,7 +17,6 @@ import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.HttpContent;
 import io.netty.handler.codec.http.HttpHeaders;
-import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.handler.codec.http.HttpVersion;
 import io.netty.handler.codec.http.LastHttpContent;
 import io.netty.handler.codec.http.multipart.DefaultHttpDataFactory;
@@ -27,6 +26,8 @@ import io.netty.handler.codec.http.multipart.FileUpload;
 import io.netty.handler.codec.http.multipart.HttpDataFactory;
 import io.netty.handler.codec.http.multipart.HttpPostRequestDecoder;
 import io.netty.handler.codec.http.multipart.InterfaceHttpData;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.SocketAddress;
@@ -50,6 +51,7 @@ public class HttpHandler extends MessageHandler<HttpConfig, Object> {
      * The current HTTP request
      */
     protected HttpRequest request;
+    protected HttpResponse res;
     /**
      * The current HTTP method which matches the current {@link #request}.
      * If no method matches this will be null
@@ -58,6 +60,7 @@ public class HttpHandler extends MessageHandler<HttpConfig, Object> {
     protected ParamInjector injector;
     protected HttpProtocolConfiguration protocolConfig;
     protected HttpPostRequestDecoder decoder;
+    private Logger requestLogger = LoggerFactory.getLogger("request_logger");
 
     public HttpHandler(HttpProtocolConfiguration config) {
         super(config.getServer().getConfig());
@@ -95,12 +98,13 @@ public class HttpHandler extends MessageHandler<HttpConfig, Object> {
 //                        "Old request :\n%s \nNew request :\n%s", request, msg));
             }
             request = (HttpRequest) msg;
+            res = new HttpResponse(ctx.alloc().buffer());
             //apply transcriptions
             protocolConfig.getTranscriber().transcribe(request);
             //must always set protocol config before anything uses the request
             request.setConfig(protocolConfig);
             //initialise request, setting cookies, media types etc
-            request.init();
+            request.init(ctx);
             method = findMethod(request.getUri(), ctx, msg, methodClass);
             if (method == null) {
                 //404
@@ -194,22 +198,21 @@ public class HttpHandler extends MessageHandler<HttpConfig, Object> {
     }
 
     protected void invoke(ChannelHandlerContext ctx) {
-        HttpResponse res = new HttpResponse(ctx.alloc().buffer());
         Object[] params = injector.injectParams(method, request, res, ctx);
         try {
             Object response = method.invoke(ctx, request.getUri(), method, params);
             Queue<ResponseTransformer> transformers = protocolConfig.getTransformers();
-            writeResponse(ctx, response, res, transformers);
+            writeResponse(ctx, response, transformers);
         } catch (Throwable t) {
             logDetailedFailMessage(true, params, t, method.method());
             throw new WebApplicationException(HttpStatus.INTERNAL_SERVER_ERROR, request, t);
         }
     }
 
-    protected void writeResponse(ChannelHandlerContext ctx, Object response, HttpResponse res,
-                                 Queue<ResponseTransformer> t) {
+    protected void writeResponse(ChannelHandlerContext ctx, Object response, Queue<ResponseTransformer> t) {
         if (response instanceof HttpResponse) {
-            doWrite(ctx, (HttpResponse) response);
+            res = (HttpResponse) response;
+            doWrite(ctx);
             return;
         }
         List<ResponseTransformer> ts = new FixedSortedList<>(t);
@@ -222,6 +225,7 @@ public class HttpHandler extends MessageHandler<HttpConfig, Object> {
             if (transformer.canTransform(response, request, request.getMatchedMediaType(), method, ctx)) {
                 transformer.transform(response, request, res, request.getMatchedMediaType(),
                         method, ctx);
+                notAcceptable = false;
                 break;
             }
             notAcceptable = true;
@@ -229,36 +233,36 @@ public class HttpHandler extends MessageHandler<HttpConfig, Object> {
         if (notAcceptable) {
             res.setStatus(HttpStatus.NOT_ACCEPTABLE);
         }
-        doWrite(ctx, res);
+        doWrite(ctx);
     }
 
-    protected void doWrite(ChannelHandlerContext ctx, HttpResponse response) {
+    protected void doWrite(ChannelHandlerContext ctx) {
         //apply request cookies to response, this includes the session id
-        response.finalizeCustomHeaders(request);
+        res.finalizeCustomHeaders(request);
         if (config.log_requests) {
             SocketAddress address = ctx.channel().remoteAddress();
             //going with the Apache format
             //194.116.215.20 - [14/Nov/2005:22:28:57 +0000] “GET / HTTP/1.0″ 200 16440
-            log.info(String.format("%s - [%s] \"%s %s %s\" %s %s",
+            requestLogger.info(String.format("%s - [%s] \"%s %s %s\" %s %s",
                     address,
                     HttpHeaders.getDate(request, request.getCreatedAt().toDate()),
                     request.getMethod().name(),
                     request.getUri(),
                     request.getProtocolVersion(),
-                    response.getStatus().code(),
-                    getHeader(response, HttpHeaders.Names.CONTENT_LENGTH) == null ?
-                            response.content().writerIndex() : HttpHeaders.getContentLength(response)
+                    res.getStatus().code(),
+                    getHeader(res, HttpHeaders.Names.CONTENT_LENGTH) == null ?
+                            res.content().writerIndex() : HttpHeaders.getContentLength(res)
             ));
         }
         // Decide whether to close the connection or not.
         boolean close = HttpHeaders.Values.CLOSE.equalsIgnoreCase(request.headers().get(CONNECTION))
                 || request.getProtocolVersion().equals(HttpVersion.HTTP_1_0)
                 && !HttpHeaders.Values.KEEP_ALIVE.equalsIgnoreCase(request.headers().get(CONNECTION));
-        if (!close && response.getPostWriteOp() == null) {
-            setContentLength(response, response.content().readableBytes());
+        if (!close && res.getPostWriteOp() == null) {
+            setContentLength(res, res.content().readableBytes());
         }
-        ChannelFuture future = ctx.write(response);
-        response.postWrite(future);
+        ChannelFuture future = ctx.write(res);
+        res.postWrite(future);
         // Close the connection after the write operation is done if necessary.
         if (close) {
             future.addListener(ChannelFutureListener.CLOSE);
@@ -269,20 +273,18 @@ public class HttpHandler extends MessageHandler<HttpConfig, Object> {
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
         try {
             if (cause instanceof WebApplicationException) {
-                writeResponse(ctx, cause, new HttpResponse(((WebApplicationException) cause).getStatus()),
-                        protocolConfig.getErrorTransformers());
+                writeResponse(ctx, cause, protocolConfig.getErrorTransformers());
             } else {
                 log.warn(String.format("Error while processing request %s", request), cause);
                 writeResponse(ctx, new WebApplicationException(HttpStatus.INTERNAL_SERVER_ERROR, request, cause),
-                        new HttpResponse(HttpResponseStatus.INTERNAL_SERVER_ERROR),
                         protocolConfig.getErrorTransformers());
             }
         } catch (Throwable t) {
             //at this point if an exception occurs, just log and return internal server error
             //internal server error
             log.warn(String.format("Uncaught error while processing request %s", request), cause);
-            HttpResponse ise = new HttpResponse(HttpStatus.INTERNAL_SERVER_ERROR);
-            doWrite(ctx, ise);
+            res.setStatus(HttpStatus.INTERNAL_SERVER_ERROR);
+            doWrite(ctx);
         }
     }
 }

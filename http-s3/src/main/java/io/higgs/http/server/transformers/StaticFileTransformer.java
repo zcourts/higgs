@@ -91,7 +91,7 @@ public class StaticFileTransformer extends BaseTransformer {
     }
 
     @Override
-    public void transform(Object response, HttpRequest request, HttpResponse httpResponse, MediaType mediaType,
+    public void transform(Object response, HttpRequest request, HttpResponse res, MediaType mediaType,
                           HttpMethod method,
                           ChannelHandlerContext ctx) {
         //first try to match all thymeleaf extensions
@@ -99,17 +99,14 @@ public class StaticFileTransformer extends BaseTransformer {
             String fileName = response instanceof File ?
                     ((File) response).getName() : ((JarFile) response).getEntry().getName();
             if (extensionPattern.matcher(fileName).matches()) {
-                parseTemplate(response, request, httpResponse, mediaType, method, ctx);
+                parseTemplate(response, request, res, mediaType, method, ctx);
             }
         }
-        HttpResponse res = new HttpResponse(HttpResponseStatus.OK);
         if (response != null) {
             if (response instanceof InputStream) {
                 writeResponseFromStream((InputStream) response, res, request, mediaType, method, ctx);
             } else if (response instanceof File) {
-                ByteBuf buffer = ctx.alloc().buffer();
-                res = new HttpResponse(buffer);
-                writeResponseFromFile((File) response, res, request, mediaType, method, ctx, buffer);
+                writeResponseFromFile((File) response, res, request, mediaType, method, ctx, res.content());
             } else {
                 res.setStatus(HttpResponseStatus.INTERNAL_SERVER_ERROR);
                 log.warn(String.format("Expecting an input stream or file,%s received", response.getClass().getName()));
@@ -141,14 +138,14 @@ public class StaticFileTransformer extends BaseTransformer {
                 File file = (File) response;
                 path = file.toPath();
             }
+            String name = path.toString();
+            //transformer uses getTemplate()
+            method.setTemplate(name);
+            transformer.transform(response, request, httpResponse, mediaType, method, ctx);
         } catch (IOException e) {
             log.warn(String.format("Error passing static file through Thymeleaf Path:%s", path), e);
             httpResponse.setStatus(HttpResponseStatus.INTERNAL_SERVER_ERROR);
         }
-        String name = path.toString();
-        //transformer uses getTemplate()
-        method.setTemplate(name);
-        transformer.transform(response, request, httpResponse, mediaType, method, ctx);
     }
 
     private void writeResponseFromStream(InputStream response, HttpResponse res, HttpRequest request,
@@ -167,7 +164,8 @@ public class StaticFileTransformer extends BaseTransformer {
         }
     }
 
-    private void writeResponseFromFile(File file, HttpResponse res, final HttpRequest request, MediaType mediaType,
+    private void writeResponseFromFile(File file, final HttpResponse res, final HttpRequest request,
+                                       MediaType mediaType,
                                        HttpMethod method, final ChannelHandlerContext ctx, ByteBuf buffer) {
         if (file.isDirectory()) {
             sendListing(res, file);
@@ -225,7 +223,7 @@ public class StaticFileTransformer extends BaseTransformer {
                 } catch (IOException e) {
                     done = true;
                     log.warn("Error writing chunk", e);
-                    HttpResponse res = new HttpResponse(HttpStatus.INTERNAL_SERVER_ERROR);
+                    res.setStatus(HttpStatus.INTERNAL_SERVER_ERROR);
                     ctx.write(res);
                 }
             }
