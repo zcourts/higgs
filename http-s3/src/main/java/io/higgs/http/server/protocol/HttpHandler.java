@@ -216,10 +216,6 @@ public class HttpHandler extends MessageHandler<HttpConfig, Object> {
             return;
         }
         List<ResponseTransformer> ts = new FixedSortedList<>(t);
-        if (response == null) {
-            //method returned nothing
-            res.setStatus(HttpStatus.NO_CONTENT);
-        }
         boolean notAcceptable = false;
         for (ResponseTransformer transformer : ts) {
             if (transformer.canTransform(response, request, request.getMatchedMediaType(), method, ctx)) {
