@@ -22,7 +22,13 @@ add_default_resource_filter : true
 #if true static files will be served from template_config.
 add_static_resource_filter : true
 template_config :
-    #if true templates are cache after first load
+  #when static files are being served, files with the following extensions will be passed through
+  #thymelead first so that thymeleaf directives can be processed
+  #these must be valid Java regex values
+  auto_parse_extensions : ".*html,.*htm,.*tpl"
+  #Thymeleaf template mode on of Thymeleaf's supported XML,VALIDXML,XHTML,VALIDXHTML,LEGACYHTML5,HTML5
+  template_mode : HTML5
+  #if true templates are cache after first load
   cacheable : true
   #24hrs in milliseconds  (max time a template is cached for)
   cache_age_ms : 86400000

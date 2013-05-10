@@ -3,13 +3,13 @@ package io.higgs.http.server;
 import io.higgs.core.ObjectFactory;
 import io.higgs.http.server.protocol.HttpMethod;
 import io.higgs.http.server.protocol.HttpProtocolConfiguration;
+import io.higgs.http.server.transformers.JarFile;
 import io.netty.channel.ChannelHandlerContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -48,7 +48,7 @@ public class StaticFileMethod extends HttpMethod {
         }
     }
 
-    private InputStream zipStream;
+    private JarFile jarFile;
     private File matchedFile;
 
     public StaticFileMethod(Queue<ObjectFactory> factories, HttpProtocolConfiguration protocolConfig) {
@@ -208,8 +208,8 @@ public class StaticFileMethod extends HttpMethod {
     }
 
     public Object getFile() {
-        if (zipStream != null) {
-            return zipStream;
+        if (jarFile != null) {
+            return jarFile;
         }
         return matchedFile;
     }
@@ -232,7 +232,9 @@ public class StaticFileMethod extends HttpMethod {
             while (entries.hasMoreElements()) {
                 ZipEntry entry = entries.nextElement();
                 if (jarFile.equalsIgnoreCase(entry.getName())) {
-                    zipStream = zip.getInputStream(entry);
+                    this.jarFile = new JarFile(zip,
+                            entry,
+                            zip.getInputStream(entry));
                     return true;
                 }
             }

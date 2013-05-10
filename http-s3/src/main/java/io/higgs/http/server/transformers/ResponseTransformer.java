@@ -1,9 +1,9 @@
 package io.higgs.http.server.transformers;
 
 import io.higgs.core.Sortable;
-import io.higgs.http.server.protocol.HttpMethod;
 import io.higgs.http.server.HttpRequest;
 import io.higgs.http.server.HttpResponse;
+import io.higgs.http.server.protocol.HttpMethod;
 import io.higgs.http.server.resource.MediaType;
 import io.netty.channel.ChannelHandlerContext;
 
@@ -31,19 +31,20 @@ public interface ResponseTransformer extends Sortable<ResponseTransformer> {
     /**
      * Given the response object transform it into one of the accepted media types
      *
-     * @param response the response object to be transformed
-     * @param request  the request which generated the response
-     * @param method   The method which was invoked to produce the response
-     * @param ctx      the channel context, provided in the case where an unrecoverable error is
-     *                 encountered an error response can be returned by by passing the normal response
-     *                 route
-     * @return an HTTP response. If null is returned the server will return
-     *         406 Not Acceptable to the client...
-     *         (i.e. The requested resource is only capable of generating content not acceptable
-     *         according to the Accept headers sent in the request.)
+     * @param response     the response object to be transformed
+     * @param request      the request which generated the response
+     * @param httpResponse the HTTP response which will be returned to the client
+     * @param method       The method which was invoked to produce the response
+     * @param ctx          the channel context, provided in the case where an unrecoverable error is
+     *                     encountered an error response can be returned by by passing the normal response
+     *                     route   @return an HTTP response. If null is returned the server will return
+     *                     406 Not Acceptable to the client...
+     *                     (i.e. The requested resource is only capable of generating content not acceptable
+     *                     according to the Accept headers sent in the request.)
      */
-    HttpResponse transform(Object response, HttpRequest request, MediaType mediaType, HttpMethod method,
-                           ChannelHandlerContext ctx);
+    void transform(Object response, HttpRequest request, HttpResponse httpResponse, MediaType mediaType,
+                   HttpMethod method,
+                   ChannelHandlerContext ctx);
 
     /**
      * @return If a transformer maintains state then this method should return a new instance every time.

@@ -27,7 +27,7 @@ public class DefaultParamInjector implements ParamInjector {
     private final ReflectionUtil reflection = new ReflectionUtil();
 
     @Override
-    public Object[] injectParams(HttpMethod method, HttpRequest request, ChannelHandlerContext ctx) {
+    public Object[] injectParams(HttpMethod method, HttpRequest request, HttpResponse res, ChannelHandlerContext ctx) {
         MethodParam[] params = method.getParams();
         Object[] args = new Object[params.length];
 
@@ -44,7 +44,7 @@ public class DefaultParamInjector implements ParamInjector {
                 args[i] = processAnnotations(method, request, param, params, path, components, ctx);
             } else {
                 //process the non-named parameters
-                args[i] = processClasses(method, request, param, params, path, components, ctx);
+                args[i] = processClasses(method, request, res, param, params, path, components, ctx);
             }
         }
         return args;
@@ -56,12 +56,15 @@ public class DefaultParamInjector implements ParamInjector {
      * {@link HttpCookies},{@link QueryParams},{@link HttpSession},{@link ResourcePath},
      * {@link ChannelHandlerContext} ,{@link Channel}
      */
-    private Object processClasses(HttpMethod method, HttpRequest request, MethodParam param, MethodParam[] params,
-                                  ResourcePath path, ResourcePath.Component[] components, ChannelHandlerContext ctx) {
+    private Object processClasses(HttpMethod method, HttpRequest request, HttpResponse res, MethodParam param,
+                                  MethodParam[] params, ResourcePath path, ResourcePath.Component[] components,
+                                  ChannelHandlerContext ctx) {
         if (io.netty.handler.codec.http.HttpRequest.class.isAssignableFrom(param.getParameterType())) {
             return request;
         } else if (FormFiles.class.isAssignableFrom(param.getParameterType())) {
             return request.getFormFiles();
+        } else if (HttpResponse.class.isAssignableFrom(param.getParameterType())) {
+            return res;
         } else if (FormParams.class.isAssignableFrom(param.getParameterType())) {
             return request.getFormParam();
         } else if (HttpCookies.class.isAssignableFrom(param.getParameterType())) {

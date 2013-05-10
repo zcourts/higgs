@@ -1,19 +1,17 @@
 package io.higgs.http.server.transformers;
 
 import io.higgs.core.reflect.ReflectionUtil;
-import io.higgs.http.server.config.TemplateConfig;
-import io.higgs.http.server.protocol.HttpMethod;
 import io.higgs.http.server.HttpRequest;
 import io.higgs.http.server.HttpResponse;
 import io.higgs.http.server.HttpStatus;
+import io.higgs.http.server.config.TemplateConfig;
+import io.higgs.http.server.protocol.HttpMethod;
 import io.higgs.http.server.resource.MediaType;
 import io.higgs.http.server.transformers.thymeleaf.Thymeleaf;
 import io.higgs.http.server.transformers.thymeleaf.WebContext;
-import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.HttpHeaders;
 import io.netty.handler.codec.http.HttpResponseStatus;
-import io.netty.handler.codec.http.HttpVersion;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.thymeleaf.TemplateEngine;
@@ -37,9 +35,13 @@ public class ThymeleafTransformer extends BaseTransformer {
     protected Thymeleaf tl;
     private Logger log = LoggerFactory.getLogger(getClass());
 
-    public ThymeleafTransformer(TemplateConfig config) {
+    public ThymeleafTransformer(TemplateConfig config, boolean ignoreConfigPrefixAndSuffix) {
         this.config = config;
-        tl = new Thymeleaf(this.config);
+        tl = new Thymeleaf(this.config, ignoreConfigPrefixAndSuffix);
+    }
+
+    public ThymeleafTransformer(TemplateConfig template_config) {
+        this(template_config, false);
     }
 
     @Override
@@ -64,26 +66,27 @@ public class ThymeleafTransformer extends BaseTransformer {
     }
 
     @Override
-    public HttpResponse transform(Object response, HttpRequest request, MediaType mediaType, HttpMethod method,
-                                  ChannelHandlerContext ctx) {
+    public void transform(Object response, HttpRequest request, HttpResponse httpResponse, MediaType mediaType,
+                          HttpMethod method,
+                          ChannelHandlerContext ctx) {
         WebContext webContext = new WebContext();
-        return transform(webContext, method.getTemplate(), response, request, mediaType, method, ctx,
+        transform(webContext, method.getTemplate(), response, request, httpResponse, mediaType, method, ctx,
                 null);
     }
 
     @Override
     public ThymeleafTransformer instance() {
-        return new ThymeleafTransformer(config);
+        return new ThymeleafTransformer(config, false);
     }
 
-    public HttpResponse transform(WebContext webContext, String templateName, Object response, HttpRequest request,
-                                  MediaType mediaType, HttpMethod method,
-                                  ChannelHandlerContext ctx, HttpResponseStatus status) {
+    public void transform(WebContext webContext, String templateName, Object response, HttpRequest request,
+                          HttpResponse res, MediaType mediaType, HttpMethod method,
+                          ChannelHandlerContext ctx, HttpResponseStatus status) {
         if (response == null) {
             //if returns==null then the resource method returned void so return No Content
-            return new HttpResponse(HttpStatus.NO_CONTENT);
+            res.setStatus(HttpStatus.NO_CONTENT);
         } else {
-            byte[] data;
+            byte[] data = null;
             try {
                 if (request != null) {
                     if (config.determine_language_from_accept_header) {
@@ -101,17 +104,13 @@ public class ThymeleafTransformer extends BaseTransformer {
             } catch (Throwable e) {
                 log.warn("Unable to transform response to HTML using Thymeleaf transformer", e);
                 //todo use template to generate 500
-                return new HttpResponse(HttpStatus.INTERNAL_SERVER_ERROR);
+                res.setStatus(HttpStatus.INTERNAL_SERVER_ERROR);
             }
             if (data != null) {
-                HttpResponse httpResponse = new HttpResponse(
-                        request == null ? HttpVersion.HTTP_1_1 : request.getProtocolVersion(),
-                        status == null ? HttpStatus.OK : status,
-                        Unpooled.wrappedBuffer(data));
-                HttpHeaders.setContentLength(httpResponse, data.length);
-                return httpResponse;
+                res.setStatus(status == null ? HttpStatus.OK : status);
+                res.content().writeBytes(data);
+                HttpHeaders.setContentLength(res, data.length);
             }
-            return null;
         }
     }
 

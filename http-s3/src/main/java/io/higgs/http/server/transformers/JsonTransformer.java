@@ -5,10 +5,10 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.introspect.VisibilityChecker;
-import io.higgs.http.server.protocol.HttpMethod;
 import io.higgs.http.server.HttpRequest;
 import io.higgs.http.server.HttpResponse;
 import io.higgs.http.server.HttpStatus;
+import io.higgs.http.server.protocol.HttpMethod;
 import io.higgs.http.server.resource.MediaType;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.HttpHeaders;
@@ -51,9 +51,10 @@ public class JsonTransformer extends BaseTransformer {
     }
 
     @Override
-    public HttpResponse transform(Object response, HttpRequest request, MediaType mediaType, HttpMethod method,
-                                  ChannelHandlerContext ctx) {
-        return transform(response, request, mediaType, method, ctx, null);
+    public void transform(Object response, HttpRequest request, HttpResponse httpResponse, MediaType mediaType,
+                          HttpMethod method,
+                          ChannelHandlerContext ctx) {
+        transform(response, request, httpResponse, mediaType, method, ctx, null);
     }
 
     @Override
@@ -61,9 +62,10 @@ public class JsonTransformer extends BaseTransformer {
         return new JsonTransformer();
     }
 
-    public HttpResponse transform(Object response, HttpRequest request, MediaType mediaType, HttpMethod method,
-                                  ChannelHandlerContext ctx, HttpResponseStatus status) {
-        byte[] data;
+    public void transform(Object response, HttpRequest request, HttpResponse res, MediaType mediaType,
+                          HttpMethod method,
+                          ChannelHandlerContext ctx, HttpResponseStatus status) {
+        byte[] data = null;
         if (response == null) {
             data = "{}".getBytes();
         } else {
@@ -72,17 +74,14 @@ public class JsonTransformer extends BaseTransformer {
             } catch (JsonProcessingException e) {
                 log.warn("Unable to transform response to JSON", e);
                 //todo use template for 500
-                return new HttpResponse(HttpStatus.INTERNAL_SERVER_ERROR);
+                res.setStatus(HttpStatus.INTERNAL_SERVER_ERROR);
             }
         }
         if (data != null) {
-            HttpResponse httpResponse = new HttpResponse(request.getProtocolVersion(),
-                    status == null ? HttpStatus.OK : status,
-                    ctx.alloc().buffer().writeBytes(data));
-            HttpHeaders.setContentLength(httpResponse, data.length);
-            return httpResponse;
+            res.setStatus(status == null ? HttpStatus.OK : status);
+            res.content().writeBytes(data);
+            HttpHeaders.setContentLength(res, data.length);
         }
-        return null;
     }
 
     @Override
