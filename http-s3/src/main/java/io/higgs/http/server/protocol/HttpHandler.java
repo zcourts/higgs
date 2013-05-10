@@ -141,9 +141,9 @@ public class HttpHandler extends MessageHandler<HttpConfig, Object> {
                 request.setChunked(HttpHeaders.isTransferEncodingChunked(request));
                 request.setMultipart(decoder.isMultipart());
 
-                if (!request.isChunked()) {
-                    allHttpDataReceived(ctx);
-                }
+//                if (!request.isChunked()) {
+//                    allHttpDataReceived(ctx);
+//                }
             }
             if (msg instanceof HttpContent) {
                 // New chunk is received
@@ -154,8 +154,47 @@ public class HttpHandler extends MessageHandler<HttpConfig, Object> {
                     log.warn("Unable to decode HTTP chunk", e1);
                     throw new WebApplicationException(HttpStatus.BAD_REQUEST, request);
                 }
-                if (chunk instanceof LastHttpContent) {
+                readHttpDataChunkByChunk();
+                if (chunk instanceof LastHttpContent && !(chunk instanceof HttpRequest)) {
                     allHttpDataReceived(ctx);
+                }
+            }
+        }
+    }
+
+    private void readHttpDataChunkByChunk() {
+        try {
+            while (decoder.hasNext()) {
+                InterfaceHttpData data = decoder.next();
+                if (data != null) {
+                    // new value
+                    writeHttpData(data);
+                }
+            }
+        } catch (HttpPostRequestDecoder.EndOfDataDecoderException e1) {
+            // end
+        }
+    }
+
+    private void writeHttpData(InterfaceHttpData data) {
+        //check if is file upload or attribute, attributes go into form params and file uploads to file params
+        if (data.getHttpDataType() == InterfaceHttpData.HttpDataType.Attribute) {
+            io.netty.handler.codec.http.multipart.Attribute field =
+                    (io.netty.handler.codec.http.multipart.Attribute) data;
+            try {
+                //add form param
+                request.addFormField(field.getName(), field.getValue());
+            } catch (IOException e) {
+                log.warn(String.format("unable to extract form field's value, field name = %s", field.getName()));
+            }
+        } else {
+            if (data instanceof FileUpload) {
+                //add form file
+                request.addFormFile(new HttpFile((FileUpload) data));
+            } else {
+                if (data != null) {
+                    log.warn(String.format("Unknown form type encountered Class: %s,data type:%s,name:%s",
+                            data.getClass().getName(), data.getHttpDataType().name(), data.getName()));
                 }
             }
         }
@@ -172,27 +211,7 @@ public class HttpHandler extends MessageHandler<HttpConfig, Object> {
         }
         //called when all data is received, go over request data and separate form fields from files
         for (InterfaceHttpData httpData : data) {
-            //check if is file upload or attribute, attributes go into form params and file uploads to file params
-            if (httpData instanceof io.netty.handler.codec.http.multipart.Attribute) {
-                io.netty.handler.codec.http.multipart.Attribute field =
-                        (io.netty.handler.codec.http.multipart.Attribute) httpData;
-                try {
-                    //add form param
-                    request.addFormField(field.getName(), field.getValue());
-                } catch (IOException e) {
-                    log.warn(String.format("unable to extract form field's value, field name = %s", field.getName()));
-                }
-            } else {
-                if (httpData instanceof FileUpload) {
-                    //add form file
-                    request.addFormFile(new HttpFile((FileUpload) httpData));
-                } else {
-                    if (httpData != null) {
-                        log.warn(String.format("Unknown form type encountered Class: %s,data type:%s,name:%s",
-                                httpData.getClass().getName(), httpData.getHttpDataType().name(), httpData.getName()));
-                    }
-                }
-            }
+            writeHttpData(httpData);
         }
         invoke(ctx);
     }
@@ -210,6 +229,11 @@ public class HttpHandler extends MessageHandler<HttpConfig, Object> {
     }
 
     protected void writeResponse(ChannelHandlerContext ctx, Object response, Queue<ResponseTransformer> t) {
+        if (res.isRedirect()) {
+            doWrite(ctx);
+            return;
+        }
+
         if (response instanceof HttpResponse) {
             res = (HttpResponse) response;
             doWrite(ctx);

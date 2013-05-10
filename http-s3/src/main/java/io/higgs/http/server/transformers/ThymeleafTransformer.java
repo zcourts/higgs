@@ -82,35 +82,30 @@ public class ThymeleafTransformer extends BaseTransformer {
     public void transform(WebContext webContext, String templateName, Object response, HttpRequest request,
                           HttpResponse res, MediaType mediaType, HttpMethod method,
                           ChannelHandlerContext ctx, HttpResponseStatus status) {
-        if (response == null) {
-            //if returns==null then the resource method returned void so return No Content
-            res.setStatus(HttpStatus.NO_CONTENT);
-        } else {
-            byte[] data = null;
-            try {
-                if (request != null) {
-                    if (config.determine_language_from_accept_header) {
-                        try {
-                            webContext.setLocale(Locale.forLanguageTag(
-                                    request.headers().get(HttpHeaders.Names.ACCEPT_LANGUAGE)));
-                        } catch (Throwable t) {
-                            log.warn("Unable to set locale from accept header");
-                        }
+        byte[] data = null;
+        try {
+            if (request != null) {
+                if (config.determine_language_from_accept_header) {
+                    try {
+                        webContext.setLocale(Locale.forLanguageTag(
+                                request.headers().get(HttpHeaders.Names.ACCEPT_LANGUAGE)));
+                    } catch (Throwable t) {
+                        log.warn("Unable to set locale from accept header");
                     }
-                    populateContext(webContext, response, request);
                 }
-                String content = tl.getTemplateEngine().process(templateName, webContext);
-                data = content.getBytes(Charset.forName(config.character_encoding));
-            } catch (Throwable e) {
-                log.warn("Unable to transform response to HTML using Thymeleaf transformer", e);
-                //todo use template to generate 500
-                res.setStatus(HttpStatus.INTERNAL_SERVER_ERROR);
+                populateContext(webContext, response, request);
             }
-            if (data != null) {
-                res.setStatus(status == null ? HttpStatus.OK : status);
-                res.content().writeBytes(data);
-                HttpHeaders.setContentLength(res, data.length);
-            }
+            String content = tl.getTemplateEngine().process(templateName, webContext);
+            data = content.getBytes(Charset.forName(config.character_encoding));
+        } catch (Throwable e) {
+            log.warn("Unable to transform response to HTML using Thymeleaf transformer", e);
+            //todo use template to generate 500
+            res.setStatus(HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+        if (data != null) {
+            res.setStatus(status == null ? HttpStatus.OK : status);
+            res.content().writeBytes(data);
+            HttpHeaders.setContentLength(res, data.length);
         }
     }
 
@@ -120,7 +115,6 @@ public class ThymeleafTransformer extends BaseTransformer {
         ctx.setVariable("_query", request.getQueryParams());
         ctx.setVariable("_form", request.getFormParam());
         ctx.setVariable("_files", request.getFormFiles());
-        //TODO session should never be null!
         ctx.setVariable("_session", request.getSession());
         ctx.setVariable("_cookies", request.getCookies());
         ctx.setVariable("_request", request);

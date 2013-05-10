@@ -29,6 +29,7 @@ public class HttpResponse extends DefaultFullHttpResponse {
     private HttpVersion version = HttpVersion.HTTP_1_1;
     private HttpHeaders headers = new DefaultHttpHeaders();
     private DecoderResult result;
+    private boolean redirect;
 
     public HttpResponse(HttpVersion version, HttpResponseStatus status, ByteBuf content) {
         super(version, status);
@@ -116,11 +117,13 @@ public class HttpResponse extends DefaultFullHttpResponse {
      * sets any overridden headers
      */
     public void finalizeCustomHeaders(HttpRequest request) {
-        HashMap<String, HttpCookie> cookies = new HashMap<>();
-        cookies.putAll(request.getCookies());
-        cookies.putAll(newCookies);
-        headers().set(HttpHeaders.Names.SET_COOKIE,
-                ServerCookieEncoder.encode(new ArrayList<Cookie>(cookies.values())));
+        if (newCookies.size() > 0 || request.isNewSession()) {
+            HashMap<String, HttpCookie> cookies = new HashMap<>();
+            cookies.putAll(request.getCookies());
+            cookies.putAll(newCookies);
+            headers().set(HttpHeaders.Names.SET_COOKIE,
+                    ServerCookieEncoder.encode(new ArrayList<Cookie>(cookies.values())));
+        }
     }
 
     public void postWrite(ChannelFuture future) {
@@ -172,5 +175,20 @@ public class HttpResponse extends DefaultFullHttpResponse {
     @Override
     public void setDecoderResult(DecoderResult result) {
         this.result = result;
+    }
+
+    /**
+     * Send a 303 (See Other) redirect
+     *
+     * @param to the location to redirect to
+     */
+    public void redirect(String to) {
+        setStatus(HttpResponseStatus.SEE_OTHER);
+        headers().set("Location", to);
+        redirect = true;
+    }
+
+    public boolean isRedirect() {
+        return redirect;
     }
 }
