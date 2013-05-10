@@ -22,7 +22,7 @@ import java.util.Map;
  * @author Courtney Robinson <courtney@crlog.info>
  */
 public class HttpResponse extends DefaultFullHttpResponse {
-    private Map<String, HttpCookie> cookies = new HashMap<>();
+    private Map<String, HttpCookie> newCookies = new HashMap<>();
     private StaticFilePostWriteOperation postWriteOp;
     private ByteBuf content = Unpooled.buffer();
     private HttpResponseStatus status = HttpResponseStatus.OK;
@@ -88,7 +88,7 @@ public class HttpResponse extends DefaultFullHttpResponse {
     }
 
     public void setCookies(final Map<String, HttpCookie> cookies) {
-        this.cookies.putAll(cookies);
+        this.newCookies.putAll(cookies);
     }
 
     /**
@@ -100,22 +100,25 @@ public class HttpResponse extends DefaultFullHttpResponse {
     public void setCookie(final String name, final String value) {
         HttpCookie cookie = new HttpCookie(name, value);
         cookie.setPath("/");
-        cookies.put(name, cookie);
+        newCookies.put(name, cookie);
     }
 
     public void setCookie(final HttpCookie cookie) {
-        cookies.put(cookie.getName(), cookie);
+        newCookies.put(cookie.getName(), cookie);
     }
 
     public void clearHeaders() {
-        cookies.clear();
+        newCookies.clear();
         headers().clear();
     }
 
     /**
      * sets any overridden headers
      */
-    public void finalizeCustomHeaders() {
+    public void finalizeCustomHeaders(HttpRequest request) {
+        HashMap<String, HttpCookie> cookies = new HashMap<>();
+        cookies.putAll(request.getCookies());
+        cookies.putAll(newCookies);
         headers().set(HttpHeaders.Names.SET_COOKIE,
                 ServerCookieEncoder.encode(new ArrayList<Cookie>(cookies.values())));
     }

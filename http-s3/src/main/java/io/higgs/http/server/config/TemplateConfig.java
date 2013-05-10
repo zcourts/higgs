@@ -28,4 +28,7 @@ public class TemplateConfig {
     public boolean convert_pojo_responses_to_key_value_pairs = true;
     public boolean auto_initialize_thymeleaf = true;
     public boolean determine_language_from_accept_header = true;
+    public String auto_parse_extensions = "html,htm";
+
+    public String template_mode = "LEGACYHTML5";
 }

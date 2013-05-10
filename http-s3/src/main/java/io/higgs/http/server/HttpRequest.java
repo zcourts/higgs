@@ -76,26 +76,18 @@ public class HttpRequest extends DefaultFullHttpRequest {
         }
         QueryStringDecoder decoderQuery = new QueryStringDecoder(getUri());
         queryParams.putAll(decoderQuery.parameters());
+        getSessionIDFromCookie();
         initSession();
     }
 
     public void initSession() {
         if (sessionId == null || config.getSessions().get(sessionId) == null) {
-            HttpCookie cookie = getCookie(SID);
-            HttpSession s = config.getSessions().get(sessionId);
-            if (s == null && cookie != null) {
-                //server may have crashed, session cookie exists on client but not in memory, could be spoofed as well
-                //so start a new session, new ID etc...
-                cookie = null;
-            }
-            if (cookie == null) {
+            if (config.getSessions().get(sessionId) == null) {
                 //generate a new session ID
                 SecureRandom random = new SecureRandom();
                 sessionId = new BigInteger(130, random).toString(32);
 
                 HttpCookie session = new HttpCookie(SID, sessionId);
-                setCookie(session); //set the session id cookie
-
                 session.setPath(config.getServer().getConfig().session_path);
                 session.setMaxAge(config.getServer().getConfig().session_max_age);
                 session.setHttpOnly(config.getServer().getConfig().session_http_only);
@@ -118,9 +110,17 @@ public class HttpRequest extends DefaultFullHttpRequest {
                     }
                     session.setPorts(ports);
                 }
+                setCookie(session); //set the session id cookie
                 this.newSession = true;
                 config.getSessions().put(sessionId, new HttpSession());
             }
+        }
+    }
+
+    private void getSessionIDFromCookie() {
+        HttpCookie cookie = getCookie(SID);
+        if (cookie != null) {
+            sessionId = cookie.getValue();
         }
     }
 

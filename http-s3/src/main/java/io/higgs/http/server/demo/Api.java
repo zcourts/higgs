@@ -6,6 +6,7 @@ import com.google.common.base.Function;
 import io.higgs.core.ResourcePath;
 import io.higgs.core.method;
 import io.higgs.http.server.HttpRequest;
+import io.higgs.http.server.HttpResponse;
 import io.higgs.http.server.HttpStatus;
 import io.higgs.http.server.WebApplicationException;
 import io.higgs.http.server.params.CookieParam;
@@ -42,8 +43,9 @@ public class Api {
 
     @GET
     @method
-    public String index() {
+    public String index(HttpSession session) {
         System.out.println("index");
+        session.put("index-" + Math.random(), Math.random());
         return "yes index";
     }
 
@@ -71,7 +73,7 @@ public class Api {
             @PathParam("some-random-name") Integer randomInt,
             @QueryParam("a") String a,
             //all these unnamed parameters can be injected and should never be null
-            HttpRequest request, FormFiles files,
+            HttpRequest request, HttpResponse response, FormFiles files,
             FormParams form, HttpCookies cookies,
             QueryParams query, HttpSession session,
             ResourcePath path
@@ -83,10 +85,12 @@ public class Api {
         assert query != null;
         assert session != null;
         assert path != null;
+        session.put("api-" + count, Math.random());
         count += 1;
         System.out.println("test:" + count);
         //set something in the session
         session.put("count", count);
+        response.setCookie("api-cookie", String.valueOf(true));
         return new ObjectMapper().writeValueAsString(this);
     }
 

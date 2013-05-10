@@ -17,6 +17,7 @@ import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.HttpContent;
 import io.netty.handler.codec.http.HttpHeaders;
+import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.handler.codec.http.HttpVersion;
 import io.netty.handler.codec.http.LastHttpContent;
 import io.netty.handler.codec.http.multipart.DefaultHttpDataFactory;
@@ -193,42 +194,47 @@ public class HttpHandler extends MessageHandler<HttpConfig, Object> {
     }
 
     protected void invoke(ChannelHandlerContext ctx) {
-        Object[] params = injector.injectParams(method, request, ctx);
+        HttpResponse res = new HttpResponse(ctx.alloc().buffer());
+        Object[] params = injector.injectParams(method, request, res, ctx);
         try {
             Object response = method.invoke(ctx, request.getUri(), method, params);
             Queue<ResponseTransformer> transformers = protocolConfig.getTransformers();
-            writeResponse(ctx, response, transformers);
+            writeResponse(ctx, response, res, transformers);
         } catch (Throwable t) {
             logDetailedFailMessage(true, params, t, method.method());
             throw new WebApplicationException(HttpStatus.INTERNAL_SERVER_ERROR, request, t);
         }
     }
 
-    protected void writeResponse(ChannelHandlerContext ctx, Object response, Queue<ResponseTransformer> t) {
+    protected void writeResponse(ChannelHandlerContext ctx, Object response, HttpResponse res,
+                                 Queue<ResponseTransformer> t) {
+        if (response instanceof HttpResponse) {
+            doWrite(ctx, (HttpResponse) response);
+            return;
+        }
         List<ResponseTransformer> ts = new FixedSortedList<>(t);
-        HttpResponse httpResponse = null;
         if (response == null) {
             //method returned nothing
-            httpResponse = new HttpResponse(HttpStatus.NO_CONTENT);
+            res.setStatus(HttpStatus.NO_CONTENT);
         }
+        boolean notAcceptable = false;
         for (ResponseTransformer transformer : ts) {
             if (transformer.canTransform(response, request, request.getMatchedMediaType(), method, ctx)) {
-                httpResponse = transformer.transform(response, request, request.getMatchedMediaType(),
+                transformer.transform(response, request, res, request.getMatchedMediaType(),
                         method, ctx);
                 break;
             }
+            notAcceptable = true;
         }
-        if (httpResponse == null) {
-            //no transformer could create a response to match what the client accepts
-            httpResponse = new HttpResponse(HttpStatus.NOT_ACCEPTABLE);
+        if (notAcceptable) {
+            res.setStatus(HttpStatus.NOT_ACCEPTABLE);
         }
-        doWrite(ctx, httpResponse);
+        doWrite(ctx, res);
     }
 
     protected void doWrite(ChannelHandlerContext ctx, HttpResponse response) {
         //apply request cookies to response, this includes the session id
-        response.setCookies(request.getCookies());
-        response.finalizeCustomHeaders();
+        response.finalizeCustomHeaders(request);
         if (config.log_requests) {
             SocketAddress address = ctx.channel().remoteAddress();
             //going with the Apache format
@@ -263,10 +269,12 @@ public class HttpHandler extends MessageHandler<HttpConfig, Object> {
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
         try {
             if (cause instanceof WebApplicationException) {
-                writeResponse(ctx, cause, protocolConfig.getErrorTransformers());
+                writeResponse(ctx, cause, new HttpResponse(((WebApplicationException) cause).getStatus()),
+                        protocolConfig.getErrorTransformers());
             } else {
                 log.warn(String.format("Error while processing request %s", request), cause);
                 writeResponse(ctx, new WebApplicationException(HttpStatus.INTERNAL_SERVER_ERROR, request, cause),
+                        new HttpResponse(HttpResponseStatus.INTERNAL_SERVER_ERROR),
                         protocolConfig.getErrorTransformers());
             }
         } catch (Throwable t) {
