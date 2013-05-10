@@ -10,6 +10,7 @@ import io.higgs.http.server.params.HttpSession;
 import io.higgs.http.server.params.QueryParams;
 import io.higgs.http.server.protocol.HttpProtocolConfiguration;
 import io.higgs.http.server.resource.MediaType;
+import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.Cookie;
 import io.netty.handler.codec.http.CookieDecoder;
 import io.netty.handler.codec.http.DefaultFullHttpRequest;
@@ -17,6 +18,8 @@ import io.netty.handler.codec.http.HttpHeaders;
 import io.netty.handler.codec.http.HttpMethod;
 import io.netty.handler.codec.http.HttpVersion;
 import io.netty.handler.codec.http.QueryStringDecoder;
+import io.netty.util.Attribute;
+import io.netty.util.AttributeKey;
 import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -48,6 +51,7 @@ public class HttpRequest extends DefaultFullHttpRequest {
     private boolean multipart;
     private boolean chunked;
     public static final String SID = "HS3-ID";
+    private static final AttributeKey<String> sessionAttr = new AttributeKey<>(SID + "-attr");
 
     /**
      * Creates a new instance.
@@ -63,8 +67,10 @@ public class HttpRequest extends DefaultFullHttpRequest {
     /**
      * Because some custom fields depend on headers not set on construction this method
      * must be invoked after Netty populates the headers.
+     *
+     * @param ctx
      */
-    public void init() {
+    public void init(ChannelHandlerContext ctx) {
         String accept = headers().get(HttpHeaders.Names.ACCEPT);
         mediaTypes = MediaType.valueOf(accept);
         String cookiesStr = headers().get(HttpHeaders.Names.COOKIE);
@@ -76,11 +82,11 @@ public class HttpRequest extends DefaultFullHttpRequest {
         }
         QueryStringDecoder decoderQuery = new QueryStringDecoder(getUri());
         queryParams.putAll(decoderQuery.parameters());
-        getSessionIDFromCookie();
-        initSession();
+        getSessionID(ctx);
+        initSession(ctx);
     }
 
-    public void initSession() {
+    public void initSession(ChannelHandlerContext ctx) {
         if (sessionId == null || config.getSessions().get(sessionId) == null) {
             if (config.getSessions().get(sessionId) == null) {
                 //generate a new session ID
@@ -111,15 +117,23 @@ public class HttpRequest extends DefaultFullHttpRequest {
                     session.setPorts(ports);
                 }
                 setCookie(session); //set the session id cookie
+                //need to associate session ID with the channel since multiple requests can be received
+                //before the session cookie is set on the client, e.g. in keep alive requests
+                Attribute<String> sessAttr = ctx.channel().attr(sessionAttr);
+                sessAttr.set(sessionId);
                 this.newSession = true;
                 config.getSessions().put(sessionId, new HttpSession());
             }
         }
     }
 
-    private void getSessionIDFromCookie() {
+    private void getSessionID(ChannelHandlerContext ctx) {
+        Attribute<String> sessAttr = ctx.channel().attr(sessionAttr);
+        if (sessAttr != null && sessAttr.get() != null) {
+            sessionId = sessAttr.get();
+        }
         HttpCookie cookie = getCookie(SID);
-        if (cookie != null) {
+        if (sessionId == null && cookie != null) {
             sessionId = cookie.getValue();
         }
     }
@@ -189,12 +203,10 @@ public class HttpRequest extends DefaultFullHttpRequest {
     }
 
     public String getSessionId() {
-        initSession();
         return sessionId;
     }
 
     public HttpSession getSession() {
-        initSession();
         return config.getSessions().get(sessionId);
     }
 
