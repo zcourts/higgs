@@ -15,6 +15,7 @@ import io.higgs.http.server.transformers.ResponseTransformer;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.handler.codec.http.FullHttpRequest;
 import io.netty.handler.codec.http.HttpContent;
 import io.netty.handler.codec.http.HttpHeaders;
 import io.netty.handler.codec.http.HttpVersion;
@@ -90,14 +91,12 @@ public class HttpHandler extends MessageHandler<HttpConfig, Object> {
     }
 
     public void messageReceived(ChannelHandlerContext ctx, Object msg) throws Exception {
-        if (msg instanceof HttpRequest) {
-            if (request != null) {
-                //browsers like chrome keep the connection open and make additional requests
-//                throw new IllegalStateException(String.format("HttpRequest instance received but request already
-// set." +
-//                        "Old request :\n%s \nNew request :\n%s", request, msg));
+        if (msg instanceof HttpRequest || msg instanceof FullHttpRequest) {
+            if (msg instanceof HttpRequest) {
+                request = (HttpRequest) msg;
+            } else {
+                request = new HttpRequest((FullHttpRequest) msg);
             }
-            request = (HttpRequest) msg;
             res = new HttpResponse(ctx.alloc().buffer());
             //apply transcriptions
             protocolConfig.getTranscriber().transcribe(request);
@@ -105,7 +104,7 @@ public class HttpHandler extends MessageHandler<HttpConfig, Object> {
             request.setConfig(protocolConfig);
             //initialise request, setting cookies, media types etc
             request.init(ctx);
-            method = findMethod(request.getUri(), ctx, msg, methodClass);
+            method = findMethod(request.getUri(), ctx, request, methodClass);
             if (method == null) {
                 //404
                 throw new WebApplicationException(HttpStatus.NOT_FOUND, request);
@@ -155,7 +154,7 @@ public class HttpHandler extends MessageHandler<HttpConfig, Object> {
                     throw new WebApplicationException(HttpStatus.BAD_REQUEST, request);
                 }
                 readHttpDataChunkByChunk();
-                if (chunk instanceof LastHttpContent && !(chunk instanceof HttpRequest)) {
+                if (chunk instanceof LastHttpContent) {
                     allHttpDataReceived(ctx);
                 }
             }
@@ -287,6 +286,11 @@ public class HttpHandler extends MessageHandler<HttpConfig, Object> {
         if (close) {
             future.addListener(ChannelFutureListener.CLOSE);
         }
+        //clean up and prep for next request. if keep-alive browsers like chrome will
+        //make multiple requests on the same channel
+        request = null;
+        res = null;
+        decoder = null;
     }
 
     @Override

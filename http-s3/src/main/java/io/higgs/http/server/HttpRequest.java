@@ -10,10 +10,13 @@ import io.higgs.http.server.params.HttpSession;
 import io.higgs.http.server.params.QueryParams;
 import io.higgs.http.server.protocol.HttpProtocolConfiguration;
 import io.higgs.http.server.resource.MediaType;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.Cookie;
 import io.netty.handler.codec.http.CookieDecoder;
-import io.netty.handler.codec.http.DefaultFullHttpRequest;
+import io.netty.handler.codec.http.DefaultHttpRequest;
+import io.netty.handler.codec.http.FullHttpRequest;
 import io.netty.handler.codec.http.HttpHeaders;
 import io.netty.handler.codec.http.HttpMethod;
 import io.netty.handler.codec.http.HttpVersion;
@@ -35,7 +38,7 @@ import static java.lang.Integer.parseInt;
 /**
  * @author Courtney Robinson <courtney@crlog.info>
  */
-public class HttpRequest extends DefaultFullHttpRequest {
+public class HttpRequest extends DefaultHttpRequest {
     private final QueryParams queryParams = new QueryParams();
     private final FormFiles files = new FormFiles();
     private final FormParams form = new FormParams();
@@ -52,6 +55,7 @@ public class HttpRequest extends DefaultFullHttpRequest {
     private boolean chunked;
     public static final String SID = "HS3-ID";
     private static final AttributeKey<String> sessionAttr = new AttributeKey<>(SID + "-attr");
+    private ByteBuf content = Unpooled.buffer(0);
 
     /**
      * Creates a new instance.
@@ -62,6 +66,13 @@ public class HttpRequest extends DefaultFullHttpRequest {
      */
     public HttpRequest(HttpVersion httpVersion, HttpMethod method, String uri) {
         super(httpVersion, method, uri);
+    }
+
+    public HttpRequest(FullHttpRequest msg) {
+        this(msg.getProtocolVersion(), msg.getMethod(), msg.getUri());
+        headers().add(msg.headers());
+        content = msg.content();
+        setDecoderResult(msg.getDecoderResult());
     }
 
     /**
@@ -295,5 +306,9 @@ public class HttpRequest extends DefaultFullHttpRequest {
 
     public boolean isChunked() {
         return chunked;
+    }
+
+    public ByteBuf content() {
+        return content;
     }
 }
