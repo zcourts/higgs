@@ -1,7 +1,6 @@
 package io.higgs.ws.protocol;
 
 import com.google.common.net.HttpHeaders;
-import io.higgs.http.server.HttpRequest;
 import io.higgs.http.server.protocol.HttpHandler;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelFuture;
@@ -10,7 +9,6 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.DefaultFullHttpResponse;
 import io.netty.handler.codec.http.FullHttpRequest;
 import io.netty.handler.codec.http.FullHttpResponse;
-import io.netty.handler.codec.http.LastHttpContent;
 import io.netty.handler.codec.http.websocketx.CloseWebSocketFrame;
 import io.netty.handler.codec.http.websocketx.PingWebSocketFrame;
 import io.netty.handler.codec.http.websocketx.PongWebSocketFrame;
@@ -26,7 +24,6 @@ import static io.netty.handler.codec.http.HttpHeaders.isKeepAlive;
 import static io.netty.handler.codec.http.HttpHeaders.setContentLength;
 import static io.netty.handler.codec.http.HttpMethod.GET;
 import static io.netty.handler.codec.http.HttpResponseStatus.BAD_REQUEST;
-import static io.netty.handler.codec.http.HttpResponseStatus.FORBIDDEN;
 import static io.netty.handler.codec.http.HttpVersion.HTTP_1_1;
 
 /**
@@ -46,22 +43,31 @@ public class WebSocketHandler extends HttpHandler {
         WEBSOCKET_PATH = config.getWebsocketPath();
     }
 
+    /**
+     * Only HTTP GET requests come through the WebSocketHandler.
+     * The {@link WebSocketDetector} uses the {@link io.netty.handler.codec.http.HttpObjectAggregator}
+     * to ensure that only {@link FullHttpRequest}s are passed in.
+     * If it is a full http request then if the path matches the configured web socket path
+     * the request is handled as a WebSocket upgrade request (if the upgrade header is present)
+     * <p/>
+     * Otherwise the request is passed to the {@link HttpHandler} which will handle the request
+     * as a normal HTTP request.
+     */
     @Override
     public void messageReceived(ChannelHandlerContext ctx, Object msg) throws Exception {
-        if (msg instanceof HttpRequest) {
-            handleHttpRequest(ctx, (HttpRequest) msg);
-        } else if (msg instanceof LastHttpContent && method != null) {
-            //if method !=null it means we received a request before without the upgrade header
-            //and only then do we have a normal HTTP GET request
-            super.messageReceived(ctx, msg);
+        if (msg instanceof FullHttpRequest) {
+            handleHttpRequest(ctx, (FullHttpRequest) msg);
         } else if (msg instanceof WebSocketFrame) {
             handleWebSocketFrame(ctx, (WebSocketFrame) msg);
+        } else {
+            super.messageReceived(ctx, msg);
         }
     }
 
-    private void handleHttpRequest(ChannelHandlerContext ctx, HttpRequest req) throws Exception {
+    private void handleHttpRequest(ChannelHandlerContext ctx, FullHttpRequest req) throws Exception {
         if (!WEBSOCKET_PATH.equalsIgnoreCase(req.getUri()) ||
-                !req.headers().contains(HttpHeaders.UPGRADE)) {
+                !req.headers().contains(HttpHeaders.UPGRADE) ||
+                req.getMethod() != GET) {
             //if the web socket path doesn't match then it's a normal GET request
             super.messageReceived(ctx, req);
             return;
@@ -72,11 +78,6 @@ public class WebSocketHandler extends HttpHandler {
             return;
         }
 
-        // Allow only GET methods, already ensured by detector but coded defensively
-        if (req.getMethod() != GET) {
-            sendHttpResponse(ctx, req, new DefaultFullHttpResponse(HTTP_1_1, FORBIDDEN));
-            return;
-        }
         try {
             // Handshake
             WebSocketServerHandshakerFactory wsFactory = new WebSocketServerHandshakerFactory(

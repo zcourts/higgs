@@ -30,5 +30,5 @@ public class TemplateConfig {
     public boolean determine_language_from_accept_header = true;
     public String auto_parse_extensions = "html,htm";
 
-    public String template_mode = "LEGACYHTML5";
+    public String template_mode = "HTML5";
 }
