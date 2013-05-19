@@ -65,7 +65,6 @@ public class Request {
         headers.set(HttpHeaders.Names.REFERER, uri.toString());
         headers.set(HttpHeaders.Names.USER_AGENT, userAgent);
         headers.set(HttpHeaders.Names.ACCEPT, "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8");
-
     }
 
     /**
