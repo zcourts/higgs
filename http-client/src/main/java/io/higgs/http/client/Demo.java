@@ -1,6 +1,8 @@
 package io.higgs.http.client;
 
+import io.higgs.http.client.future.FileReader;
 import io.higgs.http.client.future.Function;
+import io.higgs.http.client.future.LineReader;
 import io.higgs.http.client.future.PageReader;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.GenericFutureListener;
@@ -15,9 +17,11 @@ import java.nio.file.Files;
  * @author Courtney Robinson <courtney@crlog.info>
  */
 public class Demo {
+    private Demo() {
+    }
 
     public static void main(String[] args) throws Exception {
-/*        //to read an entire page
+        //to read an entire page
         PageReader page = new PageReader();
         page.listen(new Function<String>() {
             public void apply(String data) {
@@ -77,7 +81,6 @@ public class Demo {
                 .form("def", 456)
                 .header("haha", "yup")
                 .execute();
- */
 
         //multi part http post request
         PageReader postReader = new PageReader(new Function<String>() {
