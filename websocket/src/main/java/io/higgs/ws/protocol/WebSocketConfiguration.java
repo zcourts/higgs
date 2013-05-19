@@ -19,6 +19,10 @@ public class WebSocketConfiguration extends HttpProtocolConfiguration {
         return websocketPath;
     }
 
+    public void setWebsocketPath(String websocketPath) {
+        this.websocketPath = websocketPath;
+    }
+
     public WebSocketEventHandler getWebSocketEventHandler() {
         return webSocketEventHandler == null ? new DefaultWebSocketEventHandler() : webSocketEventHandler;
     }

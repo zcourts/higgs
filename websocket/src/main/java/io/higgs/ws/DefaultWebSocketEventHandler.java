@@ -52,13 +52,13 @@ public class DefaultWebSocketEventHandler implements WebSocketEventHandler {
         try {
             Object returns = method.invoke(ctx, request.getPath(), request, params);
             if (returns != null) {
-                String res;
+                Object res;
                 if (returns instanceof TextWebSocketFrame) {
                     res = ((TextWebSocketFrame) returns).text();
                 } else {
-                    res = mapper.writeValueAsString(returns);
+                    res = returns;
                 }
-                Map<String, String> map = new HashMap<>();
+                Map<String, Object> map = new HashMap<>();
                 map.put("callback", request.getCallback());
                 map.put("data", res);
                 //

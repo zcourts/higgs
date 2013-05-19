@@ -118,32 +118,27 @@ public class HttpHandler extends MessageHandler<HttpConfig, Object> {
         //we have a request and it matches a registered method
         if (!io.netty.handler.codec.http.HttpMethod.POST.name().equalsIgnoreCase(request.getMethod().name()) &&
                 !io.netty.handler.codec.http.HttpMethod.PUT.name().equalsIgnoreCase(request.getMethod().name())) {
-            if (msg instanceof LastHttpContent && !(msg instanceof HttpRequest)) {
+            if (msg instanceof LastHttpContent) {
                 //only post and put requests  are allowed to send form data so everything else just returns
                 invoke(ctx);
             }
         } else {
-            if (msg instanceof HttpRequest) {
-                //if its a post or put request and a decoder doesn't exist then create one.
-                if (decoder == null) {
-                    try {
-                        decoder = new HttpPostRequestDecoder(factory, request);
-                    } catch (HttpPostRequestDecoder.ErrorDataDecoderException e1) {
-                        log.warn("Unable to decode data", e1);
-                        throw new WebApplicationException(HttpStatus.BAD_REQUEST, request);
-                    } catch (HttpPostRequestDecoder.IncompatibleDataDecoderException e) {
-                        log.warn("Incompatible request type", e);
-                        throw new WebApplicationException(HttpStatus.BAD_REQUEST, request);
-                    }
+            //if its a post or put request and a decoder doesn't exist then create one.
+            if (decoder == null) {
+                try {
+                    decoder = new HttpPostRequestDecoder(factory, request);
+                } catch (HttpPostRequestDecoder.ErrorDataDecoderException e1) {
+                    log.warn("Unable to decode data", e1);
+                    throw new WebApplicationException(HttpStatus.BAD_REQUEST, request);
+                } catch (HttpPostRequestDecoder.IncompatibleDataDecoderException e) {
+                    log.warn("Incompatible request type", e);
+                    throw new WebApplicationException(HttpStatus.BAD_REQUEST, request);
                 }
-                //decoder is created if it doesn't exist, can decode all if entire message received
-                request.setChunked(HttpHeaders.isTransferEncodingChunked(request));
-                request.setMultipart(decoder.isMultipart());
-
-//                if (!request.isChunked()) {
-//                    allHttpDataReceived(ctx);
-//                }
             }
+            //decoder is created if it doesn't exist, can decode all if entire message received
+            request.setChunked(HttpHeaders.isTransferEncodingChunked(request));
+            request.setMultipart(decoder.isMultipart());
+
             if (msg instanceof HttpContent) {
                 // New chunk is received
                 HttpContent chunk = (HttpContent) msg;
