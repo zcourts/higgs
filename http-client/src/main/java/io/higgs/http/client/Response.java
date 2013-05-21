@@ -91,4 +91,11 @@ public class Response {
     public Request request() {
         return request;
     }
+
+    /**
+     * @return true if this response is the result of following a redirect
+     */
+    public boolean isRedirected() {
+        return request.originalUri() != null;
+    }
 }

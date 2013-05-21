@@ -38,34 +38,48 @@ public class Demo {
                 e.printStackTrace();
             }
         });
-        PageReader responsePrinter = new PageReader(new Function2<String, Response>() {
-            public void apply(String s, Response response) {
-                System.out.print(response);
-            }
-        });
+
         //automatically follow redirects
-        Request r = defaults.GET(new URI("http://httpbin.org/relative-redirect/1"), responsePrinter);
-        r.execute().addListener(new GenericFutureListener<Future<Response>>() {
-            public void operationComplete(Future<Response> future) throws Exception {
-                if (!future.isSuccess()) {
-                    future.cause().printStackTrace();
-                }
-            }
-        });
-//        r.url("/get").execute();
-//        defaults.GET(new URI("http://httpbin.org/redirect/1"), responsePrinter).execute();
+        //disable redirect
+        HttpRequestBuilder clone = defaults.clone();
+        // could remove all redirect statuses with clone.redirectOn().clear();
+        Request req = clone.GET(new URI("http://httpbin.org/relative-redirect/1"),
+                new PageReader(new Function2<String, Response>() {
+                    public void apply(String s, final Response response) {
+                        System.out.println(s);
+                    }
+                }));
+        req.execute();
+        Request r = clone.GET(new URI("http://httpbin.org/redirect/1"),
+                new PageReader(new Function2<String, Response>() {
+                    public void apply(String s, Response response) {
+                        System.out.println(s);
+                        System.out.println(response);
+                    }
+                }));
+        r.execute();
+
+        //keeping all previous settings on r we can make a request to a url on the same host
+        //by providing a path or to a different host by providing a complete URL
+        //this will make a request to http://httpbin.org/get
+        r.url("/get").execute();
+
         if (true) {
             return;
         }
 
         //to read an entire page
         PageReader page = new PageReader();
-        page.listen(new Function2<String, Response>() {
+        page.listen(new Function2<String, Response>()
+
+        {
             public void apply(String data, Response response) {
                 System.out.println("----------------------------------- SIMPLE GET ----------------------------------");
                 System.out.println(data);
             }
-        });
+        }
+
+        );
         //by using clone we create a new instance which keeps the global settings configured on defaults
         //and now any operation on the clone is completely independent so default settings can be changed
         // without affecting each other
@@ -77,12 +91,19 @@ public class Demo {
                 //can add headers
                 .header("some-header", "it's value")
                         //can add cookies separately
-                .cookie("cookie-name", "cookie value");
-        request.execute().addListener(new GenericFutureListener<Future<Response>>() {
-            public void operationComplete(Future<Response> future) throws Exception {
-                //or get the response here
-            }
-        });
+                .
+
+                        cookie("cookie-name", "cookie value");
+
+        request.execute().
+
+                addListener(new GenericFutureListener<Future<Response>>() {
+                    public void operationComplete(Future<Response> future) throws Exception {
+                        //or get the response here
+                    }
+                }
+
+                );
 
         //to read a url line by line such as a Twitter or other API stream
         //use alternative constructor
@@ -91,12 +112,19 @@ public class Demo {
                 System.out.println("LINE: " + line);
             }
         });
-        defaults.GET(new URI("http://httpbin.org/get"), lineReader).execute();
+        defaults.GET(new
+
+                URI("http://httpbin.org/get"), lineReader
+
+        ).
+
+                execute();
 
         //to download a file
         FileReader fileReader = new FileReader(new Function2<File, Response>() {
             public void apply(File file, Response response) {
-                System.out.println("--------------------------------- DOWNLOAD FILE ---------------------------------");
+                System.out.println("--------------------------------- DOWNLOAD FILE " +
+                        "---------------------------------");
                 System.out.print("NAME:");
                 System.out.println(file.getName());
                 System.out.print("PATH:");
@@ -105,33 +133,57 @@ public class Demo {
                 System.out.println(file.getTotalSpace());
             }
         });
-        defaults.GET(new URI("https://codeload.github.com/zcourts/higgs/zip/master"),
-                fileReader).execute();
+        defaults.GET(new
+
+                URI("https://codeload.github.com/zcourts/higgs/zip/master"),
+
+                fileReader).
+
+                execute();
 
         //url encoded POST request
         PageReader post = new PageReader(new Function2<String, Response>() {
             public void apply(String data, Response response) {
-                System.out.println("------------------------------- URL-ENCODED POST --------------------------------");
+                System.out.println("------------------------------- URL-ENCODED POST " +
+                        "--------------------------------");
                 System.out.println(data);
             }
         });
 
-        defaults.POST(new URI("http://httpbin.org/post"), post)
-                .form("abc", 123)
-                .form("def", 456)
-                .header("haha", "yup")
-                .execute();
+        defaults.POST(new
+
+                URI("http://httpbin.org/post"), post
+
+        )
+                .
+
+                        form("abc", 123)
+
+                .
+
+                        form("def", 456)
+
+                .
+
+                        header("haha", "yup")
+
+                .
+
+                        execute();
 
         //multi part http post request
         PageReader postReader = new PageReader(new Function2<String, Response>() {
             public void apply(String data, Response response) {
-                System.out.println("----------------------------------- MULTIPART -----------------------------------");
+                System.out.println("----------------------------------- MULTIPART " +
+                        "-----------------------------------");
                 System.out.println(data);
             }
         });
         File tmpFile = Files.createTempFile("upload", ".txt").toFile();
 
-        if (tmpFile.exists()) {
+        if (tmpFile.exists())
+
+        {
             tmpFile.delete();
         }
 
@@ -151,15 +203,19 @@ public class Demo {
                 .header("haha", "yup");
 
         p.execute()
-                .addListener(new GenericFutureListener<Future<Response>>() {
-                    public void operationComplete(Future<Response> future) throws Exception {
-                        System.out.println(future.getNow());
-                        //handle errors
-                        if (!future.isSuccess()) {
-                            future.cause().printStackTrace();
+                .
+
+                        addListener(new GenericFutureListener<Future<Response>>() {
+                            public void operationComplete(Future<Response> future) throws Exception {
+                                System.out.println(future.getNow());
+                                //handle errors
+                                if (!future.isSuccess()) {
+                                    future.cause().printStackTrace();
+                                }
+                            }
                         }
-                    }
-                });
+
+                        );
 
         //See also HttpRequestBuilder.GET,HEAD,OPTIONS,PATCH,DELETE,TRACE
 

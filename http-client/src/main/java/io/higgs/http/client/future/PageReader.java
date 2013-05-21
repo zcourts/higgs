@@ -25,12 +25,10 @@ public class PageReader extends Reader<String> {
 
     @Override
     public void done() {
-        if (buffer.writerIndex() > 0) {
-            for (Function2<String, Response> function : functions) {
-                function.apply(buffer.toString(0, buffer.writerIndex(), utf8), response);
-            }
-            //we read the entire stream
-            buffer.readerIndex(buffer.writerIndex());
+        for (Function2<String, Response> function : functions) {
+            function.apply(buffer.toString(0, buffer.writerIndex(), utf8), response);
         }
+        //we read the entire stream
+        buffer.readerIndex(buffer.writerIndex());
     }
 }

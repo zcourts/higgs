@@ -29,13 +29,13 @@ public class ClientHandler extends ChannelInboundMessageHandlerAdapter<Object> {
                     && location != null) {
                 //execute a new request using the same request instance and response
                 //this will use a new channel initializer
+                //BufUtil.retain(response.request().nettyRequest());
                 response.request()
                         .url(location)
                         .execute()
                         .addListener(new GenericFutureListener<Future<Response>>() {
                             public void operationComplete(Future<Response> f) throws Exception {
                                 if (!f.isSuccess()) {
-                                    f.cause().printStackTrace();
                                     future.setFailure(f.cause());
                                 }
                             }
@@ -51,19 +51,21 @@ public class ClientHandler extends ChannelInboundMessageHandlerAdapter<Object> {
                 response.setChunked(true);
             }
         }
-        if (msg instanceof HttpContent) {
+        if (!redirecting && msg instanceof HttpContent) {
             HttpContent chunk = (HttpContent) msg;
             response.write(chunk.content());
             if (chunk instanceof LastHttpContent) {
                 response.setCompleted(true);
-                future.setSuccess(response);
+                //make sure it's not already marked as finished
+                if (!future.isDone()) {
+                    future.setSuccess(response);
+                }
             }
         }
     }
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
-        cause.printStackTrace();
         future.setFailure(cause);
         ctx.channel().close();
     }
