@@ -52,7 +52,7 @@ public class Demo {
                 }
             }
         });
-        r.url("/get").execute();
+//        r.url("/get").execute();
 //        defaults.GET(new URI("http://httpbin.org/redirect/1"), responsePrinter).execute();
         if (true) {
             return;
