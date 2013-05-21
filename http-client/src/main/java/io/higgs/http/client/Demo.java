@@ -4,6 +4,7 @@ import io.higgs.core.func.Function2;
 import io.higgs.http.client.future.FileReader;
 import io.higgs.http.client.future.LineReader;
 import io.higgs.http.client.future.PageReader;
+import io.netty.handler.codec.http.HttpHeaders;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.GenericFutureListener;
 
@@ -17,7 +18,15 @@ import java.nio.file.Files;
  * @author Courtney Robinson <courtney@crlog.info>
  */
 public class Demo {
+    private static HttpRequestBuilder defaults = new HttpRequestBuilder();
+
     private Demo() {
+        //configure default builder
+        defaults.acceptedLanguages("en,fr")
+                .acceptedMimeTypes("text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8")
+                .charSet("ISO-8859-1,utf-8;q=0.7,*;q=0.7")
+                .userAgent("Mozilla/5.0 (compatible; HiggsBoson/0.0.1; +https://github.com/zcourts/higgs)")
+                .connection(HttpHeaders.Values.CLOSE);
     }
 
     public static void main(String[] args) throws Exception {
@@ -29,7 +38,10 @@ public class Demo {
                 System.out.println(data);
             }
         });
-        Request request = HttpRequestBuilder.GET(new URI("http://httpbin.org/get"), page);
+        //by using clone we create a new instance which keeps the global settings configured on defaults
+        //and now any operation on the clone is completely independent so default settings can be changed
+        // without affecting each other
+        Request request = defaults.clone().GET(new URI("http://httpbin.org/get"), page);
         //get the request here
         Response response = request.response();
 
@@ -51,7 +63,7 @@ public class Demo {
                 System.out.println("LINE: " + line);
             }
         });
-        HttpRequestBuilder.GET(new URI("http://httpbin.org/get"), lineReader).execute();
+        defaults.GET(new URI("http://httpbin.org/get"), lineReader).execute();
 
         //to download a file
         FileReader fileReader = new FileReader(new Function2<File, Response>() {
@@ -65,7 +77,7 @@ public class Demo {
                 System.out.println(file.getTotalSpace());
             }
         });
-        HttpRequestBuilder.GET(new URI("https://codeload.github.com/zcourts/higgs/zip/master"),
+        defaults.GET(new URI("https://codeload.github.com/zcourts/higgs/zip/master"),
                 fileReader).execute();
 
         //url encoded POST request
@@ -76,7 +88,7 @@ public class Demo {
             }
         });
 
-        HttpRequestBuilder.POST(new URI("http://httpbin.org/post"), post)
+        defaults.POST(new URI("http://httpbin.org/post"), post)
                 .form("abc", 123)
                 .form("def", 456)
                 .header("haha", "yup")
@@ -103,7 +115,7 @@ public class Demo {
         file.addFile(tmpFile, true); //true = isTextFile
 
         //could also use http://posttestserver.com/post.php to test post
-        Request p = HttpRequestBuilder.POST(new URI("http://httpbin.org/post"), postReader)
+        Request p = defaults.POST(new URI("http://httpbin.org/post"), postReader)
                 //multipart is inferred as soon as a file is added, otherwise it'll just
                 //be a normal url-encoded post
                 .file(file)
