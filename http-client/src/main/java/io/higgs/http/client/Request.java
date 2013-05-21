@@ -54,17 +54,7 @@ public class Request {
         request = new DefaultFullHttpRequest(version, method, uri.getRawPath());
         headers = request.headers();
         future = new FutureResponse(group);
-
-        //default headers
-        headers.set(HttpHeaders.Names.CONNECTION, HttpHeaders.Values.CLOSE);
-        headers.set(HttpHeaders.Names.ACCEPT_ENCODING, HttpHeaders.Values.GZIP + ','
-                + HttpHeaders.Values.DEFLATE);
-
-        headers.set(HttpHeaders.Names.ACCEPT_CHARSET, "ISO-8859-1,utf-8;q=0.7,*;q=0.7");
-        headers.set(HttpHeaders.Names.ACCEPT_LANGUAGE, "en");
         headers.set(HttpHeaders.Names.REFERER, uri.toString());
-        headers.set(HttpHeaders.Names.USER_AGENT, userAgent);
-        headers.set(HttpHeaders.Names.ACCEPT, "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8");
     }
 
     /**
@@ -175,6 +165,10 @@ public class Request {
     public Request header(String name, String value) {
         headers.set(name, value);
         return this;
+    }
+
+    public HttpHeaders headers() {
+        return headers;
     }
 
     /**
