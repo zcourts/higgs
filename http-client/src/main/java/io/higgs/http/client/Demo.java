@@ -26,10 +26,38 @@ public class Demo {
                 .acceptedMimeTypes("text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8")
                 .charSet("ISO-8859-1,utf-8;q=0.7,*;q=0.7")
                 .userAgent("Mozilla/5.0 (compatible; HiggsBoson/0.0.1; +https://github.com/zcourts/higgs)")
-                .connection(HttpHeaders.Values.CLOSE);
+                .connection(HttpHeaders.Values.CLOSE)
+                        //automatically follow redirects when these status codes are returned
+                .redirectOn(301, 302, 303, 307, 308);
     }
 
     public static void main(String[] args) throws Exception {
+        Thread.setDefaultUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
+            @Override
+            public void uncaughtException(Thread t, Throwable e) {
+                e.printStackTrace();
+            }
+        });
+        PageReader responsePrinter = new PageReader(new Function2<String, Response>() {
+            public void apply(String s, Response response) {
+                System.out.print(response);
+            }
+        });
+        //automatically follow redirects
+        Request r = defaults.GET(new URI("http://httpbin.org/relative-redirect/1"), responsePrinter);
+        r.execute().addListener(new GenericFutureListener<Future<Response>>() {
+            public void operationComplete(Future<Response> future) throws Exception {
+                if (!future.isSuccess()) {
+                    future.cause().printStackTrace();
+                }
+            }
+        });
+        r.url("/get").execute();
+//        defaults.GET(new URI("http://httpbin.org/redirect/1"), responsePrinter).execute();
+        if (true) {
+            return;
+        }
+
         //to read an entire page
         PageReader page = new PageReader();
         page.listen(new Function2<String, Response>() {

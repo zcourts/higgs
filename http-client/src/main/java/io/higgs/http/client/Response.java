@@ -81,6 +81,14 @@ public class Response {
                 ", headers=" + headers +
                 ", completed=" + completed +
                 ", reader=" + reader +
+                ", \nrequest=" + request +
                 '}';
+    }
+
+    /**
+     * @return The request which generated this response
+     */
+    public Request request() {
+        return request;
     }
 }
