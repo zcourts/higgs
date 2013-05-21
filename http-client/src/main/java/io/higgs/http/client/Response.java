@@ -17,9 +17,11 @@ public class Response {
     private boolean completed;
 
     protected Reader reader;
+    protected final Request request;
 
-    public Response(Reader reader) {
+    public Response(Request request, Reader reader) {
         this.reader = reader;
+        this.request = request;
         reader.response(this);
     }
 
