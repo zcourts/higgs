@@ -36,9 +36,11 @@ public class Request {
 
     protected final FutureResponse future;
     protected final EventLoopGroup group;
+    private final HttpMethod method;
+    private HttpVersion version;
     protected HttpRequest request;
     protected URI uri;
-    protected final HttpHeaders headers;
+    protected HttpHeaders headers;
     protected Channel channel;
     protected String userAgent = "Mozilla/5.0 (compatible; HiggsBoson/0.0.1; +https://github.com/zcourts/higgs)";
     protected List<Cookie> cookies = new ArrayList<>();
@@ -54,11 +56,17 @@ public class Request {
         baseDirectory(null);
         this.uri = uri;
         this.group = group;
+        this.method = method;
+        this.version = version;
         //ignore uri.getRawPath, it's overwritten later in #configure()
+        newNettyRequest(uri, method, version);
+        future = new FutureResponse(group);
+    }
+
+    private void newNettyRequest(URI uri, HttpMethod method, HttpVersion version) {
         request = new DefaultFullHttpRequest(version, method, uri.getRawPath());
         headers = request.headers();
-        future = new FutureResponse(group);
-        headers.set(HttpHeaders.Names.REFERER, uri.toString());
+        headers.set(HttpHeaders.Names.REFERER, originalUri == null ? uri.toString() : originalUri.toString());
     }
 
     /**
@@ -272,6 +280,11 @@ public class Request {
         } else {
             this.uri = uri.resolve(url);
         }
+        newNettyRequest(uri, method, version);
         return this;
+    }
+
+    public HttpRequest nettyRequest() {
+        return request;
     }
 }

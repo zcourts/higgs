@@ -52,6 +52,10 @@ public class HttpRequestBuilder {
         return this;
     }
 
+    public Set<Integer> redirectOn() {
+        return redirectStatusCodes;
+    }
+
     public Request applyDefaults(Request request) {
         for (int code : redirectStatusCodes) {
             request.redirectOn(code);
