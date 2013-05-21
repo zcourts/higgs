@@ -273,7 +273,7 @@ public class HttpRequestBuilder {
      *
      * @return a new instance with the settings copied
      */
-    public HttpRequestBuilder clone() {
+    public HttpRequestBuilder copy() {
         return new HttpRequestBuilder(this);
     }
 }
