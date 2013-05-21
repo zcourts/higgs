@@ -22,27 +22,24 @@ public class ClientHandler extends ChannelInboundMessageHandlerAdapter<Object> {
 
     @Override
     public void messageReceived(ChannelHandlerContext ctx, Object msg) throws Exception {
-        if (redirecting && msg instanceof LastHttpContent) {
-            //execute a new request using the same request instance and response
-            //this will use a new channel initializer
-            response.request()
-                    .execute()
-                    .addListener(new GenericFutureListener<Future<Response>>() {
-                        public void operationComplete(Future<Response> f) throws Exception {
-                            if (!f.isSuccess()) {
-                                future.setFailure(f.cause());
-                            }
-                        }
-                    });
-            return;
-        }
         if (msg instanceof HttpResponse) {
             HttpResponse res = (HttpResponse) msg;
             String location = res.headers().get(HttpHeaders.Names.LOCATION);
             if (response.request().redirectOn().contains(res.getStatus().code())
                     && location != null) {
+                //execute a new request using the same request instance and response
+                //this will use a new channel initializer
                 response.request()
-                        .url(location);
+                        .url(location)
+                        .execute()
+                        .addListener(new GenericFutureListener<Future<Response>>() {
+                            public void operationComplete(Future<Response> f) throws Exception {
+                                if (!f.isSuccess()) {
+                                    f.cause().printStackTrace();
+                                    future.setFailure(f.cause());
+                                }
+                            }
+                        });
                 redirecting = true;
                 return;
             }
@@ -66,6 +63,7 @@ public class ClientHandler extends ChannelInboundMessageHandlerAdapter<Object> {
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
+        cause.printStackTrace();
         future.setFailure(cause);
         ctx.channel().close();
     }
