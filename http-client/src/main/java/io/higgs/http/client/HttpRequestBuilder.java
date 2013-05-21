@@ -22,8 +22,9 @@ public class HttpRequestBuilder {
     protected String acceptedMimeTypes = "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8";
     private String acceptedEncodings = HttpHeaders.Values.GZIP + ',' + HttpHeaders.Values.DEFLATE;
     private String connectionHeader = HttpHeaders.Values.CLOSE;
+    private static final HttpRequestBuilder instance = new HttpRequestBuilder();
 
-    protected HttpRequestBuilder() {
+    public HttpRequestBuilder() {
         //http://en.wikipedia.org/wiki/List_of_HTTP_status_codes#3xx_Redirection
         redirectStatusCodes.addAll(Arrays.asList(301, 302, 303, 307, 308));
     }
@@ -37,6 +38,13 @@ public class HttpRequestBuilder {
         acceptedLanguages = that.acceptedLanguages;
         acceptedMimeTypes = that.acceptedMimeTypes;
         connectionHeader = that.connectionHeader;
+    }
+
+    /**
+     * @return use a static instance of the request builder
+     */
+    public HttpRequestBuilder instance() {
+        return instance;
     }
 
     /**
