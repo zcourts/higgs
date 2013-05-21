@@ -19,27 +19,31 @@ import io.netty.handler.codec.http.QueryStringEncoder;
 import io.netty.handler.codec.http.multipart.DiskFileUpload;
 
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * @author Courtney Robinson <courtney@crlog.info>
  */
 public class Request {
     protected final Response response;
-    protected final Bootstrap bootstrap = new Bootstrap();
     protected final Map<String, Object> queryParams = new HashMap<>();
 
     protected final FutureResponse future;
     protected final EventLoopGroup group;
     protected HttpRequest request;
-    protected final URI uri;
+    protected URI uri;
     protected final HttpHeaders headers;
     protected Channel channel;
     protected String userAgent = "Mozilla/5.0 (compatible; HiggsBoson/0.0.1; +https://github.com/zcourts/higgs)";
     protected List<Cookie> cookies = new ArrayList<>();
+    private Set<Integer> redirectStatusCodes = new HashSet<>();
+    private URI originalUri;
 
     public Request(EventLoopGroup group, URI uri, HttpMethod method, HttpVersion version, Reader responseReader) {
         if (responseReader == null) {
@@ -55,6 +59,26 @@ public class Request {
         headers = request.headers();
         future = new FutureResponse(group);
         headers.set(HttpHeaders.Names.REFERER, uri.toString());
+    }
+
+    /**
+     * Automatically follow redirect responses for the given status codes
+     *
+     * @param codes the status codes to treat as redirects
+     * @return this
+     */
+    public Request redirectOn(int... codes) {
+        for (int code : codes) {
+            redirectStatusCodes.add(code);
+        }
+        return this;
+    }
+
+    /**
+     * @return the set of status codes this request's responses should be redirected on
+     */
+    public Set<Integer> redirectOn() {
+        return redirectStatusCodes;
     }
 
     /**
@@ -79,7 +103,9 @@ public class Request {
         headers.set(HttpHeaders.Names.HOST, host);
         try {
             configure();
-            bootstrap.group(group)
+            Bootstrap bootstrap = new Bootstrap();
+            bootstrap
+                    .group(group)
                     .channel(NioSocketChannel.class)
                     .handler(new ClientIntializer(ssl, response, future));
             //connect
@@ -227,5 +253,25 @@ public class Request {
      */
     public Response response() {
         return response;
+    }
+
+    /**
+     * @return The URI this request was first made to or NULL if the response did not result in a redirect
+     */
+    public URI originalUri() {
+        return originalUri;
+    }
+
+    public Request url(String url) throws URISyntaxException {
+        if (url == null) {
+            throw new IllegalArgumentException("NULL url provided");
+        }
+        originalUri = uri;
+        if (url.startsWith("http")) {
+            this.uri = new URI(url);
+        } else {
+            this.uri = uri.resolve(url);
+        }
+        return this;
     }
 }

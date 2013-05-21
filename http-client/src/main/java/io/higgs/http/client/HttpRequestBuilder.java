@@ -14,7 +14,7 @@ import java.util.Set;
 
 public class HttpRequestBuilder {
 
-    private EventLoopGroup group = new NioEventLoopGroup();
+    private static EventLoopGroup group = new NioEventLoopGroup();
     private Set<Integer> redirectStatusCodes = new HashSet<>();
     protected String userAgent = "Mozilla/5.0 (compatible; HiggsBoson/0.0.1; +https://github.com/zcourts/higgs)";
     protected String charSet = "ISO-8859-1,utf-8;q=0.7,*;q=0.7";
@@ -24,9 +24,12 @@ public class HttpRequestBuilder {
     private String connectionHeader = HttpHeaders.Values.CLOSE;
 
     protected HttpRequestBuilder() {
+        //http://en.wikipedia.org/wiki/List_of_HTTP_status_codes#3xx_Redirection
+        redirectStatusCodes.addAll(Arrays.asList(301, 302, 303, 307, 308));
     }
 
     public HttpRequestBuilder(HttpRequestBuilder that) {
+        this();
         redirectStatusCodes.addAll(that.redirectStatusCodes);
         userAgent = that.userAgent;
         charSet = that.charSet;
@@ -50,11 +53,11 @@ public class HttpRequestBuilder {
     }
 
     public Request applyDefaults(Request request) {
-        //http://en.wikipedia.org/wiki/List_of_HTTP_status_codes#3xx_Redirection
-        redirectStatusCodes.addAll(Arrays.asList(301, 302, 303, 307, 308));
+        for (int code : redirectStatusCodes) {
+            request.redirectOn(code);
+        }
         request.headers().set(HttpHeaders.Names.CONNECTION, connectionHeader);
         request.headers().set(HttpHeaders.Names.ACCEPT_ENCODING, acceptedEncodings);
-
         request.headers().set(HttpHeaders.Names.ACCEPT_CHARSET, charSet);
         request.headers().set(HttpHeaders.Names.ACCEPT_LANGUAGE, acceptedLanguages);
         request.headers().set(HttpHeaders.Names.USER_AGENT, userAgent);
@@ -228,7 +231,7 @@ public class HttpRequestBuilder {
         }
     }
 
-    public void shutdown() {
+    public static void shutdown() {
         group.shutdownGracefully();
     }
 
