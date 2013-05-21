@@ -1,18 +1,3 @@
-/*
- * Copyright 2012 The Netty Project
- *
- * The Netty Project licenses this file to you under the Apache License,
- * version 2.0 (the "License"); you may not use this file except in compliance
- * with the License. You may obtain a copy of the License at:
- *
- *   http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- */
 package io.higgs.http.client;
 
 import io.netty.channel.ChannelHandlerContext;
@@ -37,7 +22,18 @@ public class ClientHandler extends ChannelInboundMessageHandlerAdapter<Object> {
 
     @Override
     public void messageReceived(ChannelHandlerContext ctx, Object msg) throws Exception {
-        if (redirecting) {
+        if (redirecting && msg instanceof LastHttpContent) {
+            //execute a new request using the same request instance and response
+            //this will use a new channel initializer
+            response.request()
+                    .execute()
+                    .addListener(new GenericFutureListener<Future<Response>>() {
+                        public void operationComplete(Future<Response> f) throws Exception {
+                            if (!f.isSuccess()) {
+                                future.setFailure(f.cause());
+                            }
+                        }
+                    });
             return;
         }
         if (msg instanceof HttpResponse) {
@@ -45,18 +41,8 @@ public class ClientHandler extends ChannelInboundMessageHandlerAdapter<Object> {
             String location = res.headers().get(HttpHeaders.Names.LOCATION);
             if (response.request().redirectOn().contains(res.getStatus().code())
                     && location != null) {
-                //execute a new request using the same request instance and response
-                //this will use a new channel initializer
                 response.request()
-                        .url(location)
-                        .execute()
-                        .addListener(new GenericFutureListener<Future<Response>>() {
-                            public void operationComplete(Future<Response> f) throws Exception {
-                                if (!f.isSuccess()) {
-                                    future.setFailure(f.cause());
-                                }
-                            }
-                        });
+                        .url(location);
                 redirecting = true;
                 return;
             }
