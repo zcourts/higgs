@@ -20,6 +20,7 @@ public class Response {
 
     public Response(Reader reader) {
         this.reader = reader;
+        reader.response(this);
     }
 
     public void setChunked(boolean chunked) {

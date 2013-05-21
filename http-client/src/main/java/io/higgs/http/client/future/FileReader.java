@@ -1,5 +1,7 @@
 package io.higgs.http.client.future;
 
+import io.higgs.core.func.Function2;
+import io.higgs.http.client.Response;
 import io.netty.buffer.ByteBuf;
 
 import java.io.File;
@@ -18,7 +20,7 @@ public class FileReader extends Reader<File> {
         this(null);
     }
 
-    public FileReader(Function<File> function) throws IOException {
+    public FileReader(Function2<File, Response> function) throws IOException {
         if (function != null) {
             listen(function);
         }
@@ -39,8 +41,8 @@ public class FileReader extends Reader<File> {
 
     @Override
     public void done() {
-        for (Function<File> function : functions) {
-            function.apply(file);
+        for (Function2<File, Response> function : functions) {
+            function.apply(file, response);
         }
     }
 }

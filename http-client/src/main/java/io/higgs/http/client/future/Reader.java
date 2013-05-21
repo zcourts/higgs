@@ -1,5 +1,7 @@
 package io.higgs.http.client.future;
 
+import io.higgs.core.func.Function2;
+import io.higgs.http.client.Response;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufInputStream;
 import io.netty.buffer.Unpooled;
@@ -18,13 +20,14 @@ public abstract class Reader<T> {
     protected static final Charset utf8 = Charset.forName("UTF-8");
     protected ByteBuf buffer = Unpooled.buffer();
     protected ByteBufInputStream data = new ByteBufInputStream(buffer);
-    protected Set<Function<T>> functions = new HashSet<>();
+    protected Set<Function2<T, Response>> functions = new HashSet<>();
     private boolean completed;
+    protected Response response;
 
     public Reader() {
     }
 
-    public Reader(Function<T> function) {
+    public Reader(Function2<T, Response> function) {
         if (function == null) {
             throw new IllegalArgumentException("Function cannot be null, use another constructor");
         }
@@ -57,10 +60,17 @@ public abstract class Reader<T> {
     /**
      * @param function Adds a function to be invoked by this reader
      */
-    public void listen(Function<T> function) {
+    public void listen(Function2<T, Response> function) {
         if (function != null) {
             functions.add(function);
         }
     }
 
+    public Response response() {
+        return response;
+    }
+
+    public void response(Response response) {
+        this.response = response;
+    }
 }

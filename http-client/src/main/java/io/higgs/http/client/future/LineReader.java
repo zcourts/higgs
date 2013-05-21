@@ -1,5 +1,7 @@
 package io.higgs.http.client.future;
 
+import io.higgs.core.func.Function2;
+import io.higgs.http.client.Response;
 import io.netty.buffer.ByteBuf;
 
 import java.io.IOException;
@@ -15,7 +17,7 @@ import java.io.IOException;
  * @author Courtney Robinson <courtney@crlog.info>
  */
 public class LineReader extends PageReader {
-    public LineReader(Function<String> function) {
+    public LineReader(Function2<String, Response> function) {
         super(function);
     }
 
@@ -26,8 +28,8 @@ public class LineReader extends PageReader {
 // everything is received to ensure entire content is read
 
     public void writeLine(String line) {
-        for (Function<String> function : functions) {
-            function.apply(line);
+        for (Function2<String, Response> function : functions) {
+            function.apply(line, response);
         }
     }
 
