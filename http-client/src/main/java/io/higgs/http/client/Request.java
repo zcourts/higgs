@@ -45,7 +45,7 @@ public class Request {
         if (responseReader == null) {
             throw new IllegalArgumentException("A response reader is required, can't process the response otherwise");
         }
-        response = new Response(responseReader);
+        response = new Response(this, responseReader);
         deleteTempFileOnExit(true);
         baseDirectory(null);
         this.uri = uri;
