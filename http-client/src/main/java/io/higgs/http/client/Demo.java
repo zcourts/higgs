@@ -1,7 +1,7 @@
 package io.higgs.http.client;
 
+import io.higgs.core.func.Function2;
 import io.higgs.http.client.future.FileReader;
-import io.higgs.http.client.future.Function;
 import io.higgs.http.client.future.LineReader;
 import io.higgs.http.client.future.PageReader;
 import io.netty.util.concurrent.Future;
@@ -23,8 +23,8 @@ public class Demo {
     public static void main(String[] args) throws Exception {
         //to read an entire page
         PageReader page = new PageReader();
-        page.listen(new Function<String>() {
-            public void apply(String data) {
+        page.listen(new Function2<String, Response>() {
+            public void apply(String data, Response response) {
                 System.out.println("----------------------------------- SIMPLE GET ----------------------------------");
                 System.out.println(data);
             }
@@ -46,16 +46,16 @@ public class Demo {
 
         //to read a url line by line such as a Twitter or other API stream
         //use alternative constructor
-        LineReader lineReader = new LineReader(new Function<String>() {
-            public void apply(String line) {
+        LineReader lineReader = new LineReader(new Function2<String, Response>() {
+            public void apply(String line, Response response) {
                 System.out.println("LINE: " + line);
             }
         });
         HttpRequestBuilder.GET(new URI("http://httpbin.org/get"), lineReader).execute();
 
         //to download a file
-        FileReader fileReader = new FileReader(new Function<File>() {
-            public void apply(File file) {
+        FileReader fileReader = new FileReader(new Function2<File, Response>() {
+            public void apply(File file, Response response) {
                 System.out.println("--------------------------------- DOWNLOAD FILE ---------------------------------");
                 System.out.print("NAME:");
                 System.out.println(file.getName());
@@ -69,8 +69,8 @@ public class Demo {
                 fileReader).execute();
 
         //url encoded POST request
-        PageReader post = new PageReader(new Function<String>() {
-            public void apply(String data) {
+        PageReader post = new PageReader(new Function2<String, Response>() {
+            public void apply(String data, Response response) {
                 System.out.println("------------------------------- URL-ENCODED POST --------------------------------");
                 System.out.println(data);
             }
@@ -83,8 +83,8 @@ public class Demo {
                 .execute();
 
         //multi part http post request
-        PageReader postReader = new PageReader(new Function<String>() {
-            public void apply(String data) {
+        PageReader postReader = new PageReader(new Function2<String, Response>() {
+            public void apply(String data, Response response) {
                 System.out.println("----------------------------------- MULTIPART -----------------------------------");
                 System.out.println(data);
             }
