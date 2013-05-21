@@ -43,7 +43,7 @@ public class HttpRequestBuilder {
     /**
      * @return use a static instance of the request builder
      */
-    public HttpRequestBuilder instance() {
+    public static HttpRequestBuilder instance() {
         return instance;
     }
 
