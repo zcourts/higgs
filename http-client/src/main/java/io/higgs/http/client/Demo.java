@@ -7,6 +7,8 @@ import io.higgs.http.client.future.PageReader;
 import io.netty.handler.codec.http.HttpHeaders;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.GenericFutureListener;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -19,6 +21,7 @@ import java.nio.file.Files;
  */
 public class Demo {
     private static HttpRequestBuilder defaults = new HttpRequestBuilder();
+    private static Logger log = LoggerFactory.getLogger(Demo.class);
 
     private Demo() {
         //configure default builder
@@ -163,7 +166,7 @@ public class Demo {
                 System.out.println(future.getNow());
                 //handle errors
                 if (!future.isSuccess()) {
-                    future.cause().printStackTrace();
+                    log.warn("ummo", future.cause());
                 }
             }
         });

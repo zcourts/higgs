@@ -59,7 +59,8 @@ public class DefaultWebSocketEventHandler implements WebSocketEventHandler {
                     res = returns;
                 }
                 Map<String, Object> map = new HashMap<>();
-                map.put("callback", request.getCallback());
+                String c = request.getCallback();
+                map.put("callback", c != null && !c.isEmpty() ? c : method.getName());
                 map.put("data", res);
                 //
                 ctx.channel().write(new TextWebSocketFrame(mapper.writeValueAsString(map)));

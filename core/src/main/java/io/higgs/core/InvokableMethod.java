@@ -20,6 +20,7 @@ public abstract class InvokableMethod implements Sortable<InvokableMethod> {
     protected String[] pathAttributes;
     protected final String path;
     protected Attr attrs = new Attr();
+    private String name;
 
     public InvokableMethod(Queue<ObjectFactory> factories, Class<?> klass, Method classMethod) {
         if (factories == null || klass == null || classMethod == null) {
@@ -28,18 +29,29 @@ public abstract class InvokableMethod implements Sortable<InvokableMethod> {
         this.klass = klass;
         this.factories = factories;
         this.classMethod = classMethod;
+        name = classMethod.getName();
         path = parsePath();
     }
 
     protected String parsePath() {
         String classPath = null, methodPath = null;
+        //get any path set on the entire class so it can be prepended to method paths
         if (klass.isAnnotationPresent(method.class)) {
             method path = klass.getAnnotation(method.class);
             classPath = path.value() != null && !path.value().isEmpty() ? path.value() : "/";
         }
+        //get any path set on the method
         if (classMethod.isAnnotationPresent(method.class)) {
             method path = classMethod.getAnnotation(method.class);
             methodPath = path.value() != null && !path.value().isEmpty() ? path.value() : "/";
+            //if name is set use it, else if path is set is the path else use the method name
+            if (path.name() != null && !path.name().isEmpty()) {
+                setName(path.name());
+            } else if (path.value() != null && !path.value().isEmpty()) {
+                setName(path.value());
+            } else {
+                setName(classMethod.getName());
+            }
             if (path.attr() != null && path.attr().length > 0) {
                 pathAttributes = path.attr();
             }
@@ -129,6 +141,14 @@ public abstract class InvokableMethod implements Sortable<InvokableMethod> {
     public void registered() {
         log.info(String.format("REGISTERED > %1$-20s | %2$-30s | %3$-50s", classMethod.getName(),
                 path(), classMethod.getReturnType().getName()));
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
     }
 
     /**
