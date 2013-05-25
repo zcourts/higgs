@@ -270,6 +270,10 @@ public class Request {
         return originalUri;
     }
 
+    public URI url() {
+        return uri;
+    }
+
     public Request url(String url) throws URISyntaxException {
         if (url == null) {
             throw new IllegalArgumentException("NULL url provided");
