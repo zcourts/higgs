@@ -5,6 +5,7 @@ import io.higgs.http.server.HttpResponse;
 import io.higgs.http.server.HttpStatus;
 import io.higgs.http.server.StaticFileMethod;
 import io.higgs.http.server.StaticFilePostWriteOperation;
+import io.higgs.http.server.config.HttpConfig;
 import io.higgs.http.server.protocol.HttpMethod;
 import io.higgs.http.server.protocol.HttpProtocolConfiguration;
 import io.higgs.http.server.resource.MediaType;
@@ -58,14 +59,16 @@ public class StaticFileTransformer extends BaseTransformer {
     public static final String HTTP_DATE_GMT_TIMEZONE = "GMT";
     public static final int HTTP_CACHE_SECONDS = 60;
     private static final Pattern ALLOWED_FILE_NAME = Pattern.compile("[A-Za-z0-9][-_A-Za-z0-9\\.]*");
+    private final HttpConfig conf;
     private Pattern[] tlExtensions;
     private File base;
 
     public StaticFileTransformer(HttpProtocolConfiguration configuration) {
         this.config = configuration;
-        base = StaticFileMethod.baseUri(config.getServer().getConfig().files.public_directory);
+        conf = configuration.getServer().getConfig();
+        base = StaticFileMethod.baseUri(conf.files.public_directory);
         //htm,html -> text/html, json -> application/json, xml -> application/xml
-        Map<String, String> textFormats = configuration.getServer().getConfig().files.custom_mime_types;
+        Map<String, String> textFormats = conf.files.custom_mime_types;
         //map multiple extensions to the same content type
         for (String commaSeparatedExtensions : textFormats.keySet()) {
             String[] extensions = commaSeparatedExtensions.split(",");
@@ -74,7 +77,7 @@ public class StaticFileTransformer extends BaseTransformer {
                 formats.put(extension, contentType);
             }
         }
-        String[] tmp = config.getServer().getConfig().template_config.auto_parse_extensions.split(",");
+        String[] tmp = conf.template_config.auto_parse_extensions.split(",");
         tlExtensions = new Pattern[tmp.length];
         for (int i = 0; i < tmp.length; i++) {
             String ext = tmp[i];
@@ -119,7 +122,7 @@ public class StaticFileTransformer extends BaseTransformer {
                                HttpMethod method, ChannelHandlerContext ctx) {
 
         ThymeleafTransformer transformer =
-                new ThymeleafTransformer(config.getServer().getConfig().template_config, true);
+                new ThymeleafTransformer(conf.template_config, true);
 
         Path path = null;
         try {
@@ -209,7 +212,7 @@ public class StaticFileTransformer extends BaseTransformer {
                 try {
                     final ChannelFuture writeFuture =
                             ctx.write(new ChunkedFile(raf, 0, fileLength,
-                                    config.getServer().getConfig().files.chunk_size));
+                                    conf.files.chunk_size));
                     writeFuture.addListener(new GenericFutureListener<Future<Void>>() {
                         public void operationComplete(Future<Void> future) throws Exception {
                             //mark as done sending

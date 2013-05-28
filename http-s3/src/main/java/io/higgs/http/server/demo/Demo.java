@@ -18,7 +18,7 @@ public class Demo {
         //re-write all requests to /app/* to index.html
         http.getTranscriber().addTranscription(new Transcription("/app((?:\\/[\\w([^\\..]{1,4}\b)\\-]+)+)",
                 "/index.html"));
-        HiggsServer<HttpConfig> server = new HiggsServer<>("config.yml", HttpConfig.class);
+        HiggsServer server = new HiggsServer().setConfig("config.yml", HttpConfig.class);
         server.registerProtocol(http);
         //
         server.registerPackage(Api.class.getPackage());

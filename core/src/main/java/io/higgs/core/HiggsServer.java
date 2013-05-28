@@ -31,6 +31,8 @@ import org.yaml.snakeyaml.constructor.Constructor;
 import java.io.FileInputStream;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collections;
@@ -42,35 +44,35 @@ import java.util.concurrent.ConcurrentLinkedDeque;
 
 /**
  */
-public class HiggsServer<C extends ServerConfig> {
+public class HiggsServer {
 
-    private final int port;
-    private final Set<MethodProcessor> methodProcessors = new HashSet<>();
-    private final Queue<ProtocolDetectorFactory> detectors = new ConcurrentLinkedDeque<>();
+    protected final Set<MethodProcessor> methodProcessors = new HashSet<>();
+    protected final Queue<ProtocolDetectorFactory> detectors = new ConcurrentLinkedDeque<>();
     protected final Set<ProtocolConfiguration> protocolConfigurations =
             Collections.newSetFromMap(new ConcurrentHashMap<ProtocolConfiguration, Boolean>());
 
     /**
      * A sorted set of methods. Methods are sorted in descending order of priority.
      */
-    private Queue<InvokableMethod> methods = new ConcurrentLinkedDeque<>();
-    private Queue<ObjectFactory> factories = new ConcurrentLinkedDeque<>();
-    private EventLoopGroup bossGroup = new NioEventLoopGroup();
-    private EventLoopGroup workerGroup = new NioEventLoopGroup();
-    private ServerBootstrap bootstrap = new ServerBootstrap();
-    private Channel channel;
-    private boolean detectSsl;
-    private boolean detectGzip;
-    private final C config;
-    private Logger log = LoggerFactory.getLogger(getClass());
+    protected Queue<InvokableMethod> methods = new ConcurrentLinkedDeque<>();
+    protected Queue<ObjectFactory> factories = new ConcurrentLinkedDeque<>();
+    protected EventLoopGroup bossGroup = new NioEventLoopGroup();
+    protected EventLoopGroup workerGroup = new NioEventLoopGroup();
+    protected ServerBootstrap bootstrap = new ServerBootstrap();
+    protected Channel channel;
+    protected boolean detectSsl;
+    protected boolean detectGzip;
+    protected ServerConfig config = new ServerConfig();
+    protected Logger log = LoggerFactory.getLogger(getClass());
     Class<method> methodClass = method.class;
-    private boolean onlyRegisterAnnotatedMethods = true;
+    protected boolean onlyRegisterAnnotatedMethods = true;
+    protected int port = 8080;
 
-    public HiggsServer(String configFile, Class<C> klass) {
-        this(configFile, klass, null);
+    public <C extends ServerConfig> HiggsServer setConfig(String configFile, Class<C> klass) {
+        return setConfig(configFile, klass, null);
     }
 
-    public HiggsServer(String configFile, Class<C> klass, Constructor constructor) {
+    public <C extends ServerConfig> HiggsServer setConfig(String configFile, Class<C> klass, Constructor constructor) {
         if (configFile == null || configFile.isEmpty()) {
             throw new IllegalArgumentException(String.format("usage: %s path/to/config.yml", getClass().getName()));
         }
@@ -89,6 +91,7 @@ public class HiggsServer<C extends ServerConfig> {
                     configPath), e);
         }
         this.port = config.port;
+        return this;
     }
 
     /**
@@ -97,6 +100,10 @@ public class HiggsServer<C extends ServerConfig> {
      * @throws UnsupportedOperationException if the server's already started
      */
     public void start() {
+        start(new InetSocketAddress(port));
+    }
+
+    public void start(SocketAddress address) {
         if (channel != null) {
             throw new UnsupportedOperationException("Server already started");
         }
@@ -110,7 +117,7 @@ public class HiggsServer<C extends ServerConfig> {
                         }
                     });
             // Bind and start to accept incoming connections.
-            channel = bootstrap.bind(port).sync().channel();
+            channel = bootstrap.bind(address).sync().channel();
         } catch (Throwable t) {
             log.warn("Error starting server", t);
         }
@@ -254,8 +261,8 @@ public class HiggsServer<C extends ServerConfig> {
         }
     }
 
-    public C getConfig() {
-        return config;
+    public <C extends ServerConfig> C getConfig() {
+        return (C) config;
     }
 
     /**
