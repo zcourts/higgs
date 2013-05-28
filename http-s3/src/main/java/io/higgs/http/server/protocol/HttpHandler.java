@@ -64,17 +64,18 @@ public class HttpHandler extends MessageHandler<HttpConfig, Object> {
     private Logger requestLogger = LoggerFactory.getLogger("request_logger");
 
     public HttpHandler(HttpProtocolConfiguration config) {
-        super(config.getServer().getConfig());
+        super(config.getServer().<HttpConfig>getConfig());
+        HttpConfig c = config.getServer().getConfig();
         protocolConfig = config;
         injector = config.getInjector();
         // should delete file
-        DiskFileUpload.deleteOnExitTemporaryFile = config.getServer().getConfig().files.delete_temp_on_exit;
+        DiskFileUpload.deleteOnExitTemporaryFile = c.files.delete_temp_on_exit;
         // system temp directory
-        DiskFileUpload.baseDirectory = config.getServer().getConfig().files.temp_directory;
+        DiskFileUpload.baseDirectory = c.files.temp_directory;
         // should delete file on
-        DiskAttribute.deleteOnExitTemporaryFile = config.getServer().getConfig().files.delete_temp_on_exit;
+        DiskAttribute.deleteOnExitTemporaryFile = c.files.delete_temp_on_exit;
         // exit (in normal exit)
-        DiskAttribute.baseDirectory = config.getServer().getConfig().files.temp_directory; // system temp directory
+        DiskAttribute.baseDirectory = c.files.temp_directory; // system temp directory
     }
 
     public <M extends InvokableMethod> M findMethod(String path, ChannelHandlerContext ctx,

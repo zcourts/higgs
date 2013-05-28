@@ -75,6 +75,10 @@ public abstract class InvokableMethod implements Sortable<InvokableMethod> {
         return new ResourcePath(path);
     }
 
+    public String rawPath() {
+        return path;
+    }
+
     /**
      * Invoke this method using the parameters provided
      *

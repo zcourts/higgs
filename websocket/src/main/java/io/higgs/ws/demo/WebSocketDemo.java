@@ -22,7 +22,7 @@ public class WebSocketDemo {
         ws.getTranscriber().addTranscription(new Transcription("/app((?:\\/[\\w([^\\..]{1,4}\b)\\-]+)+)",
                 "/index.html"));
 
-        HiggsServer<HttpConfig> server = new HiggsServer<>("config.yml", HttpConfig.class);
+        HiggsServer server = new HiggsServer().setConfig("config.yml", HttpConfig.class);
         server.registerProtocol(ws);
         //HTTP must be registered after WebSockets
         server.registerProtocol(http);

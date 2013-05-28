@@ -1,6 +1,7 @@
 package io.higgs.http.server;
 
 import io.higgs.core.ObjectFactory;
+import io.higgs.http.server.config.HttpConfig;
 import io.higgs.http.server.protocol.HttpMethod;
 import io.higgs.http.server.protocol.HttpProtocolConfiguration;
 import io.higgs.http.server.transformers.JarFile;
@@ -54,7 +55,7 @@ public class StaticFileMethod extends HttpMethod {
     public StaticFileMethod(Queue<ObjectFactory> factories, HttpProtocolConfiguration protocolConfig) {
         super(factories, StaticFileMethod.class, METHOD);
         this.config = protocolConfig;
-        base = baseUri(config.getServer().getConfig().files.public_directory);
+        base = baseUri(((HttpConfig) config.getServer().getConfig()).files.public_directory);
         if (base != null) {
             if (!base.exists()) {
                 canServe = false;
@@ -96,7 +97,7 @@ public class StaticFileMethod extends HttpMethod {
                 io.netty.handler.codec.http.HttpMethod.GET.name())) {
             return false;
         }
-        String base_dir = config.getServer().getConfig().files.public_directory;
+        String base_dir = ((HttpConfig) config.getServer().getConfig()).files.public_directory;
         String uri = normalizeURI(request, base_dir);
         //sanitize before use
         uri = base_dir + sanitizeUri(uri);
@@ -143,14 +144,14 @@ public class StaticFileMethod extends HttpMethod {
                 boolean list = true;
                 for (Path localPath : paths) {
                     Path name = localPath.getFileName();
-                    if (config.getServer().getConfig().files.index_file.endsWith(name.toString())) {
+                    if (((HttpConfig) config.getServer().getConfig()).files.index_file.endsWith(name.toString())) {
                         file = localPath.toFile();
                         list = false;
                         break;
                     }
                 }
                 if (list) {
-                    if (config.getServer().getConfig().files.enable_directory_listing) {
+                    if (((HttpConfig) config.getServer().getConfig()).files.enable_directory_listing) {
                         this.matchedFile = file;
                         return true;
                     } else {
@@ -194,8 +195,8 @@ public class StaticFileMethod extends HttpMethod {
         if (uri.contains("?")) {
             uri = uri.substring(0, uri.indexOf("?"));
         }
-        if (uri.equals("/") && config.getServer().getConfig().files.serve_index_file) {
-            uri = config.getServer().getConfig().files.index_file;
+        if (uri.equals("/") && ((HttpConfig) config.getServer().getConfig()).files.serve_index_file) {
+            uri = ((HttpConfig) config.getServer().getConfig()).files.index_file;
         }
         //the URL must be from the public directory
         if (!uri.startsWith("/")) {
