@@ -3,6 +3,8 @@ package io.higgs.events.demo;
 import io.higgs.core.func.Function1;
 import io.higgs.events.Events;
 
+import java.io.IOException;
+
 /**
  * @author Courtney Robinson <courtney@crlog.info>
  */
@@ -10,7 +12,7 @@ public class Demo {
     private Demo() {
     }
 
-    public static void main(String... args) {
+    public static void main(String... args) throws IOException {
         // if you really must completely isolate events then use Events.group("group-name");
         //but each call to Events.group creates a fresh set of resources...
         //too much and you'll run out of memory - i.e it's rare you'll need to
@@ -20,6 +22,8 @@ public class Demo {
         //subscribe this class' methods
         events.subscribe(ClassExample.class);
 
+        //subscribe all eligible classes   (including those in sub packages of this package)
+        events.subscribeAll(Events.class.getPackage());
         //subscribe an instance - as many instances can be registered as you want
         // event instances of the same class (but they'll all be invoked if the event topic matches)...
         events.subscribe(new ClassExample());
