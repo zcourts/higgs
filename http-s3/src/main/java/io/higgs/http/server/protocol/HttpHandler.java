@@ -8,6 +8,7 @@ import io.higgs.core.reflect.dependency.Injector;
 import io.higgs.http.server.HttpRequest;
 import io.higgs.http.server.HttpResponse;
 import io.higgs.http.server.HttpStatus;
+import io.higgs.http.server.MessagePusher;
 import io.higgs.http.server.ParamInjector;
 import io.higgs.http.server.StaticFileMethod;
 import io.higgs.http.server.WebApplicationException;
@@ -218,32 +219,44 @@ public class HttpHandler extends MessageHandler<HttpConfig, Object> {
         invoke(ctx);
     }
 
-    protected void invoke(ChannelHandlerContext ctx) {
+    protected void invoke(final ChannelHandlerContext ctx) {
+        MessagePusher pusher = new MessagePusher() {
+            @Override
+            public ChannelFuture push(Object message) {
+                if (message == null) {
+                    return ctx.newFailedFuture(new IllegalArgumentException("Cannot push null as an HTTP response"));
+                }
+                Queue<ResponseTransformer> transformers = protocolConfig.getTransformers();
+                return writeResponse(ctx, message, transformers);
+            }
+
+            @Override
+            public ChannelHandlerContext ctx() {
+                return ctx;
+            }
+        };
         //inject globally available dependencies
         Object[] params = Injector.inject(method.method().getParameterTypes(), new Object[0],
-                DependencyProvider.from());
+                DependencyProvider.from(pusher));
         //inject request specific dependencies
         injector.injectParams(method, request, res, ctx, params);
         try {
             Object response = method.invoke(ctx, request.getUri(), method, params);
-            Queue<ResponseTransformer> transformers = protocolConfig.getTransformers();
-            writeResponse(ctx, response, transformers);
+            pusher.push(response);
         } catch (Throwable t) {
             logDetailedFailMessage(true, params, t, method.method());
             throw new WebApplicationException(HttpStatus.INTERNAL_SERVER_ERROR, request, t);
         }
     }
 
-    protected void writeResponse(ChannelHandlerContext ctx, Object response, Queue<ResponseTransformer> t) {
+    protected ChannelFuture writeResponse(ChannelHandlerContext ctx, Object response, Queue<ResponseTransformer> t) {
         if (res.isRedirect()) {
-            doWrite(ctx);
-            return;
+            return doWrite(ctx);
         }
 
         if (response instanceof HttpResponse) {
             res = (HttpResponse) response;
-            doWrite(ctx);
-            return;
+            return doWrite(ctx);
         }
         List<ResponseTransformer> ts = new FixedSortedList<>(t);
         boolean notAcceptable = false;
@@ -259,10 +272,10 @@ public class HttpHandler extends MessageHandler<HttpConfig, Object> {
         if (notAcceptable) {
             res.setStatus(HttpStatus.NOT_ACCEPTABLE);
         }
-        doWrite(ctx);
+        return doWrite(ctx);
     }
 
-    protected void doWrite(ChannelHandlerContext ctx) {
+    protected ChannelFuture doWrite(ChannelHandlerContext ctx) {
         //apply request cookies to response, this includes the session id
         res.finalizeCustomHeaders(request);
         if (config.log_requests) {
@@ -299,6 +312,7 @@ public class HttpHandler extends MessageHandler<HttpConfig, Object> {
         res = null;
         decoder = null;
         replied = true;
+        return future;
     }
 
     @Override

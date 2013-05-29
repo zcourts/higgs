@@ -8,6 +8,7 @@ import io.higgs.core.method;
 import io.higgs.http.server.HttpRequest;
 import io.higgs.http.server.HttpResponse;
 import io.higgs.http.server.HttpStatus;
+import io.higgs.http.server.MessagePusher;
 import io.higgs.http.server.WebApplicationException;
 import io.higgs.http.server.params.CookieParam;
 import io.higgs.http.server.params.FormFiles;
@@ -76,7 +77,7 @@ public class Api {
             HttpRequest request, HttpResponse response, FormFiles files,
             FormParams form, HttpCookies cookies,
             QueryParams query, HttpSession session,
-            ResourcePath path
+            ResourcePath path, MessagePusher pusher
     ) throws JsonProcessingException {
         assert request != null;
         assert files != null;
