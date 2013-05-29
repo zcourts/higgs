@@ -8,6 +8,7 @@ import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelInitializer;
+import io.netty.channel.EventLoop;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.local.LocalAddress;
 import io.netty.channel.local.LocalChannel;
@@ -38,6 +39,12 @@ public class Events {
         return group("*");
     }
 
+    /**
+     * Create a new event group with it's own set of resources
+     *
+     * @param name the name of this group
+     * @return a new group if one with the same name doesn't already exist in which case the existing one is returned
+     */
     public static Events group(String name) {
         if (name == null) {
             throw new IllegalArgumentException("Group name is required");
@@ -48,6 +55,34 @@ public class Events {
             groups.put(name, group);
         }
         return group;
+    }
+
+    /**
+     * @return The event loop used to schedule tasks
+     */
+    public EventLoop eventLoop() {
+        return server.channel().eventLoop();
+    }
+
+    /**
+     * Execute a task in the event loop
+     *
+     * @param task the task
+     * @param <T>
+     */
+    public <T> void execute(final Task task) {
+        eventLoop().submit(new Runnable() {
+            public void run() {
+                task.apply();
+            }
+        });
+    }
+
+    /**
+     * @return the server used for pub-sub events  in this event group
+     */
+    public EventServer server() {
+        return server;
     }
 
     /**
@@ -62,6 +97,25 @@ public class Events {
         for (String event : events) {
             server.registerMethod(new FunctionEventMethod<>(event, function));
         }
+    }
+
+    /**
+     * Subscribe all eligible class's in this package for events
+     *
+     * @param pkg
+     */
+    public void subscribe(Package pkg) {
+        server.registerPackage(pkg);
+    }
+
+    /**
+     * Subscribe all eligible class's in this package AND it's sub packages for events
+     * An eligible class is any class where at least one of it's methods is annotated with {@link io.higgs.core.method}
+     *
+     * @param pkg
+     */
+    public void subscribeAll(Package pkg) {
+        server.registerPackageAndSubpackages(pkg);
     }
 
     public void subscribe(Class<ClassExample> klass) {

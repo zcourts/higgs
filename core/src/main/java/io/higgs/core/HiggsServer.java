@@ -1,20 +1,6 @@
-/*
- * Copyright 2012 The Netty Project
- *
- * The Netty Project licenses this file to you under the Apache License,
- * version 2.0 (the "License"); you may not use this file except in compliance
- * with the License. You may obtain a copy of the License at:
- *
- *   http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- */
 package io.higgs.core;
 
+import io.higgs.core.reflect.HiggsClassLoader;
 import io.higgs.core.reflect.PackageScanner;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
@@ -45,7 +31,7 @@ import java.util.concurrent.ConcurrentLinkedDeque;
 /**
  */
 public class HiggsServer {
-
+    private static final HiggsClassLoader HIGGS_CLASS_LOADER = new HiggsClassLoader();
     protected final Set<MethodProcessor> methodProcessors = new HashSet<>();
     protected final Queue<ProtocolDetectorFactory> detectors = new ConcurrentLinkedDeque<>();
     protected final Set<ProtocolConfiguration> protocolConfigurations =
@@ -128,6 +114,13 @@ public class HiggsServer {
         workerGroup.shutdownGracefully();
     }
 
+    /**
+     * @return The Server's channel or null if it's not started
+     */
+    public Channel channel() {
+        return channel;
+    }
+
     public void setDetectSsl(boolean detectSsl) {
         this.detectSsl = detectSsl;
     }
@@ -169,30 +162,46 @@ public class HiggsServer {
         detectors.add(factory);
     }
 
+    /**
+     * Discover all this package's classes, including sub packages and register them
+     *
+     * @param p the package to register
+     */
+    public void registerPackageAndSubpackages(Package p) {
+        for (Class<?> c : HIGGS_CLASS_LOADER.loadPackage(p)) {
+            registerObjectFactoryOrClass(c);
+        }
+    }
+
     public void registerPackage(Package p) {
         registerPackage(p.getName());
     }
 
     public void registerPackage(String name) {
         for (Class<?> c : PackageScanner.get(name)) {
-            if (ObjectFactory.class.isAssignableFrom(c)) {
-                registerObjectFactory((Class<ObjectFactory>) c);
-            } else {
-                registerClass(c);
-            }
+            registerObjectFactoryOrClass(c);
+        }
+    }
+
+    private void registerObjectFactoryOrClass(Class<?> c) {
+        if (ObjectFactory.class.isAssignableFrom(c)) {
+            registerObjectFactory((Class<ObjectFactory>) c);
+        } else {
+            registerClass(c);
         }
     }
 
     public void registerObjectFactory(Class<ObjectFactory> c) {
         try {
-            ObjectFactory factory = c.
-                    getConstructor(HiggsServer.class, Set.class)
-                    .newInstance(this, protocolConfigurations);
+            ObjectFactory factory = c.getConstructor(HiggsServer.class).newInstance(this);
             registerObjectFactory(factory);
-        } catch (InstantiationException | NoSuchMethodException | InvocationTargetException e) {
+        } catch (InstantiationException | InvocationTargetException e) {
             log.warn(String.format("Unable to create instance of ObjectFactory %s", c.getName()), e);
         } catch (IllegalAccessException e) {
             log.warn(String.format("Unable to access ObjectFactory %s", c.getName()), e);
+        } catch (NoSuchMethodException e) {
+            log.warn(String.format("%s does not have the required ObjectFactory(HiggsServer) constructor",
+                    c.getName()));
         }
     }
 
