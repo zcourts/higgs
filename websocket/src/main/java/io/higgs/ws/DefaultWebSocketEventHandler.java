@@ -3,11 +3,13 @@ package io.higgs.ws;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.higgs.core.InvokableMethod;
+import io.higgs.http.server.MessagePusher;
 import io.higgs.http.server.MethodParam;
 import io.higgs.http.server.protocol.HttpMethod;
 import io.higgs.ws.protocol.WebSocketConfiguration;
 import io.higgs.ws.protocol.WebSocketHandler;
 import io.netty.channel.Channel;
+import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.websocketx.TextWebSocketFrame;
 import org.slf4j.Logger;
@@ -45,30 +47,45 @@ public class DefaultWebSocketEventHandler implements WebSocketEventHandler {
         }
     }
 
-    protected void invoke(HttpMethod method, JsonRequest request, TextWebSocketFrame frame, WebSocketHandler
-            handler, ChannelHandlerContext ctx, WebSocketConfiguration config, Queue<InvokableMethod> methods) {
+    protected void invoke(final HttpMethod method, final JsonRequest request, TextWebSocketFrame frame, WebSocketHandler
+            handler, final ChannelHandlerContext ctx, WebSocketConfiguration config, Queue<InvokableMethod> methods) {
         Object[] params = new Object[method.getParams().length];
-        injectParams(params, method, request, frame, handler, ctx, config, method);
+        MessagePusher pusher = new MessagePusher() {
+            @Override
+            public ChannelFuture push(Object message) {
+                if (message != null) {
+                    Object res;
+                    if (message instanceof TextWebSocketFrame) {
+                        res = ((TextWebSocketFrame) message).text();
+                    } else {
+                        res = message;
+                    }
+                    Map<String, Object> map = new HashMap<>();
+                    String c = request.getCallback();
+                    map.put("callback", c != null && !c.isEmpty() ? c : method.getName());
+                    map.put("data", res);
+                    //
+                    try {
+                        return ctx.channel().write(new TextWebSocketFrame(mapper.writeValueAsString(map)));
+                    } catch (JsonProcessingException e) {
+                        log.warn(String.format("Message received but failed to convert object to JSON string"));
+                        return ctx.newFailedFuture(e);
+                    }
+                }
+                return ctx.newFailedFuture(new IllegalArgumentException("Tried to push a null message"));
+            }
+
+            @Override
+            public ChannelHandlerContext ctx() {
+                return ctx;
+            }
+        };
+        injectParams(params, method, request, frame, handler, ctx, config, method, pusher);
         try {
             Object returns = method.invoke(ctx, request.getPath(), request, params);
-            if (returns != null) {
-                Object res;
-                if (returns instanceof TextWebSocketFrame) {
-                    res = ((TextWebSocketFrame) returns).text();
-                } else {
-                    res = returns;
-                }
-                Map<String, Object> map = new HashMap<>();
-                String c = request.getCallback();
-                map.put("callback", c != null && !c.isEmpty() ? c : method.getName());
-                map.put("data", res);
-                //
-                ctx.channel().write(new TextWebSocketFrame(mapper.writeValueAsString(map)));
-            }
+            pusher.push(returns);
         } catch (InvocationTargetException | IllegalAccessException | InstantiationException e) {
             log.warn(String.format("Crap! Unable to invoke method %s", method), e);
-        } catch (JsonProcessingException e) {
-            log.warn(String.format("Response received but failed to convert object to JSON string"));
         }
     }
 
@@ -79,7 +96,8 @@ public class DefaultWebSocketEventHandler implements WebSocketEventHandler {
      */
     private void injectParams(Object[] params, HttpMethod method, JsonRequest request, TextWebSocketFrame frame,
                               WebSocketHandler handler, ChannelHandlerContext ctx, WebSocketConfiguration config,
-                              HttpMethod method1) {
+                              HttpMethod method1, MessagePusher pusher) {
+        //TODO migrate to the new Injector API
         MethodParam[] p = method.getParams();
         for (int i = 0; i < p.length; i++) {
             MethodParam param = p[i];
@@ -92,6 +110,8 @@ public class DefaultWebSocketEventHandler implements WebSocketEventHandler {
                 params[i] = ctx.channel();
             } else if (paramType.isAssignableFrom(WebSocketConfiguration.class)) {
                 params[i] = config;
+            } else if (paramType.isAssignableFrom(MessagePusher.class)) {
+                params[i] = pusher;
             } else {
                 try {
                     params[i] = request.as(paramType);

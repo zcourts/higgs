@@ -36,6 +36,9 @@ public class DefaultParamInjector implements ParamInjector {
             components = path.getComponents();
         }
         for (int i = 0; i < params.length; i++) {
+            if (args[i] != null) {
+                continue; //this param has already been injected, move on
+            }
             MethodParam param = params[i];
             if (param.isNamed()) {
                 //process annotations, i.e. the named parameters
