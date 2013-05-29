@@ -1,7 +1,7 @@
 package io.higgs.core;
 
-import io.higgs.core.reflect.HiggsClassLoader;
-import io.higgs.core.reflect.PackageScanner;
+import io.higgs.core.reflect.classpath.HiggsClassLoader;
+import io.higgs.core.reflect.classpath.PackageScanner;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelInitializer;

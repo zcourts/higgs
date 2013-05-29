@@ -1,4 +1,4 @@
-package io.higgs.core.reflect;
+package io.higgs.core.reflect.classpath;
 
 /**
  * @author Courtney Robinson <courtney@crlog.info>
