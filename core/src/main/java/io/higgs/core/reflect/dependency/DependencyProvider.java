@@ -24,11 +24,13 @@ public class DependencyProvider {
      * @param dependency the dependency to add
      * @return false if instance is null, true otherwise
      */
-    public boolean add(Object dependency) {
+    public boolean add(Object... dependency) {
         if (dependency == null) {
             return false;
         }
-        instances.put(dependency.getClass(), dependency);
+        for (Object o : dependency) {
+            instances.put(o.getClass(), o);
+        }
         return true;
     }
 
