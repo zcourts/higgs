@@ -3,6 +3,7 @@ package io.higgs.http.server.protocol;
 import io.higgs.core.InvokableMethod;
 import io.higgs.core.ObjectFactory;
 import io.higgs.core.ResourcePath;
+import io.higgs.core.reflect.dependency.DependencyProvider;
 import io.higgs.http.server.HttpRequest;
 import io.higgs.http.server.MethodParam;
 import io.higgs.http.server.WebApplicationException;
@@ -84,7 +85,9 @@ public class HttpMethod extends InvokableMethod {
         return false;
     }
 
-    protected Object[] injectDependencies(ChannelHandlerContext ctx, Object msg, Object[] params, Object instance) {
+    @Override
+    protected Object[] injectParameters(ChannelHandlerContext ctx, Object msg, Object[] params, Object instance,
+                                        DependencyProvider deps) {
         //http handler has already injected everything it needs to
         return params;
     }

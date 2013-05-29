@@ -92,7 +92,11 @@ public abstract class InvokableMethod implements Sortable<InvokableMethod> {
     public Object invoke(ChannelHandlerContext ctx, String path, Object msg, Object[] params)
             throws InvocationTargetException, IllegalAccessException, InstantiationException {
         Object instance = createInstance();
-        Object[] depParams = injectDependencies(ctx, msg, params, instance);
+
+        DependencyProvider deps = DependencyProvider.from(ctx, ctx.channel(), ctx.executor(), msg);
+        injectFields(instance, deps);
+
+        Object[] depParams = injectParameters(ctx, msg, params, instance, deps);
         try {
             Method init = instance.getClass().getMethod("init");
             init.invoke(instance);
@@ -117,12 +121,15 @@ public abstract class InvokableMethod implements Sortable<InvokableMethod> {
         return instance;
     }
 
-    protected Object[] injectDependencies(ChannelHandlerContext ctx, Object msg, Object[] params, Object instance) {
-        DependencyProvider deps = DependencyProvider.from(ctx, ctx.channel(), ctx.executor(), msg);
-        //inject instance dependencies
-        Injector.inject(instance, deps);
+    protected Object[] injectParameters(ChannelHandlerContext ctx, Object msg, Object[] params, Object instance,
+                                        DependencyProvider deps) {
         //inject method dependencies
         return Injector.inject(classMethod.getParameterTypes(), params, deps);
+    }
+
+    protected void injectFields(Object instance, DependencyProvider deps) {
+        //inject instance dependencies
+        Injector.inject(instance, deps);
     }
 
     /**
