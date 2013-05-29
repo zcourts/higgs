@@ -1,5 +1,7 @@
 package io.higgs.core;
 
+import io.higgs.core.reflect.dependency.DependencyProvider;
+import io.higgs.core.reflect.dependency.Injector;
 import io.netty.channel.ChannelHandlerContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -89,6 +91,19 @@ public abstract class InvokableMethod implements Sortable<InvokableMethod> {
      */
     public Object invoke(ChannelHandlerContext ctx, String path, Object msg, Object[] params)
             throws InvocationTargetException, IllegalAccessException, InstantiationException {
+        Object instance = createInstance();
+        Object[] depParams = injectDependencies(ctx, msg, params, instance);
+        try {
+            Method init = instance.getClass().getMethod("init");
+            init.invoke(instance);
+        } catch (InvocationTargetException | NoSuchMethodException ignored) {
+            //empty catch not allowed  by style settings so do return
+            return classMethod.invoke(instance, depParams);
+        }
+        return classMethod.invoke(instance, depParams);
+    }
+
+    protected Object createInstance() throws InstantiationException, IllegalAccessException {
         Object instance = null;
         for (ObjectFactory factory : factories) {
             if (factory.canCreateInstanceOf(klass)) {
@@ -99,7 +114,15 @@ public abstract class InvokableMethod implements Sortable<InvokableMethod> {
         if (instance == null) {
             instance = klass.newInstance();
         }
-        return classMethod.invoke(instance, params);
+        return instance;
+    }
+
+    protected Object[] injectDependencies(ChannelHandlerContext ctx, Object msg, Object[] params, Object instance) {
+        DependencyProvider deps = DependencyProvider.from(ctx, ctx.channel(), ctx.executor(), msg);
+        //inject instance dependencies
+        Injector.inject(instance, deps);
+        //inject method dependencies
+        return Injector.inject(classMethod.getParameterTypes(), params, deps);
     }
 
     /**

@@ -5,17 +5,16 @@ import java.util.Collections;
 import java.util.Set;
 
 public class ReflectionUtil {
-    private final int MAX_RECURSION_DEPTH;
+    public static int MAX_RECURSION_DEPTH = 10;
 
-    public ReflectionUtil() {
-        this(10);
+    private ReflectionUtil() {
     }
 
-    public ReflectionUtil(int maxRecursionDepth) {
-        MAX_RECURSION_DEPTH = maxRecursionDepth;
+    public static Set<Field> getAllFields(Set<Field> fields, Class<?> type) {
+        return getAllFields(fields, type, MAX_RECURSION_DEPTH);
     }
 
-    public Set<Field> getAllFields(Set<Field> fields, Class<?> type, int depth) {
+    public static Set<Field> getAllFields(Set<Field> fields, Class<?> type, int depth) {
         //first get inherited fields
         if (type.getSuperclass() != null && depth <= MAX_RECURSION_DEPTH) {
             Set<Field> superFields = getAllFields(fields, type.getSuperclass(), ++depth);
@@ -34,7 +33,7 @@ public class ReflectionUtil {
      * @param klass
      * @return true if klass represents a numeric type, including byte. Both boxed and unboxed.
      */
-    public boolean isNumeric(Class<?> klass) {
+    public static boolean isNumeric(Class<?> klass) {
         return Integer.class.isAssignableFrom(klass) ||
                 int.class.isAssignableFrom(klass) ||
                 Long.class.isAssignableFrom(klass) ||

@@ -24,12 +24,10 @@ import java.util.List;
  * @author Courtney Robinson <courtney@crlog.info>
  */
 public class DefaultParamInjector implements ParamInjector {
-    private final ReflectionUtil reflection = new ReflectionUtil();
-
     @Override
-    public Object[] injectParams(HttpMethod method, HttpRequest request, HttpResponse res, ChannelHandlerContext ctx) {
+    public Object[] injectParams(HttpMethod method, HttpRequest request, HttpResponse res, ChannelHandlerContext ctx,
+                                 Object[] args) {
         MethodParam[] params = method.getParams();
-        Object[] args = new Object[params.length];
 
         ResourcePath path = method.path();
         ResourcePath.Component[] components = new ResourcePath.Component[0];
@@ -109,7 +107,7 @@ public class DefaultParamInjector implements ParamInjector {
                 return component.getRuntimeValue();
             }
         } else {
-            if (reflection.isNumeric(param.getParameterType())) {
+            if (ReflectionUtil.isNumeric(param.getParameterType())) {
                 //if param is a number then try to handle with NumberType.parseType
                 return extractNumberParam(param, component == null ? null : component.getRuntimeValue());
             }
@@ -124,7 +122,7 @@ public class DefaultParamInjector implements ParamInjector {
         } else if (String.class.isAssignableFrom(param.getParameterType())) {
             return request.getQueryParams().getFirst(param.getName());
         } else {
-            if (reflection.isNumeric(param.getParameterType())) {
+            if (ReflectionUtil.isNumeric(param.getParameterType())) {
                 //if param is a number then try to handle with NumberType.parseType
                 return extractNumberParam(param, request.getQueryParams().getFirst(param.getName()));
             } else {
@@ -137,7 +135,7 @@ public class DefaultParamInjector implements ParamInjector {
         if (String.class.isAssignableFrom(param.getParameterType())) {
             return request.getFormParam().get(param.getName());
         } else {
-            if (reflection.isNumeric(param.getParameterType())) {
+            if (ReflectionUtil.isNumeric(param.getParameterType())) {
                 //if param is a number then try to handle with NumberType.parseType
                 return extractNumberParam(param, request.getFormParam().get(param.getName()));
             } else {
@@ -154,7 +152,7 @@ public class DefaultParamInjector implements ParamInjector {
             if (String.class.isAssignableFrom(param.getParameterType())) {
                 return request.headers().get(param.getName());
             } else {
-                if (reflection.isNumeric(param.getParameterType())) {
+                if (ReflectionUtil.isNumeric(param.getParameterType())) {
                     //if param is a number then try to handle with NumberType.parseType
                     return extractNumberParam(param, request.headers().get(param.getName()));
                 } else {
@@ -173,7 +171,7 @@ public class DefaultParamInjector implements ParamInjector {
             return cookie.getValue();
         } else if (HttpCookie.class.isAssignableFrom(param.getParameterType())) {
             return cookie;
-        } else if (reflection.isNumeric(param.getParameterType())) {
+        } else if (ReflectionUtil.isNumeric(param.getParameterType())) {
             //if param is a number then try to handle with NumberType.parseType
             return extractNumberParam(param, cookie.getValue());
         } else {

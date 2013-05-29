@@ -23,13 +23,6 @@
             <artifactId>core</artifactId>
             <version>0.0.1-SNAPSHOT</version>
         </dependency>
-        <!--high scale lib - unmodified version http://search.maven.org/#artifactdetails%7Ccom.github.stephenc.high-scale-lib%7Chigh-scale-lib%7C1.1.4%7Cjar-->
-        <!--boundary's copy with bug fixes-->
-        <dependency>
-            <groupId>com.boundary</groupId>
-            <artifactId>high-scale-lib</artifactId>
-            <version>1.0.3</version>
-        </dependency>
     </dependencies>
 
     <repositories>

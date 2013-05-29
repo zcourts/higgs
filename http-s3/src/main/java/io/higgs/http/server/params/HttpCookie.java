@@ -16,7 +16,6 @@ import java.util.Set;
  */
 public class HttpCookie extends DefaultCookie {
     protected Logger log = LoggerFactory.getLogger(getClass());
-    private ReflectionUtil reflection = new ReflectionUtil();
 
     public HttpCookie(String name, String value) {
         super(name, value);
@@ -25,7 +24,7 @@ public class HttpCookie extends DefaultCookie {
 
     public HttpCookie(Cookie cookie) {
         this(cookie.getName(), cookie.getValue());
-        Set<Field> fields = reflection.getAllFields(new HashSet<Field>(), DefaultCookie.class, 1);
+        Set<Field> fields = ReflectionUtil.getAllFields(new HashSet<Field>(), DefaultCookie.class, 1);
         for (Field field : fields) {
             try {
                 if (!Modifier.isFinal(field.getModifiers())) {

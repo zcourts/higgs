@@ -3,6 +3,8 @@ package io.higgs.http.server.protocol;
 import io.higgs.core.FixedSortedList;
 import io.higgs.core.InvokableMethod;
 import io.higgs.core.MessageHandler;
+import io.higgs.core.reflect.dependency.DependencyProvider;
+import io.higgs.core.reflect.dependency.Injector;
 import io.higgs.http.server.HttpRequest;
 import io.higgs.http.server.HttpResponse;
 import io.higgs.http.server.HttpStatus;
@@ -62,6 +64,7 @@ public class HttpHandler extends MessageHandler<HttpConfig, Object> {
     protected HttpProtocolConfiguration protocolConfig;
     protected HttpPostRequestDecoder decoder;
     private Logger requestLogger = LoggerFactory.getLogger("request_logger");
+    private boolean replied;
 
     public HttpHandler(HttpProtocolConfiguration config) {
         super(config.getServer().<HttpConfig>getConfig());
@@ -92,6 +95,10 @@ public class HttpHandler extends MessageHandler<HttpConfig, Object> {
     }
 
     public void messageReceived(ChannelHandlerContext ctx, Object msg) throws Exception {
+        if (msg instanceof LastHttpContent && replied) {
+            return;  //can happen if exception was thrown before last http content received
+        }
+        replied = false;
         if (msg instanceof HttpRequest || msg instanceof FullHttpRequest) {
             if (msg instanceof HttpRequest) {
                 request = (HttpRequest) msg;
@@ -212,7 +219,11 @@ public class HttpHandler extends MessageHandler<HttpConfig, Object> {
     }
 
     protected void invoke(ChannelHandlerContext ctx) {
-        Object[] params = injector.injectParams(method, request, res, ctx);
+        //inject globally available dependencies
+        Object[] params = Injector.inject(method.method().getParameterTypes(), new Object[0],
+                DependencyProvider.from());
+        //inject request specific dependencies
+        injector.injectParams(method, request, res, ctx, params);
         try {
             Object response = method.invoke(ctx, request.getUri(), method, params);
             Queue<ResponseTransformer> transformers = protocolConfig.getTransformers();
@@ -287,6 +298,7 @@ public class HttpHandler extends MessageHandler<HttpConfig, Object> {
         request = null;
         res = null;
         decoder = null;
+        replied = true;
     }
 
     @Override

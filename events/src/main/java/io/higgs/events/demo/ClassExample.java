@@ -11,6 +11,22 @@ import io.netty.util.concurrent.EventExecutor;
  */
 public class ClassExample {
     /**
+     * This will be injected before the method is invoked.
+     * One method is invoked per instance
+     */
+    private EventExecutor instanceExecutor;
+
+    public ClassExample() {
+        //instanceExecutor will be null in the constructor but will be injected after construction
+    }
+
+    public void init() {
+        //if init method exists it'll be called, use in place of constructor
+        //all injectable fields will be injected at this point
+        System.out.println("init, instanceInject!=null -->" + (instanceExecutor != null));
+    }
+
+    /**
      * ctx,channel and event can appear at any location in the list of parameters
      * but the order of other parameters must match the order of parameters emitted
      * in this case, Events.emit("test","some string",100) must be the order

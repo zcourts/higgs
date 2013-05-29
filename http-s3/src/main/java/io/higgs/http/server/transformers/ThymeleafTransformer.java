@@ -30,7 +30,6 @@ import java.util.Set;
  * @author Courtney Robinson <courtney@crlog.info>
  */
 public class ThymeleafTransformer extends BaseTransformer {
-    private final ReflectionUtil reflection = new ReflectionUtil();
     protected TemplateConfig config;
     protected Thymeleaf tl;
     private Logger log = LoggerFactory.getLogger(getClass());
@@ -123,7 +122,8 @@ public class ThymeleafTransformer extends BaseTransformer {
         //response already available under ${_response} so only include if is POJO or Map, then we can
         //do a field to value setup
         if (response instanceof Map || //only Map is allowed from the set of Collections
-                (response != null && !reflection.isNumeric(response.getClass()) && !(response instanceof Collection))) {
+                (response != null && !ReflectionUtil.isNumeric(response.getClass()) && !(response instanceof
+                        Collection))) {
 
             if (response instanceof Map && config.convert_map_responses_to_key_value_pairs) {
                 ctx.setVariables((Map<String, ?>) response);
@@ -131,7 +131,7 @@ public class ThymeleafTransformer extends BaseTransformer {
                 //it must be a POJO otherwise (since its not a primitive or a Map,List or Set...)
                 if (config.convert_pojo_responses_to_key_value_pairs) {
                     //get fields going a max of 10 parent classes up in the chain
-                    Set<Field> fields = reflection.getAllFields(new HashSet<Field>(), response.getClass(), 10);
+                    Set<Field> fields = ReflectionUtil.getAllFields(new HashSet<Field>(), response.getClass(), 10);
                     for (Field field : fields) {
                         try {
                             field.setAccessible(true);

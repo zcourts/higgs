@@ -29,6 +29,7 @@ public class FunctionEventMethod<A> extends EventMethod {
         }
     }
 
+    //won't use normal dependency injection because it only supports 1 parameter
     public Object invoke(ChannelHandlerContext ctx, String path, Object msg, Object[] params)
             throws InvocationTargetException, IllegalAccessException, InstantiationException {
         try {

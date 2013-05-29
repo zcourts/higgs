@@ -84,6 +84,11 @@ public class HttpMethod extends InvokableMethod {
         return false;
     }
 
+    protected Object[] injectDependencies(ChannelHandlerContext ctx, Object msg, Object[] params, Object instance) {
+        //http handler has already injected everything it needs to
+        return params;
+    }
+
     /**
      * Sets the given parameter
      *
