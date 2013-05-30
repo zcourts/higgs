@@ -12,6 +12,7 @@ import io.higgs.http.server.MessagePusher;
 import io.higgs.http.server.ParamInjector;
 import io.higgs.http.server.StaticFileMethod;
 import io.higgs.http.server.WebApplicationException;
+import io.higgs.http.server.WrappedResponse;
 import io.higgs.http.server.config.HttpConfig;
 import io.higgs.http.server.params.HttpFile;
 import io.higgs.http.server.transformers.ResponseTransformer;
@@ -96,7 +97,7 @@ public class HttpHandler extends MessageHandler<HttpConfig, Object> {
     }
 
     public void messageReceived(ChannelHandlerContext ctx, Object msg) throws Exception {
-        if (msg instanceof LastHttpContent && replied) {
+        if (msg instanceof LastHttpContent && !(msg instanceof FullHttpRequest) && replied) {
             return;  //can happen if exception was thrown before last http content received
         }
         replied = false;
@@ -118,6 +119,8 @@ public class HttpHandler extends MessageHandler<HttpConfig, Object> {
                 //404
                 throw new WebApplicationException(HttpStatus.NOT_FOUND, request);
             }
+            //set the path that matched
+            request.setPath(method.path());
         }
         if (request == null || method == null) {
             log.warn(String.format("Method or request is null \n method \n%s \n request \n%s",
@@ -223,9 +226,14 @@ public class HttpHandler extends MessageHandler<HttpConfig, Object> {
         MessagePusher pusher = new MessagePusher() {
             @Override
             public ChannelFuture push(Object message) {
-                if (message == null) {
-                    return ctx.newFailedFuture(new IllegalArgumentException("Cannot push null as an HTTP response"));
+                //http methods can return null or void and still have the response injected and modified
+                //so null messages are allowed here
+                Object wrappedRes = message != null && message instanceof WrappedResponse ?
+                        ((WrappedResponse) message).data() : null;
+                if (wrappedRes != null) {
+                    message = wrappedRes;
                 }
+
                 Queue<ResponseTransformer> transformers = protocolConfig.getTransformers();
                 return writeResponse(ctx, message, transformers);
             }

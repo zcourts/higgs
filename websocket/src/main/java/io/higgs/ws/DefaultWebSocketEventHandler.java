@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.higgs.core.InvokableMethod;
 import io.higgs.http.server.MessagePusher;
 import io.higgs.http.server.MethodParam;
+import io.higgs.http.server.WrappedResponse;
 import io.higgs.http.server.protocol.HttpMethod;
 import io.higgs.ws.protocol.WebSocketConfiguration;
 import io.higgs.ws.protocol.WebSocketHandler;
@@ -62,7 +63,15 @@ public class DefaultWebSocketEventHandler implements WebSocketEventHandler {
                     }
                     Map<String, Object> map = new HashMap<>();
                     String c = request.getCallback();
-                    map.put("callback", c != null && !c.isEmpty() ? c : method.getName());
+                    String cbk = res instanceof WrappedResponse ? ((WrappedResponse) res).callback() : null;
+                    Object wrappedRes = res instanceof WrappedResponse ? ((WrappedResponse) res).data() : null;
+                    if (cbk != null) {
+                        c = cbk;
+                    }
+                    if (wrappedRes != null) {
+                        res = wrappedRes;
+                    }
+                    map.put("callback", c != null && !c.isEmpty() ? c : method.rawPath());
                     map.put("data", res);
                     //
                     try {

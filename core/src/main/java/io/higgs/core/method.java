@@ -26,13 +26,6 @@ public @interface method {
     String value() default "";
 
     /**
-     * Sets the name of this method to an alternative string value
-     *
-     * @return the method's name, if not set or is empty the formal method name is used
-     */
-    String name() default "";
-
-    /**
      * If provided the method this is applied to will NOT be registered to receive messages.
      * NOTE: Applying this at class level is meaningless and is ignored. Only applies to methods
      *
