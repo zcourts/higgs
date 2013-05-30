@@ -119,7 +119,10 @@ public class HttpResponse extends DefaultFullHttpResponse {
     public void finalizeCustomHeaders(HttpRequest request) {
         if (newCookies.size() > 0 || request.isNewSession()) {
             HashMap<String, HttpCookie> cookies = new HashMap<>();
-            cookies.putAll(request.getCookies());
+            //if it's a new session or the session cookie isn't set on the request then tell the client to set it
+            if (request.isNewSession() || request.getCookie(HttpRequest.SID) == null) {
+                cookies.put(request.getSessionCookie().getName(), request.getSessionCookie());
+            }
             cookies.putAll(newCookies);
             headers().set(HttpHeaders.Names.SET_COOKIE,
                     ServerCookieEncoder.encode(new ArrayList<Cookie>(cookies.values())));

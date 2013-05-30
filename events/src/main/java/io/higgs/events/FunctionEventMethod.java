@@ -18,12 +18,12 @@ public class FunctionEventMethod<A> extends EventMethod {
         super(new LinkedList<ObjectFactory>(), Function1.class,
                 Function1.class.getMethods()[0]);
         this.function = function;
-        setName(event);
+        path = event;
     }
 
     public boolean matches(String path, ChannelHandlerContext ctx, Object msg) {
         try {
-            return getName().equalsIgnoreCase(path);
+            return path.matches(path);
         } catch (ClassCastException cce) {
             return false;
         }

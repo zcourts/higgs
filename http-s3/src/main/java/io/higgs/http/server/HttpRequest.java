@@ -56,6 +56,7 @@ public class HttpRequest extends DefaultHttpRequest {
     public static final String SID = "HS3-ID";
     private static final AttributeKey<String> sessionAttr = new AttributeKey<>(SID + "-attr");
     private ByteBuf content = Unpooled.buffer(0);
+    private HttpCookie sessionCookie;
 
     /**
      * Creates a new instance.
@@ -127,12 +128,12 @@ public class HttpRequest extends DefaultHttpRequest {
                     }
                     session.setPorts(ports);
                 }
-                setCookie(session); //set the session id cookie
                 //need to associate session ID with the channel since multiple requests can be received
                 //before the session cookie is set on the client, e.g. in keep alive requests
                 Attribute<String> sessAttr = ctx.channel().attr(sessionAttr);
                 sessAttr.set(sessionId);
                 this.newSession = true;
+                this.sessionCookie = session;
                 config.getSessions().put(sessionId, new HttpSession());
             }
         }
@@ -143,9 +144,8 @@ public class HttpRequest extends DefaultHttpRequest {
         if (sessAttr != null && sessAttr.get() != null) {
             sessionId = sessAttr.get();
         }
-        HttpCookie cookie = getCookie(SID);
-        if (sessionId == null && cookie != null) {
-            sessionId = cookie.getValue();
+        if (sessionId == null && sessionCookie != null) {
+            sessionId = sessionCookie.getValue();
         }
     }
 
@@ -215,6 +215,10 @@ public class HttpRequest extends DefaultHttpRequest {
 
     public String getSessionId() {
         return sessionId;
+    }
+
+    public HttpCookie getSessionCookie() {
+        return sessionCookie;
     }
 
     public HttpSession getSession() {
