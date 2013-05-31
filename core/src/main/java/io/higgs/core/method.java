@@ -26,6 +26,16 @@ public @interface method {
     String value() default "";
 
     /**
+     * When this annotation is applied to a method whose class also has the annotation
+     * the default action is to amalgamate the class' path with the method's.
+     * If this property is set to true then this default behaviour is overriden so that only
+     * the method's {@link #value()} is used to form the method's path
+     *
+     * @return true if the class' path should be ignored
+     */
+    boolean ignoreClassPrefix() default false;
+
+    /**
      * If provided the method this is applied to will NOT be registered to receive messages.
      * NOTE: Applying this at class level is meaningless and is ignored. Only applies to methods
      *

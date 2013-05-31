@@ -35,11 +35,7 @@ public abstract class InvokableMethod implements Sortable<InvokableMethod> {
 
     protected void parsePath() {
         String classPath = null, methodPath = null;
-        //get any path set on the entire class so it can be prepended to method paths
-        if (klass.isAnnotationPresent(method.class)) {
-            method path = klass.getAnnotation(method.class);
-            classPath = path.value() != null && !path.value().isEmpty() ? path.value() : "/";
-        }
+        boolean ignoreClassPrefix = false;
         //get any path set on the method
         if (classMethod.isAnnotationPresent(method.class)) {
             method path = classMethod.getAnnotation(method.class);
@@ -47,7 +43,14 @@ public abstract class InvokableMethod implements Sortable<InvokableMethod> {
             if (path.attr() != null && path.attr().length > 0) {
                 pathAttributes = path.attr();
             }
+            ignoreClassPrefix = path.ignoreClassPrefix();
         }
+        //get any path set on the entire class so it can be prepended to method paths
+        if (!ignoreClassPrefix && klass.isAnnotationPresent(method.class)) {
+            method path = klass.getAnnotation(method.class);
+            classPath = path.value() != null && !path.value().isEmpty() ? path.value() : "/";
+        }
+
         if (classPath == null) {
             classPath = "/";
         }
@@ -60,7 +63,7 @@ public abstract class InvokableMethod implements Sortable<InvokableMethod> {
         if (!methodPath.startsWith("/") && !classPath.endsWith("/")) {
             classPath += "/";
         }
-        path = classPath + methodPath;
+        path = ignoreClassPrefix ? methodPath : classPath + methodPath;
         if (path.length() > 1 && path.endsWith("/")) {
             path = path.substring(0, path.length() - 1);
         }
