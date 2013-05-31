@@ -212,8 +212,36 @@ public class HiggsServer {
         factories.add(factory);
     }
 
+    /**
+     * Remove all referentially equal object factories
+     *
+     * @param factory the factory to remove
+     */
+    public void deRegister(ObjectFactory factory) {
+        for (ObjectFactory f : factories) {
+            if (factory == f) {
+                factories.remove(f);
+            }
+        }
+    }
+
     public void registerClass(Class<?> c) {
         registerMethods(c);
+    }
+
+    /**
+     * Remove all *identical* registered methods of this class
+     * An identical class in one which matches registeredClass.equals(klass)
+     * If such a match is found then all the methods registered for this class are removed
+     *
+     * @param klass the class whose methods are to be removed
+     */
+    public void deRegister(Class<?> klass) {
+        for (InvokableMethod method : methods) {
+            if (method.klass().equals(klass)) {
+                methods.remove(method);
+            }
+        }
     }
 
     /**

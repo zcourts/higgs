@@ -6,11 +6,11 @@ import io.higgs.core.ObjectFactory;
 /**
  * @author Courtney Robinson <courtney@crlog.info>
  */
-public class RandomFactory extends ObjectFactory {
+public class SingletonFactory extends ObjectFactory {
     private final Object instance;
     private final Class<?> klass;
 
-    public RandomFactory(HiggsServer server, Object instance) {
+    public SingletonFactory(HiggsServer server, Object instance) {
         super(server);
         this.instance = instance;
         klass = instance.getClass();
@@ -25,5 +25,12 @@ public class RandomFactory extends ObjectFactory {
     @Override
     public boolean canCreateInstanceOf(Class<?> klass) {
         return this.klass.isAssignableFrom(klass);
+    }
+
+    /**
+     * @return the instance represented by this singleton factory
+     */
+    public Object instance() {
+        return instance;
     }
 }
