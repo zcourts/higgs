@@ -3,7 +3,6 @@ package io.higgs.events;
 
 import io.higgs.core.InvokableMethod;
 import io.higgs.core.func.Function1;
-import io.higgs.events.demo.ClassExample;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
@@ -15,17 +14,20 @@ import io.netty.channel.local.LocalChannel;
 import io.netty.channel.local.LocalEventLoopGroup;
 import org.cliffc.high_scale_lib.NonBlockingHashMap;
 
+import java.util.ArrayList;
 import java.util.LinkedList;
+import java.util.List;
 
 /**
  * @author Courtney Robinson <courtney@crlog.info>
  */
 public class Events {
     private static NonBlockingHashMap<String, Events> groups = new NonBlockingHashMap<>();
-    protected EventServer server;
-    protected NonBlockingHashMap<String, Channel> channels = new NonBlockingHashMap<>();
     protected final LocalAddress address;
     private final EventLoopGroup group;
+    private final List<SingletonFactory> registeredFactories = new ArrayList<>();
+    protected EventServer server;
+    protected NonBlockingHashMap<String, Channel> channels = new NonBlockingHashMap<>();
 
     public Events(String groupName) {
         address = new LocalAddress(groupName);
@@ -118,7 +120,7 @@ public class Events {
         server.registerPackageAndSubpackages(pkg);
     }
 
-    public void subscribe(Class<ClassExample> klass) {
+    public void subscribe(Class<?> klass) {
         server.registerClass(klass);
     }
 
@@ -129,7 +131,26 @@ public class Events {
         if (instance == null) {
             throw new IllegalArgumentException("cannot register null instance");
         }
-        server.registerObjectFactory(new RandomFactory(server, instance));
+        SingletonFactory factory = new SingletonFactory(server, instance);
+        registeredFactories.add(factory);
+        server.registerObjectFactory(factory);
+    }
+
+    /**
+     * Unsubscribe all referentially equal subscriptions of the instance provided.
+     * If the same instance was subscribed multiple times, ALL  subscriptions will be removed
+     * i.e. where subscribedObject == instance ONLY
+     * That is to say, even if subscribedObject.equals(instance) would return true
+     * an instance is only removed if subscribedObject == instance (ref)
+     *
+     * @param instance the instance to unsubscribe
+     */
+    public void unsubscribe(Object instance) {
+        for (SingletonFactory f : registeredFactories) {
+            if (f.instance() == instance) {
+                server.deRegister(f);
+            }
+        }
     }
 
     /**

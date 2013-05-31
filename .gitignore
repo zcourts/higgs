@@ -12,3 +12,4 @@ target
 build
 build.log
 log/*
+var/*
