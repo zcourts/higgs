@@ -94,58 +94,55 @@ public class HttpRequest extends DefaultHttpRequest {
         }
         QueryStringDecoder decoderQuery = new QueryStringDecoder(getUri());
         queryParams.putAll(decoderQuery.parameters());
-        getSessionID(ctx);
         initSession(ctx);
     }
 
     public void initSession(ChannelHandlerContext ctx) {
-        if (sessionId == null || config.getSessions().get(sessionId) == null) {
-            if (config.getSessions().get(sessionId) == null) {
-                //generate a new session ID
-                SecureRandom random = new SecureRandom();
-                sessionId = new BigInteger(130, random).toString(32);
-
-                HttpCookie session = new HttpCookie(SID, sessionId);
-                session.setPath(config.getServer().getConfig().session_path);
-                session.setMaxAge(config.getServer().getConfig().session_max_age);
-                session.setHttpOnly(config.getServer().getConfig().session_http_only);
-
-                if (config.getServer().getConfig().session_domain != null &&
-                        !config.getServer().getConfig().session_domain.isEmpty()) {
-                    session.setDomain(config.getServer().getConfig().session_domain);
-                }
-
-                String sp = config.getServer().getConfig().session_ports;
-                if (sp != null && !sp.isEmpty()) {
-                    String[] ps = sp.split(",");
-                    List<Integer> ports = new ArrayList<>(ps.length);
-                    for (String p : ps) {
-                        try {
-                            ports.add(parseInt(p));
-                        } catch (NumberFormatException nfe) {
-                            log.warn(String.format("Session port config contained non-numeric value (%s)", p));
-                        }
-                    }
-                    session.setPorts(ports);
-                }
-                //need to associate session ID with the channel since multiple requests can be received
-                //before the session cookie is set on the client, e.g. in keep alive requests
-                Attribute<String> sessAttr = ctx.channel().attr(sessionAttr);
-                sessAttr.set(sessionId);
-                this.newSession = true;
-                this.sessionCookie = session;
-                config.getSessions().put(sessionId, new HttpSession());
+        HttpCookie sc = getCookie(SID);
+        if (sc == null) {
+            Attribute<String> sessAttr = ctx.channel().attr(sessionAttr);
+            if (sessAttr.get() != null) {
+                sc = getCookie(sessAttr.get());
+                sessionId = sessAttr.get();
             }
+        } else {
+            sessionId = sc.getValue();
         }
-    }
+        if (sc == null || config.getSessions().get(sessionId) == null) {
+            //generate a new session ID
+            SecureRandom random = new SecureRandom();
+            sessionId = new BigInteger(130, random).toString(32);
 
-    private void getSessionID(ChannelHandlerContext ctx) {
-        Attribute<String> sessAttr = ctx.channel().attr(sessionAttr);
-        if (sessAttr != null && sessAttr.get() != null) {
-            sessionId = sessAttr.get();
-        }
-        if (sessionId == null && sessionCookie != null) {
-            sessionId = sessionCookie.getValue();
+            HttpCookie session = new HttpCookie(SID, sessionId);
+            session.setPath(config.getServer().getConfig().session_path);
+            session.setMaxAge(config.getServer().getConfig().session_max_age);
+            session.setHttpOnly(config.getServer().getConfig().session_http_only);
+
+            if (config.getServer().getConfig().session_domain != null &&
+                    !config.getServer().getConfig().session_domain.isEmpty()) {
+                session.setDomain(config.getServer().getConfig().session_domain);
+            }
+
+            String sp = config.getServer().getConfig().session_ports;
+            if (sp != null && !sp.isEmpty()) {
+                String[] ps = sp.split(",");
+                List<Integer> ports = new ArrayList<>(ps.length);
+                for (String p : ps) {
+                    try {
+                        ports.add(parseInt(p));
+                    } catch (NumberFormatException nfe) {
+                        log.warn(String.format("Session port config contained non-numeric value (%s)", p));
+                    }
+                }
+                session.setPorts(ports);
+            }
+            //need to associate session ID with the channel since multiple requests can be received
+            //before the session cookie is set on the client, e.g. in keep alive requests
+            Attribute<String> sessAttr = ctx.channel().attr(sessionAttr);
+            sessAttr.set(sessionId);
+            this.newSession = true;
+            this.sessionCookie = session;
+            config.getSessions().put(sessionId, new HttpSession());
         }
     }
 
