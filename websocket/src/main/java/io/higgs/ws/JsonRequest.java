@@ -74,6 +74,17 @@ public class JsonRequest {
         return DefaultWebSocketEventHandler.mapper.treeToValue(message, klass);
     }
 
+    public <T> T as(String field, Class<T> klass) throws JsonProcessingException {
+        if (klass == null) {
+            return null;
+        }
+        JsonNode node = message.findValue(field);
+        if (node == null) {
+            return null;
+        }
+        return DefaultWebSocketEventHandler.mapper.treeToValue(node, klass);
+    }
+
     public String toString() {
         return "JsonEvent{" +
                 "\nTopic='" + path + '\'' +
