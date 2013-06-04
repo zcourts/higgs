@@ -57,7 +57,7 @@ public class POST extends Request {
     private void addFormParams() throws HttpPostRequestEncoder.ErrorDataEncoderException {
         // add Form attribute
         for (Map.Entry<String, Object> e : form.entrySet()) {
-            encoder.addBodyAttribute(e.getKey(), e.getValue() == null ? "" : e.getKey());
+            encoder.addBodyAttribute(e.getKey(), String.valueOf(e.getValue() == null ? "" : e.getValue()));
         }
     }
 
