@@ -1,6 +1,6 @@
 # Higgs Boson
 
-## Please note that this README is slightly out dated. There are far more features now and slight syntax differences. Have a look at each module which has a current working demo. Hoping to update/rewrite this soon (Time is...scarce).
+### Please note that this README is slightly out dated. There are far more features now and slight syntax differences. Have a look at each module which has a current working demo. Hoping to update/rewrite this soon (Time is...scarce).
 
 A high performance, message oriented network library. It provides a core extensible framework and libraries built on top of the core. Libraries include WebSocket server, HTTP Server and Client and Boson a custom serialization and RMI library. 
 
