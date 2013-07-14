@@ -1,5 +1,7 @@
 # Higgs Cluster
 
+## Implementation not yet published
+
 A cluster is a set of Higgs servers which communicate via a de-centralized pubsub style environment.
 
 A gossip protocol is used to communicate the state of Nodes within the cluster.
