@@ -3,6 +3,7 @@ package io.higgs.http.server.protocol;
 import io.higgs.core.FixedSortedList;
 import io.higgs.core.InvokableMethod;
 import io.higgs.core.MessageHandler;
+import io.higgs.core.StaticUtil;
 import io.higgs.core.reflect.dependency.DependencyProvider;
 import io.higgs.core.reflect.dependency.Injector;
 import io.higgs.http.server.HttpRequest;
@@ -96,7 +97,7 @@ public class HttpHandler extends MessageHandler<HttpConfig, Object> {
         return m;
     }
 
-    public void messageReceived(ChannelHandlerContext ctx, Object msg) throws Exception {
+    public void channelRead0(ChannelHandlerContext ctx, Object msg) throws Exception {
         if (msg instanceof LastHttpContent && !(msg instanceof FullHttpRequest) && replied) {
             return;  //can happen if exception was thrown before last http content received
         }
@@ -308,7 +309,7 @@ public class HttpHandler extends MessageHandler<HttpConfig, Object> {
         if (!close && res.getPostWriteOp() == null) {
             setContentLength(res, res.content().readableBytes());
         }
-        ChannelFuture future = ctx.write(res);
+        ChannelFuture future = StaticUtil.write(ctx, res);
         res.postWrite(future);
         // Close the connection after the write operation is done if necessary.
         if (close) {

@@ -3,9 +3,10 @@ package io.higgs.core;
 import io.higgs.core.ssl.SSLConfigFactory;
 import io.higgs.core.ssl.SSLContextFactory;
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.EmptyByteBuf;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelInboundByteHandlerAdapter;
 import io.netty.channel.ChannelPipeline;
+import io.netty.handler.codec.ByteToMessageDecoder;
 import io.netty.handler.codec.compression.ZlibCodecFactory;
 import io.netty.handler.codec.compression.ZlibWrapper;
 import io.netty.handler.ssl.SslHandler;
@@ -21,7 +22,7 @@ import java.util.Queue;
  * Manipulates the current pipeline dynamically to switch protocols or enable
  * SSL or GZIP.
  */
-public class Transducer extends ChannelInboundByteHandlerAdapter {
+public class Transducer extends ByteToMessageDecoder {
     private Logger log = LoggerFactory.getLogger(getClass());
     private boolean detectSsl;
     private boolean detectGzip;
@@ -37,7 +38,10 @@ public class Transducer extends ChannelInboundByteHandlerAdapter {
     }
 
     @Override
-    public void inboundBufferUpdated(ChannelHandlerContext ctx, ByteBuf in) throws Exception {
+    public void decode(ChannelHandlerContext ctx, ByteBuf in, List<Object> out) throws Exception {
+        if (in instanceof EmptyByteBuf) {
+            return;
+        }
         if (detectSsl) {
             // Will use the first five bytes to detect SSL.
             if (in.readableBytes() < 5) {

@@ -1,7 +1,7 @@
 package io.higgs.http.client;
 
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelInboundMessageHandlerAdapter;
+import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.codec.http.HttpContent;
 import io.netty.handler.codec.http.HttpHeaders;
 import io.netty.handler.codec.http.HttpResponse;
@@ -9,7 +9,7 @@ import io.netty.handler.codec.http.LastHttpContent;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.GenericFutureListener;
 
-public class ClientHandler extends ChannelInboundMessageHandlerAdapter<Object> {
+public class ClientHandler extends SimpleChannelInboundHandler<Object> {
 
     private final Response response;
     private final FutureResponse future;
@@ -21,7 +21,7 @@ public class ClientHandler extends ChannelInboundMessageHandlerAdapter<Object> {
     }
 
     @Override
-    public void messageReceived(ChannelHandlerContext ctx, Object msg) throws Exception {
+    public void channelRead0(ChannelHandlerContext ctx, Object msg) throws Exception {
         if (msg instanceof HttpResponse) {
             HttpResponse res = (HttpResponse) msg;
             String location = res.headers().get(HttpHeaders.Names.LOCATION);

@@ -31,7 +31,7 @@
     <properties>
         <maven.compiler.source>1.7</maven.compiler.source>
         <maven.compiler.target>1.7</maven.compiler.target>
-        <netty.version>4.0.0.Final-SNAPSHOT</netty.version>
+        <netty.version>4.0.0.CR10-SNAPSHOT</netty.version>
         <netty.group>io.netty</netty.group>
         <encoding>UTF-8</encoding>
         <higgs.version>0.0.1-SNAPSHOT</higgs.version>
@@ -67,7 +67,11 @@
             <scope>compile</scope>
             <optional>true</optional>
         </dependency>
-
+        <dependency>
+            <groupId>com.boundary</groupId>
+            <artifactId>high-scale-lib</artifactId>
+            <version>1.0.3</version>
+        </dependency>
         <!-- Test -->
         <dependency>
             <groupId>junit</groupId>
@@ -95,63 +99,23 @@
                 </executions>
             </plugin>
             <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-surefire-plugin</artifactId>
-                <version>2.6</version>
+                <artifactId>maven-jar-plugin</artifactId>
+                <version>2.3.1</version>
                 <configuration>
-                    <useFile>false</useFile>
-                    <disableXmlReport>true</disableXmlReport>
-                    <!-- If you have classpath issue like NoDefClassError,... -->
-                    <!-- useManifestOnlyJar>false</useManifestOnlyJar -->
-                    <includes>
-                        <include>**/*Test.*</include>
-                        <include>**/*Suite.*</include>
-                    </includes>
+                    <archive>
+                        <manifest>
+                            <mainClass>io.higgs.events.demo.Demo</mainClass>
+                            <addClasspath>true</addClasspath>
+                        </manifest>
+                    </archive>
                 </configuration>
             </plugin>
-            <plugin>
-                <artifactId>maven-checkstyle-plugin</artifactId>
-                <version>2.9.1</version>
-                <executions>
-                    <execution>
-                        <id>check-style</id>
-                        <goals>
-                            <goal>check</goal>
-                        </goals>
-                        <phase>validate</phase>
-                        <configuration>
-                            <consoleOutput>true</consoleOutput>
-                            <logViolationsToConsole>true</logViolationsToConsole>
-                            <failsOnError>true</failsOnError>
-                            <failOnViolation>true</failOnViolation>
-                            <configLocation>checkstyle.xml</configLocation>
-                        </configuration>
-                    </execution>
-                </executions>
-                <dependencies>
-                    <dependency>
-                        <groupId>com.puppycrawl.tools</groupId>
-                        <artifactId>checkstyle</artifactId>
-                        <version>5.5</version>
-                    </dependency>
-                </dependencies>
-            </plugin>
-            <!--<plugin>-->
-            <!--<groupId>org.apache.maven.plugins</groupId>-->
-            <!--<artifactId>maven-checkstyle-plugin</artifactId>-->
-            <!--<version>2.9.1</version>-->
-            <!--<configuration>-->
-
-            <!--<enableRulesSummary>false</enableRulesSummary>-->
-            <!--<consoleOutput>true</consoleOutput>-->
-            <!--<failOnViolation>true</failOnViolation>-->
-            <!--<format>sun</format>-->
-            <!--<indentSize>4</indentSize>-->
-            <!--<lineLength>120</lineLength>-->
-            <!--<linkXRef>true</linkXRef>-->
-            <!--<logViolationsToConsole>true</logViolationsToConsole>-->
-            <!--</configuration>-->
-            <!--</plugin>-->
         </plugins>
     </build>
+    <repositories>
+        <repository>
+            <id>boundary-site</id>
+            <url>http://maven.boundary.com/artifactory/repo</url>
+        </repository>
+    </repositories>
 </project>

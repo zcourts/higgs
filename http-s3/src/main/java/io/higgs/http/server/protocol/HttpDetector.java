@@ -4,6 +4,7 @@ import io.higgs.core.ProtocolDetector;
 import io.higgs.http.server.HttpRequestDecoder;
 import io.higgs.http.server.HttpResponseEncoder;
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.EmptyByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPipeline;
 import io.netty.handler.stream.ChunkedWriteHandler;

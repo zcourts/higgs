@@ -3,6 +3,7 @@ package io.higgs.ws;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.higgs.core.InvokableMethod;
+import io.higgs.core.StaticUtil;
 import io.higgs.http.server.MessagePusher;
 import io.higgs.http.server.MethodParam;
 import io.higgs.http.server.WrappedResponse;
@@ -75,7 +76,7 @@ public class DefaultWebSocketEventHandler implements WebSocketEventHandler {
                     map.put("data", res);
                     //
                     try {
-                        return ctx.channel().write(new TextWebSocketFrame(mapper.writeValueAsString(map)));
+                        return StaticUtil.write(ctx.channel(), new TextWebSocketFrame(mapper.writeValueAsString(map)));
                     } catch (JsonProcessingException e) {
                         log.warn(String.format("Message received but failed to convert object to JSON string"));
                         return ctx.newFailedFuture(e);
