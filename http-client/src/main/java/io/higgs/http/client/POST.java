@@ -1,5 +1,6 @@
 package io.higgs.http.client;
 
+import io.higgs.core.StaticUtil;
 import io.higgs.http.client.future.Reader;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.EventLoopGroup;
@@ -66,8 +67,8 @@ public class POST extends Request {
     }
 
     private ChannelFuture doRequest() {
-        channel.write(request);
-        return channel.write(encoder).awaitUninterruptibly()
+        StaticUtil.write(channel,request);
+        return StaticUtil.write(channel, encoder).awaitUninterruptibly()
                 .addListener(new GenericFutureListener<Future<Void>>() {
                     @Override
                     public void operationComplete(Future<Void> future) throws Exception {

@@ -1,7 +1,7 @@
 package io.higgs.core;
 
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelInboundMessageHandlerAdapter;
+import io.netty.channel.SimpleChannelInboundHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -13,7 +13,7 @@ import java.util.Queue;
 /**
  * @author Courtney Robinson <courtney@crlog.info>
  */
-public abstract class MessageHandler<C extends ServerConfig, T> extends ChannelInboundMessageHandlerAdapter<T> {
+public abstract class MessageHandler<C extends ServerConfig, T> extends SimpleChannelInboundHandler<T> {
 
     protected Queue<InvokableMethod> methods;
     protected Logger log = LoggerFactory.getLogger(getClass());

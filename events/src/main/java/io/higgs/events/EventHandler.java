@@ -2,7 +2,7 @@ package io.higgs.events;
 
 import io.higgs.core.InvokableMethod;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelInboundMessageHandlerAdapter;
+import io.netty.channel.SimpleChannelInboundHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -11,7 +11,7 @@ import java.util.Queue;
 /**
  * @author Courtney Robinson <courtney@crlog.info>
  */
-public class EventHandler extends ChannelInboundMessageHandlerAdapter<Event> {
+public class EventHandler extends SimpleChannelInboundHandler<Event> {
     private final Queue<InvokableMethod> methods;
     private Logger log = LoggerFactory.getLogger(getClass());
 
@@ -20,7 +20,7 @@ public class EventHandler extends ChannelInboundMessageHandlerAdapter<Event> {
     }
 
     @Override
-    public void messageReceived(ChannelHandlerContext ctx, Event msg) throws Exception {
+    public void channelRead0(ChannelHandlerContext ctx, Event msg) throws Exception {
         int matches = 0;
         for (InvokableMethod method : methods) {
             if (method.matches(msg.name(), ctx, msg)) {

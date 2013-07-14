@@ -2,6 +2,8 @@ package io.higgs.events.demo;
 
 import io.higgs.core.func.Function1;
 import io.higgs.events.Events;
+import io.netty.channel.ChannelFuture;
+import io.netty.util.concurrent.GenericFutureListener;
 
 import java.io.IOException;
 
@@ -40,7 +42,18 @@ public class Demo {
             //both ClassExample.test and the function above subscribe to the topic "test"
             // so both will be invoked but the function will only get the first parameter
             //where as the class's method accepts a string,int,RandomObject so will get all
-            events.emit("test", "test event", i, new RandomObject(i));
+            ChannelFuture f = events.emit("test", "test event", i, new RandomObject(i));
+            f.addListener(new GenericFutureListener<ChannelFuture>() {
+                @Override
+                public void operationComplete(ChannelFuture future) throws Exception {
+                    System.out.println("Completed");
+                    if (future.isSuccess()) {
+                        System.out.println("Emitted ");
+                    } else {
+                        future.cause().printStackTrace();
+                    }
+                }
+            });
         }
     }
 }

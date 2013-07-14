@@ -1,5 +1,6 @@
 package io.higgs.http.client;
 
+import io.higgs.core.StaticUtil;
 import io.higgs.http.client.future.Reader;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
@@ -126,7 +127,7 @@ public class Request {
     }
 
     protected ChannelFuture makeTheRequest() {
-        return channel.write(request);
+        return StaticUtil.write(channel, request);
     }
 
     protected void configure() throws Exception {

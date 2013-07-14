@@ -1,6 +1,7 @@
 package io.higgs.ws.protocol;
 
 import com.google.common.net.HttpHeaders;
+import io.higgs.core.StaticUtil;
 import io.higgs.http.server.protocol.HttpHandler;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelFuture;
@@ -54,13 +55,13 @@ public class WebSocketHandler extends HttpHandler {
      * as a normal HTTP request.
      */
     @Override
-    public void messageReceived(ChannelHandlerContext ctx, Object msg) throws Exception {
+    public void channelRead0(ChannelHandlerContext ctx, Object msg) throws Exception {
         if (msg instanceof FullHttpRequest) {
             handleHttpRequest(ctx, (FullHttpRequest) msg);
         } else if (msg instanceof WebSocketFrame) {
             handleWebSocketFrame(ctx, (WebSocketFrame) msg);
         } else {
-            super.messageReceived(ctx, msg);
+            super.channelRead0(ctx, msg);
         }
     }
 
@@ -69,7 +70,7 @@ public class WebSocketHandler extends HttpHandler {
                 !req.headers().contains(HttpHeaders.UPGRADE) ||
                 req.getMethod() != GET) {
             //if the web socket path doesn't match then it's a normal GET request
-            super.messageReceived(ctx, req);
+            super.channelRead0(ctx, req);
             return;
         }
         // Handle a bad request.
@@ -89,7 +90,7 @@ public class WebSocketHandler extends HttpHandler {
                 handshaker.handshake(ctx.channel(), req);
             }
         } catch (WebSocketHandshakeException wshe) {
-            super.messageReceived(ctx, req);
+            super.channelRead0(ctx, req);
         }
     }
 
@@ -103,7 +104,7 @@ public class WebSocketHandler extends HttpHandler {
         }
         if (frame instanceof PingWebSocketFrame) {
             frame.content().retain();
-            ctx.channel().write(new PongWebSocketFrame(frame.content()));
+            StaticUtil.write(ctx.channel(), new PongWebSocketFrame(frame.content()));
             return;
         }
         if (!(frame instanceof TextWebSocketFrame)) {
@@ -123,7 +124,7 @@ public class WebSocketHandler extends HttpHandler {
         }
 
         // Send the response and close the connection if necessary.
-        ChannelFuture f = ctx.channel().write(res);
+        ChannelFuture f = StaticUtil.write(ctx.channel(),res);
         if (!isKeepAlive(req) || res.getStatus().code() != 200) {
             f.addListener(ChannelFutureListener.CLOSE);
         }

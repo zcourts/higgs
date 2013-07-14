@@ -1,5 +1,6 @@
 package io.higgs.http.server.transformers;
 
+import io.higgs.core.StaticUtil;
 import io.higgs.http.server.HttpRequest;
 import io.higgs.http.server.HttpResponse;
 import io.higgs.http.server.HttpStatus;
@@ -211,12 +212,12 @@ public class StaticFileTransformer extends BaseTransformer {
             public void apply() {
                 try {
                     final ChannelFuture writeFuture =
-                            ctx.write(new ChunkedFile(raf, 0, fileLength,
+                            StaticUtil.write(ctx, new ChunkedFile(raf, 0, fileLength,
                                     conf.files.chunk_size));
                     writeFuture.addListener(new GenericFutureListener<Future<Void>>() {
                         public void operationComplete(Future<Void> future) throws Exception {
                             //mark as done sending
-                            ctx.write(LastHttpContent.EMPTY_LAST_CONTENT);
+                            StaticUtil.write(ctx,LastHttpContent.EMPTY_LAST_CONTENT);
                             done = true;
                             if (!isKeepAlive(request)) {
                                 writeFuture.channel().close();
@@ -227,7 +228,7 @@ public class StaticFileTransformer extends BaseTransformer {
                     done = true;
                     log.warn("Error writing chunk", e);
                     res.setStatus(HttpStatus.INTERNAL_SERVER_ERROR);
-                    ctx.write(res);
+                    StaticUtil.write(ctx,res);
                 }
             }
 

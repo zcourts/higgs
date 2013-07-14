@@ -2,6 +2,7 @@ package io.higgs.events;
 
 
 import io.higgs.core.InvokableMethod;
+import io.higgs.core.StaticUtil;
 import io.higgs.core.func.Function1;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
@@ -173,7 +174,7 @@ public class Events {
             channel = bootstrapChannel();
             channels.put(event, channel);
         }
-        return channel.write(new Event(event, param));
+        return StaticUtil.write(channel, new Event(event, param));
     }
 
     private Channel bootstrapChannel() {
