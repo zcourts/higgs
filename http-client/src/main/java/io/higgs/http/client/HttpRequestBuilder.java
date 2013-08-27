@@ -247,6 +247,11 @@ public class HttpRequestBuilder {
         group.shutdownGracefully();
     }
 
+	public static void restart() {
+		shutdown();
+		group = new NioEventLoopGroup();
+	}
+
     public HttpRequestBuilder acceptedLanguages(String acceptedLanguages) {
         this.acceptedLanguages = acceptedLanguages;
         return this;

@@ -89,6 +89,22 @@ public class Events {
     }
 
     /**
+     * @deprecated
+     */
+    public <A> void on(Function1<A> function, final String... events) {
+        Event[] e = new Event[events.length];
+        for (int i = 0; i < events.length; i++) {
+            final int finalI = i;
+            e[i] = new Event() {
+                public String name() {
+                    return events[finalI];
+                }
+            };
+        }
+        on(function, e);
+    }
+
+    /**
      * Note that by providing a function its {@link Function1#apply(Object)} method
      * can be invoked from multiple threads
      *
@@ -96,9 +112,11 @@ public class Events {
      * @param events   a set of events to subscribe the function to
      * @param <A>      the type the function accepts, only events matching this type will cause invocation
      */
-    public <A> void on(Function1<A> function, String... events) {
-        for (String event : events) {
-            server.registerMethod(new FunctionEventMethod<>(event, function));
+    public <A> void on(Function1<A> function, Event... events) {
+        if (events.length == 0)
+            throw new IllegalArgumentException("At least one event is required");
+        for (Event event : events) {
+            server.registerMethod(new FunctionEventMethod<>(event.name(), function));
         }
     }
 
@@ -155,26 +173,40 @@ public class Events {
     }
 
     /**
+     * Try to use the type safe {@link #emit(Event, Object...)} instead
+     *
+     * @deprecated
+     */
+    public ChannelFuture emit(final String event, Object... param) {
+        return emit(new Event() {
+            @Override
+            public String name() {
+                return event;
+            }
+        }, param);
+    }
+
+    /**
      * Emit an event with the given name and parameters
      *
      * @param event thhe name of the event
      * @param param one or more parameters to pass to subscribers
      * @return a future which will be notified when the event has finished, been cancelled or had an error
      */
-    public ChannelFuture emit(String event, Object... param) {
-        if (event == null) {
+    public ChannelFuture emit(Event event, Object... param) {
+        if (event == null || event.name() == null) {
             throw new IllegalArgumentException("event name cannot be null");
         }
-        Channel channel = channels.get(event);
+        Channel channel = channels.get(event.name());
         //make sure the channel is writable
         if (channel != null && !channel.isActive()) {
             channel = null;
         }
         if (channel == null) {
             channel = bootstrapChannel();
-            channels.put(event, channel);
+            channels.put(event.name(), channel);
         }
-        return StaticUtil.write(channel, new Event(event, param));
+        return StaticUtil.write(channel, new EventMessage(event.name(), param));
     }
 
     private Channel bootstrapChannel() {

@@ -1,7 +1,7 @@
 package io.higgs.events.demo;
 
 import io.higgs.core.method;
-import io.higgs.events.Event;
+import io.higgs.events.EventMessage;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.concurrent.EventExecutor;
@@ -39,7 +39,7 @@ public class ClassExample {
      * @param ctx      the channel context, each event has 1 context which is paired with an
      *                 event name, in this case "test" so all test events emitted will have the same context
      * @param channel  like channel context there is 1 channel per event
-     * @param event    every time the test event is emitted a new {@link Event} object will be created
+     * @param eventMessage    every time the test event is emitted a new {@link io.higgs.events.EventMessage} object will be created
      * @param executor submit background tasks to the executor
      */
     @method("test") //subscribe to events emitted with the name "test"
@@ -48,7 +48,7 @@ public class ClassExample {
             String a,
             Channel channel,
             int b,
-            Event event,
+            EventMessage eventMessage,
             RandomObject object,
             EventExecutor executor) {
         System.out.println(
