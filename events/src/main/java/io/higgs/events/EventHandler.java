@@ -11,7 +11,7 @@ import java.util.Queue;
 /**
  * @author Courtney Robinson <courtney@crlog.info>
  */
-public class EventHandler extends SimpleChannelInboundHandler<Event> {
+public class EventHandler extends SimpleChannelInboundHandler<EventMessage> {
     private final Queue<InvokableMethod> methods;
     private Logger log = LoggerFactory.getLogger(getClass());
 
@@ -20,7 +20,7 @@ public class EventHandler extends SimpleChannelInboundHandler<Event> {
     }
 
     @Override
-    public void channelRead0(ChannelHandlerContext ctx, Event msg) throws Exception {
+    public void channelRead0(ChannelHandlerContext ctx, EventMessage msg) throws Exception {
         int matches = 0;
         for (InvokableMethod method : methods) {
             if (method.matches(msg.name(), ctx, msg)) {

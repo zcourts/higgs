@@ -39,9 +39,7 @@ public class EventServer extends HiggsServer {
                     .childHandler(new ChannelInitializer<LocalChannel>() {
                         @Override
                         public void initChannel(LocalChannel ch) throws Exception {
-                            ch.pipeline().addLast(
-                                    // new LoggingHandler(LogLevel.ERROR),
-                                    new EventHandler(methods));
+                            ch.pipeline().addLast(new EventHandler(methods));
                         }
                     });
 
