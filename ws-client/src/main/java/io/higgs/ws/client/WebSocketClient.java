@@ -63,6 +63,10 @@ import java.util.Map;
  */
 public class WebSocketClient {
     public static final ObjectMapper MAPPER = new ObjectMapper();
+    /**
+     * The maximum size a websocket frame can be - in bytes
+     */
+    public static int maxFramePayloadLength = 65536 * 10;
 
     /**
      * Connect to the given URI
@@ -101,7 +105,7 @@ public class WebSocketClient {
             customHeaderSet.add(e.getKey(), e.getValue());
         }
         WebSocketClientHandshaker handshaker = WebSocketClientHandshakerFactory
-                .newHandshaker(uri, WebSocketVersion.V13, subprotocol, allowExtensions, customHeaderSet);
+                .newHandshaker(uri, WebSocketVersion.V13, subprotocol, allowExtensions, customHeaderSet, maxFramePayloadLength);
         final WebSocketClientHandler handler = new WebSocketClientHandler(handshaker, events);
 
         b.group(group)

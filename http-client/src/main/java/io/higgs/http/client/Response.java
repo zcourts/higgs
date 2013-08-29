@@ -15,7 +15,8 @@ public class Response {
     private HttpResponseStatus status;
     private HttpHeaders headers;
     private boolean completed;
-
+    protected boolean failed;
+    protected Throwable cause;
     protected Reader reader;
     protected final Request request;
 
@@ -66,6 +67,32 @@ public class Response {
     public void setCompleted(boolean completed) {
         this.completed = completed;
         reader.setCompleted(completed);
+    }
+
+    /**
+     * Mark the request as failed, this will set this response as completed
+     * and notify all listeners that the request failed
+     * @param cause an optional exception that may have been the cause of the failure
+     */
+    public void markFailed(Throwable cause){
+        this.failed = true;
+        this.cause = cause;
+        setCompleted(true);
+    }
+
+    /**
+     * @return true if the request for this response has failed for some reason
+     */
+    public boolean hasFailed() {
+        return failed;
+    }
+
+    /**
+     * @return If the request has failed, this returns the reason for the failure
+     * May* be null
+     */
+    public Throwable failureCause(){
+        return cause;
     }
 
     public boolean isCompleted() {
