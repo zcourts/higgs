@@ -7,13 +7,27 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.socket.nio.NioSocketChannel;
-import io.netty.handler.codec.http.*;
+import io.netty.handler.codec.http.ClientCookieEncoder;
+import io.netty.handler.codec.http.Cookie;
+import io.netty.handler.codec.http.DefaultCookie;
+import io.netty.handler.codec.http.DefaultFullHttpRequest;
+import io.netty.handler.codec.http.HttpHeaders;
+import io.netty.handler.codec.http.HttpMethod;
+import io.netty.handler.codec.http.HttpRequest;
+import io.netty.handler.codec.http.HttpVersion;
+import io.netty.handler.codec.http.QueryStringDecoder;
+import io.netty.handler.codec.http.QueryStringEncoder;
 import io.netty.handler.codec.http.multipart.DiskFileUpload;
 import io.netty.util.concurrent.GenericFutureListener;
 
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * @author Courtney Robinson <courtney@crlog.info>
@@ -47,7 +61,7 @@ public class Request {
         this.version = version;
         //ignore uri.getRawPath, it's overwritten later in #configure()
         newNettyRequest(uri, method, version);
-        future = new FutureResponse(group);
+        future = new FutureResponse(group, response);
     }
 
     private void newNettyRequest(URI uri, HttpMethod method, HttpVersion version) {

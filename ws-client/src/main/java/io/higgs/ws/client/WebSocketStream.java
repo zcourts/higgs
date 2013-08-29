@@ -66,4 +66,12 @@ public class WebSocketStream {
             return null;
         }
     }
+
+    /**
+     * @return The future obtained from the connection attempt.
+     *         Subscribe for notification of completion or error
+     */
+    public ChannelFuture connectFuture() {
+        return future;
+    }
 }
