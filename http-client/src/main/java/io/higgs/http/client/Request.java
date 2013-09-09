@@ -158,7 +158,7 @@ public class Request {
                 encoder.addParam(e.getKey(), e.getValue() == null ? "" : e.getValue().toString());
             }
         }
-        request.setUri(new URI(encoder.toString()).getRawPath());
+        request.setUri(encoder.toString());
     }
 
     public Request userAgent(String agent) {
