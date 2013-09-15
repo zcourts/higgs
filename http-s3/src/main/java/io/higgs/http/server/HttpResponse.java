@@ -23,7 +23,7 @@ import java.util.Map;
  */
 public class HttpResponse extends DefaultFullHttpResponse {
     private Map<String, HttpCookie> newCookies = new HashMap<>();
-    private StaticFilePostWriteOperation postWriteOp;
+    private ManagedWriter managedWriter;
     private ByteBuf content = Unpooled.buffer();
     private HttpResponseStatus status = HttpResponseStatus.OK;
     private HttpVersion version = HttpVersion.HTTP_1_1;
@@ -129,18 +129,19 @@ public class HttpResponse extends DefaultFullHttpResponse {
         }
     }
 
-    public void postWrite(ChannelFuture future) {
-        if (postWriteOp != null && !postWriteOp.isDone()) {
-            postWriteOp.apply();
+    public ChannelFuture doManagedWrite() {
+        if (managedWriter != null && !managedWriter.isDone()) {
+            return managedWriter.doWrite();
         }
+        return null;
     }
 
-    public void setPostWriteOp(StaticFilePostWriteOperation postWriteOp) {
-        this.postWriteOp = postWriteOp;
+    public void setManagedWriter(ManagedWriter managedWriter) {
+        this.managedWriter = managedWriter;
     }
 
-    public StaticFilePostWriteOperation getPostWriteOp() {
-        return postWriteOp;
+    public ManagedWriter getManagedWriter() {
+        return managedWriter;
     }
 
     @Override
@@ -193,5 +194,9 @@ public class HttpResponse extends DefaultFullHttpResponse {
 
     public boolean isRedirect() {
         return redirect;
+    }
+
+    public void resetContent(ByteBuf buffer) {
+        content = buffer;
     }
 }

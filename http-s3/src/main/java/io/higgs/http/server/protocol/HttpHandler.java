@@ -3,7 +3,6 @@ package io.higgs.http.server.protocol;
 import io.higgs.core.FixedSortedList;
 import io.higgs.core.InvokableMethod;
 import io.higgs.core.MessageHandler;
-import io.higgs.core.StaticUtil;
 import io.higgs.core.reflect.dependency.DependencyProvider;
 import io.higgs.core.reflect.dependency.Injector;
 import io.higgs.http.server.HttpRequest;
@@ -306,16 +305,21 @@ public class HttpHandler extends MessageHandler<HttpConfig, Object> {
         boolean close = HttpHeaders.Values.CLOSE.equalsIgnoreCase(request.headers().get(CONNECTION))
                 || request.getProtocolVersion().equals(HttpVersion.HTTP_1_0)
                 && !HttpHeaders.Values.KEEP_ALIVE.equalsIgnoreCase(request.headers().get(CONNECTION));
-        if (!close && res.getPostWriteOp() == null) {
+        if (!close && res.getManagedWriter() == null) {
             setContentLength(res, res.content().readableBytes());
         }
-        ChannelFuture future = StaticUtil.write(ctx, res);
-        res.postWrite(future);
+        ChannelFuture future;
+        if (res.getManagedWriter() == null) {
+            //if no post write op is set then the handler flushes the response
+            future = ctx.writeAndFlush(res);
+        } else {
+            //if there is write manager it'll do all the write/flush
+            future = res.doManagedWrite();
+        }
         // Close the connection after the write operation is done if necessary.
         if (close) {
             future.addListener(ChannelFutureListener.CLOSE);
-        }
-        //clean up and prep for next request. if keep-alive browsers like chrome will
+        }        //clean up and prep for next request. if keep-alive browsers like chrome will
         //make multiple requests on the same channel
         request = null;
         res = null;
