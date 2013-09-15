@@ -1,10 +1,12 @@
 package io.higgs.http.server;
 
+import io.netty.channel.ChannelFuture;
+
 /**
  * @author Courtney Robinson <courtney@crlog.info>
  */
-public interface StaticFilePostWriteOperation {
-    void apply();
+public interface ManagedWriter {
+    ChannelFuture doWrite();
 
     boolean isDone();
 }
