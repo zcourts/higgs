@@ -1,0 +1,47 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <artifactId>hmq</artifactId>
+    <version>0.0.3-SNAPSHOT</version>
+    <name>${project.artifactId}</name>
+    <description>Higgs implementation of ZMQ's ZMTP protocol and abstractions</description>
+    <packaging>jar</packaging>
+    <parent>
+        <groupId>io.higgs</groupId>
+        <artifactId>higgs</artifactId>
+        <relativePath>../pom.xml</relativePath>
+        <version>0.0.3-SNAPSHOT</version>
+    </parent>
+    <dependencies>
+        <dependency>
+            <groupId>io.higgs</groupId>
+            <artifactId>core</artifactId>
+            <version>0.0.3-SNAPSHOT</version>
+        </dependency>
+    </dependencies>
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <argLine>-Djava.library.path=/usr/local/lib</argLine>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <configuration>
+                    <mainClass>io.higgs.hmq.Demo</mainClass>
+                    <includePluginDependencies>false</includePluginDependencies>
+                    <systemProperties>
+                        <property>
+                            <key>java.util.logging.config.file</key>
+                            <value>logging.properties</value>
+                        </property>
+                    </systemProperties>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+</project>
