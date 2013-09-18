@@ -15,6 +15,8 @@
  */
 package io.higgs.hmq.factorial;
 
+import io.higgs.hmq.protocol.serialization.FrameDecoder;
+import io.higgs.hmq.protocol.serialization.FrameEncoder;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.socket.SocketChannel;
@@ -34,8 +36,8 @@ public class FactorialServerInitializer extends ChannelInitializer<SocketChannel
         pipeline.addLast("inflater", ZlibCodecFactory.newZlibDecoder(ZlibWrapper.GZIP));
 
         // Add the number codec first,
-        pipeline.addLast("decoder", new BigIntegerDecoder());
-        pipeline.addLast("encoder", new NumberEncoder());
+        pipeline.addLast("decoder", new FrameDecoder());
+        pipeline.addLast("encoder", new FrameEncoder());
 
         // and then business logic.
         // Please note we create a handler for every new channel

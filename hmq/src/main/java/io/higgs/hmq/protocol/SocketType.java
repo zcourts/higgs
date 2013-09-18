@@ -19,6 +19,30 @@ public enum SocketType {
         val = value;
     }
 
+    public static SocketType fromByte(byte b) {
+        switch (b) {
+            case 0x00:
+                return PAIR;
+            case 0x01:
+                return PUB;
+            case 0x02:
+                return SUB;
+            case 0x03:
+                return REQ;
+            case 0x04:
+                return REP;
+            case 0x05:
+                return DEALER;
+            case 0x06:
+                return ROUTER;
+            case 0x07:
+                return PULL;
+            case 0x08:
+                return PUSH;
+        }
+        throw new IllegalArgumentException(String.format("Value %s, is not a valid socket type "));
+    }
+
     public byte getValue() {
         return val;
     }

@@ -29,39 +29,25 @@ public class FactorialClient {
 
     private final String host;
     private final int port;
-    private final int count;
 
-    public FactorialClient(String host, int port, int count) {
+    public FactorialClient(String host, int port) {
         this.host = host;
         this.port = port;
-        this.count = count;
-    }
-
-    public void run() throws Exception {
-        EventLoopGroup group = new NioEventLoopGroup();
-        try {
-            Bootstrap b = new Bootstrap();
-            b.group(group)
-                    .channel(NioSocketChannel.class)
-                    .handler(new FactorialClientInitializer(count));
-
-            // Make a new connection.
-            ChannelFuture f = b.connect(host, port).sync();
-
-            // Get the handler instance to retrieve the answer.
-            FactorialClientHandler handler =
-                    (FactorialClientHandler) f.channel().pipeline().last();
-
-            // Print out the answer.
-            System.err.format(
-                    "Factorial of %,d is: %,d", count, handler.getFactorial());
-        } finally {
-            group.shutdownGracefully();
-        }
     }
 
     public static void main(String[] args) throws Exception {
 
-        new FactorialClient("localhost", 5563, 1).run();
+        new FactorialClient("localhost", 5563).run();
+    }
+
+    public void run() throws Exception {
+        EventLoopGroup group = new NioEventLoopGroup();
+        Bootstrap b = new Bootstrap();
+        b.group(group)
+                .channel(NioSocketChannel.class)
+                .handler(new FactorialClientInitializer());
+
+        // Make a new connection.
+        ChannelFuture f = b.connect(host, port).sync();
     }
 }

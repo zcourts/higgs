@@ -15,7 +15,14 @@
  */
 package io.higgs.hmq.factorial;
 
-import io.higgs.hmq.protocol.serialization.HmqHandshakeDecoder;
+import io.higgs.hmq.protocol.SignatureHandler;
+import io.higgs.hmq.protocol.SocketHandler;
+import io.higgs.hmq.protocol.serialization.FrameDecoder;
+import io.higgs.hmq.protocol.serialization.FrameEncoder;
+import io.higgs.hmq.protocol.serialization.IdentityEncoder;
+import io.higgs.hmq.protocol.serialization.RevisionAndSocketTypeDecoder;
+import io.higgs.hmq.protocol.serialization.SignatureDecoder;
+import io.higgs.hmq.protocol.serialization.SignatureEncoder;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.socket.SocketChannel;
@@ -25,22 +32,28 @@ import io.netty.channel.socket.SocketChannel;
  */
 public class FactorialClientInitializer extends ChannelInitializer<SocketChannel> {
 
-    private final int count;
-
-    public FactorialClientInitializer(int count) {
-        this.count = count;
+    public FactorialClientInitializer() {
     }
 
     @Override
     public void initChannel(SocketChannel ch) throws Exception {
         ChannelPipeline pipeline = ch.pipeline();
 
-        // Add the number codec first,
-        pipeline.addLast("handshake-decoder", new HmqHandshakeDecoder());
-        pipeline.addLast("decoder", new BigIntegerDecoder());
-        pipeline.addLast("encoder", new NumberEncoder());
+        pipeline.addLast("signature-decoder", new SignatureDecoder());
+        pipeline.addLast("signature-encoder", new SignatureEncoder());
+        //
+        pipeline.addLast("revision-and-socket-decoder", new RevisionAndSocketTypeDecoder());
+        pipeline.addLast("identity-encoder", new IdentityEncoder());
+//
+        pipeline.addLast("frame-decoder", new FrameDecoder());
+        pipeline.addLast("frame-encoder", new FrameEncoder());
 
         // and then business logic.
-        pipeline.addLast("handler", new FactorialClientHandler(count));
+        pipeline.addLast("signature-handler", new SignatureHandler());
+        //
+        pipeline.addLast("socket-handler", new SocketHandler());
+
+        //
+//        pipeline.addLast("handler", new FactorialClientHandler(count));
     }
 }

@@ -66,7 +66,7 @@ public class FactorialClientHandler extends SimpleChannelInboundHandler<BigInteg
     @Override
     public void channelActive(ChannelHandlerContext ctx) {
         this.ctx = ctx;
-//        sendNumbers();
+        sendNumbers();
     }
 
     @Override
