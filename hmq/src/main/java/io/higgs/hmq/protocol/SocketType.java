@@ -40,10 +40,29 @@ public enum SocketType {
             case 0x08:
                 return PUSH;
         }
-        throw new IllegalArgumentException(String.format("Value %s, is not a valid socket type "));
+        throw new IllegalArgumentException(String.format("Value %s, is not a valid socket type ", b));
     }
 
-    public byte getValue() {
+    public byte value() {
         return val;
+    }
+
+    public boolean compatible(SocketType type) {
+        if (type == null) {
+            return false;
+        }
+        switch (type) {
+            case PUSH:
+                //if remote type == push this.val must be pull
+                return PULL.value() == val;
+            case PULL:
+                return PUSH.value() == val;
+            case PUB:
+                return SUB.value() == val;
+            case SUB:
+                return PUB.value() == val;
+            default:
+                throw new UnsupportedOperationException("Only push/pull and pub/sub are supported");
+        }
     }
 }

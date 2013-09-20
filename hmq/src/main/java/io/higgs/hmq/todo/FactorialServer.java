@@ -13,7 +13,7 @@
  * License for the specific language governing permissions and limitations
  * under the License.
  */
-package io.higgs.hmq.factorial;
+package io.higgs.hmq.todo;
 
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.EventLoopGroup;
@@ -21,8 +21,8 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 
 /**
- * Receives a sequence of integers from a {@link FactorialClient} to calculate
- * the factorial of the specified integer.
+ * Receives a sequence of integers from a {@link io.higgs.hmq.Client} to calculate
+ * the todo of the specified integer.
  */
 public class FactorialServer {
 

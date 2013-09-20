@@ -13,7 +13,7 @@
  * License for the specific language governing permissions and limitations
  * under the License.
  */
-package io.higgs.hmq.factorial;
+package io.higgs.hmq.todo;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
@@ -40,7 +40,7 @@ public class FactorialServerHandler extends SimpleChannelInboundHandler<BigInteg
 
     @Override
     public void channelRead0(ChannelHandlerContext ctx, BigInteger msg) throws Exception {
-        // Calculate the cumulative factorial and send it to the client.
+        // Calculate the cumulative todo and send it to the client.
         lastMultiplier = msg;
         factorial = factorial.multiply(msg);
         ctx.writeAndFlush(factorial);

@@ -9,11 +9,13 @@ import io.netty.buffer.Unpooled;
 public class Frame {
     private ByteBuf data = Unpooled.buffer();
     private Command command;
+    private String commandText;
     private boolean commandFrame;
 
-    public Frame(Command command) {
+    public Frame(Command command, String body) {
         this.commandFrame = true;
         this.command = command;
+        commandText = body;
     }
 
     public Frame(ByteBuf msg) {
@@ -22,31 +24,13 @@ public class Frame {
         this.data = msg;
     }
 
-    /**
-     * Given a byte b set the bit at the given position to 1
-     *
-     * @param b        the byte to manipulate
-     * @param position the bit position
-     * @return the modified byte
-     */
-    private byte setBit(byte b, int position) {
-        return b |= 1 << position;
-    }
-
-    /**
-     * Given a byte b set the bit at the given position to 0
-     *
-     * @param b        the byte to manipulate
-     * @param position the bit position
-     * @return the modified byte
-     */
-    private byte unsetBit(byte b, int position) {
-        return b &= ~(1 << position);
-    }
-
     public ByteBuf encode() {
         if (isCommandFrame()) {
-            data.writeByte(command.val());
+            byte[] body = this.commandText.getBytes();
+            data.writeByte(0); //flag = no more frames to follow
+            data.writeByte(body.length + 1); //length = command body + command
+            data.writeByte(command.val()); //command
+            data.writeBytes(body); //body
         } else {
 
         }
