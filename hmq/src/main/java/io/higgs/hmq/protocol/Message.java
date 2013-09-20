@@ -9,7 +9,6 @@ import java.nio.charset.Charset;
  * @author Courtney Robinson <courtney.robinson@datasift.com>
  */
 public class Message {
-    private final byte[] topic;
     private final Charset utf8 = Charset.forName("UTF-8");
     private ByteBuf data = Unpooled.buffer();
     private Command command;
@@ -20,11 +19,9 @@ public class Message {
         this.commandFrame = true;
         this.command = command;
         commandText = body;
-        topic = new byte[0];
     }
 
-    public Message(byte[] topic, ByteBuf contents) {
-        this.topic = topic;
+    public Message(ByteBuf contents) {
         this.data = contents;
     }
 
@@ -41,20 +38,13 @@ public class Message {
         return data;
     }
 
-    public byte[] topic() {
-        return topic;
-    }
-
     public ByteBuf contents() {
         return data;
     }
 
     @Override
     public String toString() {
-        return "Message{" +
-                "topic=" + new String(topic, utf8) +
-                ", data=" + data.toString(utf8) +
-                '}';
+        return "Message{data=" + data.toString(utf8) + '}';
     }
 
     public boolean isCommandFrame() {

@@ -41,8 +41,8 @@ public class SocketHandler extends SimpleChannelInboundHandler<Message> {
         this.socket = socket;
         System.out.println("New ZMQ socket created and handshake completed!");
         //try doing a subscription
-        Message subscribe = new Message(Message.Command.SUBSCRIBE, "B");
-        socket.channel().writeAndFlush(subscribe);
+//        Message subscribe = new Message(Message.Command.SUBSCRIBE, "B");
+//        socket.channel().writeAndFlush(subscribe);
     }
 
     @Override

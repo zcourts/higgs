@@ -41,7 +41,7 @@ public class Client {
 
     public static void main(String[] args) throws Exception {
 
-        new Client("localhost", 5563).connect(SocketType.SUB);
+        new Client("localhost", 5557).connect(SocketType.PULL);
     }
 
     public SocketHandler connect(final SocketType type) throws Exception {
