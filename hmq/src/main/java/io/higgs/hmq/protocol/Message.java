@@ -3,25 +3,29 @@ package io.higgs.hmq.protocol;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 
+import java.nio.charset.Charset;
+
 /**
  * @author Courtney Robinson <courtney.robinson@datasift.com>
  */
-public class Frame {
+public class Message {
+    private final byte[] topic;
+    private final Charset utf8 = Charset.forName("UTF-8");
     private ByteBuf data = Unpooled.buffer();
     private Command command;
     private String commandText;
     private boolean commandFrame;
 
-    public Frame(Command command, String body) {
+    public Message(Command command, String body) {
         this.commandFrame = true;
         this.command = command;
         commandText = body;
+        topic = new byte[0];
     }
 
-    public Frame(ByteBuf msg) {
-        this.commandFrame = false;
-        this.data.release();
-        this.data = msg;
+    public Message(byte[] topic, ByteBuf contents) {
+        this.topic = topic;
+        this.data = contents;
     }
 
     public ByteBuf encode() {
@@ -35,6 +39,22 @@ public class Frame {
 
         }
         return data;
+    }
+
+    public byte[] topic() {
+        return topic;
+    }
+
+    public ByteBuf contents() {
+        return data;
+    }
+
+    @Override
+    public String toString() {
+        return "Message{" +
+                "topic=" + new String(topic, utf8) +
+                ", data=" + data.toString(utf8) +
+                '}';
     }
 
     public boolean isCommandFrame() {

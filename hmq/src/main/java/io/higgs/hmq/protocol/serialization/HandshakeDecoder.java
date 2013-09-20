@@ -28,27 +28,27 @@ public class HandshakeDecoder extends ByteToMessageDecoder {
             return;//handshake needs 14 bytes minimum
         }
         //first byte must be 0xFF
-        if (in.readUnsignedByte() != 0xFF) {
+        if (in.getUnsignedByte(0) != 0xFF) {
             log.error(String.format("Invalid signature received 0xFF wasn't the first byte"));
             ctx.channel().close();
             return;
         }
-        //advance the read index by to the 9th byte
-        in.readerIndex(in.readerIndex() + 7);
         //the 10th byte must be 0x7F
-        if (in.readUnsignedByte() == 0x7F) {
+        if (in.getUnsignedByte(9) != 0x7F) {
             log.error(String.format("Invalid signature received 0x7F wasn't the 10th byte"));
             ctx.channel().close();
             return;
         }
-        int revision = in.readUnsignedByte(); //11th byte
-        SocketType socketType = SocketType.fromByte((byte) in.readUnsignedByte()); //12th byte
+        short revision = in.getUnsignedByte(10); //11th byte
+        SocketType socketType = SocketType.fromByte((byte) in.getUnsignedByte(11)); //12th byte
         if (!type.compatible(socketType)) {
             log.error(String.format("Incompatible socket types local type = %s remote = %s", type, socketType));
             ctx.channel().close();
             return;
         }
         out.add(new Socket(type, socketType, ctx));
+        //advance the reader index to the 14th byte which is the length of the entire handshake
+        in.readBytes(new byte[14]);
         //remove from pipeline, handshake is only done once
         ctx.pipeline().remove(this);
         decoded = true;

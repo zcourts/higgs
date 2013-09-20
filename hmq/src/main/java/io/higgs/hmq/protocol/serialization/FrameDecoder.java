@@ -1,16 +1,20 @@
 package io.higgs.hmq.protocol.serialization;
 
+import io.higgs.hmq.protocol.IllegalFrameSizeException;
+import io.higgs.hmq.protocol.Message;
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.ByteToMessageDecoder;
 
-import java.math.BigInteger;
-import java.nio.charset.Charset;
 import java.util.List;
 
 import static io.higgs.hmq.ByteUtil.isBitSet;
 
 public class FrameDecoder extends ByteToMessageDecoder {
+    private boolean moreFramesToCome;
+    private byte[] topic;
+    private ByteBuf contents = Unpooled.buffer();
 
     @Override
     protected void decode(ChannelHandlerContext ctx, ByteBuf in, List<Object> out) {
@@ -21,7 +25,7 @@ public class FrameDecoder extends ByteToMessageDecoder {
         //get the first readable byte, it's the flag
         //if the lsb i.e. bit 0 == 1 then more frames to follow, otherwise this is the only frame
         byte flag = in.readByte();
-        boolean moreFramesToCome = isBitSet(flag, 0);
+        moreFramesToCome = isBitSet(flag, 0);
         //if bit 1 is set then it's a long message
         boolean longMessage = isBitSet(flag, 1);
         long size;
@@ -30,22 +34,35 @@ public class FrameDecoder extends ByteToMessageDecoder {
                 in.resetReaderIndex();
                 return;
             }
-            byte[] b = new byte[8];
-            in.readBytes(b);
-            size = new BigInteger(b).longValue();
+            size = in.readLong();
         } else {
             if (in.readableBytes() < 1) {
                 in.resetReaderIndex();
                 return;
             }
-            size = in.readByte();
+            size = in.readUnsignedByte();
+        }
+        if (size > Integer.MAX_VALUE) {
+            throw new IllegalFrameSizeException("A frame size of %s bytes was received, this is too big.");
         }
         if (in.readableBytes() < size) {
             in.resetReaderIndex();
             return;
         }
-        ByteBuf body = ctx.alloc().buffer();
-        in.readBytes(body, (int) size);
-        System.out.println(body.toString(Charset.forName("UTF-8")));
+        byte[] data = new byte[(int) size];
+        in.readBytes(data);
+        //topic is always the first part of a message
+        //since the max body of a subscription is 255 bytes the topic will always be in the first frame
+        if (topic == null) {
+            topic = data;
+        } else {
+            contents.writeBytes(data);
+        }
+        //if there are no more frames to come we have the entire message
+        if (moreFramesToCome == false) {
+            out.add(new Message(topic, contents));
+            topic = null;
+            contents = Unpooled.buffer();
+        }
     }
 }
