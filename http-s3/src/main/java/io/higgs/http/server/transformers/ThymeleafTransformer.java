@@ -92,7 +92,7 @@ public class ThymeleafTransformer extends BaseTransformer {
                         log.warn("Unable to set locale from accept header");
                     }
                 }
-                populateContext(webContext, response, request);
+                populateContext(webContext, response, request, method);
             }
             String content = tl.getTemplateEngine().process(templateName, webContext);
             data = content.getBytes(Charset.forName(config.character_encoding));
@@ -108,7 +108,7 @@ public class ThymeleafTransformer extends BaseTransformer {
         }
     }
 
-    private void populateContext(final WebContext ctx, Object response, HttpRequest request) {
+    private void populateContext(final WebContext ctx, Object response, HttpRequest request, HttpMethod method) {
         //set defaults first so that users can override
         //${_query} ,${_form},${_files},${_session},${_cookies},${_request},${_response},${_server}
         ctx.setVariable("_query", request.getQueryParams());
@@ -118,6 +118,7 @@ public class ThymeleafTransformer extends BaseTransformer {
         ctx.setVariable("_cookies", request.getCookies());
         ctx.setVariable("_request", request);
         ctx.setVariable("_response", response);
+        ctx.setVariable("_validation", method.getValidationResult());
         //ctx.setVariable("_server", server);
         //response already available under ${_response} so only include if is POJO or Map, then we can
         //do a field to value setup

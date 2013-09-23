@@ -1,5 +1,7 @@
 package io.higgs.http.server;
 
+import io.higgs.http.server.params.Validator;
+
 /**
  * @author Courtney Robinson <courtney@crlog.info>
  */
@@ -10,10 +12,12 @@ public class MethodParam {
     private boolean formParam;
     private boolean headerParam;
     private boolean cookieParam;
+    private boolean validationRequired;
     /**
      * The class type of the parameter
      */
     private Class<?> parameterType;
+    private Validator validator;
     /**
      * The index/position of the parameter in the method's parameter list
      */
@@ -25,6 +29,22 @@ public class MethodParam {
 
     public boolean isNamed() {
         return name != null;
+    }
+
+    public Validator getValidator() {
+        return validator;
+    }
+
+    public <T extends Validator> void setValidator(T validator) {
+        this.validator = validator;
+    }
+
+    public boolean isValidationRequired() {
+        return validationRequired;
+    }
+
+    public void setValidationRequired(boolean validationRequired) {
+        this.validationRequired = validationRequired;
     }
 
     public void setName(final String name) {

@@ -21,6 +21,9 @@ import io.higgs.http.server.params.HttpSession;
 import io.higgs.http.server.params.PathParam;
 import io.higgs.http.server.params.QueryParam;
 import io.higgs.http.server.params.QueryParams;
+import io.higgs.http.server.params.RequiredParam;
+import io.higgs.http.server.params.ValidationResult;
+import io.higgs.http.server.params.valid;
 import io.higgs.http.server.resource.GET;
 import io.higgs.http.server.resource.MediaType;
 import io.higgs.http.server.resource.POST;
@@ -63,8 +66,9 @@ public class Api {
             //for cookies, values can be a cookie String or a HttpCookie
             @CookieParam(HttpRequest.SID) String sessionid, //gets HttpCookie.getValue()
             @CookieParam(HttpRequest.SID) HttpCookie sessionidAsCookie, //gets HttpCookie
-            //will be null in get requests
-            @FormParam("textline") String text,
+            //will be null in get requests, it will be marked as in valid since it will be null
+            @valid @FormParam("textline") String text,
+            @valid @FormParam("text2") RequiredParam<String> text2,
             @HeaderParam("Connection") String keepAlive,
             @PathParam("string") String random,
             //if a primitive number such as int,double,float etc is not found it'll be 0
@@ -77,7 +81,8 @@ public class Api {
             HttpRequest request, HttpResponse response, FormFiles files,
             FormParams form, HttpCookies cookies,
             QueryParams query, HttpSession session,
-            ResourcePath path, MessagePusher pusher
+            ResourcePath path, MessagePusher pusher,
+            ValidationResult validation
     ) throws JsonProcessingException {
         assert request != null;
         assert files != null;
@@ -86,6 +91,9 @@ public class Api {
         assert query != null;
         assert session != null;
         assert path != null;
+        assert validation.isValid();
+        assert text2.isValid();
+        assert text2.getValue() == null;
         session.put("api-" + count, Math.random());
         count += 1;
         System.out.println("test:" + count);
