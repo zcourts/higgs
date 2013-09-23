@@ -7,6 +7,7 @@ import io.higgs.core.reflect.dependency.DependencyProvider;
 import io.higgs.http.server.HttpRequest;
 import io.higgs.http.server.MethodParam;
 import io.higgs.http.server.WebApplicationException;
+import io.higgs.http.server.params.ValidationResult;
 import io.higgs.http.server.resource.MediaType;
 import io.higgs.http.server.resource.Produces;
 import io.netty.channel.ChannelHandlerContext;
@@ -24,6 +25,7 @@ public class HttpMethod extends InvokableMethod {
      * Path to an HTML template file used to format responses
      */
     private String template;
+    private ValidationResult validationResult;
 
     public HttpMethod(Queue<ObjectFactory> factories, Class<?> klass, Method classMethod) {
         super(factories, klass, classMethod);
@@ -128,5 +130,13 @@ public class HttpMethod extends InvokableMethod {
 
     public void setTemplate(String template) {
         this.template = template;
+    }
+
+    public void setValidationResult(ValidationResult validationResult) {
+        this.validationResult = validationResult;
+    }
+
+    public ValidationResult getValidationResult() {
+        return validationResult;
     }
 }

@@ -9,6 +9,8 @@ import io.higgs.http.server.params.HttpCookies;
 import io.higgs.http.server.params.HttpFile;
 import io.higgs.http.server.params.HttpSession;
 import io.higgs.http.server.params.QueryParams;
+import io.higgs.http.server.params.RequiredParam;
+import io.higgs.http.server.params.ValidationResult;
 import io.higgs.http.server.protocol.HttpMethod;
 import io.netty.channel.ChannelHandlerContext;
 
@@ -35,17 +37,37 @@ public class DefaultParamInjector implements ParamInjector {
         if (path != null) {
             components = path.getComponents();
         }
+        ValidationResult result = new ValidationResult();
+        method.setValidationResult(result);
         for (int i = 0; i < params.length; i++) {
             if (args[i] != null) {
                 continue; //this param has already been injected, move on
             }
             MethodParam param = params[i];
+            if (ValidationResult.class.isAssignableFrom(param.getParameterType())) {
+                args[i] = result;
+                continue;
+            }
+            Object o;
             if (param.isNamed()) {
                 //process annotations, i.e. the named parameters
-                args[i] = processAnnotations(method, request, param, params, path, components, ctx);
+                o = processAnnotations(method, request, param, params, path, components, ctx);
             } else {
                 //process the non-named parameters
-                args[i] = processClasses(method, request, res, param, params, path, components, ctx);
+                o = processClasses(method, request, res, param, params, path, components, ctx);
+            }
+            if (param.isValidationRequired()) {
+                boolean valid = param.getValidator().isValid(o);
+                args[i] = RequiredParam.class.isAssignableFrom(param.getParameterType()) ?
+                        new RequiredParam<>(o, valid) : o;
+                result.put(param.getName() + "_valid", valid);
+                if (!valid) {
+                    result.put(param.getName(), param.getValidator().getValidationMessage(param));
+                }
+            } else {
+                //if validation isn't required _valid is always trueString
+                result.put(param.getName() + "_valid", true);
+                args[i] = o;
             }
         }
         return args;

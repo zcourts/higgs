@@ -4,10 +4,13 @@ import io.higgs.core.MethodProcessor;
 import io.higgs.core.ObjectFactory;
 import io.higgs.http.server.MethodParam;
 import io.higgs.http.server.params.CookieParam;
+import io.higgs.http.server.params.DefaultValidator;
 import io.higgs.http.server.params.FormParam;
 import io.higgs.http.server.params.HeaderParam;
+import io.higgs.http.server.params.IllegalValidatorException;
 import io.higgs.http.server.params.PathParam;
 import io.higgs.http.server.params.QueryParam;
+import io.higgs.http.server.params.valid;
 import io.higgs.http.server.resource.template;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -66,6 +69,20 @@ public class HttpMethodProcessor implements MethodProcessor {
             //inner array is the list of annotations on the current method parameter
             for (Annotation annotation : paramterAnnotations) {
                 //a single parameter can have multiple of these annotations
+                if (annotation.annotationType().isAssignableFrom(valid.class)) {
+                    valid validationParam = (valid) annotation;
+                    methodParam.setValidationRequired(true);
+                    if (DefaultValidator.class.isAssignableFrom(validationParam.value())) {
+                        methodParam.setValidator(new DefaultValidator());
+                    } else {
+                        try {
+                            methodParam.setValidator(validationParam.value().newInstance());
+                        } catch (InstantiationException | IllegalAccessException e) {
+                            throw new IllegalValidatorException("All validators must have a publicly accessible " +
+                                    "no-args constructor", e);
+                        }
+                    }
+                }
                 if (annotation.annotationType().isAssignableFrom(PathParam.class)) {
                     PathParam pathParam = (PathParam) annotation;
                     methodParam.setPathParam(true);
