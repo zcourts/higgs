@@ -62,6 +62,7 @@ public class DefaultParamInjector implements ParamInjector {
                         new RequiredParam<>(o, valid) : o;
                 result.put(param.getName() + "_valid", valid);
                 if (!valid) {
+                    result.invalid();
                     result.put(param.getName(), param.getValidator().getValidationMessage(param));
                 }
             } else {
