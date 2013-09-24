@@ -10,6 +10,7 @@ import io.higgs.http.server.params.HeaderParam;
 import io.higgs.http.server.params.IllegalValidatorException;
 import io.higgs.http.server.params.PathParam;
 import io.higgs.http.server.params.QueryParam;
+import io.higgs.http.server.params.SessionParam;
 import io.higgs.http.server.params.valid;
 import io.higgs.http.server.resource.template;
 import org.slf4j.Logger;
@@ -82,6 +83,14 @@ public class HttpMethodProcessor implements MethodProcessor {
                                     "no-args constructor", e);
                         }
                     }
+                }
+                if (annotation.annotationType().isAssignableFrom(SessionParam.class)) {
+                    SessionParam sessionParam = (SessionParam) annotation;
+                    if (sessionParam.value() != null && !sessionParam.value().isEmpty()) {
+                        methodParam.setSessionParam(true);
+                        methodParam.setName(sessionParam.value());
+                    }
+                    continue;
                 }
                 if (annotation.annotationType().isAssignableFrom(PathParam.class)) {
                     PathParam pathParam = (PathParam) annotation;

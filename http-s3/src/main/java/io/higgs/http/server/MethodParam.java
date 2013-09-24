@@ -22,6 +22,7 @@ public class MethodParam {
      * The index/position of the parameter in the method's parameter list
      */
     private int position;
+    private boolean sessionParam;
 
     public String getName() {
         return name;
@@ -120,6 +121,14 @@ public class MethodParam {
      */
     public int getPosition() {
         return position;
+    }
+
+    public void setSessionParam(boolean sessionParam) {
+        this.sessionParam = sessionParam;
+    }
+
+    public boolean isSessionParam() {
+        return sessionParam;
     }
 }
 

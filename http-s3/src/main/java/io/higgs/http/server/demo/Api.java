@@ -22,6 +22,7 @@ import io.higgs.http.server.params.PathParam;
 import io.higgs.http.server.params.QueryParam;
 import io.higgs.http.server.params.QueryParams;
 import io.higgs.http.server.params.RequiredParam;
+import io.higgs.http.server.params.SessionParam;
 import io.higgs.http.server.params.ValidationResult;
 import io.higgs.http.server.params.valid;
 import io.higgs.http.server.resource.GET;
@@ -77,6 +78,7 @@ public class Api {
             //if boxed Number such as Integer,Double,Float etc is not found then value will be null
             @PathParam("some-random-name") Integer randomInt,
             @QueryParam("a") String a,
+            @valid @SessionParam("user_id") String user_id,
             //all these unnamed parameters can be injected and should never be null
             HttpRequest request, HttpResponse response, FormFiles files,
             FormParams form, HttpCookies cookies,
