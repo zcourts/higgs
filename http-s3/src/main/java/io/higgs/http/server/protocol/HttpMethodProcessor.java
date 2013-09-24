@@ -83,6 +83,7 @@ public class HttpMethodProcessor implements MethodProcessor {
                                     "no-args constructor", e);
                         }
                     }
+                    continue;
                 }
                 if (annotation.annotationType().isAssignableFrom(SessionParam.class)) {
                     SessionParam sessionParam = (SessionParam) annotation;
