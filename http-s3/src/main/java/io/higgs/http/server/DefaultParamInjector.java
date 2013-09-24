@@ -121,6 +121,8 @@ public class DefaultParamInjector implements ParamInjector {
             return extractQueryParam(param, request);
         } else if (param.isPathParam()) {
             return extractPathParam(param, path);
+        } else if (param.isSessionParam()) {
+            return request.getSession() == null ? null : request.getSession().get(param.getName());
         }
         return null;
     }
