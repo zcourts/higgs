@@ -26,6 +26,7 @@ public class HttpMethod extends InvokableMethod {
      */
     private String template;
     private ValidationResult validationResult;
+    private String[] fragments = new String[0];
 
     public HttpMethod(Queue<ObjectFactory> factories, Class<?> klass, Method classMethod) {
         super(factories, klass, classMethod);
@@ -121,7 +122,7 @@ public class HttpMethod extends InvokableMethod {
      * @return true if this method is annotated with a template which can be used by Thymeleaf
      */
     public boolean hasTemplate() {
-        return template != null;
+        return template != null || fragments.length > 0;
     }
 
     public String getTemplate() {
@@ -130,6 +131,18 @@ public class HttpMethod extends InvokableMethod {
 
     public void setTemplate(String template) {
         this.template = template;
+    }
+
+    public void setTemplate(String[] fragments) {
+        this.fragments = fragments;
+    }
+
+    public String[] getFragments() {
+        return fragments;
+    }
+
+    public boolean hasFragments() {
+        return fragments.length > 0;
     }
 
     public void setValidationResult(ValidationResult validationResult) {

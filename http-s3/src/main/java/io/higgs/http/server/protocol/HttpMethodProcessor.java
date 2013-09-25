@@ -36,23 +36,7 @@ public class HttpMethodProcessor implements MethodProcessor {
 
         HttpMethod im = new HttpMethod(factories, klass, method);
 
-        boolean classHasTemplate = klass.isAnnotationPresent(template.class);
-        String methodTemplate = null;
-        //does the method have a template?
-        if (classHasTemplate) {
-            template template = klass.getAnnotation(template.class);
-            if (template.value() != null && !template.value().isEmpty()) {
-                methodTemplate = template.value();
-            }
-        }
-        //if the method has a template and the class has one, override the class' with the template found on the method
-        if (method.isAnnotationPresent(template.class)) {
-            template template = method.getAnnotation(template.class);
-            if (template.value() != null && !template.value().isEmpty()) {
-                methodTemplate = template.value();
-            }
-        }
-        im.setTemplate(methodTemplate);
+        determineTemplate(method, klass, im);
         Class<?>[] parameters = method.getParameterTypes();
         //outter array is list of annotations on the method
         Annotation[][] methodAnnotations = method.getParameterAnnotations();
@@ -137,5 +121,27 @@ public class HttpMethodProcessor implements MethodProcessor {
             }
         }
         return im;
+    }
+
+    private void determineTemplate(Method method, Class<?> klass, HttpMethod im) {
+        boolean classHasTemplate = klass.isAnnotationPresent(template.class);
+        String methodTemplate = null;
+        //does the method have a template?
+        if (classHasTemplate) {
+            template template = klass.getAnnotation(template.class);
+            if (template.value() != null && !template.value().isEmpty()) {
+                methodTemplate = template.value();
+            }
+            im.setTemplate(template.fragments());
+        }
+        //if the method has a template and the class has one, override the class' with the template found on the method
+        if (method.isAnnotationPresent(template.class)) {
+            template template = method.getAnnotation(template.class);
+            if (template.value() != null && !template.value().isEmpty()) {
+                methodTemplate = template.value();
+            }
+            im.setTemplate(template.fragments());
+        }
+        im.setTemplate(methodTemplate);
     }
 }

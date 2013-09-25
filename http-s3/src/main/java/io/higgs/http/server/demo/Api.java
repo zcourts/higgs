@@ -59,7 +59,7 @@ public class Api {
     //transformer is used on the response, if no transformer can convert the response a Not Acceptable status
     // is returned
     @method("test/{string:[a-z0-9]+}/{num:[0-9]+}")
-    @template("api")
+    @template(fragments = { "header", "api", "footer" }, value = "")
     @GET
     @POST
     public Object test(

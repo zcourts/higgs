@@ -79,4 +79,15 @@ public @interface template {
      */
     String value();
 
+    /**
+     * Allows multiple template files to be specified. The files will be merged once at start up.
+     * The resulting file will be passed through Thymeleaf as a single template.
+     * If the array returned as any items then {@link #value()} is used as the name of the file to generate.
+     * If a file exists with that name it will be replaced with the newly generated file. If {@link #value()} returns
+     * null or an empty string then a random file name is used. The location of the generated files is determined by
+     * the server config's temp_templates directory
+     *
+     * @return an empty array or a list of template fragments to merge into one
+     */
+    String[] fragments() default { };
 }

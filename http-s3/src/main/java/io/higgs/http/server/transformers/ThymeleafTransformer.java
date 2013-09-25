@@ -69,8 +69,12 @@ public class ThymeleafTransformer extends BaseTransformer {
                           HttpMethod method,
                           ChannelHandlerContext ctx) {
         WebContext webContext = new WebContext();
-        transform(webContext, method.getTemplate(), response, request, httpResponse, mediaType, method, ctx,
-                null);
+        String[] fragements = method.getFragments();
+        String template = method.getTemplate();
+        if (fragements.length > 0) {
+            template = tl.getFullTemplate(template, fragements);
+        }
+        transform(webContext, template, response, request, httpResponse, mediaType, method, ctx, null);
     }
 
     @Override
@@ -118,7 +122,9 @@ public class ThymeleafTransformer extends BaseTransformer {
         ctx.setVariable("_cookies", request.getCookies());
         ctx.setVariable("_request", request);
         ctx.setVariable("_response", response);
-        ctx.setVariable("_validation", method.getValidationResult());
+        if (method != null) {
+            ctx.setVariable("_validation", method.getValidationResult());
+        }
         //ctx.setVariable("_server", server);
         //response already available under ${_response} so only include if is POJO or Map, then we can
         //do a field to value setup
