@@ -7,6 +7,13 @@ import org.thymeleaf.templateresolver.FileTemplateResolver;
 import org.thymeleaf.templateresolver.ITemplateResolver;
 import org.thymeleaf.templateresolver.UrlTemplateResolver;
 
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.FileReader;
+import java.io.IOException;
+import java.io.OutputStreamWriter;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -88,5 +95,47 @@ public class Thymeleaf {
 
     public UrlTemplateResolver getUrlResolver() {
         return urlResolver;
+    }
+
+    public String getFullTemplate(String suggestedName, String[] fragements) {
+        String name = config.fragments_dir;
+        if (suggestedName == null || suggestedName.isEmpty()) {
+            for (String a : fragements) {
+                name += "_" + a;
+            }
+        } else {
+            name = suggestedName;
+        }
+        String fullPath = config.prefix + name + config.suffix;
+        File file = new File(fullPath);
+
+        if (!file.exists() || config.merge_fragments_on_each_request) {
+            try {
+                if (file.exists() && !file.delete()) {
+                    throw new IllegalStateException(String.format("Unable to delete template file '%s'",
+                            file.getAbsolutePath()));
+                }
+                if (!file.createNewFile()) {
+                    throw new IllegalStateException(String.format("Unable to create template file from fragments '%s'",
+                            file.getAbsolutePath()));
+                }
+                BufferedWriter out = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(file)));
+                for (String frag : fragements) {
+                    String fragmentPath = config.prefix + frag + config.suffix;
+                    BufferedReader stream = new BufferedReader(new FileReader(new File(fragmentPath)));
+                    String line;
+                    while ((line = stream.readLine()) != null) {
+                        out.append(line);
+                    }
+                    out.flush();
+                    stream.close();
+                }
+                out.close();
+            } catch (IOException e) {
+                throw new RuntimeException(String.format("Couldn't build template file from fragments - %s",
+                        file.getAbsolutePath()), e);
+            }
+        }
+        return name;
     }
 }

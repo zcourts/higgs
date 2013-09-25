@@ -55,6 +55,13 @@ template_config :
   #if true then thymeleaf's locale is set to the locale obtained from the Accept-Language http header
   #if you use multiple language files it will load one based on this locale
   determine_language_from_accept_header : true
+  #if true then whenever a method specifies multiple templates those templates are merged into one file before being passed to Thymleaf
+  #this allows invalid/incomplete fragments HTML to be put into different files and combined to form a complete template
+  #if this is false then the fragments are only combined the first time the resource is requested or if a combined file doesn't exist already
+  #note that when merged together fragments must form a valid document for the template_mode set otherwise Thymeleaf will throw an exception
+  merge_fragments_on_each_request : true
+  #a directory where generated templates are created. this is relative to the "prefix" option
+  fragments_dir : "merged-fragments/"
 #static files are first fetched from the class path. If not found then the path is checked on disk
 files :
     #should temp uploaded files be deleted

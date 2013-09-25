@@ -31,4 +31,10 @@ public class TemplateConfig {
     public String auto_parse_extensions = "html,htm";
 
     public String template_mode = "HTML5";
+    /**
+     * If true then template fragments are merged on each request.
+     * If false then fragments are merged once at start up
+     */
+    public boolean merge_fragments_on_each_request = true;
+    public String fragments_dir = "merged-fragments/";
 }
