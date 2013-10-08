@@ -74,4 +74,8 @@ public class WebSocketStream {
     public ChannelFuture connectFuture() {
         return future;
     }
+
+    public Channel channel() {
+        return channel;
+    }
 }
