@@ -5,6 +5,7 @@ import io.netty.channel.SimpleChannelInboundHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.List;
@@ -74,7 +75,8 @@ public abstract class MessageHandler<C extends ServerConfig, T> extends SimpleCh
                 "received: %s", uncaught ? "Uncaught exception while invoking method - " : "",
                 method.getName(), argvalues,
                 method.getDeclaringClass().getName() + "." + method.getName(),
-                expected, actual), e);
+                expected, actual),
+                e instanceof InvocationTargetException && e.getCause() != null ? e.getCause() : e);
     }
 
     protected void logDetailedFailMessage(Object[] args, Throwable e, Method method) {

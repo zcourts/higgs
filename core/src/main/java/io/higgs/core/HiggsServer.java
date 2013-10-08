@@ -32,6 +32,7 @@ import java.util.concurrent.ConcurrentLinkedDeque;
  */
 public class HiggsServer {
     private static final HiggsClassLoader HIGGS_CLASS_LOADER = new HiggsClassLoader();
+    public static Path BASE_PATH = Paths.get("./");
     protected final Set<MethodProcessor> methodProcessors = new HashSet<>();
     protected final Queue<ProtocolDetectorFactory> detectors = new ConcurrentLinkedDeque<>();
     protected final Set<ProtocolConfiguration> protocolConfigurations =
@@ -76,6 +77,7 @@ public class HiggsServer {
             throw new IllegalStateException(String.format("The server cannot be started, unable to load config (%s)",
                     configPath), e);
         }
+        BASE_PATH = configPath.toFile().getParentFile().toPath();
         this.port = config.port;
         return this;
     }

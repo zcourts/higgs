@@ -160,12 +160,13 @@ public class DefaultParamInjector implements ParamInjector {
     }
 
     protected Object extractFormParam(MethodParam param, HttpRequest request) {
-        if (String.class.isAssignableFrom(param.getParameterType())) {
-            return request.getFormParam().get(param.getName());
+        Object obj = request.getFormParam().get(param.getName());
+        if (obj != null && param.getParameterType().isAssignableFrom(obj.getClass())) {
+            return obj;
         } else {
             if (ReflectionUtil.isNumeric(param.getParameterType())) {
                 //if param is a number then try to handle with NumberType.parseType
-                return extractNumberParam(param, request.getFormParam().get(param.getName()));
+                return extractNumberParam(param, (String) request.getFormParam().get(param.getName()));
             } else {
                 return null;
             }
