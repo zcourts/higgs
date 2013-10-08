@@ -36,6 +36,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.SocketAddress;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Queue;
 
@@ -189,7 +190,18 @@ public class HttpHandler extends MessageHandler<HttpConfig, Object> {
                     (io.netty.handler.codec.http.multipart.Attribute) data;
             try {
                 //add form param
-                request.addFormField(field.getName(), field.getValue());
+                String name = field.getName();
+                int idx = name.indexOf("[");
+                if (idx != -1 && name.endsWith("]")) {
+                    String realName = name.substring(0, idx);
+                    String fieldName = name.substring(idx + 1).replace(']', ' ').trim();
+                    if (request.getFormParam().get(realName) == null) {
+                        request.getFormParam().put(realName, new HashMap<String, String>());
+                    }
+                    ((HashMap<String, String>) request.getFormParam().get(realName)).put(fieldName, field.getValue());
+                } else {
+                    request.addFormField(name, field.getValue());
+                }
             } catch (IOException e) {
                 log.warn(String.format("unable to extract form field's value, field name = %s", field.getName()));
             }
@@ -252,8 +264,12 @@ public class HttpHandler extends MessageHandler<HttpConfig, Object> {
             Object response = method.invoke(ctx, request.getUri(), method, params);
             pusher.push(response);
         } catch (Throwable t) {
-            logDetailedFailMessage(true, params, t, method.method());
-            throw new WebApplicationException(HttpStatus.INTERNAL_SERVER_ERROR, request, t);
+            if (t.getCause() instanceof WebApplicationException) {
+                throw (WebApplicationException) t.getCause();
+            } else {
+                logDetailedFailMessage(true, params, t, method.method());
+                throw new WebApplicationException(HttpStatus.INTERNAL_SERVER_ERROR, request, t);
+            }
         }
     }
 

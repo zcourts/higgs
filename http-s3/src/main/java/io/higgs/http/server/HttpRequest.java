@@ -222,7 +222,7 @@ public class HttpRequest extends DefaultHttpRequest {
         return config.getSessions().get(sessionId);
     }
 
-    public void addFormField(final String name, final String value) {
+    public void addFormField(final String name, final Object value) {
         form.put(name, value);
     }
 

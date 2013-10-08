@@ -1,5 +1,6 @@
 package io.higgs.http.server.transformers.thymeleaf;
 
+import io.higgs.core.HiggsServer;
 import io.higgs.http.server.config.TemplateConfig;
 import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.templateresolver.ClassLoaderTemplateResolver;
@@ -104,15 +105,21 @@ public class Thymeleaf {
                 name += "_" + a;
             }
         } else {
-            name = suggestedName;
+            name += suggestedName;
         }
         String fullPath = config.prefix + name + config.suffix;
-        File file = new File(fullPath);
+        File file = HiggsServer.BASE_PATH.resolve(fullPath).toFile();
 
         if (!file.exists() || config.merge_fragments_on_each_request) {
             try {
                 if (file.exists() && !file.delete()) {
                     throw new IllegalStateException(String.format("Unable to delete template file '%s'",
+                            file.getAbsolutePath()));
+                }
+                File parent = file.getParentFile();
+                if (!parent.exists() && !parent.mkdirs()) {
+                    throw new IllegalStateException(String.format("Unable to create directory structure for fragments" +
+                            " '%s'",
                             file.getAbsolutePath()));
                 }
                 if (!file.createNewFile()) {
@@ -122,7 +129,8 @@ public class Thymeleaf {
                 BufferedWriter out = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(file)));
                 for (String frag : fragements) {
                     String fragmentPath = config.prefix + frag + config.suffix;
-                    BufferedReader stream = new BufferedReader(new FileReader(new File(fragmentPath)));
+                    BufferedReader stream = new BufferedReader(new FileReader(HiggsServer.BASE_PATH.resolve
+                            (fragmentPath).toFile()));
                     String line;
                     while ((line = stream.readLine()) != null) {
                         out.append(line);
