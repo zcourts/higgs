@@ -8,25 +8,31 @@ import io.higgs.http.server.HttpRequest;
 import io.higgs.http.server.MethodParam;
 import io.higgs.http.server.WebApplicationException;
 import io.higgs.http.server.params.ValidationResult;
+import io.higgs.http.server.resource.Consumes;
 import io.higgs.http.server.resource.MediaType;
 import io.higgs.http.server.resource.Produces;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.HttpResponseStatus;
 
 import java.lang.reflect.Method;
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
 
+import static io.netty.handler.codec.http.HttpHeaders.Names.CONTENT_TYPE;
+
 public class HttpMethod extends InvokableMethod {
     private MethodParam[] params = new MethodParam[0];
-    private LinkedList<MediaType> mediaTypes = new LinkedList<>();
+    private LinkedList<MediaType> producesMediaTypes = new LinkedList<>();
+    private LinkedList<MediaType> consumesMediaTypes = new LinkedList<>();
     /**
      * Path to an HTML template file used to format responses
      */
     private String template;
     private ValidationResult validationResult;
     private String[] fragments = new String[0];
+    private List<VERB> verbs = new ArrayList<>();
 
     public HttpMethod(Queue<ObjectFactory> factories, Class<?> klass, Method classMethod) {
         super(factories, klass, classMethod);
@@ -49,8 +55,27 @@ public class HttpMethod extends InvokableMethod {
         System.arraycopy(methodProduces, 0, mTypes, classProduces.length, methodProduces.length);
         for (String mType : mTypes) {
             List<MediaType> mediaTypeList = MediaType.valueOf(mType);
-            mediaTypes.addAll(mediaTypeList);
+            producesMediaTypes.addAll(mediaTypeList);
         }
+        //TODO remove repeated code for consumes and produces
+        String[] classConsumes = new String[0], methodConsumes = new String[0];
+        if (klass.isAnnotationPresent(Consumes.class)) {
+            Consumes produces = klass.getAnnotation(Consumes.class);
+            classConsumes = produces.value() != null ?
+                    produces.value() : new String[]{ MediaType.WILDCARD };
+        }
+        if (classMethod.isAnnotationPresent(Consumes.class)) {
+            Consumes path = classMethod.getAnnotation(Consumes.class);
+            methodProduces = path.value() != null ? path.value() : new String[]{ MediaType.WILDCARD };
+        }
+        String[] consumesmTypes = new String[classConsumes.length + methodProduces.length];
+        System.arraycopy(classConsumes, 0, consumesmTypes, 0, classConsumes.length);
+        System.arraycopy(methodProduces, 0, consumesmTypes, classConsumes.length, methodProduces.length);
+        for (String mType : consumesmTypes) {
+            List<MediaType> mediaTypeList = MediaType.valueOf(mType);
+            consumesMediaTypes.addAll(mediaTypeList);
+        }
+
     }
 
     @Override
@@ -64,10 +89,35 @@ public class HttpMethod extends InvokableMethod {
                 //if it is an http request the the media type must also match, if set
                 HttpRequest request = (HttpRequest) msg;
                 request.setPath(resourcePath);
+                //firstly does the request's verb matches the method's
+                if (!matchesVerb(request.getMethod().name())) {
+                    return false; //if verb doesn't match nothing else matters
+                }
+                //does the method limit the content type it consumes?
+                if (consumesMediaTypes.size() > 0) {
+                    //is there a content type and does the method consume the content type supplied?
+                    String strType = request.headers() == null ? null : request.headers().get(CONTENT_TYPE);
+                    if (strType != null && !strType.isEmpty()) {
+                        LinkedList<MediaType> contentType = MediaType.valueOf(strType);
+                        boolean consumesType = false;
+                        for (MediaType consumesMediaType : consumesMediaTypes) {
+                            for (MediaType type : contentType) {
+                                if (consumesMediaType.isCompatible(type)) {
+                                    consumesType = true;
+                                    break;
+                                }
+                            }
+                        }
+                        //if after all the consumed media types are enumerated and none match then return false
+                        if (!consumesType) {
+                            return false;
+                        }
+                    }
+                }
                 //does the method or it's class have the @Produces annotation?
-                if (mediaTypes.size() > 0) {
+                if (producesMediaTypes.size() > 0) {
                     //if so does this method produce a media type which matches what the client accepts
-                    for (MediaType producesMediaType : mediaTypes) {
+                    for (MediaType producesMediaType : producesMediaTypes) {
                         for (MediaType acceptedMediaType : request.getMediaTypes()) {
                             if (producesMediaType.isCompatible(acceptedMediaType)) {
                                 //set the matched media type to the type the class produces
@@ -151,5 +201,39 @@ public class HttpMethod extends InvokableMethod {
 
     public ValidationResult getValidationResult() {
         return validationResult;
+    }
+
+    public void addVerb(VERB a) {
+        if (a != null) {
+            verbs.add(a);
+        }
+    }
+
+    public boolean matchesVerb(String verb) {
+        if (verbs.isEmpty()) {
+            //by default if no verb annotation is specified the method responds to everything
+            return true;
+        }
+        //if any one of the verb annotations match return true
+        for (VERB v : verbs) {
+            if (v.matches(verb)) {
+                return true;
+            }
+        }
+        //all else fails return false
+        return false;
+    }
+
+    public static enum VERB {
+        GET("GET"), POST("POST"), PUT("PUT"), DELETE("DELETE"), HEAD("HEAD"), OPTIONS("OPTIONS");
+        public final String value;
+
+        VERB(String a) {
+            value = a;
+        }
+
+        public boolean matches(String method) {
+            return value.equalsIgnoreCase(method);
+        }
     }
 }

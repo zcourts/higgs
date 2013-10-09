@@ -12,6 +12,12 @@ import io.higgs.http.server.params.PathParam;
 import io.higgs.http.server.params.QueryParam;
 import io.higgs.http.server.params.SessionParam;
 import io.higgs.http.server.params.valid;
+import io.higgs.http.server.resource.DELETE;
+import io.higgs.http.server.resource.GET;
+import io.higgs.http.server.resource.HEAD;
+import io.higgs.http.server.resource.OPTIONS;
+import io.higgs.http.server.resource.POST;
+import io.higgs.http.server.resource.PUT;
 import io.higgs.http.server.resource.template;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,8 +43,9 @@ public class HttpMethodProcessor implements MethodProcessor {
         HttpMethod im = new HttpMethod(factories, klass, method);
 
         determineTemplate(method, klass, im);
+        processVerbs(im, method);
         Class<?>[] parameters = method.getParameterTypes();
-        //outter array is list of annotations on the method
+        //outter array is each parameter, inner array is list of annotations for each parameter
         Annotation[][] methodAnnotations = method.getParameterAnnotations();
         for (int i = 0; i < methodAnnotations.length; i++) {
             Annotation[] paramterAnnotations = methodAnnotations[i];
@@ -121,6 +128,30 @@ public class HttpMethodProcessor implements MethodProcessor {
             }
         }
         return im;
+    }
+
+    private void processVerbs(HttpMethod im, Method method) {
+        Annotation[] annotations = method.getAnnotations(); //o length array if none so safe from null
+        for (Annotation a : annotations) {
+            if (GET.class.isAssignableFrom(a.annotationType())) {
+                im.addVerb(HttpMethod.VERB.GET);
+            }
+            if (POST.class.isAssignableFrom(a.annotationType())) {
+                im.addVerb(HttpMethod.VERB.POST);
+            }
+            if (PUT.class.isAssignableFrom(a.annotationType())) {
+                im.addVerb(HttpMethod.VERB.PUT);
+            }
+            if (DELETE.class.isAssignableFrom(a.annotationType())) {
+                im.addVerb(HttpMethod.VERB.DELETE);
+            }
+            if (HEAD.class.isAssignableFrom(a.annotationType())) {
+                im.addVerb(HttpMethod.VERB.HEAD);
+            }
+            if (OPTIONS.class.isAssignableFrom(a.annotationType())) {
+                im.addVerb(HttpMethod.VERB.OPTIONS);
+            }
+        }
     }
 
     private void determineTemplate(Method method, Class<?> klass, HttpMethod im) {
