@@ -25,6 +25,7 @@ import io.higgs.http.server.params.RequiredParam;
 import io.higgs.http.server.params.SessionParam;
 import io.higgs.http.server.params.ValidationResult;
 import io.higgs.http.server.params.valid;
+import io.higgs.http.server.resource.Consumes;
 import io.higgs.http.server.resource.GET;
 import io.higgs.http.server.resource.MediaType;
 import io.higgs.http.server.resource.POST;
@@ -116,8 +117,10 @@ public class Api {
         return map;
     }
 
+    @Consumes({ MediaType.APPLICATION_JSON })
     @method("boom")
     @GET
+    @POST
     public Object boom2() {
         //you can, and SHOULD return WebApplicationException
         //if a wae is returned wae.setRequest() is automatically called
