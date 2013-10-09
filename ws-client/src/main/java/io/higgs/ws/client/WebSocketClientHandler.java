@@ -78,6 +78,7 @@ public class WebSocketClientHandler extends SimpleChannelInboundHandler<Object> 
             events.emit(PONG, ctx, frame);
         } else if (frame instanceof CloseWebSocketFrame) {
             ch.close();
+            events.emit(DISCONNECT, ctx);
         }
     }
 
