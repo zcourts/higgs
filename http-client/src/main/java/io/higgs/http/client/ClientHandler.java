@@ -25,8 +25,7 @@ public class ClientHandler extends SimpleChannelInboundHandler<Object> {
         if (msg instanceof HttpResponse) {
             HttpResponse res = (HttpResponse) msg;
             String location = res.headers().get(HttpHeaders.Names.LOCATION);
-            if (response.request().redirectOn().contains(res.getStatus().code())
-                    && location != null) {
+            if (response.request().redirectOn().contains(res.getStatus().code()) && location != null) {
                 //execute a new request using the same request instance and response
                 //this will use a new channel initializer
                 //BufUtil.retain(response.request().nettyRequest());

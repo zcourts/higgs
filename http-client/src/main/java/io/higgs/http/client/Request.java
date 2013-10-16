@@ -5,7 +5,9 @@ import io.higgs.http.client.future.Reader;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelHandler;
 import io.netty.channel.EventLoopGroup;
+import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.codec.http.ClientCookieEncoder;
 import io.netty.handler.codec.http.Cookie;
@@ -22,6 +24,7 @@ import io.netty.util.concurrent.GenericFutureListener;
 
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -29,26 +32,36 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import static javax.xml.bind.DatatypeConverter.printBase64Binary;
+
 /**
  * @author Courtney Robinson <courtney@crlog.info>
  */
 public class Request {
+    public static final Charset UTF8 = Charset.forName("UTF-8");
     protected final Response response;
     protected final Map<String, Object> queryParams = new HashMap<>();
     protected final FutureResponse future;
     protected final EventLoopGroup group;
-    private final HttpMethod method;
+    protected final HttpMethod method;
     protected HttpRequest request;
     protected URI uri;
-    protected HttpHeaders headers;
     protected Channel channel;
     protected String userAgent = "Mozilla/5.0 (compatible; HiggsBoson/0.0.1; +https://github.com/zcourts/higgs)";
     protected List<Cookie> cookies = new ArrayList<>();
-    private HttpVersion version;
-    private Set<Integer> redirectStatusCodes = new HashSet<>();
-    private URI originalUri;
+    protected String proxyHost = HttpRequestBuilder.proxyHost, proxyUser = HttpRequestBuilder.proxyUsername,
+            proxyPass = HttpRequestBuilder.proxyPassword;
+    protected int proxyPort = HttpRequestBuilder.proxyPort;
+    protected HttpVersion version;
+    protected Set<Integer> redirectStatusCodes = new HashSet<>();
+    protected URI originalUri;
+    protected DefaultFullHttpRequest proxyRequest;
+    protected ChannelFuture connectFuture;
+    protected boolean useSSL;
+    protected boolean tunneling;
 
-    public Request(EventLoopGroup group, URI uri, HttpMethod method, HttpVersion version, Reader responseReader) {
+    public Request(HttpRequestBuilder builder, EventLoopGroup group, URI uri, HttpMethod method, HttpVersion version,
+                   Reader responseReader) {
         if (responseReader == null) {
             throw new IllegalArgumentException("A response reader is required, can't process the response otherwise");
         }
@@ -62,12 +75,21 @@ public class Request {
         //ignore uri.getRawPath, it's overwritten later in #configure()
         newNettyRequest(uri, method, version);
         future = new FutureResponse(group, response);
+        for (int code : redirectStatusCodes) {
+            redirectOn(code);
+        }
+        //once Netty request is created, set default headers on it
+        headers().set(HttpHeaders.Names.CONNECTION, builder.connectionHeader);
+        headers().set(HttpHeaders.Names.ACCEPT_ENCODING, builder.acceptedEncodings);
+        headers().set(HttpHeaders.Names.ACCEPT_CHARSET, builder.charSet);
+        headers().set(HttpHeaders.Names.ACCEPT_LANGUAGE, builder.acceptedLanguages);
+        headers().set(HttpHeaders.Names.USER_AGENT, builder.userAgent);
+        headers().set(HttpHeaders.Names.ACCEPT, builder.acceptedMimeTypes);
     }
 
-    private void newNettyRequest(URI uri, HttpMethod method, HttpVersion version) {
+    protected void newNettyRequest(URI uri, HttpMethod method, HttpVersion version) {
         request = new DefaultFullHttpRequest(version, method, uri.getRawPath());
-        headers = request.headers();
-        headers.set(HttpHeaders.Names.REFERER, originalUri == null ? uri.toString() : originalUri.toString());
+        headers().set(HttpHeaders.Names.REFERER, originalUri == null ? uri.toString() : originalUri.toString());
     }
 
     /**
@@ -97,30 +119,45 @@ public class Request {
      *         It doesn't mean the entire contents of the response has been received, just that it's started.
      */
     public FutureResponse execute() {
-        String scheme = uri.getScheme() == null ? "http" : uri.getScheme();
-        String host = uri.getHost() == null ? "localhost" : uri.getHost();
+        String scheme = getScheme();
+        String host = getHost();
         int port = uri.getPort();
         if (port == -1) {
-            if ("http".equalsIgnoreCase(scheme)) {
-                port = 80;
-            } else if ("https".equalsIgnoreCase(scheme)) {
-                port = 443;
+            port = getPort(scheme);
+            try {
+                //use the newly inferred port
+                uri = new URI(uri.getScheme(), uri.getUserInfo(), uri.getHost(), port, uri.getPath(), uri.getQuery(),
+                        uri.getFragment());
+            } catch (URISyntaxException e) {
+                System.err.println(e.getMessage());
             }
         }
-        boolean ssl = "https".equalsIgnoreCase(scheme);
+        boolean ssl = isSSLScheme(scheme);
 
-        headers.set(HttpHeaders.Names.HOST, host);
+        headers().set(HttpHeaders.Names.HOST, host);
+        useSSL = ssl;
         try {
+            //configure before proxy since proxy settings may affect the final config
             configure();
+            if (isProxyEnabled()) {
+                host = proxyHost;
+                port = proxyPort;
+                configureProxy(ssl);
+                if (tunneling) {
+                    //SSL is always false when tunneling because even secure connections must first make an
+                    //unsecured CONNECT request to the proxy. Only once this initial connection is established should
+                    // the SSL handlers be added and any further traffic is then encrypted
+                    useSSL = false;
+                }
+            }
             Bootstrap bootstrap = new Bootstrap();
             bootstrap
                     .group(group)
                     .channel(NioSocketChannel.class)
-                    .handler(new ClientIntializer(ssl, response, future));
-            //connect
-            ChannelFuture cf = bootstrap.connect(host, port);
-            channel = cf.channel();
-            cf.addListener(new GenericFutureListener<ChannelFuture>() {
+                    .handler(newInitializer());
+            connect(host, port, bootstrap);
+            channel = connectFuture.channel();
+            connectFuture.addListener(new GenericFutureListener<ChannelFuture>() {
                 @Override
                 public void operationComplete(ChannelFuture f) throws Exception {
                     if (f.isSuccess()) {
@@ -136,29 +173,139 @@ public class Request {
         return future;
     }
 
+    protected String getHost() {
+        return uri.getHost() == null ? "localhost" : uri.getHost();
+    }
+
+    protected String getScheme() {
+        return uri.getScheme() == null ? "http" : uri.getScheme();
+    }
+
+    protected boolean isSSLScheme(String scheme) {
+        return "https".equalsIgnoreCase(scheme);
+    }
+
+    protected int getPort(String scheme) {
+        if (isSSLScheme(scheme)) {
+            return 443;
+        }
+        return 80;
+    }
+
+    protected ChannelFuture connect(String host, int port, Bootstrap bootstrap) {
+        connectFuture = bootstrap.connect(host, port);
+        return connectFuture;
+    }
+
+    protected ChannelHandler newInitializer() {
+        ConnectHandler.InitFactory factory = new ConnectHandler.InitFactory() {
+            @Override
+            public ClientIntializer newInstance(boolean ssl, SimpleChannelInboundHandler<Object>
+                    handler, ConnectHandler h) {
+                return new ClientIntializer(ssl, handler, h);
+            }
+        };
+        return new ClientIntializer(useSSL, newInboundHandler(),
+                //if proxy request exists then initializer should add it instead of the normal handler
+                isProxyEnabled() && proxyRequest != null ?
+                        new ConnectHandler(tunneling, request, newInboundHandler(), factory) : null);
+    }
+
+    protected SimpleChannelInboundHandler<Object> newInboundHandler() {
+        return new ClientHandler(response, future);
+    }
+
     protected ChannelFuture makeTheRequest() {
-        return StaticUtil.write(channel, request);
+        if (isProxyEnabled() && proxyRequest != null) {
+            return StaticUtil.write(channel, proxyRequest);
+        } else {
+            return StaticUtil.write(channel, request);
+        }
+    }
+
+    protected void configureProxy(boolean ssl) {
+        //http://tools.ietf.org/html/rfc2817#section-5.2 - authority and host required
+        String authority = uri.getHost() + ":" + uri.getPort();
+        //if we're making an SSL connection or using any method other than GET or POST then request a tunnel
+        if (ssl || tunneling || !(HttpMethod.GET.equals(method) || HttpMethod.POST.equals(method))) {
+            proxyRequest = new DefaultFullHttpRequest(HttpVersion.HTTP_1_1, HttpMethod.CONNECT, authority);
+            proxyRequest.headers().set(HttpHeaders.Names.HOST, authority);
+            proxyRequest.headers().set(HttpHeaders.Names.CONNECTION, HttpHeaders.Values.KEEP_ALIVE);
+            proxyRequest.headers().set("Proxy-Connection", HttpHeaders.Values.KEEP_ALIVE);
+            tunneling = true;
+        } else {
+            String proxyURL = getProxyPath();
+            request.setUri(proxyURL);
+            request.headers().set(HttpHeaders.Names.HOST, uri.getHost() == null ? "localhost" : uri.getHost());
+        }
+        //provide authorization if configured
+        if (proxyUser != null && !proxyUser.isEmpty()) {
+            String encoded = printBase64Binary((proxyUser + ":" + proxyPass).getBytes(UTF8));
+            String auth = "Basic " + encoded;
+            (proxyRequest == null ? request : proxyRequest).headers().set(HttpHeaders.Names.PROXY_AUTHORIZATION, auth);
+        }
+    }
+
+    protected String getProxyPath() {
+        //proxy requests require the full URL
+        //can stick http:// in because ssl connections will never use this method
+        return getScheme() + "://" + uri.getHost() + request.getUri();
+    }
+
+    /**
+     * Uses the proxy host to determine if proxy is enabled for this request.
+     *
+     * @return true if {@link #proxyHost} is not null and is not empty
+     */
+    public boolean isProxyEnabled() {
+        return proxyHost != null && !proxyHost.isEmpty();
     }
 
     protected void configure() throws Exception {
-        headers.set(HttpHeaders.Names.COOKIE, ClientCookieEncoder.encode(cookies));
+        headers().set(HttpHeaders.Names.COOKIE, ClientCookieEncoder.encode(cookies));
         QueryStringEncoder encoder = new QueryStringEncoder(uri.getRawPath());
         QueryStringDecoder decoder = new QueryStringDecoder(uri);
         //add url params first
         for (Map.Entry<String, List<String>> e : decoder.parameters().entrySet()) {
             if (e.getKey() != null) {
                 for (String val : e.getValue()) {
-                    encoder.addParam(e.getKey(), val == null ? "" : val);
+                    if (e.getKey() != null) {
+                        encoder.addParam(e.getKey(), val == null ? "" : val);
+                    }
                 }
             }
         }
         //now add any cofnigured params overwriting existing ones
         for (Map.Entry<String, Object> e : queryParams.entrySet()) {
             if (e.getKey() != null) {
-                encoder.addParam(e.getKey(), e.getValue() == null ? "" : e.getValue().toString());
+                if (e.getKey() != null) {
+                    encoder.addParam(e.getKey(), e.getValue() == null ? "" : e.getValue().toString());
+                }
             }
         }
         request.setUri(encoder.toString());
+    }
+
+    public Request proxy(String host, int port) {
+        return proxy(host, port, null, null);
+    }
+
+    /**
+     * Sets proxy information what will be used to make the request
+     * These proxy settings apply only to this request, not any other made after
+     *
+     * @param host     the proxy host
+     * @param port     the proxy port
+     * @param username username for the proxy
+     * @param password password for the proxy
+     * @return this
+     */
+    public Request proxy(String host, int port, String username, String password) {
+        proxyHost = host;
+        proxyPort = port;
+        proxyUser = username;
+        proxyPass = password;
+        return this;
     }
 
     public Request userAgent(String agent) {
@@ -188,7 +335,7 @@ public class Request {
      * @return this
      */
     public Request header(String name, Object value) {
-        headers.set(name, value);
+        headers().set(name, value);
         return this;
     }
 
@@ -198,7 +345,7 @@ public class Request {
      * @return this
      */
     public Request header(String name, Iterable<?> value) {
-        headers.set(name, value);
+        headers().set(name, value);
         return this;
     }
 
@@ -208,12 +355,12 @@ public class Request {
      * @return this
      */
     public Request header(String name, String value) {
-        headers.set(name, value);
+        headers().set(name, value);
         return this;
     }
 
     public HttpHeaders headers() {
-        return headers;
+        return request.headers();
     }
 
     /**
@@ -290,7 +437,7 @@ public class Request {
             throw new IllegalArgumentException("NULL url provided");
         }
         originalUri = uri;
-        if (url.startsWith("http")) {
+        if (url.startsWith(getScheme())) {
             this.uri = new URI(url);
         } else {
             this.uri = uri.resolve(url);
