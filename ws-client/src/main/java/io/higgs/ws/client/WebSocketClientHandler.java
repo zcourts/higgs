@@ -1,11 +1,19 @@
 package io.higgs.ws.client;
 
 import io.higgs.events.Events;
+import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
+import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
 import io.netty.channel.SimpleChannelInboundHandler;
+import io.netty.handler.codec.DecoderResult;
+import io.netty.handler.codec.http.DefaultFullHttpResponse;
+import io.netty.handler.codec.http.DefaultHttpResponse;
 import io.netty.handler.codec.http.FullHttpResponse;
+import io.netty.handler.codec.http.HttpHeaders;
+import io.netty.handler.codec.http.HttpResponseStatus;
+import io.netty.handler.codec.http.LastHttpContent;
 import io.netty.handler.codec.http.websocketx.CloseWebSocketFrame;
 import io.netty.handler.codec.http.websocketx.PingWebSocketFrame;
 import io.netty.handler.codec.http.websocketx.PongWebSocketFrame;
@@ -13,6 +21,7 @@ import io.netty.handler.codec.http.websocketx.TextWebSocketFrame;
 import io.netty.handler.codec.http.websocketx.WebSocketClientHandshaker;
 import io.netty.handler.codec.http.websocketx.WebSocketFrame;
 import io.netty.util.CharsetUtil;
+import io.netty.util.concurrent.GenericFutureListener;
 
 import static io.higgs.ws.client.WebSocketEvent.CONNECT;
 import static io.higgs.ws.client.WebSocketEvent.DISCONNECT;
@@ -29,6 +38,8 @@ public class WebSocketClientHandler extends SimpleChannelInboundHandler<Object> 
     protected final Events events;
     private final WebSocketClientHandshaker handshaker;
     private ChannelPromise handshakeFuture;
+    private FullHttpResponse response;
+    private ChannelHandlerContext ctx;
 
     public WebSocketClientHandler(WebSocketClientHandshaker handshaker, Events events) {
         this.handshaker = handshaker;
@@ -41,29 +52,37 @@ public class WebSocketClientHandler extends SimpleChannelInboundHandler<Object> 
     }
 
     @Override
-    public void channelActive(ChannelHandlerContext ctx) throws Exception {
-        handshaker.handshake(ctx.channel());
+    public void channelActive(ChannelHandlerContext c) throws Exception {
+        //if channelActive is called then we're not behind a proxy otherwise the proxy's connect handler would have
+        // had it's channel#ACtive called
+        doHandshake(c);
     }
 
     @Override
-    public void channelInactive(ChannelHandlerContext ctx) throws Exception {
+    public void channelInactive(ChannelHandlerContext c) throws Exception {
         events.emit(DISCONNECT, ctx);
     }
 
     @Override
-    public void channelRead0(final ChannelHandlerContext ctx, Object msg) throws Exception {
+    public void channelRead0(final ChannelHandlerContext c, Object msg) throws Exception {
         Channel ch = ctx.channel();
-        if (!handshaker.isHandshakeComplete()) {
-            handshaker.finishHandshake(ch, (FullHttpResponse) msg);
-            handshakeFuture.setSuccess();
-            events.emit(CONNECT, ctx);
+        if (response == null) {
+            if (msg instanceof FullHttpResponse) {
+                response = (FullHttpResponse) msg;
+            } else {
+                response = new WSResponse((DefaultHttpResponse) msg, ctx.alloc().buffer());
+            }
+            if (completeHandshake(ctx)) {
+                return;
+            }
+        }
+        if (msg instanceof LastHttpContent) {
             return;
         }
 
-        if (msg instanceof FullHttpResponse) {
-            FullHttpResponse response = (FullHttpResponse) msg;
-            throw new Exception("Unexpected FullHttpResponse (getStatus=" + response.getStatus() + ", content="
-                    + response.content().toString(CharsetUtil.UTF_8) + ')');
+        if (!(msg instanceof WebSocketFrame)) {
+            throw new Exception("Unexpected FullHttpResponse (getStatus=" + response.getStatus() + ", " +
+                    "content=" + response.content().toString(CharsetUtil.UTF_8) + ')');
         }
 
         final WebSocketFrame frame = (WebSocketFrame) msg;
@@ -82,6 +101,32 @@ public class WebSocketClientHandler extends SimpleChannelInboundHandler<Object> 
         }
     }
 
+    protected void doHandshake(final ChannelHandlerContext ctx) {
+        this.ctx = ctx;
+        handshaker.handshake(ctx.channel()).addListener(new GenericFutureListener<ChannelFuture>() {
+            @Override
+            public void operationComplete(ChannelFuture future) throws Exception {
+                if (!future.isSuccess()) {
+                    exceptionCaught(ctx, future.cause());
+                }
+            }
+        });
+    }
+
+    protected boolean completeHandshake(ChannelHandlerContext ctx) {
+        if (!handshaker.isHandshakeComplete()) {
+            if (response != null && response.getStatus().code() > 299) {
+                events.emit(ERROR, response, ctx);
+                return true;
+            }
+            handshaker.finishHandshake(ctx.channel(), response);
+            handshakeFuture.setSuccess();
+            events.emit(CONNECT, ctx);
+            return true;
+        }
+        return false;
+    }
+
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
         if (!handshakeFuture.isDone()) {
@@ -89,5 +134,27 @@ public class WebSocketClientHandler extends SimpleChannelInboundHandler<Object> 
         }
         events.emit(ERROR, cause, ctx);
         ctx.close();
+    }
+
+    private static class WSResponse extends DefaultFullHttpResponse implements FullHttpResponse {
+
+        protected final DefaultHttpResponse response;
+
+        public WSResponse(DefaultHttpResponse msg, ByteBuf content) {
+            super(msg.getProtocolVersion(), msg.getStatus(), content);
+            this.response = msg;
+        }
+
+        public HttpHeaders headers() {
+            return response.headers();
+        }
+
+        public HttpResponseStatus getStatus() {
+            return response.getStatus();
+        }
+
+        public DecoderResult getDecoderResult() {
+            return response.getDecoderResult();
+        }
     }
 }
