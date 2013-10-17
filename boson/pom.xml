@@ -1,7 +1,7 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <artifactId>boson</artifactId>
-    <version>0.0.5-SNAPSHOT</version>
+    <version>0.0.5</version>
     <name>${project.artifactId}</name>
     <packaging>jar</packaging>
     <description>Higgs' Boson protocolConfiguration implementation</description>
@@ -10,7 +10,7 @@
         <groupId>io.higgs</groupId>
         <artifactId>higgs</artifactId>
         <relativePath>../pom.xml</relativePath>
-        <version>0.0.5-SNAPSHOT</version>
+        <version>0.0.5</version>
     </parent>
     <properties>
         <kryo.version>2.21</kryo.version>
@@ -19,7 +19,7 @@
         <dependency>
             <groupId>io.higgs</groupId>
             <artifactId>core</artifactId>
-            <version>0.0.5-SNAPSHOT</version>
+            <version>0.0.5</version>
         </dependency>
         <dependency>
             <groupId>com.esotericsoftware.kryo</groupId>
