@@ -2,9 +2,11 @@ package io.higgs.http.server.transformers;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.introspect.VisibilityChecker;
+import com.fasterxml.jackson.datatype.joda.JodaModule;
 import io.higgs.http.server.HttpRequest;
 import io.higgs.http.server.HttpResponse;
 import io.higgs.http.server.HttpStatus;
@@ -24,10 +26,13 @@ import java.io.InputStream;
  */
 public class JsonTransformer extends BaseTransformer {
     private Logger log = LoggerFactory.getLogger(getClass());
-    protected final ObjectMapper mapper = new ObjectMapper();
+    public static final ObjectMapper mapper = new ObjectMapper();
 
     public JsonTransformer() {
         mapper.configure(SerializationFeature.WRITE_NULL_MAP_VALUES, true);
+        mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        mapper.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, true);
+        mapper.registerModule(new JodaModule());
         //auto discover fields
         VisibilityChecker visibilityChecker = mapper.getSerializationConfig().getDefaultVisibilityChecker();
         visibilityChecker.withFieldVisibility(JsonAutoDetect.Visibility.ANY);

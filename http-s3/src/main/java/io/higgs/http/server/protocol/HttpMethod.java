@@ -60,18 +60,18 @@ public class HttpMethod extends InvokableMethod {
         //TODO remove repeated code for consumes and produces
         String[] classConsumes = new String[0], methodConsumes = new String[0];
         if (klass.isAnnotationPresent(Consumes.class)) {
-            Consumes produces = klass.getAnnotation(Consumes.class);
-            classConsumes = produces.value() != null ?
-                    produces.value() : new String[]{ MediaType.WILDCARD };
+            Consumes consumes = klass.getAnnotation(Consumes.class);
+            classConsumes = consumes.value() != null ?
+                    consumes.value() : new String[]{ MediaType.WILDCARD };
         }
         if (classMethod.isAnnotationPresent(Consumes.class)) {
             Consumes path = classMethod.getAnnotation(Consumes.class);
-            methodProduces = path.value() != null ? path.value() : new String[]{ MediaType.WILDCARD };
+            methodConsumes = path.value() != null ? path.value() : new String[]{ MediaType.WILDCARD };
         }
-        String[] consumesmTypes = new String[classConsumes.length + methodProduces.length];
-        System.arraycopy(classConsumes, 0, consumesmTypes, 0, classConsumes.length);
-        System.arraycopy(methodProduces, 0, consumesmTypes, classConsumes.length, methodProduces.length);
-        for (String mType : consumesmTypes) {
+        String[] consumesTypes = new String[classConsumes.length + methodConsumes.length];
+        System.arraycopy(classConsumes, 0, consumesTypes, 0, classConsumes.length);
+        System.arraycopy(methodConsumes, 0, consumesTypes, classConsumes.length, methodConsumes.length);
+        for (String mType : consumesTypes) {
             List<MediaType> mediaTypeList = MediaType.valueOf(mType);
             consumesMediaTypes.addAll(mediaTypeList);
         }

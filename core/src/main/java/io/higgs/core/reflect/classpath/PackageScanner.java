@@ -30,10 +30,10 @@ public class PackageScanner {
             String packageName = packagePath.replace(".", "/");
             packageURL = classLoader.getResource(packageName);
             if (packageURL != null) {
-                if (packageURL.getProtocol() == "jar") {
-                    String jarFileName = null;
-                    JarFile jf = null;
-                    String entryName = null;
+                if (packageURL.getProtocol().equals("jar")) {
+                    String jarFileName;
+                    JarFile jf;
+                    String entryName;
                     jarFileName = URLDecoder.decode(packageURL.getFile(), "UTF-8");
                     jarFileName = jarFileName.substring(5, jarFileName.indexOf("!"));
                     jf = new JarFile(jarFileName);
@@ -53,7 +53,7 @@ public class PackageScanner {
                     File folder = new File(packageURL.getFile());
                     File[] contenuti = folder.listFiles();
                     String entryName;
-                    for (File actual : contenuti) {
+                    for (File actual : contenuti != null ? contenuti : new File[0]) {
                         entryName = actual.getName();
                         if (entryName.contains(".")) {
                             entryName = entryName.substring(0, entryName.lastIndexOf('.'));
