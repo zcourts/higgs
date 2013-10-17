@@ -14,15 +14,17 @@ import java.util.Set;
 
 public class HttpRequestBuilder {
 
+    private static final HttpRequestBuilder instance = new HttpRequestBuilder();
+    protected static String proxyHost, proxyUsername, proxyPassword;
+    protected static int proxyPort = 80;
     private static EventLoopGroup group = new NioEventLoopGroup();
-    private Set<Integer> redirectStatusCodes = new HashSet<>();
     protected String userAgent = "Mozilla/5.0 (compatible; HiggsBoson/0.0.1; +https://github.com/zcourts/higgs)";
     protected String charSet = "ISO-8859-1,utf-8;q=0.7,*;q=0.7";
     protected String acceptedLanguages = "en";
     protected String acceptedMimeTypes = "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8";
-    private String acceptedEncodings = HttpHeaders.Values.GZIP + ',' + HttpHeaders.Values.DEFLATE;
-    private String connectionHeader = HttpHeaders.Values.CLOSE;
-    private static final HttpRequestBuilder instance = new HttpRequestBuilder();
+    protected Set<Integer> redirectStatusCodes = new HashSet<>();
+    protected String acceptedEncodings = HttpHeaders.Values.GZIP + ',' + HttpHeaders.Values.DEFLATE;
+    protected String connectionHeader = HttpHeaders.Values.CLOSE;
 
     public HttpRequestBuilder() {
         //http://en.wikipedia.org/wiki/List_of_HTTP_status_codes#3xx_Redirection
@@ -47,6 +49,41 @@ public class HttpRequestBuilder {
         return instance;
     }
 
+    public static EventLoopGroup group() {
+        return group;
+    }
+
+    public static void shutdown() {
+        group.shutdownGracefully();
+    }
+
+    public static void restart() {
+        shutdown();
+        group = new NioEventLoopGroup();
+    }
+
+    public HttpRequestBuilder proxy(String host, int port) {
+        return proxy(host, port, null, null);
+    }
+
+    /**
+     * Sets proxy information what will be used to make all requests made using the client
+     * i.e. this only needs to be set once and it will apply to all requests made after
+     *
+     * @param host     the proxy host
+     * @param port     the proxy port
+     * @param username username for the proxy
+     * @param password password for the proxy
+     * @return this
+     */
+    public HttpRequestBuilder proxy(String host, int port, String username, String password) {
+        proxyHost = host;
+        proxyPort = port;
+        proxyUsername = username;
+        proxyPassword = password;
+        return this;
+    }
+
     /**
      * Automatically follow redirect responses for the given status codes
      *
@@ -62,19 +99,6 @@ public class HttpRequestBuilder {
 
     public Set<Integer> redirectOn() {
         return redirectStatusCodes;
-    }
-
-    public Request applyDefaults(Request request) {
-        for (int code : redirectStatusCodes) {
-            request.redirectOn(code);
-        }
-        request.headers().set(HttpHeaders.Names.CONNECTION, connectionHeader);
-        request.headers().set(HttpHeaders.Names.ACCEPT_ENCODING, acceptedEncodings);
-        request.headers().set(HttpHeaders.Names.ACCEPT_CHARSET, charSet);
-        request.headers().set(HttpHeaders.Names.ACCEPT_LANGUAGE, acceptedLanguages);
-        request.headers().set(HttpHeaders.Names.USER_AGENT, userAgent);
-        request.headers().set(HttpHeaders.Names.ACCEPT, acceptedMimeTypes);
-        return request;
     }
 
     /**
@@ -94,7 +118,7 @@ public class HttpRequestBuilder {
 
     public Request GET(URI uri, HttpVersion version, Reader reader) {
         checkGroup();
-        return applyDefaults(new Request(group, uri, HttpMethod.GET, version, reader));
+        return new Request(this, group, uri, HttpMethod.GET, version, reader);
     }
 
     /**
@@ -114,7 +138,7 @@ public class HttpRequestBuilder {
 
     public POST POST(URI uri, HttpVersion version, Reader reader) {
         checkGroup();
-        return new POST(group, uri, version, reader);
+        return new POST(this, group, uri, version, reader);
     }
 
     /**
@@ -134,7 +158,7 @@ public class HttpRequestBuilder {
 
     public Request DELETE(URI uri, HttpVersion version, Reader reader) {
         checkGroup();
-        return applyDefaults(new Request(group, uri, HttpMethod.DELETE, version, reader));
+        return new Request(this, group, uri, HttpMethod.DELETE, version, reader);
     }
 
     /**
@@ -154,7 +178,7 @@ public class HttpRequestBuilder {
 
     public Request OPTIONS(URI uri, HttpVersion version, Reader reader) {
         checkGroup();
-        return applyDefaults(new Request(group, uri, HttpMethod.OPTIONS, version, reader));
+        return new Request(this, group, uri, HttpMethod.OPTIONS, version, reader);
     }
 
     /**
@@ -174,7 +198,7 @@ public class HttpRequestBuilder {
 
     public Request HEAD(URI uri, HttpVersion version, Reader reader) {
         checkGroup();
-        return applyDefaults(new Request(group, uri, HttpMethod.HEAD, version, reader));
+        return new Request(this, group, uri, HttpMethod.HEAD, version, reader);
     }
 
     /**
@@ -194,7 +218,7 @@ public class HttpRequestBuilder {
 
     public Request TRACE(URI uri, HttpVersion version, Reader reader) {
         checkGroup();
-        return applyDefaults(new Request(group, uri, HttpMethod.TRACE, version, reader));
+        return new Request(this, group, uri, HttpMethod.TRACE, version, reader);
     }
 
     /**
@@ -214,7 +238,7 @@ public class HttpRequestBuilder {
 
     public Request PATCH(URI uri, HttpVersion version, Reader reader) {
         checkGroup();
-        return applyDefaults(new Request(group, uri, HttpMethod.PATCH, version, reader));
+        return new Request(this, group, uri, HttpMethod.PATCH, version, reader);
     }
 
     /**
@@ -234,7 +258,7 @@ public class HttpRequestBuilder {
 
     public Request CONNECT(URI uri, HttpVersion version, Reader reader) {
         checkGroup();
-        return applyDefaults(new Request(group, uri, HttpMethod.CONNECT, version, reader));
+        return new Request(this, group, uri, HttpMethod.CONNECT, version, reader);
     }
 
     private void checkGroup() {
@@ -242,15 +266,6 @@ public class HttpRequestBuilder {
             group = new NioEventLoopGroup();
         }
     }
-
-    public static void shutdown() {
-        group.shutdownGracefully();
-    }
-
-	public static void restart() {
-		shutdown();
-		group = new NioEventLoopGroup();
-	}
 
     public HttpRequestBuilder acceptedLanguages(String acceptedLanguages) {
         this.acceptedLanguages = acceptedLanguages;
