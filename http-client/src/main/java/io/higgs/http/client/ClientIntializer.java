@@ -19,6 +19,7 @@ import io.higgs.core.ssl.SSLConfigFactory;
 import io.higgs.core.ssl.SSLContextFactory;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
+import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.handler.codec.http.HttpClientCodec;
 import io.netty.handler.codec.http.HttpContentDecompressor;
@@ -28,35 +29,65 @@ import io.netty.handler.stream.ChunkedWriteHandler;
 import javax.net.ssl.SSLEngine;
 
 public class ClientIntializer extends ChannelInitializer<SocketChannel> {
-    private final boolean ssl;
-    private final FutureResponse future;
-    private final Response response;
+    protected final boolean ssl;
+    protected final ConnectHandler connectHandler;
+    protected final SimpleChannelInboundHandler<Object> handler;
 
-    public ClientIntializer(boolean ssl, Response response, FutureResponse future) {
+    public ClientIntializer(boolean ssl, SimpleChannelInboundHandler<Object> handler, ConnectHandler connectHandler) {
         this.ssl = ssl;
-        this.future = future;
-        this.response = response;
+        this.handler = handler;
+        this.connectHandler = connectHandler;
+    }
+
+    /**
+     * Adds an SSL engine to the given pipeline.
+     *
+     * @param pipeline     the pipeline to add SSL support to
+     * @param forceToFront if true then the SSL handler is added to the front of the pipeline otherwise it is added
+     *                     at the end
+     */
+    public static void addSSL(ChannelPipeline pipeline, boolean forceToFront) {
+        SSLEngine engine = SSLContextFactory.getSSLSocket(SSLConfigFactory.sslConfiguration).createSSLEngine();
+        engine.setUseClientMode(true);
+        if (forceToFront) {
+            pipeline.addFirst("ssl", new SslHandler(engine));
+        } else {
+            pipeline.addLast("ssl", new SslHandler(engine));
+        }
+    }
+
+    public void configurePipeline(ChannelPipeline pipeline) {
+        if (ssl) {
+            addSSL(pipeline, false);
+        }
+
+        if (pipeline.get("codec") == null) {
+            pipeline.addLast("codec", new HttpClientCodec());
+        } else {
+            pipeline.replace("codec", "codec", new HttpClientCodec());
+        }
+        if (pipeline.get("inflater") == null) {
+            pipeline.addLast("inflater", new HttpContentDecompressor());
+        } else {
+            pipeline.replace("inflater", "inflater", new HttpContentDecompressor());
+        }
+        if (pipeline.get("chunkedWriter") == null) {
+            pipeline.addLast("chunkedWriter", new ChunkedWriteHandler());
+        } else {
+            pipeline.replace("chunkedWriter", "chunkedWriter", new ChunkedWriteHandler());
+        }
+        //if a connect handler is provided then add it otherwise add the normal response handler
+        if (pipeline.get("handler") == null) {
+            pipeline.addLast("handler", connectHandler == null ? handler : connectHandler);
+        } else {
+            pipeline.replace("handler", "handler", connectHandler == null ? handler : connectHandler);
+        }
     }
 
     @Override
     public void initChannel(SocketChannel ch) throws Exception {
         // Create a default pipeline implementation.
         ChannelPipeline pipeline = ch.pipeline();
-
-        if (ssl) {
-            SSLEngine engine = SSLContextFactory.getSSLSocket(SSLConfigFactory.sslConfiguration).createSSLEngine();
-            engine.setUseClientMode(true);
-            pipeline.addLast("ssl", new SslHandler(engine));
-        }
-
-        pipeline.addLast("codec", new HttpClientCodec());
-
-        // Remove the following line if you don't want automatic content decompression.
-        pipeline.addLast("inflater", new HttpContentDecompressor());
-
-        // to be used for huge file transfer
-        pipeline.addLast("chunkedWriter", new ChunkedWriteHandler());
-
-        pipeline.addLast("handler", new ClientHandler(response, future));
+        configurePipeline(pipeline);
     }
 }

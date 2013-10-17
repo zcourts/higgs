@@ -22,14 +22,14 @@ import java.util.Map;
  * @author Courtney Robinson <courtney@crlog.info>
  */
 public class POST extends Request {
-    protected long minSize = DefaultHttpDataFactory.MINSIZE;
     private final List<HttpFile> files = new ArrayList<>();
+    protected long minSize = DefaultHttpDataFactory.MINSIZE;
     private HttpPostRequestEncoder encoder;
     private Map<String, Object> form = new HashMap<>();
     private HttpDataFactory factory;
 
-    public POST(EventLoopGroup group, URI uri, HttpVersion version, Reader f) {
-        super(group, uri, HttpMethod.POST, version, f);
+    public POST(HttpRequestBuilder builder, EventLoopGroup group, URI uri, HttpVersion version, Reader f) {
+        super(builder, group, uri, HttpMethod.POST, version, f);
     }
 
     @Override
@@ -67,7 +67,7 @@ public class POST extends Request {
     }
 
     private ChannelFuture doRequest() {
-        StaticUtil.write(channel,request);
+        StaticUtil.write(channel, request);
         return StaticUtil.write(channel, encoder).awaitUninterruptibly()
                 .addListener(new GenericFutureListener<Future<Void>>() {
                     @Override
