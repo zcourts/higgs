@@ -39,6 +39,8 @@ import static java.lang.Integer.parseInt;
  * @author Courtney Robinson <courtney@crlog.info>
  */
 public class HttpRequest extends DefaultHttpRequest {
+    public static final String SID = "HS3-ID";
+    private static final AttributeKey<String> sessionAttr = new AttributeKey<>(SID + "-attr");
     private final QueryParams queryParams = new QueryParams();
     private final FormFiles files = new FormFiles();
     private final FormParams form = new FormParams();
@@ -46,17 +48,16 @@ public class HttpRequest extends DefaultHttpRequest {
     private final DateTime createdAt = new DateTime();
     private Logger log = LoggerFactory.getLogger(getClass());
     private ResourcePath path;
-    private List<MediaType> mediaTypes = new ArrayList<>();
+    private List<MediaType> acceptedMediaTypes = new ArrayList<>();
     private boolean newSession;
     private String sessionId;
     private MediaType matchedMediaType = MediaType.WILDCARD_TYPE;
     private HttpProtocolConfiguration config;
     private boolean multipart;
     private boolean chunked;
-    public static final String SID = "HS3-ID";
-    private static final AttributeKey<String> sessionAttr = new AttributeKey<>(SID + "-attr");
     private ByteBuf content = Unpooled.buffer(0);
     private HttpCookie sessionCookie;
+    private List<MediaType> contentType;
 
     /**
      * Creates a new instance.
@@ -83,8 +84,10 @@ public class HttpRequest extends DefaultHttpRequest {
      * @param ctx
      */
     public void init(ChannelHandlerContext ctx) {
+        String contentTypeStr = headers().get(HttpHeaders.Names.CONTENT_TYPE);
+        this.contentType = MediaType.valueOf(contentTypeStr);
         String accept = headers().get(HttpHeaders.Names.ACCEPT);
-        mediaTypes = MediaType.valueOf(accept);
+        acceptedMediaTypes = MediaType.valueOf(accept);
         String cookiesStr = headers().get(HttpHeaders.Names.COOKIE);
         if (cookiesStr != null) {
             Set<Cookie> cookie = CookieDecoder.decode(cookiesStr);
@@ -146,8 +149,12 @@ public class HttpRequest extends DefaultHttpRequest {
         }
     }
 
-    public List<MediaType> getMediaTypes() {
-        return mediaTypes;
+    public List<MediaType> getContentType() {
+        return contentType;
+    }
+
+    public List<MediaType> getAcceptedMediaTypes() {
+        return acceptedMediaTypes;
     }
 
     public boolean isGet() {
@@ -261,7 +268,7 @@ public class HttpRequest extends DefaultHttpRequest {
     public String toString() {
         return "HttpRequest{" +
                 "newSession=" + newSession +
-                ", mediaTypes=" + mediaTypes.size() +
+                ", acceptedMediaTypes=" + acceptedMediaTypes.size() +
                 ", path=" + path +
                 ", cookies=" + cookies.size() +
                 ", form=" + form.size() +
@@ -274,10 +281,6 @@ public class HttpRequest extends DefaultHttpRequest {
         return createdAt;
     }
 
-    public void setMatchedMediaType(MediaType matchedMediaType) {
-        this.matchedMediaType = matchedMediaType;
-    }
-
     /**
      * @return The media type which matched on this request or {@link MediaType#WILDCARD} by default
      */
@@ -285,28 +288,32 @@ public class HttpRequest extends DefaultHttpRequest {
         return matchedMediaType;
     }
 
-    public void setConfig(HttpProtocolConfiguration config) {
-        this.config = config;
+    public void setMatchedMediaType(MediaType matchedMediaType) {
+        this.matchedMediaType = matchedMediaType;
     }
 
     public HttpProtocolConfiguration getConfig() {
         return config;
     }
 
-    public void setMultipart(boolean multipart) {
-        this.multipart = multipart;
+    public void setConfig(HttpProtocolConfiguration config) {
+        this.config = config;
     }
 
     public boolean isMultipart() {
         return multipart;
     }
 
-    public void setChunked(boolean chunked) {
-        this.chunked = chunked;
+    public void setMultipart(boolean multipart) {
+        this.multipart = multipart;
     }
 
     public boolean isChunked() {
         return chunked;
+    }
+
+    public void setChunked(boolean chunked) {
+        this.chunked = chunked;
     }
 
     public ByteBuf content() {

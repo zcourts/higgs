@@ -27,6 +27,7 @@ import io.higgs.http.server.params.ValidationResult;
 import io.higgs.http.server.params.valid;
 import io.higgs.http.server.resource.Consumes;
 import io.higgs.http.server.resource.GET;
+import io.higgs.http.server.resource.JsonData;
 import io.higgs.http.server.resource.MediaType;
 import io.higgs.http.server.resource.POST;
 import io.higgs.http.server.resource.Produces;
@@ -41,17 +42,24 @@ import java.util.Map;
 @method("/api")
 @Produces({ MediaType.TEXT_HTML })
 public class Api {
+    static int count;
     String a = "a";
     int b = 023343;
     long c = 999999999;
     double d = Math.random();
-    static int count;
 
     @GET
     @method
     public String index(HttpSession session) {
         System.out.println("index");
         session.put("index-" + Math.random(), Math.random());
+        return "yes index";
+    }
+
+    @POST
+    @method("json")
+    @Consumes(MediaType.APPLICATION_JSON)
+    public String acceptJson(JsonData data) {
         return "yes index";
     }
 

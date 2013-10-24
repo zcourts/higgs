@@ -46,7 +46,7 @@ public class JsonTransformer extends BaseTransformer {
     public boolean canTransform(Object response, HttpRequest request, MediaType mediaType,
                                 HttpMethod method, ChannelHandlerContext ctx) {
         if (response != null && !(response instanceof File || response instanceof InputStream)) {
-            for (MediaType type : request.getMediaTypes()) {
+            for (MediaType type : request.getAcceptedMediaTypes()) {
                 if (type.isCompatible(MediaType.APPLICATION_JSON_TYPE)) {
                     return true;
                 }

@@ -9,6 +9,8 @@ import java.util.Map;
 public class HttpConfig extends ServerConfig {
     public TemplateConfig template_config = new TemplateConfig();
     public FilesConfig files = new FilesConfig();
+    public boolean add_form_url_decoder = true;
+    public boolean add_json_decoder = true;
     //
     private Map<Integer, HttpMethod> errors = new HashMap<>();
 

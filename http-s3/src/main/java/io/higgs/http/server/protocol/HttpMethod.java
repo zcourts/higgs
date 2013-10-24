@@ -118,7 +118,7 @@ public class HttpMethod extends InvokableMethod {
                 if (producesMediaTypes.size() > 0) {
                     //if so does this method produce a media type which matches what the client accepts
                     for (MediaType producesMediaType : producesMediaTypes) {
-                        for (MediaType acceptedMediaType : request.getMediaTypes()) {
+                        for (MediaType acceptedMediaType : request.getAcceptedMediaTypes()) {
                             if (producesMediaType.isCompatible(acceptedMediaType)) {
                                 //set the matched media type to the type the class produces
                                 request.setMatchedMediaType(producesMediaType);
