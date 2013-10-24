@@ -85,7 +85,7 @@ public class HttpErrorTransformer extends BaseTransformer {
                                                ChannelHandlerContext ctx) {
         //if has request then we can use a transformer
         boolean thymeleafMediaType = true;
-        for (MediaType type : request.getMediaTypes()) {
+        for (MediaType type : request.getAcceptedMediaTypes()) {
             if (type.isCompatible(MediaType.TEXT_PLAIN_TYPE) ||
                     type.isCompatible(MediaType.APPLICATION_JSON_TYPE)) {
                 thymeleafMediaType = false;
@@ -111,7 +111,7 @@ public class HttpErrorTransformer extends BaseTransformer {
         }
         //if has request then we can use a transformer
         boolean thymeleafMediaType = true;
-        for (MediaType type : e.getRequest().getMediaTypes()) {
+        for (MediaType type : e.getRequest().getAcceptedMediaTypes()) {
             if (!type.isWildcardType() && (
                     type.isCompatible(MediaType.TEXT_PLAIN_TYPE) ||
                             type.isCompatible(MediaType.APPLICATION_JSON_TYPE)

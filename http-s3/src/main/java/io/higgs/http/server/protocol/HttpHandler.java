@@ -3,7 +3,6 @@ package io.higgs.http.server.protocol;
 import io.higgs.core.FixedSortedList;
 import io.higgs.core.InvokableMethod;
 import io.higgs.core.MessageHandler;
-import io.higgs.core.reflect.dependency.DependencyProvider;
 import io.higgs.core.reflect.dependency.Injector;
 import io.higgs.http.server.HttpRequest;
 import io.higgs.http.server.HttpResponse;
@@ -14,7 +13,8 @@ import io.higgs.http.server.StaticFileMethod;
 import io.higgs.http.server.WebApplicationException;
 import io.higgs.http.server.WrappedResponse;
 import io.higgs.http.server.config.HttpConfig;
-import io.higgs.http.server.params.HttpFile;
+import io.higgs.http.server.protocol.media_type_decoders.FormUrlEncodedDecoder;
+import io.higgs.http.server.protocol.media_type_decoders.JsonDecoder;
 import io.higgs.http.server.transformers.ResponseTransformer;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
@@ -22,23 +22,18 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.FullHttpRequest;
 import io.netty.handler.codec.http.HttpContent;
 import io.netty.handler.codec.http.HttpHeaders;
+import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.handler.codec.http.HttpVersion;
 import io.netty.handler.codec.http.LastHttpContent;
-import io.netty.handler.codec.http.multipart.DefaultHttpDataFactory;
 import io.netty.handler.codec.http.multipart.DiskAttribute;
 import io.netty.handler.codec.http.multipart.DiskFileUpload;
-import io.netty.handler.codec.http.multipart.FileUpload;
-import io.netty.handler.codec.http.multipart.HttpDataFactory;
-import io.netty.handler.codec.http.multipart.HttpPostRequestDecoder;
-import io.netty.handler.codec.http.multipart.InterfaceHttpData;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
 import java.net.SocketAddress;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedDeque;
 
 import static io.netty.handler.codec.http.HttpHeaders.Names.CONNECTION;
 import static io.netty.handler.codec.http.HttpHeaders.getHeader;
@@ -52,7 +47,8 @@ import static io.netty.handler.codec.http.HttpHeaders.setContentLength;
  */
 public class HttpHandler extends MessageHandler<HttpConfig, Object> {
     protected static final Class<HttpMethod> methodClass = HttpMethod.class;
-    protected static HttpDataFactory factory = new DefaultHttpDataFactory(DefaultHttpDataFactory.MINSIZE); //Disk
+    protected final Queue<MediaTypeDecoder> mediaTypeDecoders = new ConcurrentLinkedDeque<>();
+    protected final HttpConfig httpConfig;
     /**
      * The current HTTP request
      */
@@ -65,23 +61,24 @@ public class HttpHandler extends MessageHandler<HttpConfig, Object> {
     protected HttpMethod method;
     protected ParamInjector injector;
     protected HttpProtocolConfiguration protocolConfig;
-    protected HttpPostRequestDecoder decoder;
+    protected boolean replied;
+    protected MediaTypeDecoder decoder;
     private Logger requestLogger = LoggerFactory.getLogger("request_logger");
-    private boolean replied;
 
     public HttpHandler(HttpProtocolConfiguration config) {
         super(config.getServer().<HttpConfig>getConfig());
-        HttpConfig c = config.getServer().getConfig();
+        httpConfig = config.getServer().getConfig();
         protocolConfig = config;
         injector = config.getInjector();
+        mediaTypeDecoders.addAll(config.getMediaTypeDecoders());
         // should delete file
-        DiskFileUpload.deleteOnExitTemporaryFile = c.files.delete_temp_on_exit;
+        DiskFileUpload.deleteOnExitTemporaryFile = httpConfig.files.delete_temp_on_exit;
         // system temp directory
-        DiskFileUpload.baseDirectory = c.files.temp_directory;
+        DiskFileUpload.baseDirectory = httpConfig.files.temp_directory;
         // should delete file on
-        DiskAttribute.deleteOnExitTemporaryFile = c.files.delete_temp_on_exit;
+        DiskAttribute.deleteOnExitTemporaryFile = httpConfig.files.delete_temp_on_exit;
         // exit (in normal exit)
-        DiskAttribute.baseDirectory = c.files.temp_directory; // system temp directory
+        DiskAttribute.baseDirectory = httpConfig.files.temp_directory; // system temp directory
     }
 
     public <M extends InvokableMethod> M findMethod(String path, ChannelHandlerContext ctx,
@@ -122,6 +119,12 @@ public class HttpHandler extends MessageHandler<HttpConfig, Object> {
             }
             //set the path that matched
             request.setPath(method.path());
+            if (httpConfig.add_form_url_decoder) {
+                mediaTypeDecoders.add(new FormUrlEncodedDecoder(request));
+            }
+            if (httpConfig.add_json_decoder) {
+                mediaTypeDecoders.add(new JsonDecoder(request));
+            }
         }
         if (request == null || method == null) {
             log.warn(String.format("Method or request is null \n method \n%s \n request \n%s",
@@ -136,102 +139,29 @@ public class HttpHandler extends MessageHandler<HttpConfig, Object> {
                 invoke(ctx);
             }
         } else {
-            //if its a post or put request and a decoder doesn't exist then create one.
             if (decoder == null) {
-                try {
-                    decoder = new HttpPostRequestDecoder(factory, request);
-                } catch (HttpPostRequestDecoder.ErrorDataDecoderException e1) {
-                    log.warn("Unable to decode data", e1);
-                    throw new WebApplicationException(HttpStatus.BAD_REQUEST, request);
-                } catch (HttpPostRequestDecoder.IncompatibleDataDecoderException e) {
-                    log.warn("Incompatible request type", e);
-                    throw new WebApplicationException(HttpStatus.BAD_REQUEST, request);
+                for (MediaTypeDecoder d : mediaTypeDecoders) {
+                    if (d.canDecode(request.getContentType())) {
+                        decoder = d;
+                        break;
+                    }
+                }
+                if (decoder == null) {
+                    throw new WebApplicationException(HttpResponseStatus.NOT_ACCEPTABLE);
                 }
             }
             //decoder is created if it doesn't exist, can decode all if entire message received
             request.setChunked(HttpHeaders.isTransferEncodingChunked(request));
-            request.setMultipart(decoder.isMultipart());
-
             if (msg instanceof HttpContent) {
                 // New chunk is received
                 HttpContent chunk = (HttpContent) msg;
-                try {
-                    decoder.offer(chunk);
-                } catch (HttpPostRequestDecoder.ErrorDataDecoderException e1) {
-                    log.warn("Unable to decode HTTP chunk", e1);
-                    throw new WebApplicationException(HttpStatus.BAD_REQUEST, request);
-                }
-                readHttpDataChunkByChunk();
+                decoder.offer(chunk);
                 if (chunk instanceof LastHttpContent) {
-                    allHttpDataReceived(ctx);
+                    decoder.finished(ctx);
+                    invoke(ctx);
                 }
             }
         }
-    }
-
-    private void readHttpDataChunkByChunk() {
-        try {
-            while (decoder.hasNext()) {
-                InterfaceHttpData data = decoder.next();
-                if (data != null) {
-                    // new value
-                    writeHttpData(data);
-                }
-            }
-        } catch (HttpPostRequestDecoder.EndOfDataDecoderException e1) {
-            // end
-        }
-    }
-
-    private void writeHttpData(InterfaceHttpData data) {
-        //check if is file upload or attribute, attributes go into form params and file uploads to file params
-        if (data.getHttpDataType() == InterfaceHttpData.HttpDataType.Attribute) {
-            io.netty.handler.codec.http.multipart.Attribute field =
-                    (io.netty.handler.codec.http.multipart.Attribute) data;
-            try {
-                //add form param
-                String name = field.getName();
-                int idx = name.indexOf("[");
-                if (idx != -1 && name.endsWith("]")) {
-                    String realName = name.substring(0, idx);
-                    String fieldName = name.substring(idx + 1).replace(']', ' ').trim();
-                    if (request.getFormParam().get(realName) == null) {
-                        request.getFormParam().put(realName, new HashMap<String, String>());
-                    }
-                    ((HashMap<String, String>) request.getFormParam().get(realName)).put(fieldName, field.getValue());
-                } else {
-                    request.addFormField(name, field.getValue());
-                }
-            } catch (IOException e) {
-                log.warn(String.format("unable to extract form field's value, field name = %s", field.getName()));
-            }
-        } else {
-            if (data instanceof FileUpload) {
-                //add form file
-                request.addFormFile(new HttpFile((FileUpload) data));
-            } else {
-                if (data != null) {
-                    log.warn(String.format("Unknown form type encountered Class: %s,data type:%s,name:%s",
-                            data.getClass().getName(), data.getHttpDataType().name(), data.getName()));
-                }
-            }
-        }
-    }
-
-    private void allHttpDataReceived(ChannelHandlerContext ctx) {
-        //entire message/request received
-        List<InterfaceHttpData> data;
-        try {
-            data = decoder.getBodyHttpDatas();
-        } catch (HttpPostRequestDecoder.NotEnoughDataDecoderException e1) {
-            log.warn("Not enough data to decode", e1);
-            throw new WebApplicationException(HttpStatus.BAD_REQUEST, request);
-        }
-        //called when all data is received, go over request data and separate form fields from files
-        for (InterfaceHttpData httpData : data) {
-            writeHttpData(httpData);
-        }
-        invoke(ctx);
     }
 
     protected void invoke(final ChannelHandlerContext ctx) {
@@ -255,10 +185,10 @@ public class HttpHandler extends MessageHandler<HttpConfig, Object> {
                 return ctx;
             }
         };
-        //inject globally available dependencies
-        Object[] params = Injector.inject(method.method().getParameterTypes(), new Object[0],
-                DependencyProvider.from(pusher));
-        //inject request specific dependencies
+        //inject globally available provider
+        decoder.provider().add(pusher);
+        Object[] params = Injector.inject(method.method().getParameterTypes(), new Object[0], decoder.provider());
+        //inject request specific provider
         injector.injectParams(method, request, res, ctx, params);
         try {
             Object response = method.invoke(ctx, request.getUri(), method, params);

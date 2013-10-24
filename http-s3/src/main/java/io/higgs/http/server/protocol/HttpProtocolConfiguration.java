@@ -21,11 +21,12 @@ import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedDeque;
 
 public class HttpProtocolConfiguration implements ProtocolConfiguration {
-    private HiggsServer server;
-    private ParamInjector injector = new DefaultParamInjector();
     private final Map<String, HttpSession> sessions = new HashMap<>();
     private final Queue<ResponseTransformer> transformers = new ConcurrentLinkedDeque<>();
     private final Queue<ResponseTransformer> errorTransformers = new ConcurrentLinkedDeque<>();
+    private final Queue<MediaTypeDecoder> mediaTypeDecoders = new ConcurrentLinkedDeque<>();
+    private HiggsServer server;
+    private ParamInjector injector = new DefaultParamInjector();
     private Transcriber transcriber = new Transcriber();
 
     public Map<String, HttpSession> getSessions() {
@@ -86,6 +87,10 @@ public class HttpProtocolConfiguration implements ProtocolConfiguration {
         if (server.getConfig().add_thymeleaf_transformer) {
             transformers.add(new ThymeleafTransformer(((HttpConfig) this.server.getConfig()).template_config));
         }
+    }
+
+    public Queue<MediaTypeDecoder> getMediaTypeDecoders() {
+        return mediaTypeDecoders;
     }
 
     public Queue<ResponseTransformer> getTransformers() {

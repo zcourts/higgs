@@ -50,10 +50,10 @@ public class ThymeleafTransformer extends BaseTransformer {
         if (!method.hasTemplate()) {
             return false;
         }
-        if (request.getMediaTypes().isEmpty()) {
+        if (request.getAcceptedMediaTypes().isEmpty()) {
             return true; //assume */*
         }
-        for (MediaType type : request.getMediaTypes()) {
+        for (MediaType type : request.getAcceptedMediaTypes()) {
             if (type.isCompatible(MediaType.WILDCARD_TYPE) ||
                     type.isCompatible(MediaType.TEXT_HTML_TYPE) ||
                     type.isCompatible(MediaType.APPLICATION_FORM_URLENCODED_TYPE) ||
