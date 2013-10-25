@@ -3,6 +3,7 @@ package io.higgs.http.server.protocol;
 import io.higgs.core.FixedSortedList;
 import io.higgs.core.InvokableMethod;
 import io.higgs.core.MessageHandler;
+import io.higgs.core.reflect.dependency.DependencyProvider;
 import io.higgs.core.reflect.dependency.Injector;
 import io.higgs.http.server.HttpRequest;
 import io.higgs.http.server.HttpResponse;
@@ -119,11 +120,13 @@ public class HttpHandler extends MessageHandler<HttpConfig, Object> {
             }
             //set the path that matched
             request.setPath(method.path());
-            if (httpConfig.add_form_url_decoder) {
-                mediaTypeDecoders.add(new FormUrlEncodedDecoder(request));
-            }
-            if (httpConfig.add_json_decoder) {
-                mediaTypeDecoders.add(new JsonDecoder(request));
+            if (isEntityRequest()) {
+                if (httpConfig.add_form_url_decoder) {
+                    mediaTypeDecoders.add(new FormUrlEncodedDecoder(request));
+                }
+                if (httpConfig.add_json_decoder) {
+                    mediaTypeDecoders.add(new JsonDecoder(request));
+                }
             }
         }
         if (request == null || method == null) {
@@ -132,8 +135,7 @@ public class HttpHandler extends MessageHandler<HttpConfig, Object> {
             throw new WebApplicationException(HttpStatus.INTERNAL_SERVER_ERROR, request);
         }
         //we have a request and it matches a registered method
-        if (!io.netty.handler.codec.http.HttpMethod.POST.name().equalsIgnoreCase(request.getMethod().name()) &&
-                !io.netty.handler.codec.http.HttpMethod.PUT.name().equalsIgnoreCase(request.getMethod().name())) {
+        if (!isEntityRequest()) {
             if (msg instanceof LastHttpContent) {
                 //only post and put requests  are allowed to send form data so everything else just returns
                 invoke(ctx);
@@ -164,6 +166,14 @@ public class HttpHandler extends MessageHandler<HttpConfig, Object> {
         }
     }
 
+    /**
+     * @return true if post or put request, i.e. requests that have a body/entity
+     */
+    private boolean isEntityRequest() {
+        return io.netty.handler.codec.http.HttpMethod.POST.name().equalsIgnoreCase(request.getMethod().name()) ||
+                io.netty.handler.codec.http.HttpMethod.PUT.name().equalsIgnoreCase(request.getMethod().name());
+    }
+
     protected void invoke(final ChannelHandlerContext ctx) {
         MessagePusher pusher = new MessagePusher() {
             @Override
@@ -186,8 +196,9 @@ public class HttpHandler extends MessageHandler<HttpConfig, Object> {
             }
         };
         //inject globally available provider
-        decoder.provider().add(pusher);
-        Object[] params = Injector.inject(method.method().getParameterTypes(), new Object[0], decoder.provider());
+        DependencyProvider provider = decoder == null ? DependencyProvider.from() : decoder.provider();
+        provider.add(pusher);
+        Object[] params = Injector.inject(method.method().getParameterTypes(), new Object[0], provider);
         //inject request specific provider
         injector.injectParams(method, request, res, ctx, params);
         try {

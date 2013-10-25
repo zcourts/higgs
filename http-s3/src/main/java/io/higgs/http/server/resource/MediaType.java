@@ -248,6 +248,10 @@ public class MediaType {
         if (other == null) {
             return false;
         }
+        if(other.type == null || other.subtype == null){
+            return false;
+        }
+
         if (type.equals(MEDIA_TYPE_WILDCARD) || other.type.equals(MEDIA_TYPE_WILDCARD)) {
             return true;
         } else {
@@ -255,8 +259,8 @@ public class MediaType {
                     || other.subtype.equals(MEDIA_TYPE_WILDCARD))) {
                 return true;
             } else {
-                return this.type.equalsIgnoreCase(other.type)
-                        && this.subtype.equalsIgnoreCase(other.subtype);
+                return this.type.trim().equalsIgnoreCase(other.type.trim())
+                        && this.subtype.trim().equalsIgnoreCase(other.subtype.trim());
             }
         }
     }
