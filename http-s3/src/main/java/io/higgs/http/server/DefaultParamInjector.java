@@ -31,7 +31,7 @@ public class DefaultParamInjector implements ParamInjector {
                                  Object[] args) {
         MethodParam[] params = method.getParams();
 
-        ResourcePath path = method.path();
+        ResourcePath path = request.getPath();
         ResourcePath.Component[] components = new ResourcePath.Component[0];
         //@template annotation is optional
         if (path != null) {
