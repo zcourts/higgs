@@ -118,8 +118,6 @@ public class HttpHandler extends MessageHandler<HttpConfig, Object> {
                 //404
                 throw new WebApplicationException(HttpStatus.NOT_FOUND, request);
             }
-            //set the path that matched
-            request.setPath(method.path());
             if (isEntityRequest()) {
                 if (httpConfig.add_form_url_decoder) {
                     mediaTypeDecoders.add(new FormUrlEncodedDecoder(request));
