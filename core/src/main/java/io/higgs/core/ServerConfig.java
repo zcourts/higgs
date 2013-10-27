@@ -17,7 +17,7 @@ public class ServerConfig {
     public boolean add_thymeleaf_transformer = true;
     public boolean add_json_transformer = true;
     public boolean add_default_error_transformer = true;
-    public String session_path = "/";
+    public String session_path = "/", session_dir = "/tmp/hs3-sessions/";
     //ignored if null
     public String session_domain;
     //7 days in milliseconds
