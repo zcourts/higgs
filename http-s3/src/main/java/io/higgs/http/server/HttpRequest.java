@@ -1,26 +1,13 @@
 package io.higgs.http.server;
 
 import io.higgs.core.ResourcePath;
-import io.higgs.http.server.params.FormFiles;
-import io.higgs.http.server.params.FormParams;
-import io.higgs.http.server.params.HttpCookie;
-import io.higgs.http.server.params.HttpCookies;
-import io.higgs.http.server.params.HttpFile;
-import io.higgs.http.server.params.HttpSession;
-import io.higgs.http.server.params.QueryParams;
+import io.higgs.http.server.params.*;
 import io.higgs.http.server.protocol.HttpProtocolConfiguration;
 import io.higgs.http.server.resource.MediaType;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.handler.codec.http.Cookie;
-import io.netty.handler.codec.http.CookieDecoder;
-import io.netty.handler.codec.http.DefaultHttpRequest;
-import io.netty.handler.codec.http.FullHttpRequest;
-import io.netty.handler.codec.http.HttpHeaders;
-import io.netty.handler.codec.http.HttpMethod;
-import io.netty.handler.codec.http.HttpVersion;
-import io.netty.handler.codec.http.QueryStringDecoder;
+import io.netty.handler.codec.http.*;
 import io.netty.util.Attribute;
 import io.netty.util.AttributeKey;
 import org.joda.time.DateTime;
@@ -112,40 +99,42 @@ public class HttpRequest extends DefaultHttpRequest {
             sessionId = sc.getValue();
         }
         if (sc == null || config.getSessions().get(sessionId) == null) {
-            //generate a new session ID
-            SecureRandom random = new SecureRandom();
-            sessionId = new BigInteger(130, random).toString(32);
+            if (sc == null) {
+                //generate a new session ID
+                SecureRandom random = new SecureRandom();
+                sessionId = new BigInteger(130, random).toString(32);
 
-            HttpCookie session = new HttpCookie(SID, sessionId);
-            session.setPath(config.getServer().getConfig().session_path);
-            session.setMaxAge(config.getServer().getConfig().session_max_age);
-            session.setHttpOnly(config.getServer().getConfig().session_http_only);
+                HttpCookie session = new HttpCookie(SID, sessionId);
+                session.setPath(config.getServer().getConfig().session_path);
+                session.setMaxAge(config.getServer().getConfig().session_max_age);
+                session.setHttpOnly(config.getServer().getConfig().session_http_only);
 
-            if (config.getServer().getConfig().session_domain != null &&
-                    !config.getServer().getConfig().session_domain.isEmpty()) {
-                session.setDomain(config.getServer().getConfig().session_domain);
-            }
-
-            String sp = config.getServer().getConfig().session_ports;
-            if (sp != null && !sp.isEmpty()) {
-                String[] ps = sp.split(",");
-                List<Integer> ports = new ArrayList<>(ps.length);
-                for (String p : ps) {
-                    try {
-                        ports.add(parseInt(p));
-                    } catch (NumberFormatException nfe) {
-                        log.warn(String.format("Session port config contained non-numeric value (%s)", p));
-                    }
+                if (config.getServer().getConfig().session_domain != null &&
+                        !config.getServer().getConfig().session_domain.isEmpty()) {
+                    session.setDomain(config.getServer().getConfig().session_domain);
                 }
-                session.setPorts(ports);
+
+                String sp = config.getServer().getConfig().session_ports;
+                if (sp != null && !sp.isEmpty()) {
+                    String[] ps = sp.split(",");
+                    List<Integer> ports = new ArrayList<>(ps.length);
+                    for (String p : ps) {
+                        try {
+                            ports.add(parseInt(p));
+                        } catch (NumberFormatException nfe) {
+                            log.warn(String.format("Session port config contained non-numeric value (%s)", p));
+                        }
+                    }
+                    session.setPorts(ports);
+                }
+                this.sessionCookie = session;
+                this.newSession = true;
             }
             //need to associate session ID with the channel since multiple requests can be received
             //before the session cookie is set on the client, e.g. in keep alive requests
             Attribute<String> sessAttr = ctx.channel().attr(sessionAttr);
             sessAttr.set(sessionId);
-            this.newSession = true;
-            this.sessionCookie = session;
-            config.getSessions().put(sessionId, new HttpSession());
+            config.getSessions().put(sessionId, HttpSession.newSession(sessionId, config.getServer().getConfig().session_dir));
         }
     }
 
