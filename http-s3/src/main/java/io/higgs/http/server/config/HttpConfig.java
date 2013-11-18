@@ -13,6 +13,7 @@ public class HttpConfig extends ServerConfig {
     public boolean add_json_decoder = true;
     //
     private Map<Integer, HttpMethod> errors = new HashMap<>();
+    public boolean enable_keep_alive_requests;
 
     public HttpConfig() {
     }

@@ -60,7 +60,7 @@ public class HttpRequest extends DefaultHttpRequest {
     public HttpRequest(FullHttpRequest msg) {
         this(msg.getProtocolVersion(), msg.getMethod(), msg.getUri());
         headers().add(msg.headers());
-        content = msg.content();
+        content = Unpooled.copiedBuffer(msg.content());
         setDecoderResult(msg.getDecoderResult());
     }
 
