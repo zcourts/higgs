@@ -7,25 +7,16 @@ import io.higgs.core.reflect.dependency.DependencyProvider;
 import io.higgs.core.reflect.dependency.Injector;
 import io.higgs.http.server.HttpRequest;
 import io.higgs.http.server.HttpResponse;
-import io.higgs.http.server.HttpStatus;
-import io.higgs.http.server.MessagePusher;
-import io.higgs.http.server.ParamInjector;
-import io.higgs.http.server.StaticFileMethod;
-import io.higgs.http.server.WebApplicationException;
-import io.higgs.http.server.WrappedResponse;
+import io.higgs.http.server.*;
 import io.higgs.http.server.config.HttpConfig;
 import io.higgs.http.server.protocol.media_type_decoders.FormUrlEncodedDecoder;
 import io.higgs.http.server.protocol.media_type_decoders.JsonDecoder;
 import io.higgs.http.server.transformers.ResponseTransformer;
+import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.handler.codec.http.FullHttpRequest;
-import io.netty.handler.codec.http.HttpContent;
-import io.netty.handler.codec.http.HttpHeaders;
-import io.netty.handler.codec.http.HttpResponseStatus;
-import io.netty.handler.codec.http.HttpVersion;
-import io.netty.handler.codec.http.LastHttpContent;
+import io.netty.handler.codec.http.*;
 import io.netty.handler.codec.http.multipart.DiskAttribute;
 import io.netty.handler.codec.http.multipart.DiskFileUpload;
 import org.slf4j.Logger;
@@ -106,7 +97,7 @@ public class HttpHandler extends MessageHandler<HttpConfig, Object> {
             } else {
                 request = new HttpRequest((FullHttpRequest) msg);
             }
-            res = new HttpResponse(ctx.alloc().buffer());
+            res = new HttpResponse(Unpooled.buffer());
             //apply transcriptions
             protocolConfig.getTranscriber().transcribe(request);
             //must always set protocol config before anything uses the request
@@ -272,7 +263,7 @@ public class HttpHandler extends MessageHandler<HttpConfig, Object> {
             future = res.doManagedWrite();
         }
         // Close the connection after the write operation is done if necessary.
-        if (close) {
+        if (close || !config.enable_keep_alive_requests) {
             future.addListener(ChannelFutureListener.CLOSE);
         }        //clean up and prep for next request. if keep-alive browsers like chrome will
         //make multiple requests on the same channel

@@ -21,4 +21,8 @@ public class FutureResponse extends DefaultPromise<Response> {
         response.markFailed(cause);
         return res;
     }
+
+    public Response getResponse() {
+        return response;
+    }
 }

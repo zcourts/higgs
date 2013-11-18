@@ -9,7 +9,7 @@ import io.netty.channel.ChannelPipeline;
 import io.netty.handler.codec.ByteToMessageDecoder;
 import io.netty.handler.codec.compression.ZlibCodecFactory;
 import io.netty.handler.codec.compression.ZlibWrapper;
-import io.netty.handler.ssl.SslHandler;
+import io.netty.handler.ssl.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
