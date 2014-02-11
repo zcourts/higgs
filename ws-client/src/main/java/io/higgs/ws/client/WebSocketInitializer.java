@@ -19,7 +19,7 @@ public class WebSocketInitializer extends ClientIntializer {
     private final String fullUrl;
 
     public WebSocketInitializer(int maxContentLength, boolean ssl, SimpleChannelInboundHandler<Object> handler,
-                                ConnectHandler connHandler, String fullUrl) {
+                                ConnectHandler connHandler, String fullUrl, String[] sslProtocols) {
         super(ssl, handler, connHandler, sslProtocols);
         this.maxContentLength = maxContentLength;
         this.fullUrl = fullUrl;

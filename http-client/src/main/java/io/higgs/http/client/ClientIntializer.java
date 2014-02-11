@@ -32,7 +32,7 @@ public class ClientIntializer extends ChannelInitializer<SocketChannel> {
     protected final boolean ssl;
     protected final ConnectHandler connectHandler;
     protected final SimpleChannelInboundHandler<Object> handler;
-    private final String[] sslProtocols;
+    protected final String[] sslProtocols;
 
     public ClientIntializer(boolean ssl, SimpleChannelInboundHandler<Object> handler, ConnectHandler connectHandler,
                             String[] sslProtocols) {
