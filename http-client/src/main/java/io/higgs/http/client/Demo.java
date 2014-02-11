@@ -42,6 +42,21 @@ public class Demo {
             }
         });
 
+        Request req3 = HttpRequestBuilder.instance().GET(new URI("https://api.datasift.com/v1.1/dpu"),
+                new PageReader(new Function2<String, Response>() {
+                    public void apply(String s, final Response response) {
+                        System.out.println(s);
+                        HttpRequestBuilder.shutdown();
+                    }
+                }))
+                //SSLv3, TLSv1, TLSv1.1, TLSv1.2 are typical
+                .withSSLProtocols(new String[]{"SSLv3", "TLSv1"});
+        //can always check what options are supported with
+        HttpRequestBuilder.getSupportedSSLProtocols();
+        //check if a specific version is supported
+        HttpRequestBuilder.isSupportedSSLProtocol("SSLv3");
+
+        req3.execute();
         //automatically follow redirects
         //disable redirect
         HttpRequestBuilder clone = defaults.copy();

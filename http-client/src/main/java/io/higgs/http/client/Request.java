@@ -3,16 +3,34 @@ package io.higgs.http.client;
 import io.higgs.core.StaticUtil;
 import io.higgs.http.client.future.Reader;
 import io.netty.bootstrap.Bootstrap;
-import io.netty.channel.*;
+import io.netty.channel.Channel;
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelHandler;
+import io.netty.channel.EventLoopGroup;
+import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.socket.nio.NioSocketChannel;
-import io.netty.handler.codec.http.*;
+import io.netty.handler.codec.http.ClientCookieEncoder;
+import io.netty.handler.codec.http.Cookie;
+import io.netty.handler.codec.http.DefaultCookie;
+import io.netty.handler.codec.http.DefaultFullHttpRequest;
+import io.netty.handler.codec.http.HttpHeaders;
+import io.netty.handler.codec.http.HttpMethod;
+import io.netty.handler.codec.http.HttpRequest;
+import io.netty.handler.codec.http.HttpVersion;
+import io.netty.handler.codec.http.QueryStringDecoder;
+import io.netty.handler.codec.http.QueryStringEncoder;
 import io.netty.handler.codec.http.multipart.DiskFileUpload;
 import io.netty.util.concurrent.GenericFutureListener;
 
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.Charset;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import static javax.xml.bind.DatatypeConverter.printBase64Binary;
 
@@ -41,6 +59,7 @@ public class Request {
     protected ChannelFuture connectFuture;
     protected boolean useSSL;
     protected boolean tunneling;
+    private String[] sslProtocols;
 
     public Request(HttpRequestBuilder builder, EventLoopGroup group, URI uri, HttpMethod method, HttpVersion version,
                    Reader responseReader) {
@@ -98,7 +117,7 @@ public class Request {
      * Makes the request to the server
      *
      * @return A Future which is notified when the response is acknowledged by the server.
-     *         It doesn't mean the entire contents of the response has been received, just that it's started.
+     * It doesn't mean the entire contents of the response has been received, just that it's started.
      */
     public FutureResponse execute() {
         String scheme = getScheme();
@@ -188,13 +207,13 @@ public class Request {
             @Override
             public ClientIntializer newInstance(boolean ssl, SimpleChannelInboundHandler<Object>
                     handler, ConnectHandler h) {
-                return new ClientIntializer(ssl, handler, h);
+                return new ClientIntializer(ssl, handler, h, sslProtocols);
             }
         };
         return new ClientIntializer(useSSL, newInboundHandler(),
                 //if proxy request exists then initializer should add it instead of the normal handler
                 isProxyEnabled() && proxyRequest != null ?
-                        new ConnectHandler(tunneling, request, newInboundHandler(), factory) : null);
+                        new ConnectHandler(tunneling, request, newInboundHandler(), factory) : null, sslProtocols);
     }
 
     protected SimpleChannelInboundHandler<Object> newInboundHandler() {
@@ -434,5 +453,13 @@ public class Request {
 
     public HttpRequest nettyRequest() {
         return request;
+    }
+
+    public Request withSSLProtocols(String[] protocols) {
+        if (protocols == null || protocols.length == 0) {
+            throw new IllegalArgumentException("At least one SSL protocol must be enabled");
+        }
+        this.sslProtocols = protocols;
+        return this;
     }
 }

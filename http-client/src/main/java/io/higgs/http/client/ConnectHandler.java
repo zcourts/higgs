@@ -33,7 +33,7 @@ public class ConnectHandler extends SimpleChannelInboundHandler<Object> {
             if (code > 199 && code < 300) {
                 if (tunneling) {
                     //add an SSL handler to the front of the pipeline
-                    ClientIntializer.addSSL(ctx.pipeline(), true);
+                    ClientIntializer.addSSL(ctx.pipeline(), true, null);
                 }
             } else {
                 throw new ProxyConnectionException("Proxy server indicated it was unable to establish a secure " +

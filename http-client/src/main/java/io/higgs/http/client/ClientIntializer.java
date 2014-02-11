@@ -32,11 +32,14 @@ public class ClientIntializer extends ChannelInitializer<SocketChannel> {
     protected final boolean ssl;
     protected final ConnectHandler connectHandler;
     protected final SimpleChannelInboundHandler<Object> handler;
+    private final String[] sslProtocols;
 
-    public ClientIntializer(boolean ssl, SimpleChannelInboundHandler<Object> handler, ConnectHandler connectHandler) {
+    public ClientIntializer(boolean ssl, SimpleChannelInboundHandler<Object> handler, ConnectHandler connectHandler,
+                            String[] sslProtocols) {
         this.ssl = ssl;
         this.handler = handler;
         this.connectHandler = connectHandler;
+        this.sslProtocols = sslProtocols;
     }
 
     /**
@@ -46,9 +49,12 @@ public class ClientIntializer extends ChannelInitializer<SocketChannel> {
      * @param forceToFront if true then the SSL handler is added to the front of the pipeline otherwise it is added
      *                     at the end
      */
-    public static void addSSL(ChannelPipeline pipeline, boolean forceToFront) {
+    public static void addSSL(ChannelPipeline pipeline, boolean forceToFront, String[] sslProtocols) {
         SSLEngine engine = SSLContextFactory.getSSLSocket(SSLConfigFactory.sslConfiguration).createSSLEngine();
         engine.setUseClientMode(true);
+        if (sslProtocols != null && sslProtocols.length > 0) {
+            engine.setEnabledProtocols(sslProtocols);
+        }
         if (forceToFront) {
             pipeline.addFirst("ssl", new SslHandler(engine));
         } else {
@@ -58,7 +64,7 @@ public class ClientIntializer extends ChannelInitializer<SocketChannel> {
 
     public void configurePipeline(ChannelPipeline pipeline) {
         if (ssl) {
-            addSSL(pipeline, false);
+            addSSL(pipeline, false, sslProtocols);
         }
 
         if (pipeline.get("codec") == null) {
