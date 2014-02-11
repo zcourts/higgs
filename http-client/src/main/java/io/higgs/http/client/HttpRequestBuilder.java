@@ -1,5 +1,7 @@
 package io.higgs.http.client;
 
+import io.higgs.core.ssl.SSLConfigFactory;
+import io.higgs.core.ssl.SSLContextFactory;
 import io.higgs.http.client.future.Reader;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
@@ -7,6 +9,7 @@ import io.netty.handler.codec.http.HttpHeaders;
 import io.netty.handler.codec.http.HttpMethod;
 import io.netty.handler.codec.http.HttpVersion;
 
+import javax.net.ssl.SSLEngine;
 import java.net.URI;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -60,6 +63,36 @@ public class HttpRequestBuilder {
     public static void restart() {
         shutdown();
         group = new NioEventLoopGroup();
+    }
+
+    /**
+     * Gets the list of SSL protocols supported by the current JVM
+     *
+     * @return e.g. [SSLv2Hello, SSLv3, TLSv1, TLSv1.1, TLSv1.2]
+     */
+    public static String[] getSupportedSSLProtocols() {
+        SSLEngine engine = SSLContextFactory.getSSLSocket(SSLConfigFactory.sslConfiguration).createSSLEngine();
+        engine.setUseClientMode(true);
+        return engine.getSupportedProtocols();
+    }
+
+    /**
+     * Checks if the given SSL protocol is supported by the current JVM
+     *
+     * @param protocol e.g. SSLv2Hello, SSLv3, TLSv1, TLSv1.1, TLSv1.2
+     * @return true if supported, false otherwise
+     * @throws java.lang.IllegalArgumentException if the given protocol is null or empty
+     */
+    public static boolean isSupportedSSLProtocol(String protocol) {
+        if (protocol == null || protocol.isEmpty()) {
+            throw new IllegalArgumentException("Protocol cannot be null or empty");
+        }
+        for (String v : getSupportedSSLProtocols()) {
+            if (v.equalsIgnoreCase(protocol)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     public HttpRequestBuilder proxy(String host, int port) {
