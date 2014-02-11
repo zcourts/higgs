@@ -151,7 +151,7 @@ public class WebSocketClient extends Request {
             public ClientIntializer newInstance(boolean ssl,
                                                 SimpleChannelInboundHandler<Object> handler,
                                                 ConnectHandler h) {
-                return new WebSocketInitializer(maxContentLength, ssl, handler, h, fullUrl);
+                return new WebSocketInitializer(maxContentLength, ssl, handler, h, fullUrl, null);
             }
         };
 
@@ -166,7 +166,7 @@ public class WebSocketClient extends Request {
 
         connectHandler = isProxyEnabled() && proxyRequest != null ? connectHandler : null;
 
-        return new WebSocketInitializer(maxContentLength, useSSL, handler, connectHandler, fullUrl);
+        return new WebSocketInitializer(maxContentLength, useSSL, handler, connectHandler, fullUrl, null);
     }
 
     protected String getHost() {
