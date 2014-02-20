@@ -81,8 +81,9 @@ public class WebSocketClient extends Request {
     protected int maxContentLength = 8192;
     protected WebSocketStream stream;
     protected boolean autoPong = true;
+    protected String[] sslProtocols;
 
-    public WebSocketClient(URI uri, Map<String, Object> customHeaders, boolean autoPong) {
+    public WebSocketClient(URI uri, Map<String, Object> customHeaders, boolean autoPong, String[] sslProtocols) {
         super(BUILDER, HttpRequestBuilder.group(), uri, HttpMethod.GET, HttpVersion.HTTP_1_1, new PageReader());
         final String protocol = uri.getScheme();
         if (!"ws".equals(protocol) && !"wss".equals(protocol)) {
@@ -97,17 +98,20 @@ public class WebSocketClient extends Request {
                 customHeaderSet, maxFramePayloadLength);
         handler = new WebSocketClientHandler(handshaker, listeners, autoPong);
         this.autoPong = autoPong;
+        this.sslProtocols = sslProtocols == null || sslProtocols.length == 0 ?
+                HttpRequestBuilder.getSupportedSSLProtocols() : sslProtocols;
     }
 
     /**
      * Connect to the given URI
      *
-     * @param uri      the URI to connect to
-     * @param autoPong if true then the client automatically responds to pings by sending a pong
+     * @param uri          the URI to connect to
+     * @param autoPong     if true then the client automatically responds to pings by sending a pong
+     * @param sslProtocols a list of SSL protocols to support or null to use all available options on this JVM
      * @return a channel future which will be notified when the connection has completed
      */
-    public static WebSocketStream connect(URI uri, boolean autoPong) {
-        return connect(uri, new HashMap<String, Object>(), autoPong);
+    public static WebSocketStream connect(URI uri, boolean autoPong, String[] sslProtocols) {
+        return connect(uri, new HashMap<String, Object>(), autoPong, sslProtocols);
     }
 
     /**
@@ -116,10 +120,12 @@ public class WebSocketClient extends Request {
      * @param uri           the URI to connect to
      * @param customHeaders any custom headers to use
      * @param autoPong      if true then the client automatically responds to pings by sending a pong
+     * @param sslProtocols  a list of SSL protocols to support or null to use all available options on this JVM
      * @return a channel future which will be notified when the connection has completed
      */
-    public static WebSocketStream connect(URI uri, Map<String, Object> customHeaders, boolean autoPong) {
-        WebSocketClient client = new WebSocketClient(uri, customHeaders, autoPong);
+    public static WebSocketStream connect(URI uri, Map<String, Object> customHeaders, boolean autoPong,
+                                          String[] sslProtocols) {
+        WebSocketClient client = new WebSocketClient(uri, customHeaders, autoPong, sslProtocols);
         client.execute();
         return client.stream();
     }
@@ -150,7 +156,7 @@ public class WebSocketClient extends Request {
             public ClientIntializer newInstance(boolean ssl,
                                                 SimpleChannelInboundHandler<Object> handler,
                                                 ConnectHandler h) {
-                return new WebSocketInitializer(maxContentLength, ssl, handler, h, fullUrl, null);
+                return new WebSocketInitializer(maxContentLength, ssl, handler, h, fullUrl, sslProtocols);
             }
         };
 
@@ -165,7 +171,7 @@ public class WebSocketClient extends Request {
 
         connectHandler = isProxyEnabled() && proxyRequest != null ? connectHandler : null;
 
-        return new WebSocketInitializer(maxContentLength, useSSL, handler, connectHandler, fullUrl, null);
+        return new WebSocketInitializer(maxContentLength, useSSL, handler, connectHandler, fullUrl, sslProtocols);
     }
 
     protected String getHost() {
