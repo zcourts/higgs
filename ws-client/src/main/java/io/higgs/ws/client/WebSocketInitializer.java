@@ -30,6 +30,9 @@ public class WebSocketInitializer extends ClientIntializer {
             //proxy request
             super.configurePipeline(pipeline);
         } else {
+            if (ssl) {
+                addSSL(pipeline, false, sslProtocols);
+            }
             if (pipeline.get("codec") != null) {
                 pipeline.remove("codec");
             }
