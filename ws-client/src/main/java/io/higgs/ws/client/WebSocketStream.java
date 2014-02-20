@@ -1,13 +1,13 @@
 package io.higgs.ws.client;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import io.higgs.events.Events;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.handler.codec.http.websocketx.TextWebSocketFrame;
 import io.netty.util.concurrent.GenericFutureListener;
 
 import java.net.URI;
+import java.util.Set;
 
 import static io.higgs.ws.client.WebSocketClient.MAPPER;
 
@@ -17,13 +17,13 @@ import static io.higgs.ws.client.WebSocketClient.MAPPER;
 public class WebSocketStream {
     protected final ChannelFuture future;
     protected final URI uri;
-    private final Events events;
+    protected final Set<WebSocketEventListener> listeners;
     protected Channel channel;
 
-    public WebSocketStream(URI uri, ChannelFuture cf, Events events) {
+    public WebSocketStream(URI uri, ChannelFuture cf, Set<WebSocketEventListener> listeners) {
         this.uri = uri;
         this.future = cf;
-        this.events = events;
+        this.listeners = listeners;
         cf.addListener(new GenericFutureListener<ChannelFuture>() {
             public void operationComplete(ChannelFuture future) throws Exception {
                 if (future.isSuccess()) {
@@ -33,8 +33,9 @@ public class WebSocketStream {
         });
     }
 
-    public Events events() {
-        return events;
+    public WebSocketStream subscribe(WebSocketEventListener listener) {
+        listeners.add(listener);
+        return this;
     }
 
     /**
@@ -43,7 +44,7 @@ public class WebSocketStream {
      * @param message the message to send
      * @return
      */
-    public ChannelFuture emit(String message) {
+    public ChannelFuture send(String message) {
         if (channel == null || !channel.isActive()) {
             throw new IllegalStateException("Not connected");
         }
@@ -56,7 +57,7 @@ public class WebSocketStream {
      * @param message the message to send
      * @return a future or null if an error occurred
      */
-    public ChannelFuture emit(Object message) {
+    public ChannelFuture send(Object message) {
         if (channel == null || !channel.isActive()) {
             throw new IllegalStateException("Not connected");
         }
@@ -69,7 +70,7 @@ public class WebSocketStream {
 
     /**
      * @return The future obtained from the connection attempt.
-     *         Subscribe for notification of completion or error
+     * Subscribe for notification of completion or error
      */
     public ChannelFuture connectFuture() {
         return future;

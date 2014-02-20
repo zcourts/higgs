@@ -1,18 +1,18 @@
 package io.higgs.ws.client;
 
-import io.higgs.core.method;
-import io.higgs.events.EventMessage;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.handler.codec.http.HttpResponse;
+import io.netty.handler.codec.http.FullHttpResponse;
+import io.netty.handler.codec.http.websocketx.CloseWebSocketFrame;
 import io.netty.handler.codec.http.websocketx.PingWebSocketFrame;
 
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.charset.Charset;
 
 /**
  * @author Courtney Robinson <courtney.robinson@datasift.com>
  */
-public class WebSocketDemo {
+public class WebSocketDemo implements WebSocketEventListener {
     private final WebSocketStream stream;
 
     private WebSocketDemo(WebSocketStream stream) {
@@ -21,8 +21,9 @@ public class WebSocketDemo {
 
     public static void main(String... args) throws URISyntaxException {
         WebSocketClient.maxFramePayloadLength = 655360 * 20;
-        WebSocketStream stream = WebSocketClient.connect(new URI("ws://websocket.datasift.com/multi?username=zcourts&api_key=24cef71ef2da5c4a6e50586eed60f5d4"));
-        stream.events().subscribe(new WebSocketDemo(stream));
+        WebSocketStream stream = WebSocketClient.connect(new URI("ws://websocket.datasift.com/multi?username=" +
+                "zcourts&api_key=bc753994e3b3630556c7cf5c3f600d70"), true);
+        stream.subscribe(new WebSocketDemo(stream));
 
         //via a proxy...wholly a bad idea but should work almost always ;)  - ONLY WSS will work in most cases
         //because ws is not tunneled it's up to the proxy server to decide if it'll allow a ws request
@@ -34,38 +35,29 @@ public class WebSocketDemo {
 //        client.stream().events().subscribe(new WebSocketDemo(client.stream()));
     }
 
-    @method(WebSocketEvent.CONNECT_STR)
-    public void onConnect(EventMessage message, ChannelHandlerContext ws) {
-        System.out.println("Connected" + message);
-        //low throughput 1f678ba99fbcad0b572011b390cf5124
-        //stream.emit("{ \"action\" : \"subscribe\" , \"hash\": \"1f678ba99fbcad0b572011b390cf5124\"}");
-        //high throughput 13e9347e7da32f19fcdb08e297019d2e
-        stream.emit("{ \"action\" : \"subscribe\" , \"hash\": \"13e9347e7da32f19fcdb08e297019d2e\"}");
+    @Override
+    public void onConnect(ChannelHandlerContext ctx) {
+        stream.send("{ \"action\" : \"subscribe\" , \"hash\": \"13e9347e7da32f19fcdb08e297019d2e\"}");
     }
 
-    @method(WebSocketEvent.DISCONNECT_STR)
-    public void onDisconnect(EventMessage message, ChannelHandlerContext ws) {
-        System.out.println("DISCONNECTED:" + message);
+    @Override
+    public void onClose(ChannelHandlerContext ctx, CloseWebSocketFrame frame) {
+        System.out.println("DISCONNECTED:" + frame.reasonText());
     }
 
-    @method(WebSocketEvent.PING_STR)
-    public void onPing(EventMessage message, PingWebSocketFrame ws) {
-        System.out.println("PING:" + message);
+    @Override
+    public void onPing(ChannelHandlerContext ctx, PingWebSocketFrame frame) {
+        System.out.println("PING:" + frame.content().toString(Charset.forName("utf8")));
     }
 
-    @method(WebSocketEvent.PONG_STR)
-    public void onPong(EventMessage message, PingWebSocketFrame ws) {
-        System.out.println("PONG" + message);
+    @Override
+    public void onMessage(ChannelHandlerContext ctx, WebSocketMessage msg) {
+        System.out.println("MESSAGE:" + msg.data());
     }
 
-    @method(WebSocketEvent.MESSAGE_STR)
-    public void onMessage(EventMessage message, WebSocketMessage ws) {
-        System.out.println("MESSAGE:" + ws);
-    }
-
-    @method(WebSocketEvent.ERROR_STR)
-    public void onError(Throwable cause, ChannelHandlerContext ctx, EventMessage message, HttpResponse response) {
-        System.out.println("Error:" + message);
+    @Override
+    public void onError(ChannelHandlerContext ctx, Throwable cause, FullHttpResponse response) {
+        System.out.println("Error:" + response);
         if (cause != null) {
             cause.printStackTrace();
         }
