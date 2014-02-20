@@ -47,8 +47,8 @@ public class HiggsServer {
     protected EventLoopGroup workerGroup = new NioEventLoopGroup();
     protected ServerBootstrap bootstrap = new ServerBootstrap();
     protected Channel channel;
-    protected boolean detectSsl;
-    protected boolean detectGzip;
+    protected boolean detectSsl = true;
+    protected boolean detectGzip = true;
     protected ServerConfig config = new ServerConfig();
     protected Logger log = LoggerFactory.getLogger(getClass());
     Class<method> methodClass = method.class;

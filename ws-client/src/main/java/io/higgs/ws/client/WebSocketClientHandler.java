@@ -1,6 +1,5 @@
 package io.higgs.ws.client;
 
-import io.higgs.events.Events;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
@@ -22,28 +21,27 @@ import io.netty.handler.codec.http.websocketx.WebSocketClientHandshaker;
 import io.netty.handler.codec.http.websocketx.WebSocketFrame;
 import io.netty.util.CharsetUtil;
 import io.netty.util.concurrent.GenericFutureListener;
+import org.apache.log4j.Logger;
 
-import static io.higgs.ws.client.WebSocketEvent.CONNECT;
-import static io.higgs.ws.client.WebSocketEvent.DISCONNECT;
-import static io.higgs.ws.client.WebSocketEvent.ERROR;
-import static io.higgs.ws.client.WebSocketEvent.MESSAGE;
-import static io.higgs.ws.client.WebSocketEvent.PING;
-import static io.higgs.ws.client.WebSocketEvent.PONG;
+import java.util.Set;
 
 /**
  * @author Courtney Robinson <courtney@crlog.info>
  */
 public class WebSocketClientHandler extends SimpleChannelInboundHandler<Object> {
 
-    protected final Events events;
+    protected final Set<WebSocketEventListener> listensers;
     private final WebSocketClientHandshaker handshaker;
+    private final boolean autoPong;
     private ChannelPromise handshakeFuture;
     private FullHttpResponse response;
     private ChannelHandlerContext ctx;
 
-    public WebSocketClientHandler(WebSocketClientHandshaker handshaker, Events events) {
+    public WebSocketClientHandler(WebSocketClientHandshaker handshaker, Set<WebSocketEventListener> listeners,
+                                  boolean autoPong) {
         this.handshaker = handshaker;
-        this.events = events;
+        this.listensers = listeners;
+        this.autoPong = autoPong;
     }
 
     @Override
@@ -60,7 +58,9 @@ public class WebSocketClientHandler extends SimpleChannelInboundHandler<Object> 
 
     @Override
     public void channelInactive(ChannelHandlerContext c) throws Exception {
-        events.emit(DISCONNECT, ctx);
+        for (WebSocketEventListener l : listensers) {
+            l.onClose(c, null);
+        }
     }
 
     @Override
@@ -87,17 +87,25 @@ public class WebSocketClientHandler extends SimpleChannelInboundHandler<Object> 
 
         final WebSocketFrame frame = (WebSocketFrame) msg;
         if (frame instanceof TextWebSocketFrame) {
-            //emit frame as first param in case of a function since they only accept the first param emitted
-            events.emit(MESSAGE, new WebSocketMessage(((TextWebSocketFrame) frame).text()), ctx);
+            for (WebSocketEventListener l : listensers) {
+                l.onMessage(c, new WebSocketMessage(((TextWebSocketFrame) frame).text()));
+            }
         } else if (frame instanceof PingWebSocketFrame) {
-            frame.retain();
-            ctx.writeAndFlush(new PongWebSocketFrame(frame.content()));
-            events.emit(PING, ctx, frame);
+            if (autoPong) {
+                ctx.writeAndFlush(new PongWebSocketFrame(frame.content().copy()));
+            }
+            for (WebSocketEventListener l : listensers) {
+                l.onPing(c, (PingWebSocketFrame) frame.copy());
+            }
         } else if (frame instanceof PongWebSocketFrame) {
-            events.emit(PONG, ctx, frame);
+            Logger.getLogger(getClass()).warn(
+                    String.format("WebSocketClient received a PongWebSocketFrame, that shouldn't happen! Data : %s",
+                            frame.content().toString(CharsetUtil.UTF_8)));
         } else if (frame instanceof CloseWebSocketFrame) {
             ch.close();
-            events.emit(DISCONNECT, ctx);
+            for (WebSocketEventListener l : listensers) {
+                l.onClose(c, (CloseWebSocketFrame) frame.copy());
+            }
         }
     }
 
@@ -116,12 +124,16 @@ public class WebSocketClientHandler extends SimpleChannelInboundHandler<Object> 
     protected boolean completeHandshake(ChannelHandlerContext ctx) {
         if (!handshaker.isHandshakeComplete()) {
             if (response != null && response.getStatus().code() > 299) {
-                events.emit(ERROR, response, ctx);
+                for (WebSocketEventListener l : listensers) {
+                    l.onError(ctx, null, response);
+                }
                 return true;
             }
             handshaker.finishHandshake(ctx.channel(), response);
             handshakeFuture.setSuccess();
-            events.emit(CONNECT, ctx);
+            for (WebSocketEventListener l : listensers) {
+                l.onConnect(ctx);
+            }
             return true;
         }
         return false;
@@ -132,7 +144,9 @@ public class WebSocketClientHandler extends SimpleChannelInboundHandler<Object> 
         if (!handshakeFuture.isDone()) {
             handshakeFuture.setFailure(cause);
         }
-        events.emit(ERROR, cause, ctx);
+        for (WebSocketEventListener l : listensers) {
+            l.onError(ctx, cause, response);
+        }
         ctx.close();
     }
 

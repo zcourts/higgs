@@ -38,7 +38,6 @@ package io.higgs.ws.client;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.higgs.core.StaticUtil;
-import io.higgs.events.Events;
 import io.higgs.http.client.ClientIntializer;
 import io.higgs.http.client.ConnectHandler;
 import io.higgs.http.client.FutureResponse;
@@ -56,6 +55,7 @@ import io.netty.handler.codec.http.HttpVersion;
 import io.netty.handler.codec.http.websocketx.WebSocketClientHandshaker;
 import io.netty.handler.codec.http.websocketx.WebSocketClientHandshakerFactory;
 import io.netty.handler.codec.http.websocketx.WebSocketVersion;
+import org.cliffc.high_scale_lib.NonBlockingHashSet;
 
 import java.net.URI;
 import java.util.HashMap;
@@ -71,23 +71,23 @@ public class WebSocketClient extends Request {
      * The maximum size a websocket frame can be - in bytes
      */
     public static int maxFramePayloadLength = 65536 * 10;
-    protected final Events events;
-    private final WebSocketClientHandshaker handshaker;
-    private final WebSocketClientHandler handler;
+    protected NonBlockingHashSet<WebSocketEventListener> listeners = new NonBlockingHashSet<>();
+    protected WebSocketClientHandshaker handshaker;
+    protected final WebSocketClientHandler handler;
     protected boolean allowExtensions = false;
     protected WebSocketVersion version = WebSocketVersion.V13;
     protected String subprotocol = null;
     protected HttpHeaders customHeaderSet = new DefaultHttpHeaders();
     protected int maxContentLength = 8192;
-    private WebSocketStream stream;
+    protected WebSocketStream stream;
+    protected boolean autoPong = true;
 
-    public WebSocketClient(URI uri, Map<String, Object> customHeaders) {
+    public WebSocketClient(URI uri, Map<String, Object> customHeaders, boolean autoPong) {
         super(BUILDER, HttpRequestBuilder.group(), uri, HttpMethod.GET, HttpVersion.HTTP_1_1, new PageReader());
         final String protocol = uri.getScheme();
         if (!"ws".equals(protocol) && !"wss".equals(protocol)) {
             throw new IllegalArgumentException("Unsupported protocol: " + protocol);
         }
-        events = Events.group(uri.toString()); //fresh resources for each url
         if (customHeaders != null) {
             for (Map.Entry<String, Object> e : customHeaders.entrySet()) {
                 customHeaderSet.add(e.getKey(), e.getValue());
@@ -95,21 +95,19 @@ public class WebSocketClient extends Request {
         }
         handshaker = WebSocketClientHandshakerFactory.newHandshaker(uri, version, subprotocol, allowExtensions,
                 customHeaderSet, maxFramePayloadLength);
-        handler = new WebSocketClientHandler(handshaker, events);
-    }
-
-    public WebSocketClient(URI uri) {
-        this(uri, new HashMap<String, Object>());
+        handler = new WebSocketClientHandler(handshaker, listeners, autoPong);
+        this.autoPong = autoPong;
     }
 
     /**
      * Connect to the given URI
      *
-     * @param uri the URI to connect to
+     * @param uri      the URI to connect to
+     * @param autoPong if true then the client automatically responds to pings by sending a pong
      * @return a channel future which will be notified when the connection has completed
      */
-    public static WebSocketStream connect(URI uri) {
-        return connect(uri, new HashMap<String, Object>());
+    public static WebSocketStream connect(URI uri, boolean autoPong) {
+        return connect(uri, new HashMap<String, Object>(), autoPong);
     }
 
     /**
@@ -117,10 +115,11 @@ public class WebSocketClient extends Request {
      *
      * @param uri           the URI to connect to
      * @param customHeaders any custom headers to use
+     * @param autoPong      if true then the client automatically responds to pings by sending a pong
      * @return a channel future which will be notified when the connection has completed
      */
-    public static WebSocketStream connect(URI uri, Map<String, Object> customHeaders) {
-        WebSocketClient client = new WebSocketClient(uri, customHeaders);
+    public static WebSocketStream connect(URI uri, Map<String, Object> customHeaders, boolean autoPong) {
+        WebSocketClient client = new WebSocketClient(uri, customHeaders, autoPong);
         client.execute();
         return client.stream();
     }
@@ -131,7 +130,7 @@ public class WebSocketClient extends Request {
 
     public FutureResponse execute() {
         FutureResponse res = super.execute();
-        this.stream = new WebSocketStream(uri, connectFuture, events);
+        this.stream = new WebSocketStream(uri, connectFuture, listeners);
         return res;
     }
 
