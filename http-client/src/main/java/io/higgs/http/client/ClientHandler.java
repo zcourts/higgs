@@ -46,7 +46,7 @@ public class ClientHandler extends SimpleChannelInboundHandler<Object> {
             response.setProtocolVersion(res.getProtocolVersion());
             response.setHeaders(res.headers());
 
-            if (res.getStatus().code() == 200 && HttpHeaders.isTransferEncodingChunked(res)) {
+            if (HttpHeaders.isTransferEncodingChunked(res)) {
                 response.setChunked(true);
             }
         }

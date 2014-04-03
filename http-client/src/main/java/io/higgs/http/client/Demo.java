@@ -1,9 +1,9 @@
 package io.higgs.http.client;
 
 import io.higgs.core.func.Function2;
-import io.higgs.http.client.future.FileReader;
-import io.higgs.http.client.future.LineReader;
-import io.higgs.http.client.future.PageReader;
+import io.higgs.http.client.readers.FileReader;
+import io.higgs.http.client.readers.LineReader;
+import io.higgs.http.client.readers.PageReader;
 import io.netty.handler.codec.http.HttpHeaders;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.GenericFutureListener;

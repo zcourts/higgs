@@ -1,10 +1,13 @@
-package io.higgs.http.client.future;
+package io.higgs.http.client.readers;
 
 import io.higgs.core.func.Function2;
 import io.higgs.http.client.Response;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufInputStream;
 import io.netty.buffer.Unpooled;
+import io.netty.handler.codec.http.HttpHeaders;
+import io.netty.handler.codec.http.HttpResponseStatus;
+import io.netty.handler.codec.http.HttpVersion;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,12 +42,34 @@ public abstract class Reader<T> {
      *
      * @param data the data
      */
-    public abstract void data(ByteBuf data);
+    public void data(ByteBuf data) {
+        buffer.writeBytes(data);
+    }
 
     /**
      * Called once at the end of a stream when all data is received
      */
     public abstract void done();
+
+    /**
+     * @param status the HTTP status the server responded with
+     */
+    public void onStatus(HttpResponseStatus status) {
+    }
+
+    /**
+     * @param protocolVersion the HTTP version the server replied with
+     */
+    public void onProtocolVersion(HttpVersion protocolVersion) {
+    }
+
+    /**
+     * Called as soon as the HTTP response headers are available. i.e. before the data
+     *
+     * @param headers the HTTP response headers
+     */
+    public void onHeaders(HttpHeaders headers) {
+    }
 
     public void setCompleted(boolean completed) {
         this.completed = completed;

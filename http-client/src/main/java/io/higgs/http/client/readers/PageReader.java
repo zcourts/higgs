@@ -1,8 +1,7 @@
-package io.higgs.http.client.future;
+package io.higgs.http.client.readers;
 
 import io.higgs.core.func.Function2;
 import io.higgs.http.client.Response;
-import io.netty.buffer.ByteBuf;
 
 /**
  * This collects a response stream in memory and then converts it to a string when the entire stream
@@ -19,14 +18,10 @@ public class PageReader extends Reader<String> {
     }
 
     @Override
-    public void data(ByteBuf data) {
-        buffer.writeBytes(data);
-    }
-
-    @Override
     public void done() {
+        String str = buffer.toString(0, buffer.writerIndex(), utf8);
         for (Function2<String, Response> function : functions) {
-            function.apply(buffer.toString(0, buffer.writerIndex(), utf8), response);
+            function.apply(str, response);
         }
         //we read the entire stream
         buffer.readerIndex(buffer.writerIndex());

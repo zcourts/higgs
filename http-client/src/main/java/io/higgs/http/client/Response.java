@@ -1,6 +1,6 @@
 package io.higgs.http.client;
 
-import io.higgs.http.client.future.Reader;
+import io.higgs.http.client.readers.Reader;
 import io.netty.buffer.ByteBuf;
 import io.netty.handler.codec.http.HttpHeaders;
 import io.netty.handler.codec.http.HttpResponseStatus;
@@ -36,6 +36,7 @@ public class Response {
 
     public void setProtocolVersion(HttpVersion protocolVersion) {
         this.protocolVersion = protocolVersion;
+        reader.onProtocolVersion(protocolVersion);
     }
 
     public HttpVersion getProtocolVersion() {
@@ -44,6 +45,7 @@ public class Response {
 
     public void setStatus(HttpResponseStatus status) {
         this.status = status;
+        reader.onStatus(status);
     }
 
     public HttpResponseStatus getStatus() {
@@ -52,6 +54,7 @@ public class Response {
 
     public void setHeaders(HttpHeaders headers) {
         this.headers = headers;
+        reader.onHeaders(headers);
     }
 
     public HttpHeaders getHeaders() {
@@ -72,9 +75,10 @@ public class Response {
     /**
      * Mark the request as failed, this will set this response as completed
      * and notify all listeners that the request failed
+     *
      * @param cause an optional exception that may have been the cause of the failure
      */
-    public void markFailed(Throwable cause){
+    public void markFailed(Throwable cause) {
         this.failed = true;
         this.cause = cause;
         setCompleted(true);
@@ -91,7 +95,7 @@ public class Response {
      * @return If the request has failed, this returns the reason for the failure
      * May* be null
      */
-    public Throwable failureCause(){
+    public Throwable failureCause() {
         return cause;
     }
 

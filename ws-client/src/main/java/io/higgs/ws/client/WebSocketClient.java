@@ -43,7 +43,7 @@ import io.higgs.http.client.ConnectHandler;
 import io.higgs.http.client.FutureResponse;
 import io.higgs.http.client.HttpRequestBuilder;
 import io.higgs.http.client.Request;
-import io.higgs.http.client.future.PageReader;
+import io.higgs.http.client.readers.PageReader;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
