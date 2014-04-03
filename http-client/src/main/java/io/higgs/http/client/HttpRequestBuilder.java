@@ -2,7 +2,7 @@ package io.higgs.http.client;
 
 import io.higgs.core.ssl.SSLConfigFactory;
 import io.higgs.core.ssl.SSLContextFactory;
-import io.higgs.http.client.future.Reader;
+import io.higgs.http.client.readers.Reader;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.handler.codec.http.HttpHeaders;
@@ -136,10 +136,10 @@ public class HttpRequestBuilder {
 
     /**
      * See {@link Reader} for handling incoming data and the default implementations
-     * {@link io.higgs.http.client.future.PageReader} which reads an entire page
-     * {@link io.higgs.http.client.future.LineReader} which reads a response line by line
+     * {@link io.higgs.http.client.readers.PageReader} which reads an entire page
+     * {@link io.higgs.http.client.readers.LineReader} which reads a response line by line
      * or
-     * {@link io.higgs.http.client.future.FileReader} which reads a response and saves it to a file
+     * {@link io.higgs.http.client.readers.FileReader} which reads a response and saves it to a file
      *
      * @param uri    the URI to make the request to
      * @param reader the reader to use to process the response
@@ -156,10 +156,10 @@ public class HttpRequestBuilder {
 
     /**
      * See {@link Reader} for handling incoming data and the default implementations
-     * {@link io.higgs.http.client.future.PageReader} which reads an entire page
-     * {@link io.higgs.http.client.future.LineReader} which reads a response line by line
+     * {@link io.higgs.http.client.readers.PageReader} which reads an entire page
+     * {@link io.higgs.http.client.readers.LineReader} which reads a response line by line
      * or
-     * {@link io.higgs.http.client.future.FileReader} which reads a response and saves it to a file
+     * {@link io.higgs.http.client.readers.FileReader} which reads a response and saves it to a file
      *
      * @param uri    the URI to make the request to
      * @param reader the reader to use to process the response
@@ -176,10 +176,10 @@ public class HttpRequestBuilder {
 
     /**
      * See {@link Reader} for handling incoming data and the default implementations
-     * {@link io.higgs.http.client.future.PageReader} which reads an entire page
-     * {@link io.higgs.http.client.future.LineReader} which reads a response line by line
+     * {@link io.higgs.http.client.readers.PageReader} which reads an entire page
+     * {@link io.higgs.http.client.readers.LineReader} which reads a response line by line
      * or
-     * {@link io.higgs.http.client.future.FileReader} which reads a response and saves it to a file
+     * {@link io.higgs.http.client.readers.FileReader} which reads a response and saves it to a file
      *
      * @param uri    the URI to make the request to
      * @param reader the reader to use to process the response
@@ -196,10 +196,10 @@ public class HttpRequestBuilder {
 
     /**
      * See {@link Reader} for handling incoming data and the default implementations
-     * {@link io.higgs.http.client.future.PageReader} which reads an entire page
-     * {@link io.higgs.http.client.future.LineReader} which reads a response line by line
+     * {@link io.higgs.http.client.readers.PageReader} which reads an entire page
+     * {@link io.higgs.http.client.readers.LineReader} which reads a response line by line
      * or
-     * {@link io.higgs.http.client.future.FileReader} which reads a response and saves it to a file
+     * {@link io.higgs.http.client.readers.FileReader} which reads a response and saves it to a file
      *
      * @param uri    the URI to make the request to
      * @param reader the reader to use to process the response
@@ -216,10 +216,10 @@ public class HttpRequestBuilder {
 
     /**
      * See {@link Reader} for handling incoming data and the default implementations
-     * {@link io.higgs.http.client.future.PageReader} which reads an entire page
-     * {@link io.higgs.http.client.future.LineReader} which reads a response line by line
+     * {@link io.higgs.http.client.readers.PageReader} which reads an entire page
+     * {@link io.higgs.http.client.readers.LineReader} which reads a response line by line
      * or
-     * {@link io.higgs.http.client.future.FileReader} which reads a response and saves it to a file
+     * {@link io.higgs.http.client.readers.FileReader} which reads a response and saves it to a file
      *
      * @param uri    the URI to make the request to
      * @param reader the reader to use to process the response
@@ -236,10 +236,10 @@ public class HttpRequestBuilder {
 
     /**
      * See {@link Reader} for handling incoming data and the default implementations
-     * {@link io.higgs.http.client.future.PageReader} which reads an entire page
-     * {@link io.higgs.http.client.future.LineReader} which reads a response line by line
+     * {@link io.higgs.http.client.readers.PageReader} which reads an entire page
+     * {@link io.higgs.http.client.readers.LineReader} which reads a response line by line
      * or
-     * {@link io.higgs.http.client.future.FileReader} which reads a response and saves it to a file
+     * {@link io.higgs.http.client.readers.FileReader} which reads a response and saves it to a file
      *
      * @param uri    the URI to make the request to
      * @param reader the reader to use to process the response
@@ -256,10 +256,10 @@ public class HttpRequestBuilder {
 
     /**
      * See {@link Reader} for handling incoming data and the default implementations
-     * {@link io.higgs.http.client.future.PageReader} which reads an entire page
-     * {@link io.higgs.http.client.future.LineReader} which reads a response line by line
+     * {@link io.higgs.http.client.readers.PageReader} which reads an entire page
+     * {@link io.higgs.http.client.readers.LineReader} which reads a response line by line
      * or
-     * {@link io.higgs.http.client.future.FileReader} which reads a response and saves it to a file
+     * {@link io.higgs.http.client.readers.FileReader} which reads a response and saves it to a file
      *
      * @param uri    the URI to make the request to
      * @param reader the reader to use to process the response
@@ -276,10 +276,10 @@ public class HttpRequestBuilder {
 
     /**
      * See {@link Reader} for handling incoming data and the default implementations
-     * {@link io.higgs.http.client.future.PageReader} which reads an entire page
-     * {@link io.higgs.http.client.future.LineReader} which reads a response line by line
+     * {@link io.higgs.http.client.readers.PageReader} which reads an entire page
+     * {@link io.higgs.http.client.readers.LineReader} which reads a response line by line
      * or
-     * {@link io.higgs.http.client.future.FileReader} which reads a response and saves it to a file
+     * {@link io.higgs.http.client.readers.FileReader} which reads a response and saves it to a file
      *
      * @param uri    the URI to make the request to
      * @param reader the reader to use to process the response

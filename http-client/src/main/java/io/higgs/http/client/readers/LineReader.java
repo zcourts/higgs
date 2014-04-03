@@ -1,4 +1,4 @@
-package io.higgs.http.client.future;
+package io.higgs.http.client.readers;
 
 import io.higgs.core.func.Function2;
 import io.higgs.http.client.Response;

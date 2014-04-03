@@ -1,7 +1,7 @@
 package io.higgs.http.client;
 
 import io.higgs.core.StaticUtil;
-import io.higgs.http.client.future.Reader;
+import io.higgs.http.client.readers.Reader;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.EventLoopGroup;
 import io.netty.handler.codec.http.HttpMethod;

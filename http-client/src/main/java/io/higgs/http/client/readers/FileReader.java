@@ -1,4 +1,4 @@
-package io.higgs.http.client.future;
+package io.higgs.http.client.readers;
 
 import io.higgs.core.func.Function2;
 import io.higgs.http.client.Response;
@@ -41,6 +41,11 @@ public class FileReader extends Reader<File> {
 
     @Override
     public void done() {
+        try {
+            out.close();
+        } catch (IOException e) {
+            log.warn("Unable to close output stream of the downloaded file", e);
+        }
         for (Function2<File, Response> function : functions) {
             function.apply(file, response);
         }

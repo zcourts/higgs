@@ -1,16 +1,12 @@
 package io.higgs.http.client;
 
 import io.higgs.core.func.Function2;
-import io.higgs.core.ssl.SSLConfigFactory;
-import io.higgs.core.ssl.SSLContextFactory;
-import io.higgs.http.client.future.PageReader;
+import io.higgs.http.client.readers.PageReader;
 import io.netty.handler.codec.http.HttpHeaders;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.net.ssl.SSLEngine;
 import java.net.URI;
-import java.util.Arrays;
 
 /**
  * @author Courtney Robinson <courtney@crlog.info>
