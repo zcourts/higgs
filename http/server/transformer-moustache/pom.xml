@@ -1,0 +1,28 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <artifactId>transformer-moustache</artifactId>
+    <version>0.0.9-SNAPSHOT</version>
+    <name>${project.artifactId}</name>
+    <description>A service provider which implements the transformer interface</description>
+    <packaging>jar</packaging>
+    <parent>
+        <groupId>io.higgs</groupId>
+        <artifactId>http-server</artifactId>
+        <relativePath>../pom.xml</relativePath>
+        <version>0.0.9-SNAPSHOT</version>
+    </parent>
+    <dependencies>
+        <dependency>
+            <groupId>io.higgs</groupId>
+            <artifactId>http-s3</artifactId>
+            <version>0.0.9-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>com.github.spullara.mustache.java</groupId>
+            <artifactId>compiler</artifactId>
+            <version>0.8.14</version>
+        </dependency>
+    </dependencies>
+
+</project>
