@@ -3,7 +3,7 @@
     <artifactId>websocket</artifactId>
     <version>0.0.9-SNAPSHOT</version>
     <name>${project.artifactId}</name>
-    <packaging>jar</packaging>
+    <packaging>pom</packaging>
     <description>Higgs' WebSocket server and client implementation</description>
     <!-- Inherit most settings from parent project -->
     <parent>
@@ -12,6 +12,10 @@
         <relativePath>../pom.xml</relativePath>
         <version>0.0.9-SNAPSHOT</version>
     </parent>
+    <modules>
+        <module>server</module>
+        <module>client</module>
+    </modules>
     <dependencies>
         <dependency>
             <groupId>io.higgs</groupId>

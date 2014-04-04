@@ -35,12 +35,9 @@
     </developers>
     <modules>
         <module>core</module>
-        <module>boson</module>
         <module>http-client</module>
         <module>http-s3</module>
         <module>websocket</module>
-        <module>ws-client</module>
-        <module>cluster</module>
         <module>events</module>
     </modules>
 
