@@ -16,6 +16,7 @@ import java.util.Map;
 /**
  * @author Courtney Robinson <courtney@crlog.info>
  */
+//@ProviderFor(ResponseTransformer.class)
 public class HttpErrorTransformer extends BaseTransformer {
     private final HttpProtocolConfiguration protocolConfiguration;
     private final JsonTransformer json;

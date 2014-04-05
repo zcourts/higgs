@@ -3,7 +3,7 @@ package io.higgs.http.server.config;
 /**
  * @author Courtney Robinson <courtney@crlog.info>
  */
-public class TemplateConfig {
+public class MoustacheConfig {
 
     public boolean cacheable = true;
     /**
@@ -21,20 +21,8 @@ public class TemplateConfig {
      * resource names.
      */
     public String prefix = "templates/";
-    public Integer classLoader_resolver_order = 1;
-    public Integer fileResolver_order = 2;
-    public Integer url_resolver_order = 3;
     public boolean convert_map_responses_to_key_value_pairs = true;
     public boolean convert_pojo_responses_to_key_value_pairs = true;
-    public boolean auto_initialize_thymeleaf = true;
     public boolean determine_language_from_accept_header = true;
     public String auto_parse_extensions = "html,htm";
-
-    public String template_mode = "HTML5";
-    /**
-     * If true then template fragments are merged on each request.
-     * If false then fragments are merged once at start up
-     */
-    public boolean merge_fragments_on_each_request = true;
-    public String fragments_dir = "merged-fragments/";
 }

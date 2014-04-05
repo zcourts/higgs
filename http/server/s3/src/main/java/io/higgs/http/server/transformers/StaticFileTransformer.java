@@ -67,7 +67,8 @@ public class StaticFileTransformer extends BaseTransformer {
             String fileName = response instanceof File ?
                     ((File) response).getName() : ((JarFile) response).getEntry().getName();
             if (extensionPattern.matcher(fileName).matches()) {
-                parseTemplate(response, request, res, mediaType, method, ctx);
+                //parseTemplate(response, request, res, mediaType, method, ctx);
+                //todo find outher service providers that match the extension
             }
         }
         if (response != null) {
@@ -82,7 +83,7 @@ public class StaticFileTransformer extends BaseTransformer {
         }
     }
 
-    private void parseTemplate(Object response, HttpRequest request, HttpResponse httpResponse,
+  /*  private void parseTemplate(Object response, HttpRequest request, HttpResponse httpResponse,
                                MediaType mediaType,
                                HttpMethod method, ChannelHandlerContext ctx) {
 
@@ -114,7 +115,7 @@ public class StaticFileTransformer extends BaseTransformer {
             log.warn(String.format("Error passing static file through Thymeleaf Path:%s", path), e);
             httpResponse.setStatus(HttpResponseStatus.INTERNAL_SERVER_ERROR);
         }
-    }
+    }*/
 
     private void writeResponseFromStream(InputStream response, HttpResponse res, HttpRequest request,
                                          MediaType mediaType, HttpMethod method, ChannelHandlerContext ctx) {
