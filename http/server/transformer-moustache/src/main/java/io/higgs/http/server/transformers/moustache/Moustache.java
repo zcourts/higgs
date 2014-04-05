@@ -9,6 +9,7 @@ import io.higgs.http.server.protocol.HttpMethod;
 import io.higgs.http.server.resource.MediaType;
 import io.higgs.http.server.transformers.BaseTransformer;
 import io.higgs.http.server.transformers.ResponseTransformer;
+import io.higgs.spi.ProviderFor;
 import io.netty.channel.ChannelHandlerContext;
 
 import java.io.IOException;
@@ -20,6 +21,7 @@ import java.util.HashMap;
 /**
  * @author Courtney Robinson <courtney@crlog.info>
  */
+@ProviderFor(ResponseTransformer.class)
 public class Moustache extends BaseTransformer {
     public Moustache() {
     }

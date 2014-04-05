@@ -1,5 +1,6 @@
 package io.higgs.http.server.transformers;
 
+import io.higgs.core.ConfigUtil;
 import io.higgs.http.server.HttpRequest;
 import io.higgs.http.server.HttpResponse;
 import io.higgs.http.server.JarFile;
@@ -7,6 +8,7 @@ import io.higgs.http.server.config.HttpConfig;
 import io.higgs.http.server.protocol.HttpMethod;
 import io.higgs.http.server.protocol.HttpProtocolConfiguration;
 import io.higgs.http.server.resource.MediaType;
+import io.higgs.spi.ProviderFor;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.HttpResponseStatus;
@@ -21,15 +23,14 @@ import java.util.regex.Pattern;
 /**
  * @author Courtney Robinson <courtney@crlog.info>
  */
+@ProviderFor(ResponseTransformer.class)
 public class StaticFileTransformer extends BaseTransformer {
     private static Map<String, String> formats = new ConcurrentHashMap<>();
-    private final HttpProtocolConfiguration config;
-    private final HttpConfig conf;
+    private HttpConfig conf;
     private Pattern[] tlExtensions;
 
-    public StaticFileTransformer(HttpProtocolConfiguration configuration) {
-        this.config = configuration;
-        conf = configuration.getServer().getConfig();
+    public StaticFileTransformer() {
+        conf = ConfigUtil.loadYaml("static_file_config.yml", HttpConfig.class);
         //htm,html -> text/html, json -> application/json, xml -> application/xml
         Map<String, String> textFormats = conf.files.custom_mime_types;
         //map multiple extensions to the same content type
@@ -144,7 +145,7 @@ public class StaticFileTransformer extends BaseTransformer {
 
     @Override
     public ResponseTransformer instance() {
-        return new StaticFileTransformer(config);
+        return new StaticFileTransformer();
     }
 
     @Override

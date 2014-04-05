@@ -27,10 +27,6 @@
         </dependencies>
     </dependencyManagement>
     <dependencies>
-        <dependency>
-            <groupId>io.higgs</groupId>
-            <artifactId>core</artifactId>
-        </dependency>
         <!--json support-->
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>

@@ -1,5 +1,6 @@
 package io.higgs.http.server.transformers;
 
+import io.higgs.core.ConfigUtil;
 import io.higgs.core.reflect.ReflectionUtil;
 import io.higgs.http.server.HttpRequest;
 import io.higgs.http.server.HttpResponse;
@@ -10,6 +11,7 @@ import io.higgs.http.server.protocol.HttpMethod;
 import io.higgs.http.server.resource.MediaType;
 import io.higgs.http.server.transformers.thymeleaf.Thymeleaf;
 import io.higgs.http.server.transformers.thymeleaf.WebContext;
+import io.higgs.spi.ProviderFor;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.HttpHeaders;
 import org.slf4j.Logger;
@@ -29,18 +31,15 @@ import java.util.Set;
  *
  * @author Courtney Robinson <courtney@crlog.info>
  */
+@ProviderFor(ResponseTransformer.class)
 public class ThymeleafTransformer extends BaseTransformer {
     protected TemplateConfig config;
     protected Thymeleaf tl;
     private Logger log = LoggerFactory.getLogger(getClass());
 
-    public ThymeleafTransformer(TemplateConfig config, boolean ignoreConfigPrefixAndSuffix) {
-        this.config = config;
-        tl = new Thymeleaf(this.config, ignoreConfigPrefixAndSuffix);
-    }
-
-    public ThymeleafTransformer(TemplateConfig template_config) {
-        this(template_config, false);
+    public ThymeleafTransformer() {
+        this.config = ConfigUtil.loadYaml("thymeleaf_config.yml", TemplateConfig.class);
+        tl = new Thymeleaf(this.config);
     }
 
     @Override
@@ -66,7 +65,7 @@ public class ThymeleafTransformer extends BaseTransformer {
 
     @Override
     public ThymeleafTransformer instance() {
-        return new ThymeleafTransformer(config, false);
+        return new ThymeleafTransformer();
     }
 
     public void transform(Object response, HttpRequest request, HttpResponse res, MediaType mediaType,

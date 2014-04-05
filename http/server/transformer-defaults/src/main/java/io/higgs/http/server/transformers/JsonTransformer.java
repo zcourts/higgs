@@ -7,6 +7,7 @@ import io.higgs.http.server.HttpStatus;
 import io.higgs.http.server.protocol.HttpMethod;
 import io.higgs.http.server.protocol.mediaTypeDecoders.JsonDecoder;
 import io.higgs.http.server.resource.MediaType;
+import io.higgs.spi.ProviderFor;
 import io.netty.channel.ChannelHandlerContext;
 
 import java.io.File;
@@ -17,6 +18,7 @@ import static io.higgs.http.server.transformers.JsonResponseError.EMPTY_JSON_OBJ
 /**
  * @author Courtney Robinson <courtney@crlog.info>
  */
+@ProviderFor(ResponseTransformer.class)
 public class JsonTransformer extends BaseTransformer {
 
 
