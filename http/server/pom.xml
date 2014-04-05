@@ -14,6 +14,7 @@
     </parent>
     <modules>
         <module>s3</module>
+        <module>transformer-defaults</module>
         <module>transformer-thymeleaf</module>
         <module>transformer-moustache</module>
     </modules>

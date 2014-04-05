@@ -1,4 +1,4 @@
-package io.higgs.http.server.protocol.media_type_decoders;
+package io.higgs.http.server.protocol.mediaTypeDecoders;
 
 import io.higgs.core.reflect.dependency.DependencyProvider;
 import io.higgs.http.server.HttpRequest;
@@ -22,7 +22,7 @@ import java.util.HashMap;
 import java.util.List;
 
 /**
- * @author Courtney Robinson <courtney.robinson@datasift.com>
+ * @author Courtney Robinson <courtney@crlog.info>
  */
 public class FormUrlEncodedDecoder implements MediaTypeDecoder {
     protected static HttpDataFactory factory = new DefaultHttpDataFactory(DefaultHttpDataFactory.MINSIZE); //Disk

@@ -3,12 +3,13 @@ package io.higgs.http.server.transformers.moustache;
 import com.github.mustachejava.DefaultMustacheFactory;
 import com.github.mustachejava.Mustache;
 import com.github.mustachejava.MustacheFactory;
+import io.higgs.http.server.BaseTransformer;
 import io.higgs.http.server.HttpRequest;
 import io.higgs.http.server.HttpResponse;
+import io.higgs.http.server.ResponseTransformer;
+import io.higgs.http.server.TransformerType;
 import io.higgs.http.server.protocol.HttpMethod;
 import io.higgs.http.server.resource.MediaType;
-import io.higgs.http.server.transformers.BaseTransformer;
-import io.higgs.http.server.transformers.ResponseTransformer;
 import io.netty.channel.ChannelHandlerContext;
 
 import java.io.IOException;
@@ -74,6 +75,11 @@ public class Moustache extends BaseTransformer {
     @Override
     public ResponseTransformer instance() {
         return new Moustache();
+    }
+
+    @Override
+    public TransformerType[] supportedTypes() {
+        return new TransformerType[]{TransformerType.GENERIC};
     }
 
     @Override

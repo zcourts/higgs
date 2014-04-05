@@ -1,4 +1,4 @@
-package io.higgs.http.server.transformers;
+package io.higgs.http.server;
 
 import java.io.InputStream;
 import java.util.zip.ZipEntry;

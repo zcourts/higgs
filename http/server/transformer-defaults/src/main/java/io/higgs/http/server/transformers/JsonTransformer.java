@@ -1,22 +1,17 @@
 package io.higgs.http.server.transformers;
 
-import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.databind.introspect.VisibilityChecker;
-import com.fasterxml.jackson.datatype.joda.JodaModule;
+import io.higgs.http.server.BaseTransformer;
 import io.higgs.http.server.HttpRequest;
 import io.higgs.http.server.HttpResponse;
 import io.higgs.http.server.HttpStatus;
+import io.higgs.http.server.TransformerType;
 import io.higgs.http.server.protocol.HttpMethod;
+import io.higgs.http.server.protocol.mediaTypeDecoders.JsonDecoder;
 import io.higgs.http.server.resource.MediaType;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.HttpHeaders;
 import io.netty.handler.codec.http.HttpResponseStatus;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.InputStream;
@@ -25,23 +20,6 @@ import java.io.InputStream;
  * @author Courtney Robinson <courtney@crlog.info>
  */
 public class JsonTransformer extends BaseTransformer {
-    private Logger log = LoggerFactory.getLogger(getClass());
-    public static final ObjectMapper mapper = new ObjectMapper();
-
-    public JsonTransformer() {
-        mapper.configure(SerializationFeature.WRITE_NULL_MAP_VALUES, true);
-        mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-        mapper.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, true);
-        mapper.registerModule(new JodaModule());
-        //auto discover fields
-        VisibilityChecker visibilityChecker = mapper.getSerializationConfig().getDefaultVisibilityChecker();
-        visibilityChecker.withFieldVisibility(JsonAutoDetect.Visibility.ANY);
-        visibilityChecker.withGetterVisibility(JsonAutoDetect.Visibility.ANY);
-        visibilityChecker.withSetterVisibility(JsonAutoDetect.Visibility.ANY);
-        visibilityChecker.withCreatorVisibility(JsonAutoDetect.Visibility.ANY);
-        mapper.setVisibilityChecker(visibilityChecker);
-    }
-
     @Override
     public boolean canTransform(Object response, HttpRequest request, MediaType mediaType,
                                 HttpMethod method, ChannelHandlerContext ctx) {
@@ -67,6 +45,11 @@ public class JsonTransformer extends BaseTransformer {
         return new JsonTransformer();
     }
 
+    @Override
+    public TransformerType[] supportedTypes() {
+        return new TransformerType[]{TransformerType.GENERIC};
+    }
+
     public void transform(Object response, HttpRequest request, HttpResponse res, MediaType mediaType,
                           HttpMethod method,
                           ChannelHandlerContext ctx, HttpResponseStatus status) {
@@ -75,7 +58,7 @@ public class JsonTransformer extends BaseTransformer {
             data = "{}".getBytes();
         } else {
             try {
-                data = mapper.writeValueAsBytes(response);
+                data = JsonDecoder.mapper.writeValueAsBytes(response);
             } catch (JsonProcessingException e) {
                 log.warn("Unable to transform response to JSON", e);
                 //todo use template for 500

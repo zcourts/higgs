@@ -6,18 +6,14 @@ import io.higgs.core.ProtocolConfiguration;
 import io.higgs.core.ProtocolDetectorFactory;
 import io.higgs.http.server.DefaultParamInjector;
 import io.higgs.http.server.ParamInjector;
+import io.higgs.http.server.ResponseTransformer;
 import io.higgs.http.server.Transcriber;
-import io.higgs.http.server.config.HttpConfig;
 import io.higgs.http.server.params.HttpSession;
-import io.higgs.http.server.transformers.HttpErrorTransformer;
-import io.higgs.http.server.transformers.JsonTransformer;
-import io.higgs.http.server.transformers.ResponseTransformer;
-import io.higgs.http.server.transformers.StaticFileTransformer;
-import io.higgs.http.server.transformers.ThymeleafTransformer;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Queue;
+import java.util.ServiceLoader;
 import java.util.concurrent.ConcurrentLinkedDeque;
 
 public class HttpProtocolConfiguration implements ProtocolConfiguration {
@@ -73,20 +69,8 @@ public class HttpProtocolConfiguration implements ProtocolConfiguration {
     @Override
     public void initialise(HiggsServer server) {
         this.server = server;
-        if (server.getConfig().add_static_resource_filter) {
-            transformers.add(new StaticFileTransformer(this));
-        }
-        if (server.getConfig().add_default_error_transformer) {
-            errorTransformers.add(new HttpErrorTransformer(this,
-                    new JsonTransformer(),
-                    new ThymeleafTransformer(((HttpConfig) this.server.getConfig()).template_config)));
-        }
-        if (server.getConfig().add_json_transformer) {
-            transformers.add(new JsonTransformer());
-        }
-        if (server.getConfig().add_thymeleaf_transformer) {
-            transformers.add(new ThymeleafTransformer(((HttpConfig) this.server.getConfig()).template_config));
-        }
+        ServiceLoader<ResponseTransformer> transformerServiceLoader = ServiceLoader.load(ResponseTransformer.class);
+
     }
 
     public Queue<MediaTypeDecoder> getMediaTypeDecoders() {

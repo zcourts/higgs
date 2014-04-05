@@ -1,5 +1,7 @@
 package io.higgs.ws.protocol;
 
+import io.higgs.http.server.HttpRequestDecoder;
+import io.higgs.http.server.HttpResponseEncoder;
 import io.higgs.http.server.protocol.HttpDetector;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;

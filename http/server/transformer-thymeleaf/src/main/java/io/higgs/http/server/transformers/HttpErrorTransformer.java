@@ -1,7 +1,10 @@
 package io.higgs.http.server.transformers;
 
+import io.higgs.http.server.BaseTransformer;
 import io.higgs.http.server.HttpRequest;
 import io.higgs.http.server.HttpResponse;
+import io.higgs.http.server.ResponseTransformer;
+import io.higgs.http.server.TransformerType;
 import io.higgs.http.server.WebApplicationException;
 import io.higgs.http.server.protocol.HttpMethod;
 import io.higgs.http.server.protocol.HttpProtocolConfiguration;
@@ -19,14 +22,12 @@ import java.util.Map;
 //@ProviderFor(ResponseTransformer.class)
 public class HttpErrorTransformer extends BaseTransformer {
     private final HttpProtocolConfiguration protocolConfiguration;
-    private final JsonTransformer json;
     private final ThymeleafTransformer thymeleaf;
     protected Map<Integer, String> templates = new HashMap<>();
 
-    public HttpErrorTransformer(HttpProtocolConfiguration protocolConfiguration, JsonTransformer json,
+    public HttpErrorTransformer(HttpProtocolConfiguration protocolConfiguration,
                                 ThymeleafTransformer thymeleaf) {
         this.protocolConfiguration = protocolConfiguration;
-        this.json = json;
         this.thymeleaf = thymeleaf;
     }
 
@@ -96,8 +97,6 @@ public class HttpErrorTransformer extends BaseTransformer {
         if (thymeleafMediaType) {
             thymeleaf.transform(webContext, templateName, throwable, request, httpResponse, mediaType, method,
                     ctx, null);
-        } else {
-            json.transform(null, request, httpResponse, mediaType, method, ctx);
         }
     }
 
@@ -124,8 +123,6 @@ public class HttpErrorTransformer extends BaseTransformer {
         if (thymeleafMediaType) {
             thymeleaf.transform(webContext, templateName, e, request, httpResponse, mediaType, method,
                     ctx, status);
-        } else {
-            json.transform(null, request, httpResponse, mediaType, method, ctx, status);
         }
     }
 
@@ -141,7 +138,12 @@ public class HttpErrorTransformer extends BaseTransformer {
 
     @Override
     public ResponseTransformer instance() {
-        return new HttpErrorTransformer(protocolConfiguration, json, thymeleaf);
+        return new HttpErrorTransformer(protocolConfiguration, thymeleaf);
+    }
+
+    @Override
+    public TransformerType[] supportedTypes() {
+        return new TransformerType[]{TransformerType.ERROR};
     }
 
     @Override

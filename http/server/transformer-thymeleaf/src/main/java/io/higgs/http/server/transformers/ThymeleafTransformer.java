@@ -1,9 +1,11 @@
 package io.higgs.http.server.transformers;
 
 import io.higgs.core.reflect.ReflectionUtil;
+import io.higgs.http.server.BaseTransformer;
 import io.higgs.http.server.HttpRequest;
 import io.higgs.http.server.HttpResponse;
 import io.higgs.http.server.HttpStatus;
+import io.higgs.http.server.TransformerType;
 import io.higgs.http.server.config.TemplateConfig;
 import io.higgs.http.server.protocol.HttpMethod;
 import io.higgs.http.server.resource.MediaType;
@@ -80,6 +82,11 @@ public class ThymeleafTransformer extends BaseTransformer {
     @Override
     public ThymeleafTransformer instance() {
         return new ThymeleafTransformer(config, false);
+    }
+
+    @Override
+    public TransformerType[] supportedTypes() {
+        return new TransformerType[]{TransformerType.GENERIC};
     }
 
     public void transform(WebContext webContext, String templateName, Object response, HttpRequest request,

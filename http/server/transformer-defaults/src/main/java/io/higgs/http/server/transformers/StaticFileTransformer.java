@@ -1,7 +1,11 @@
 package io.higgs.http.server.transformers;
 
+import io.higgs.http.server.BaseTransformer;
 import io.higgs.http.server.HttpRequest;
 import io.higgs.http.server.HttpResponse;
+import io.higgs.http.server.JarFile;
+import io.higgs.http.server.ResponseTransformer;
+import io.higgs.http.server.TransformerType;
 import io.higgs.http.server.config.HttpConfig;
 import io.higgs.http.server.protocol.HttpMethod;
 import io.higgs.http.server.protocol.HttpProtocolConfiguration;
@@ -11,11 +15,8 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.HttpResponseStatus;
 
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
@@ -136,12 +137,17 @@ public class StaticFileTransformer extends BaseTransformer {
     private void writeResponseFromFile(File file, final HttpResponse res, final HttpRequest request,
                                        MediaType mediaType,
                                        HttpMethod method, final ChannelHandlerContext ctx, ByteBuf buffer) {
-        res.setManagedWriter(new StaticFileWriter(ctx, res, file, request, formats,conf));
+        res.setManagedWriter(new StaticFileWriter(ctx, res, file, request, formats, conf));
     }
 
     @Override
     public ResponseTransformer instance() {
         return new StaticFileTransformer(config);
+    }
+
+    @Override
+    public TransformerType[] supportedTypes() {
+        return new TransformerType[]{TransformerType.GENERIC};
     }
 
     @Override

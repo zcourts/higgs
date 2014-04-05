@@ -1,6 +1,8 @@
 package io.higgs.ws.demo;
 
 import io.higgs.core.HiggsServer;
+import io.higgs.http.server.Transcription;
+import io.higgs.http.server.config.HttpConfig;
 import io.higgs.http.server.protocol.HttpProtocolConfiguration;
 import io.higgs.ws.protocol.WebSocketConfiguration;
 

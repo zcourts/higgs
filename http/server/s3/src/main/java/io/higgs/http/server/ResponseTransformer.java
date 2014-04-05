@@ -1,8 +1,6 @@
-package io.higgs.http.server.transformers;
+package io.higgs.http.server;
 
 import io.higgs.core.Sortable;
-import io.higgs.http.server.HttpRequest;
-import io.higgs.http.server.HttpResponse;
 import io.higgs.http.server.protocol.HttpMethod;
 import io.higgs.http.server.resource.MediaType;
 import io.netty.channel.ChannelHandlerContext;
@@ -48,7 +46,17 @@ public interface ResponseTransformer extends Sortable<ResponseTransformer> {
 
     /**
      * @return If a transformer maintains state then this method should return a new instance every time.
-     *         If not then this should be returned.
+     * If not then this should be returned.
      */
     ResponseTransformer instance();
+
+    /**
+     * Decides which type of response this transformer can be registered for.
+     * For example, a transformer may be able to handle "normal" response where nothing's gone wrong and may also
+     * handle HTTP errors i.e. converting exceptions to HTTP output
+     *
+     * @return at least one type for which this transformer can be registered if the response is null or has no
+     * elements and error is raised
+     */
+    TransformerType[] supportedTypes();
 }

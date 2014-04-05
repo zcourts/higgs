@@ -14,9 +14,6 @@ public class ServerConfig {
      * the port the server binds to
      */
     public int port = 8080;
-    public boolean add_thymeleaf_transformer = true;
-    public boolean add_json_transformer = true;
-    public boolean add_default_error_transformer = true;
     public String session_path = "/", session_dir = "/tmp/hs3-sessions/";
     //ignored if null
     public String session_domain;
@@ -27,7 +24,6 @@ public class ServerConfig {
     public String session_ports;
     public String default_error_template = "error/default";
     public boolean add_default_injector = true;
-    public boolean add_default_resource_filter = true;
     public boolean add_static_resource_filter = true;
     public boolean log_requests = true;
 }
