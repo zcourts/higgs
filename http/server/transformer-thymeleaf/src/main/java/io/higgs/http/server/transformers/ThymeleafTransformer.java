@@ -1,11 +1,10 @@
 package io.higgs.http.server.transformers;
 
 import io.higgs.core.reflect.ReflectionUtil;
-import io.higgs.http.server.BaseTransformer;
 import io.higgs.http.server.HttpRequest;
 import io.higgs.http.server.HttpResponse;
 import io.higgs.http.server.HttpStatus;
-import io.higgs.http.server.TransformerType;
+import io.higgs.http.server.WebApplicationException;
 import io.higgs.http.server.config.TemplateConfig;
 import io.higgs.http.server.protocol.HttpMethod;
 import io.higgs.http.server.resource.MediaType;
@@ -13,7 +12,6 @@ import io.higgs.http.server.transformers.thymeleaf.Thymeleaf;
 import io.higgs.http.server.transformers.thymeleaf.WebContext;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.HttpHeaders;
-import io.netty.handler.codec.http.HttpResponseStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.thymeleaf.TemplateEngine;
@@ -67,31 +65,19 @@ public class ThymeleafTransformer extends BaseTransformer {
     }
 
     @Override
-    public void transform(Object response, HttpRequest request, HttpResponse httpResponse, MediaType mediaType,
-                          HttpMethod method,
-                          ChannelHandlerContext ctx) {
+    public ThymeleafTransformer instance() {
+        return new ThymeleafTransformer(config, false);
+    }
+
+    public void transform(Object response, HttpRequest request, HttpResponse res, MediaType mediaType,
+                          HttpMethod method, ChannelHandlerContext ctx) {
         WebContext webContext = new WebContext();
         String[] fragements = method.getFragments();
         String template = method.getTemplate();
         if (fragements.length > 0) {
             template = tl.getFullTemplate(template, fragements);
         }
-        transform(webContext, template, response, request, httpResponse, mediaType, method, ctx, null);
-    }
 
-    @Override
-    public ThymeleafTransformer instance() {
-        return new ThymeleafTransformer(config, false);
-    }
-
-    @Override
-    public TransformerType[] supportedTypes() {
-        return new TransformerType[]{TransformerType.GENERIC};
-    }
-
-    public void transform(WebContext webContext, String templateName, Object response, HttpRequest request,
-                          HttpResponse res, MediaType mediaType, HttpMethod method,
-                          ChannelHandlerContext ctx, HttpResponseStatus status) {
         byte[] data = null;
         try {
             if (request != null) {
@@ -105,18 +91,28 @@ public class ThymeleafTransformer extends BaseTransformer {
                 }
                 populateContext(webContext, response, request, method);
             }
-            String content = tl.getTemplateEngine().process(templateName, webContext);
+            if (isError(response)) {
+                template = determineErrorTemplate(res, response);
+            }
+            populateContext(webContext, response, request, method);
+            String content = tl.getTemplateEngine().process(template, webContext);
             data = content.getBytes(Charset.forName(config.character_encoding));
         } catch (Throwable e) {
             log.warn("Unable to transform response to HTML using Thymeleaf transformer", e);
-            //todo use template to generate 500
             res.setStatus(HttpStatus.INTERNAL_SERVER_ERROR);
         }
-        if (data != null) {
-            res.setStatus(status == null ? HttpStatus.OK : status);
-            res.content().writeBytes(data);
-            HttpHeaders.setContentLength(res, data.length);
+        setResponseContent(res, data);
+    }
+
+    protected String determineErrorTemplate(HttpResponse res, Object response) {
+        Throwable err = response instanceof Throwable ? (Throwable) response : null;
+        determineErrorStatus(res, err);
+        String tpl = "error/default";
+        if (response instanceof WebApplicationException) {
+            WebApplicationException e = (WebApplicationException) response;
+            tpl = e.getTemplate() == null || e.getTemplate().isEmpty() ? tpl : e.getTemplate();
         }
+        return tpl;
     }
 
     private void populateContext(final WebContext ctx, Object response, HttpRequest request, HttpMethod method) {

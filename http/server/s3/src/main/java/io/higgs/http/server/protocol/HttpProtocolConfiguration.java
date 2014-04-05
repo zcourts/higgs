@@ -6,24 +6,28 @@ import io.higgs.core.ProtocolConfiguration;
 import io.higgs.core.ProtocolDetectorFactory;
 import io.higgs.http.server.DefaultParamInjector;
 import io.higgs.http.server.ParamInjector;
-import io.higgs.http.server.ResponseTransformer;
+import io.higgs.http.server.transformers.ResponseTransformer;
 import io.higgs.http.server.Transcriber;
 import io.higgs.http.server.params.HttpSession;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Queue;
+import java.util.ServiceConfigurationError;
 import java.util.ServiceLoader;
 import java.util.concurrent.ConcurrentLinkedDeque;
 
 public class HttpProtocolConfiguration implements ProtocolConfiguration {
     private final Map<String, HttpSession> sessions = new HashMap<>();
     private final Queue<ResponseTransformer> transformers = new ConcurrentLinkedDeque<>();
-    private final Queue<ResponseTransformer> errorTransformers = new ConcurrentLinkedDeque<>();
     private final Queue<MediaTypeDecoder> mediaTypeDecoders = new ConcurrentLinkedDeque<>();
     private HiggsServer server;
     private ParamInjector injector = new DefaultParamInjector();
     private Transcriber transcriber = new Transcriber();
+    private Logger log = LoggerFactory.getLogger(getClass());
 
     public Map<String, HttpSession> getSessions() {
         return sessions;
@@ -69,8 +73,16 @@ public class HttpProtocolConfiguration implements ProtocolConfiguration {
     @Override
     public void initialise(HiggsServer server) {
         this.server = server;
-        ServiceLoader<ResponseTransformer> transformerServiceLoader = ServiceLoader.load(ResponseTransformer.class);
-
+        Iterator<ResponseTransformer> providers = ServiceLoader.load(ResponseTransformer.class).iterator();
+        while (providers.hasNext()) {
+            try {
+                ResponseTransformer transformer = providers.next();
+                transformers.add(transformer);
+            } catch (ServiceConfigurationError sce) {
+                log.warn("Unable to register a transformer. Please ensure it implements the interface correctly" +
+                        " and has a public, no-arg constructor", sce);
+            }
+        }
     }
 
     public Queue<MediaTypeDecoder> getMediaTypeDecoders() {
@@ -79,9 +91,5 @@ public class HttpProtocolConfiguration implements ProtocolConfiguration {
 
     public Queue<ResponseTransformer> getTransformers() {
         return transformers;
-    }
-
-    public Queue<ResponseTransformer> getErrorTransformers() {
-        return errorTransformers;
     }
 }

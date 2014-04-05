@@ -1,11 +1,8 @@
 package io.higgs.http.server.transformers;
 
-import io.higgs.http.server.BaseTransformer;
 import io.higgs.http.server.HttpRequest;
 import io.higgs.http.server.HttpResponse;
 import io.higgs.http.server.JarFile;
-import io.higgs.http.server.ResponseTransformer;
-import io.higgs.http.server.TransformerType;
 import io.higgs.http.server.config.HttpConfig;
 import io.higgs.http.server.protocol.HttpMethod;
 import io.higgs.http.server.protocol.HttpProtocolConfiguration;
@@ -78,8 +75,13 @@ public class StaticFileTransformer extends BaseTransformer {
             } else if (response instanceof File) {
                 writeResponseFromFile((File) response, res, request, mediaType, method, ctx, res.content());
             } else {
-                res.setStatus(HttpResponseStatus.INTERNAL_SERVER_ERROR);
-                log.warn(String.format("Expecting an input stream or file,%s received", response.getClass().getName()));
+                if (isError(response)) {
+                    log.warn("Unexpected error to static file transformer", response);
+                    res.setStatus(HttpResponseStatus.INTERNAL_SERVER_ERROR);
+                } else {
+                    res.setStatus(HttpResponseStatus.INTERNAL_SERVER_ERROR);
+                    log.warn(String.format("Expecting an input stream or file,%s received", response.getClass().getName()));
+                }
             }
         }
     }
@@ -143,11 +145,6 @@ public class StaticFileTransformer extends BaseTransformer {
     @Override
     public ResponseTransformer instance() {
         return new StaticFileTransformer(config);
-    }
-
-    @Override
-    public TransformerType[] supportedTypes() {
-        return new TransformerType[]{TransformerType.GENERIC};
     }
 
     @Override

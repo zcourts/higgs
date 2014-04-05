@@ -10,7 +10,7 @@ import io.higgs.http.server.HttpResponse;
 import io.higgs.http.server.HttpStatus;
 import io.higgs.http.server.MessagePusher;
 import io.higgs.http.server.ParamInjector;
-import io.higgs.http.server.ResponseTransformer;
+import io.higgs.http.server.transformers.ResponseTransformer;
 import io.higgs.http.server.StaticFileMethod;
 import io.higgs.http.server.WebApplicationException;
 import io.higgs.http.server.WrappedResponse;
@@ -288,11 +288,11 @@ public class HttpHandler extends MessageHandler<HttpConfig, Object> {
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
         try {
             if (cause instanceof WebApplicationException) {
-                writeResponse(ctx, cause, protocolConfig.getErrorTransformers());
+                writeResponse(ctx, cause, protocolConfig.getTransformers());
             } else {
                 log.warn(String.format("Error while processing request %s", request), cause);
                 writeResponse(ctx, new WebApplicationException(HttpStatus.INTERNAL_SERVER_ERROR, request, cause),
-                        protocolConfig.getErrorTransformers());
+                        protocolConfig.getTransformers());
             }
         } catch (Throwable t) {
             //at this point if an exception occurs, just log and return internal server error

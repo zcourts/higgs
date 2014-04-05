@@ -1,25 +1,25 @@
 package io.higgs.http.server.transformers;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import io.higgs.http.server.BaseTransformer;
 import io.higgs.http.server.HttpRequest;
 import io.higgs.http.server.HttpResponse;
 import io.higgs.http.server.HttpStatus;
-import io.higgs.http.server.TransformerType;
 import io.higgs.http.server.protocol.HttpMethod;
 import io.higgs.http.server.protocol.mediaTypeDecoders.JsonDecoder;
 import io.higgs.http.server.resource.MediaType;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.handler.codec.http.HttpHeaders;
-import io.netty.handler.codec.http.HttpResponseStatus;
 
 import java.io.File;
 import java.io.InputStream;
+
+import static io.higgs.http.server.transformers.JsonResponseError.EMPTY_JSON_OBJECT;
 
 /**
  * @author Courtney Robinson <courtney@crlog.info>
  */
 public class JsonTransformer extends BaseTransformer {
+
+
     @Override
     public boolean canTransform(Object response, HttpRequest request, MediaType mediaType,
                                 HttpMethod method, ChannelHandlerContext ctx) {
@@ -34,42 +34,41 @@ public class JsonTransformer extends BaseTransformer {
     }
 
     @Override
-    public void transform(Object response, HttpRequest request, HttpResponse httpResponse, MediaType mediaType,
-                          HttpMethod method,
-                          ChannelHandlerContext ctx) {
-        transform(response, request, httpResponse, mediaType, method, ctx, null);
-    }
-
-    @Override
-    public JsonTransformer instance() {
-        return new JsonTransformer();
-    }
-
-    @Override
-    public TransformerType[] supportedTypes() {
-        return new TransformerType[]{TransformerType.GENERIC};
-    }
-
     public void transform(Object response, HttpRequest request, HttpResponse res, MediaType mediaType,
                           HttpMethod method,
-                          ChannelHandlerContext ctx, HttpResponseStatus status) {
+                          ChannelHandlerContext ctx) {
         byte[] data = null;
         if (response == null) {
-            data = "{}".getBytes();
+            data = EMPTY_JSON_OBJECT.getBytes();
         } else {
+            if (isError(response)) {
+                response = convertErrorToResponseObject(res, (Throwable) response);
+            }
             try {
                 data = JsonDecoder.mapper.writeValueAsBytes(response);
             } catch (JsonProcessingException e) {
                 log.warn("Unable to transform response to JSON", e);
-                //todo use template for 500
                 res.setStatus(HttpStatus.INTERNAL_SERVER_ERROR);
             }
         }
-        if (data != null) {
-            res.setStatus(status == null ? HttpStatus.OK : status);
-            res.content().writeBytes(data);
-            HttpHeaders.setContentLength(res, data.length);
+        setResponseContent(res, data);
+    }
+
+    protected Object convertErrorToResponseObject(HttpResponse res, Throwable response) {
+        determineErrorStatus(res, response);
+        if (response instanceof JsonResponseError) {
+            JsonResponseError je = ((JsonResponseError) response);
+            res.setStatus(je.getStatus());
+            return je.getContent();
         }
+        log.warn("Unable to convert exception to response", response);
+        //never JSON encode an exception, user can set it as content to JsonResponseError if they want
+        return EMPTY_JSON_OBJECT;
+    }
+
+    @Override
+    public JsonTransformer instance() {
+        return this;//we can return this, instead of a new instance because the JSON transformer isn't stateful
     }
 
     @Override
