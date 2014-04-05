@@ -2,7 +2,6 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <artifactId>http-server</artifactId>
-    <version>0.0.9-SNAPSHOT</version>
     <name>${project.artifactId}</name>
     <description>Higgs HTTP S3 (Single Site Server)</description>
     <packaging>pom</packaging>
@@ -10,7 +9,7 @@
         <groupId>io.higgs</groupId>
         <artifactId>http</artifactId>
         <relativePath>../pom.xml</relativePath>
-        <version>0.0.9-SNAPSHOT</version>
+        <version>${higgs.version}</version>
     </parent>
     <modules>
         <module>s3</module>
@@ -18,11 +17,19 @@
         <module>transformer-thymeleaf</module>
         <module>transformer-moustache</module>
     </modules>
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>io.higgs</groupId>
+                <artifactId>http-s3</artifactId>
+                <version>${higgs.version}</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
     <dependencies>
         <dependency>
             <groupId>io.higgs</groupId>
             <artifactId>core</artifactId>
-            <version>0.0.9-SNAPSHOT</version>
         </dependency>
         <!--json support-->
         <dependency>

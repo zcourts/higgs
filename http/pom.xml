@@ -3,7 +3,6 @@
     <modelVersion>4.0.0</modelVersion>
     <name>${project.artifactId}</name>
     <artifactId>http</artifactId>
-    <version>0.0.9-SNAPSHOT</version>
     <packaging>pom</packaging>
     <description>Higgs' HTTP server and client implementation</description>
     <!-- Inherit most settings from parent project -->
@@ -11,14 +10,26 @@
         <groupId>io.higgs</groupId>
         <artifactId>higgs</artifactId>
         <relativePath>../pom.xml</relativePath>
-        <version>0.0.9-SNAPSHOT</version>
+        <version>${higgs.version}</version>
     </parent>
     <modules>
         <module>server</module>
         <module>client</module>
     </modules>
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>io.higgs</groupId>
+                <artifactId>core</artifactId>
+                <version>${higgs.version}</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
     <dependencies>
-
+        <dependency>
+            <groupId>io.higgs</groupId>
+            <artifactId>core</artifactId>
+        </dependency>
     </dependencies>
 
 </project>
