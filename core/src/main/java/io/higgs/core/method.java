@@ -42,9 +42,4 @@ public @interface method {
      * @return
      */
     boolean optout() default false;
-
-    /**
-     * Set of attributes for this method
-     */
-    String[] attr() default { };
 }
