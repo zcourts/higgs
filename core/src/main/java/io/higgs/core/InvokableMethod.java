@@ -8,7 +8,6 @@ import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.Arrays;
 import java.util.Queue;
 
 /**
@@ -19,9 +18,7 @@ public abstract class InvokableMethod implements Sortable<InvokableMethod> {
     protected final Method classMethod;
     protected final Queue<ObjectFactory> factories;
     protected final Class<?> klass;
-    protected String[] pathAttributes;
     protected String path;
-    protected Attr attrs = new Attr();
 
     public InvokableMethod(Queue<ObjectFactory> factories, Class<?> klass, Method classMethod) {
         if (factories == null || klass == null || classMethod == null) {
@@ -40,9 +37,6 @@ public abstract class InvokableMethod implements Sortable<InvokableMethod> {
         if (classMethod.isAnnotationPresent(method.class)) {
             method path = classMethod.getAnnotation(method.class);
             methodPath = path.value() != null && !path.value().isEmpty() ? path.value() : "/";
-            if (path.attr() != null && path.attr().length > 0) {
-                pathAttributes = path.attr();
-            }
             ignoreClassPrefix = path.ignoreClassPrefix();
         }
         //get any path set on the entire class so it can be prepended to method paths
@@ -128,23 +122,12 @@ public abstract class InvokableMethod implements Sortable<InvokableMethod> {
         Injector.inject(instance, deps);
     }
 
-    /**
-     * @return The set of attributes set on this method or an empty array
-     */
-    public String[] pathAttr() {
-        return pathAttributes == null ? new String[0] : pathAttributes;
-    }
-
     public Class<?> klass() {
         return klass;
     }
 
     public Method method() {
         return classMethod;
-    }
-
-    public Attr attrs() {
-        return attrs;
     }
 
     /**
@@ -187,8 +170,6 @@ public abstract class InvokableMethod implements Sortable<InvokableMethod> {
     public String toString() {
         return "InvokableMethod{" +
                 "\n path='" + path + '\'' +
-                ",\n pathAttributes=" + Arrays.toString(pathAttributes) +
-                ",\n attrs=" + attrs +
                 ",\n classMethod=" + classMethod +
                 ",\n factories=" + factories +
                 ",\n klass=" + klass.getName() +
@@ -206,36 +187,27 @@ public abstract class InvokableMethod implements Sortable<InvokableMethod> {
 
         InvokableMethod that = (InvokableMethod) o;
 
-        if (attrs != null ? !attrs.equals(that.attrs) : that.attrs != null) {
+        if (!classMethod.equals(that.classMethod)) {
             return false;
         }
-        if (classMethod != null ? !classMethod.equals(that.classMethod) : that.classMethod != null) {
+        if (!factories.equals(that.factories)) {
             return false;
         }
-        if (factories != null ? !factories.equals(that.factories) : that.factories != null) {
-            return false;
-        }
-        if (klass != null ? !klass.equals(that.klass) : that.klass != null) {
+        if (!klass.equals(that.klass)) {
             return false;
         }
         if (path != null ? !path.equals(that.path) : that.path != null) {
             return false;
         }
-        if (!Arrays.equals(pathAttributes, that.pathAttributes)) {
-            return false;
-        }
-
         return true;
     }
 
     @Override
     public int hashCode() {
-        int result = classMethod != null ? classMethod.hashCode() : 0;
-        result = 31 * result + (factories != null ? factories.hashCode() : 0);
-        result = 31 * result + (klass != null ? klass.hashCode() : 0);
-        result = 31 * result + (pathAttributes != null ? Arrays.hashCode(pathAttributes) : 0);
+        int result = classMethod.hashCode();
+        result = 31 * result + (factories.hashCode());
+        result = 31 * result + (klass.hashCode());
         result = 31 * result + (path != null ? path.hashCode() : 0);
-        result = 31 * result + (attrs != null ? attrs.hashCode() : 0);
         return result;
     }
 }
