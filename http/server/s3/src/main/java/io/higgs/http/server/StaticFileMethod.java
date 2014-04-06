@@ -1,6 +1,8 @@
 package io.higgs.http.server;
 
+import io.higgs.core.FileUtil;
 import io.higgs.core.ObjectFactory;
+import io.higgs.core.ResolvedFile;
 import io.higgs.http.server.config.HttpConfig;
 import io.higgs.http.server.protocol.HttpMethod;
 import io.higgs.http.server.protocol.HttpProtocolConfiguration;
@@ -13,17 +15,13 @@ import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.net.URISyntaxException;
-import java.net.URL;
 import java.net.URLDecoder;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Enumeration;
+import java.nio.file.Paths;
 import java.util.Queue;
 import java.util.regex.Pattern;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipFile;
 
 /**
  * @author Courtney Robinson <courtney@crlog.info>
@@ -35,10 +33,22 @@ public class StaticFileMethod extends HttpMethod {
     public static final String HTTP_DATE_GMT_TIMEZONE = "GMT";
     public static final int HTTP_CACHE_SECONDS = 60;
     private final HttpProtocolConfiguration config;
-    private File base;
+    private Path base;
     private boolean canServe = true;
     private static Logger log = LoggerFactory.getLogger(StaticFileMethod.class);
     private static final Method METHOD;
+
+    protected Path matchedFile;
+
+    public StaticFileMethod(Queue<ObjectFactory> factories, HttpProtocolConfiguration protocolConfig) {
+        super(factories, StaticFileMethod.class, METHOD);
+        this.config = protocolConfig;
+        base = Paths.get(((HttpConfig) config.getServer().getConfig()).files.public_directory);
+        if (Files.exists(base)) {
+            canServe = false;
+            log.warn("Public files directory that is configured does not exist. Will not serve static files");
+        }
+    }
 
     static {
         try {
@@ -48,38 +58,12 @@ public class StaticFileMethod extends HttpMethod {
         }
     }
 
-    private JarFile jarFile;
-    private File matchedFile;
-
-    public StaticFileMethod(Queue<ObjectFactory> factories, HttpProtocolConfiguration protocolConfig) {
-        super(factories, StaticFileMethod.class, METHOD);
-        this.config = protocolConfig;
-        base = baseUri(((HttpConfig) config.getServer().getConfig()).files.public_directory);
-        if (base != null) {
-            if (!base.exists()) {
-                canServe = false;
-                log.warn("Public files directory that is configured does not exist. Will not serve static files");
-            }
-        }
-    }
-
-    public static File baseUri(String public_directory) {
-        URL uri = Thread.currentThread().getContextClassLoader().getResource(public_directory);
-        File file = null;
-        if (uri != null) {
-            try {
-                file = new File(uri.toURI());
-            } catch (URISyntaxException e) {
-                log.info("", e);
-            }
-        }
-        if (file == null) {
-            file = new File(public_directory);
-            if (!file.exists()) {
-                log.warn("Public files directory that is configured does not exist. Will not serve static files");
-            }
-        }
-        return file;
+    /**
+     * @return the {@link java.nio.file.Path} to the file that was found by
+     * {@link #matches(String, io.netty.channel.ChannelHandlerContext, Object)}
+     */
+    public Path getFile() {
+        return matchedFile;
     }
 
     @Override
@@ -96,99 +80,53 @@ public class StaticFileMethod extends HttpMethod {
                 io.netty.handler.codec.http.HttpMethod.GET.name())) {
             return false;
         }
-        String base_dir = ((HttpConfig) config.getServer().getConfig()).files.public_directory;
-        String uri = normalizeURI(request, base_dir);
+        String uri = normalizeURI(request);
         //sanitize before use
-        uri = base_dir + sanitizeUri(uri);
-        File file = null;
-        //check the classpath first
-        URL source = Thread.currentThread().getContextClassLoader().getResource(uri);
-        try {
-            if (source != null) {
-                //jar:file:/B:/dev/projects/Higgs/higgs-http-s3/target/higgs-http-3s-0.0.1-SNAPSHOT.jar
-                //!/public/default.html
-                String url = source.toExternalForm();
-                if (url.startsWith("jar:")) {
-                    //if it's a JAR path see if we can get it
-                    boolean fromJar = returnJarStreamEndpoint(url);
-                    if (fromJar) {
-                        return fromJar;
-                    }
-                    //if we couldn't get it from the JAR continue anyway and see if it exists on disk
-                } else {
-                    file = new File(source.toURI());
-                    if (file.isHidden() || !file.exists()) {
-                        file = null;
-                    }
-                }
-            }
-        } catch (Throwable e) {
-            log.debug("", e);
-        }
-        //if we couldn't load it from the class path then try to get it from disk
-        if (file == null) {
-            file = new File(uri);
-            if (!file.isDirectory() && (file.isHidden() || !file.exists())) {
-                return false;
-            }
-        }
-        //if its not a sub directory tell them no!
-        if (!isSubDirectory(base, file)) {
+        uri = sanitizeUri(uri);
+        if (uri == null) {
             return false;
         }
-        if (file.isDirectory()) {
+        matchedFile = Paths.get(uri);
+        if (Files.isDirectory(matchedFile)) {
             //get list of files, if index/default found then send it instead of listing directory
             try {
-                DirectoryStream<Path> paths = Files.newDirectoryStream(file.toPath());
+                DirectoryStream<Path> paths = Files.newDirectoryStream(matchedFile);
                 boolean list = true;
                 for (Path localPath : paths) {
                     Path name = localPath.getFileName();
                     if (((HttpConfig) config.getServer().getConfig()).files.index_file.endsWith(name.toString())) {
-                        file = localPath.toFile();
+                        matchedFile = name;
                         list = false;
                         break;
                     }
                 }
                 if (list) {
-                    if (((HttpConfig) config.getServer().getConfig()).files.enable_directory_listing) {
-                        this.matchedFile = file;
-                        return true;
-                    } else {
-                        return false; //directory listing not enabled return 404 or another error
-                    }
+                    //directory listing not enabled return 404 or another error
+                    return ((HttpConfig) config.getServer().getConfig()).files.enable_directory_listing;
                 }
             } catch (IOException e) {
                 log.info(String.format("Failed to list files in directory {%s}", e.getMessage()));
                 return false;
             }
         }
-        if (!file.isFile()) {
-            return false;
+        ResolvedFile in = FileUtil.resolve(base, matchedFile);
+        if (in.hasStream()) {
+            try {
+                in.getStream().close();
+            } catch (IOException e) {
+                log.warn("Failed to close stream", e);
+            }
+            return true;
         }
-        // Cache Validation
-//        String modDate = request.headers().get(IF_MODIFIED_SINCE);
-//        if (modDate != null && !modDate.isEmpty()) {
-//            SimpleDateFormat dateFormatter = new SimpleDateFormat(HTTP_DATE_FORMAT, Locale.US);
-//            Date ifModifiedSinceDate = null;
-//            try {
-//                ifModifiedSinceDate = dateFormatter.parse(modDate);
-//                // Only compare up to the second because the datetime format we send to the client
-//                // does not have milliseconds
-//                long ifModifiedSinceDateSeconds = ifModifiedSinceDate.getTime() / 1000;
-//                long fileLastModifiedSeconds = file.lastModified() / 1000;
-//                if (ifModifiedSinceDateSeconds == fileLastModifiedSeconds) {
-//                    return new Endpoint("" + System.nanoTime(), server, StaticFile.class, StaticFile.NOT_MODIFIED,
-//                            StaticFile.SERVER_FILE_CONSTRUCTOR, server, file);
-//                }
-//            } catch (ParseException e) {
-//                log.warn("Unable to parse modified since date, ignoring and sending file...");
-//            }
-//        }
-        this.matchedFile = file;
-        return true;
+        return false;
     }
 
-    private String normalizeURI(HttpRequest request, String base_dir) {
+    public Object invoke(ChannelHandlerContext ctx, String path, Object msg, Object[] params)
+            throws InvocationTargetException, IllegalAccessException, InstantiationException {
+        return classMethod.invoke(this, params);
+    }
+
+    private String normalizeURI(HttpRequest request) {
         String uri = request.getUri();
         //remove query string from path
         if (uri.contains("?")) {
@@ -201,72 +139,7 @@ public class StaticFileMethod extends HttpMethod {
         if (!uri.startsWith("/")) {
             uri = "/" + uri;
         }
-        if (base_dir.endsWith("/")) {
-            uri = uri.substring(1);
-        }
         return uri;
-    }
-
-    public Object getFile() {
-        if (jarFile != null) {
-            return jarFile;
-        }
-        return matchedFile;
-    }
-
-    public Object invoke(ChannelHandlerContext ctx, String path, Object msg, Object[] params)
-            throws InvocationTargetException, IllegalAccessException, InstantiationException {
-        return classMethod.invoke(this, params);
-    }
-
-    private boolean returnJarStreamEndpoint(final String url) throws IOException {
-        //return null;
-        //todo support  serving files from JARs
-        //need to implement or extend StaticFile so that it accepts an input stream.
-        //then modify sendFile method to send a netty ChunkedStream passing in the jar input stream
-        String jar = url.substring(url.indexOf(":") + 1, url.indexOf("!"));
-        String jarFile = url.substring(url.indexOf("!") + 1);
-        ZipFile zip = new ZipFile(jar);
-        Enumeration<? extends ZipEntry> entries = zip.entries();
-        if (entries != null) {
-            while (entries.hasMoreElements()) {
-                ZipEntry entry = entries.nextElement();
-                if (jarFile.equalsIgnoreCase(entry.getName())) {
-                    this.jarFile = new JarFile(zip,
-                            entry,
-                            zip.getInputStream(entry));
-                    return true;
-                }
-            }
-        }
-        return false;
-    }
-
-    /**
-     * Checks, whether the child directory is a subdirectory of the base
-     * directory.
-     * java2s.com/Tutorial/Java/0180__File/Checkswhetherthechilddirectoryisasubdirectoryofthebasedirectory.htm
-     *
-     * @param base  the base directory.
-     * @param child the suspected child directory.
-     * @return true, if the child is a subdirectory of the base directory.
-     * @throws IOException if an IOError occured during the test.
-     */
-    public boolean isSubDirectory(File base, File child) {
-        try {
-            base = base.getCanonicalFile();
-            child = child.getCanonicalFile();
-            File parentFile = child;
-            while (parentFile != null) {
-                if (base.equals(parentFile)) {
-                    return true;
-                }
-                parentFile = parentFile.getParentFile();
-            }
-        } catch (IOException e) {
-            log.debug("", e);
-        }
-        return false;
     }
 
     private String sanitizeUri(String uri) {
@@ -296,6 +169,7 @@ public class StaticFileMethod extends HttpMethod {
         }
         return uri;
     }
+
 
     @Override
     public int priority() {

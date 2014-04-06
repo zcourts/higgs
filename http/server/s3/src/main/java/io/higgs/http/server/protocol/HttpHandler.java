@@ -3,6 +3,7 @@ package io.higgs.http.server.protocol;
 import io.higgs.core.FixedSortedList;
 import io.higgs.core.InvokableMethod;
 import io.higgs.core.MessageHandler;
+import io.higgs.core.ResolvedFile;
 import io.higgs.core.reflect.dependency.DependencyProvider;
 import io.higgs.core.reflect.dependency.Injector;
 import io.higgs.http.server.HttpRequest;
@@ -10,13 +11,13 @@ import io.higgs.http.server.HttpResponse;
 import io.higgs.http.server.HttpStatus;
 import io.higgs.http.server.MessagePusher;
 import io.higgs.http.server.ParamInjector;
-import io.higgs.http.server.transformers.ResponseTransformer;
 import io.higgs.http.server.StaticFileMethod;
 import io.higgs.http.server.WebApplicationException;
 import io.higgs.http.server.WrappedResponse;
 import io.higgs.http.server.config.HttpConfig;
 import io.higgs.http.server.protocol.mediaTypeDecoders.FormUrlEncodedDecoder;
 import io.higgs.http.server.protocol.mediaTypeDecoders.JsonDecoder;
+import io.higgs.http.server.transformers.ResponseTransformer;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
@@ -240,23 +241,10 @@ public class HttpHandler extends MessageHandler<HttpConfig, Object> {
     }
 
     protected ChannelFuture doWrite(ChannelHandlerContext ctx) {
+        long responseSize = getHeader(res, HttpHeaders.Names.CONTENT_LENGTH) == null ?
+                res.content().writerIndex() : HttpHeaders.getContentLength(res);
         //apply request cookies to response, this includes the session id
         res.finalizeCustomHeaders(request);
-        if (config.log_requests) {
-            SocketAddress address = ctx.channel().remoteAddress();
-            //going with the Apache format
-            //194.116.215.20 - [14/Nov/2005:22:28:57 +0000] “GET / HTTP/1.0″ 200 16440
-            requestLogger.info(String.format("%s - [%s] \"%s %s %s\" %s %s",
-                    address,
-                    HttpHeaders.getDate(request, request.getCreatedAt().toDate()),
-                    request.getMethod().name(),
-                    request.getUri(),
-                    request.getProtocolVersion(),
-                    res.getStatus().code(),
-                    getHeader(res, HttpHeaders.Names.CONTENT_LENGTH) == null ?
-                            res.content().writerIndex() : HttpHeaders.getContentLength(res)
-            ));
-        }
         // Decide whether to close the connection or not.
         boolean close = HttpHeaders.Values.CLOSE.equalsIgnoreCase(request.headers().get(CONNECTION))
                 || request.getProtocolVersion().equals(HttpVersion.HTTP_1_0)
@@ -271,11 +259,30 @@ public class HttpHandler extends MessageHandler<HttpConfig, Object> {
         } else {
             //if there is write manager it'll do all the write/flush
             future = res.doManagedWrite();
+            ResolvedFile f = res.getManagedWriter().getFile();
+            if (f != null) {
+                responseSize = f.size();
+            }
         }
         // Close the connection after the write operation is done if necessary.
         if (close || !config.enable_keep_alive_requests) {
             future.addListener(ChannelFutureListener.CLOSE);
-        }        //clean up and prep for next request. if keep-alive browsers like chrome will
+        }
+        if (config.log_requests) {
+            SocketAddress address = ctx.channel().remoteAddress();
+            //going with the Apache format
+            //194.116.215.20 - [14/Nov/2005:22:28:57 +0000] “GET / HTTP/1.0″ 200 16440
+            requestLogger.info(String.format("%s - [%s] \"%s %s %s\" %s %s",
+                    address,
+                    HttpHeaders.getDate(request, request.getCreatedAt().toDate()),
+                    request.getMethod().name(),
+                    request.getUri(),
+                    request.getProtocolVersion(),
+                    res.getStatus().code(),
+                    responseSize
+            ));
+        }
+        //clean up and prep for next request. if keep-alive browsers like chrome will
         //make multiple requests on the same channel
         request = null;
         res = null;

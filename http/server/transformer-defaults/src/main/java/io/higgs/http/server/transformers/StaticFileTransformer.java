@@ -1,21 +1,20 @@
 package io.higgs.http.server.transformers;
 
 import io.higgs.core.ConfigUtil;
+import io.higgs.core.FileUtil;
+import io.higgs.core.ResolvedFile;
 import io.higgs.http.server.HttpRequest;
 import io.higgs.http.server.HttpResponse;
-import io.higgs.http.server.JarFile;
 import io.higgs.http.server.config.HttpConfig;
 import io.higgs.http.server.protocol.HttpMethod;
-import io.higgs.http.server.protocol.HttpProtocolConfiguration;
 import io.higgs.http.server.resource.MediaType;
 import io.higgs.spi.ProviderFor;
-import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.HttpResponseStatus;
 
 import java.io.File;
-import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Path;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
@@ -54,93 +53,38 @@ public class StaticFileTransformer extends BaseTransformer {
     @Override
     public boolean canTransform(Object response, HttpRequest request, MediaType mediaType, HttpMethod method,
                                 ChannelHandlerContext ctx) {
-        return response != null && (response instanceof File || response instanceof JarFile);
+        return response != null && (response instanceof File ||
+                response instanceof Path ||
+                response instanceof InputStream);
     }
 
     @Override
     public void transform(Object response, HttpRequest request, HttpResponse res, MediaType mediaType,
                           HttpMethod method,
                           ChannelHandlerContext ctx) {
-        //first try to match all thymeleaf extensions
-        for (Pattern extensionPattern : tlExtensions) {
-            String fileName = response instanceof File ?
-                    ((File) response).getName() : ((JarFile) response).getEntry().getName();
-            if (extensionPattern.matcher(fileName).matches()) {
-                //parseTemplate(response, request, res, mediaType, method, ctx);
-                //todo find outher service providers that match the extension
-            }
-        }
         if (response != null) {
-            if (response instanceof InputStream) {
-                writeResponseFromStream((InputStream) response, res, request, mediaType, method, ctx);
-            } else if (response instanceof File) {
-                writeResponseFromFile((File) response, res, request, mediaType, method, ctx, res.content());
+            if (response instanceof File) {
+                response = FileUtil.resolve((File) response);
+            } else if (response instanceof Path) {
+                response = FileUtil.resolve((Path) response);
+            }
+            if (response instanceof ResolvedFile) {
+                writeResponseFromStream((ResolvedFile) response, res, request, mediaType, method, ctx);
             } else {
+                res.setStatus(HttpResponseStatus.INTERNAL_SERVER_ERROR);
                 if (isError(response)) {
                     log.warn("Unexpected error to static file transformer", response);
-                    res.setStatus(HttpResponseStatus.INTERNAL_SERVER_ERROR);
                 } else {
-                    res.setStatus(HttpResponseStatus.INTERNAL_SERVER_ERROR);
-                    log.warn(String.format("Expecting an input stream or file,%s received", response.getClass().getName()));
+                    log.warn(String.format("Expecting an input stream or file,%s received",
+                            response.getClass().getName()));
                 }
             }
         }
     }
 
-  /*  private void parseTemplate(Object response, HttpRequest request, HttpResponse httpResponse,
-                               MediaType mediaType,
-                               HttpMethod method, ChannelHandlerContext ctx) {
-
-        ThymeleafTransformer transformer =
-                new ThymeleafTransformer(conf.template_config, true);
-
-        Path path = null;
-        try {
-            if (response instanceof JarFile) {
-                //if it's a Jar file we need to create a tmp file from it
-                //TODO Either find a way to make Thymeleaf accept a stream or cache tmp files
-                JarFile file = (JarFile) response;
-                path = Files.createTempFile("hs3-thymleaf" + file.getEntry().getName(), "tmpTpl");
-                FileOutputStream out = new FileOutputStream(path.toFile());
-                while (file.getInputStream().available() > 0) {
-                    byte[] arr = new byte[file.getInputStream().available()];
-                    file.getInputStream().read(arr);
-                    out.write(arr);
-                }
-            } else {
-                File file = (File) response;
-                path = file.toPath();
-            }
-            String name = path.toString();
-            //transformer uses getTemplate()
-            method.setTemplate(name);
-            transformer.transform(response, request, httpResponse, mediaType, method, ctx);
-        } catch (IOException e) {
-            log.warn(String.format("Error passing static file through Thymeleaf Path:%s", path), e);
-            httpResponse.setStatus(HttpResponseStatus.INTERNAL_SERVER_ERROR);
-        }
-    }*/
-
-    private void writeResponseFromStream(InputStream response, HttpResponse res, HttpRequest request,
+    private void writeResponseFromStream(ResolvedFile response, HttpResponse res, HttpRequest request,
                                          MediaType mediaType, HttpMethod method, ChannelHandlerContext ctx) {
-        readEntireStream(response, res);
-    }
-
-    private void readEntireStream(InputStream response, HttpResponse res) {
-        int b;
-        try {
-            while ((b = response.read()) != -1) {
-                res.content().writeByte(b);
-            }
-        } catch (IOException e) {
-            log.warn("Error reading file input stream", e);
-        }
-    }
-
-    private void writeResponseFromFile(File file, final HttpResponse res, final HttpRequest request,
-                                       MediaType mediaType,
-                                       HttpMethod method, final ChannelHandlerContext ctx, ByteBuf buffer) {
-        res.setManagedWriter(new StaticFileWriter(ctx, res, file, request, formats, conf));
+        res.setManagedWriter(new StaticFileWriter(ctx, res, response, request, formats, conf));
     }
 
     @Override
