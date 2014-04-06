@@ -11,10 +11,8 @@ import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.yaml.snakeyaml.Yaml;
 import org.yaml.snakeyaml.constructor.Constructor;
 
-import java.io.FileInputStream;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.InetSocketAddress;
@@ -61,23 +59,9 @@ public class HiggsServer {
 
     public <C extends ServerConfig> HiggsServer setConfig(String configFile, Class<C> klass, Constructor constructor) {
         if (configFile == null || configFile.isEmpty()) {
-            throw new IllegalArgumentException(String.format("usage: %s path/to/config.yml", getClass().getName()));
+            configFile = "config.yml";
         }
-        Yaml yaml;
-        if (constructor != null) {
-            yaml = new Yaml(constructor);
-        } else {
-            yaml = new Yaml();
-        }
-        Path configPath = Paths.get(configFile).toAbsolutePath();
-        try {
-            config = yaml.loadAs(new FileInputStream(configPath.toFile()), klass);
-        } catch (Throwable e) {
-            //start up error. should not continue
-            throw new IllegalStateException(String.format("The server cannot be started, unable to load config (%s)",
-                    configPath), e);
-        }
-        BASE_PATH = configPath.toFile().getParentFile().toPath();
+        config = ConfigUtil.loadYaml(Paths.get(configFile), klass, constructor);
         this.port = config.port;
         return this;
     }
