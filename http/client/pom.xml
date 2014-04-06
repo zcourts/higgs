@@ -9,7 +9,7 @@
         <groupId>io.higgs</groupId>
         <artifactId>http</artifactId>
         <relativePath>../pom.xml</relativePath>
-        <version>${higgs.version}</version>
+        <version>0.1.0-SNAPSHOT</version>
     </parent>
     <dependencies>
         <!--for oauth url creation-->

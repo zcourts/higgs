@@ -8,7 +8,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>io.higgs</groupId>
     <artifactId>higgs</artifactId>
-    <version>${higgs.version}</version>
+    <version>0.1.0-SNAPSHOT</version>
     <name>${project.artifactId}</name>
     <description>Message oritented networking library</description>
     <inceptionYear>2012</inceptionYear>
@@ -47,7 +47,7 @@
         <netty.version>4.0.12.Final</netty.version>
         <netty.group>io.netty</netty.group>
         <encoding>UTF-8</encoding>
-        <higgs.version>0.1.0-SNAPSHOT</higgs.version>
+        <!--<higgs.version>0.1.0-SNAPSHOT</higgs.version>-->
     </properties>
 
     <dependencyManagement>
@@ -55,32 +55,37 @@
             <dependency>
                 <groupId>io.higgs</groupId>
                 <artifactId>core</artifactId>
-                <version>${higgs.version}</version>
+                <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.higgs</groupId>
                 <artifactId>events</artifactId>
-                <version>${higgs.version}</version>
+                <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.higgs</groupId>
                 <artifactId>http-client</artifactId>
-                <version>${higgs.version}</version>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.higgs</groupId>
+                <artifactId>http-server</artifactId>
+                <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.higgs</groupId>
                 <artifactId>http-s3</artifactId>
-                <version>${higgs.version}</version>
+                <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.higgs</groupId>
                 <artifactId>ws-client</artifactId>
-                <version>${higgs.version}</version>
+                <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.higgs</groupId>
                 <artifactId>ws-server</artifactId>
-                <version>${higgs.version}</version>
+                <version>${project.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>

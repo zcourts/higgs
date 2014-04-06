@@ -9,7 +9,7 @@
         <groupId>io.higgs</groupId>
         <artifactId>websocket</artifactId>
         <relativePath>../pom.xml</relativePath>
-        <version>${higgs.version}</version>
+        <version>0.1.0-SNAPSHOT</version>
     </parent>
     <dependencies>
         <dependency>
@@ -21,22 +21,4 @@
             <artifactId>events</artifactId>
         </dependency>
     </dependencies>
-    <build>
-        <plugins>
-            <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>exec-maven-plugin</artifactId>
-                <configuration>
-                    <mainClass>io.higgs.http.client.demo.Demo</mainClass>
-                    <includePluginDependencies>false</includePluginDependencies>
-                    <systemProperties>
-                        <property>
-                            <key>java.util.logging.config.file</key>
-                            <value>logging.properties</value>
-                        </property>
-                    </systemProperties>
-                </configuration>
-            </plugin>
-        </plugins>
-    </build>
 </project>

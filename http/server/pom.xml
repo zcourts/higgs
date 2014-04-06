@@ -9,7 +9,7 @@
         <groupId>io.higgs</groupId>
         <artifactId>http</artifactId>
         <relativePath>../pom.xml</relativePath>
-        <version>${higgs.version}</version>
+        <version>0.1.0-SNAPSHOT</version>
     </parent>
     <modules>
         <module>s3</module>
@@ -22,7 +22,7 @@
             <dependency>
                 <groupId>io.higgs</groupId>
                 <artifactId>http-s3</artifactId>
-                <version>${higgs.version}</version>
+                <version>${project.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
