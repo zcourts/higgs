@@ -19,6 +19,7 @@ public abstract class InvokableMethod implements Sortable<InvokableMethod> {
     protected final Queue<ObjectFactory> factories;
     protected final Class<?> klass;
     protected String path;
+    protected int priority;
 
     public InvokableMethod(Queue<ObjectFactory> factories, Class<?> klass, Method classMethod) {
         if (factories == null || klass == null || classMethod == null) {
@@ -140,13 +141,18 @@ public abstract class InvokableMethod implements Sortable<InvokableMethod> {
         return that.priority() - this.priority();
     }
 
-    /**
-     * @return A priority which determines the order in which methods are checked
-     */
+    @Override
+    public int setPriority(int value) {
+        int old = priority;
+        priority = value;
+        return old;
+    }
+
     @Override
     public int priority() {
-        return 0;
+        return priority;
     }
+
 
     /**
      * Invoked when a method has been registered

@@ -37,4 +37,8 @@ public class TemplateConfig {
      */
     public boolean merge_fragments_on_each_request = true;
     public String fragments_dir = "merged-fragments/";
+    /**
+     * Determines the order in which the thymleaf transformer is used to convert a response object
+     */
+    public int priority = 1;
 }

@@ -12,6 +12,7 @@ import org.slf4j.LoggerFactory;
  */
 public abstract class BaseTransformer implements ResponseTransformer {
     protected Logger log = LoggerFactory.getLogger(getClass());
+    protected int priority;
 
     protected void setResponseContent(HttpResponse res, byte[] data) {
         if (data != null) {
@@ -33,6 +34,18 @@ public abstract class BaseTransformer implements ResponseTransformer {
             status = wae.getStatus() == null ? HttpResponseStatus.INTERNAL_SERVER_ERROR : wae.getStatus();
         }
         res.setStatus(status);
+    }
+
+    @Override
+    public int setPriority(int value) {
+        int old = priority;
+        priority = value;
+        return old;
+    }
+
+    @Override
+    public int priority() {
+        return priority;
     }
 
     @Override

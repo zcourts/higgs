@@ -18,7 +18,7 @@ public class Transcription implements Sortable<Transcription> {
     private boolean replaceWholeRequest;
     private String replacementPath;
     private boolean replaceFirstOccurrence;
-    private int priority;
+    protected int priority;
 
     /**
      * Convenience method which creates a {@link Transcription} with a {@link java.util.regex.Pattern} criteria.
@@ -153,6 +153,13 @@ public class Transcription implements Sortable<Transcription> {
         result = 31 * result + (replacementPath != null ? replacementPath.hashCode() : 0);
         result = 31 * result + (replaceFirstOccurrence ? 1 : 0);
         return result;
+    }
+
+    @Override
+    public int setPriority(int value) {
+        int old = priority;
+        priority = value;
+        return old;
     }
 
     @Override

@@ -8,6 +8,7 @@ import io.higgs.core.ProtocolDetectorFactory;
  */
 public class HttpDetectorFactory implements ProtocolDetectorFactory {
     private final HttpProtocolConfiguration config;
+    protected int priority;
 
     public HttpDetectorFactory(HttpProtocolConfiguration config) {
         this.config = config;
@@ -19,8 +20,15 @@ public class HttpDetectorFactory implements ProtocolDetectorFactory {
     }
 
     @Override
+    public int setPriority(int value) {
+        int old = priority;
+        priority = value;
+        return old;
+    }
+
+    @Override
     public int priority() {
-        return 0;
+        return priority;
     }
 
     @Override
