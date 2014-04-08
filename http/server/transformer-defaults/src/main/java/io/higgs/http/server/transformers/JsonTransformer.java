@@ -2,7 +2,6 @@ package io.higgs.http.server.transformers;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import io.higgs.core.ConfigUtil;
-import io.higgs.core.ResolvedFile;
 import io.higgs.http.server.HttpRequest;
 import io.higgs.http.server.HttpResponse;
 import io.higgs.http.server.HttpStatus;
@@ -13,10 +12,7 @@ import io.higgs.http.server.transformers.conf.JsonConfig;
 import io.higgs.spi.ProviderFor;
 import io.netty.channel.ChannelHandlerContext;
 
-import java.io.File;
-import java.io.InputStream;
-import java.nio.file.Path;
-
+import static io.higgs.http.server.resource.MediaType.APPLICATION_JSON_TYPE;
 import static io.higgs.http.server.transformers.JsonResponseError.EMPTY_JSON_OBJECT;
 
 /**
@@ -29,24 +25,7 @@ public class JsonTransformer extends BaseTransformer {
     public JsonTransformer() {
         conf = ConfigUtil.loadYaml("json_config.yml", JsonConfig.class);
         setPriority(conf.priority);
-    }
-
-    @Override
-    public boolean canTransform(Object response, HttpRequest request, MediaType mediaType,
-                                HttpMethod method, ChannelHandlerContext ctx) {
-        if (response != null && !(
-                response instanceof File
-                        || response instanceof ResolvedFile
-                        || response instanceof InputStream
-                        || response instanceof Path
-        )) {
-            for (MediaType type : request.getAcceptedMediaTypes()) {
-                if (type.isCompatible(MediaType.APPLICATION_JSON_TYPE)) {
-                    return true;
-                }
-            }
-        }
-        return false;
+        addSupportedTypes(APPLICATION_JSON_TYPE);
     }
 
     @Override

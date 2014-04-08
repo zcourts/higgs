@@ -20,6 +20,11 @@ import java.io.StringReader;
 import java.io.Writer;
 import java.util.HashMap;
 
+import static io.higgs.http.server.resource.MediaType.APPLICATION_FORM_URLENCODED_TYPE;
+import static io.higgs.http.server.resource.MediaType.APPLICATION_XHTML_XML_TYPE;
+import static io.higgs.http.server.resource.MediaType.TEXT_HTML_TYPE;
+import static io.higgs.http.server.resource.MediaType.WILDCARD_TYPE;
+
 /**
  * @author Courtney Robinson <courtney@crlog.info>
  */
@@ -30,6 +35,7 @@ public class Moustache extends BaseTransformer {
     public Moustache() {
         config = ConfigUtil.loadYaml("moustache_config.yml", MoustacheConfig.class);
         setPriority(config.priority);
+        addSupportedTypes(WILDCARD_TYPE, TEXT_HTML_TYPE, APPLICATION_FORM_URLENCODED_TYPE, APPLICATION_XHTML_XML_TYPE);
     }
 
     static class Feature {
@@ -54,29 +60,6 @@ public class Moustache extends BaseTransformer {
         writer.flush();
     }
 
-    @Override
-    public boolean canTransform(Object response, HttpRequest request, MediaType mediaType, HttpMethod method, ChannelHandlerContext ctx) {
-        if (method == null) {
-            //can be true if response is an exception
-            return false;
-        }
-        //first and foremost an endpoint must have a template annotation to even be considered
-        if (!method.hasTemplate()) {
-            return false;
-        }
-        if (request.getAcceptedMediaTypes().isEmpty()) {
-            return true; //assume */*
-        }
-        for (MediaType type : request.getAcceptedMediaTypes()) {
-            if (type.isCompatible(MediaType.WILDCARD_TYPE) ||
-                    type.isCompatible(MediaType.TEXT_HTML_TYPE) ||
-                    type.isCompatible(MediaType.APPLICATION_FORM_URLENCODED_TYPE) ||
-                    type.isCompatible(MediaType.APPLICATION_XHTML_XML_TYPE)) {
-                return true;
-            }
-        }
-        return false;
-    }
 
     @Override
     public void transform(Object response, HttpRequest request, HttpResponse httpResponse, MediaType mediaType, HttpMethod method, ChannelHandlerContext ctx) {

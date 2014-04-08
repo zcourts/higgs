@@ -21,7 +21,6 @@ import io.netty.handler.codec.http.multipart.DiskAttribute;
 import io.netty.handler.codec.http.multipart.DiskFileUpload;
 
 import java.io.File;
-import java.io.InputStream;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Map;
@@ -65,17 +64,18 @@ public class StaticFileTransformer extends BaseTransformer {
         setPriority(conf.priority); //after JSON
     }
 
+    /**
+     * Overrides the default behaviour in
+     * {@link BaseTransformer#canTransform(Object, HttpRequest, MediaType, HttpMethod, ChannelHandlerContext)}
+     * for a custom check on static files
+     */
     @Override
     public boolean canTransform(Object response, HttpRequest request, MediaType mediaType, HttpMethod method,
                                 ChannelHandlerContext ctx) {
-        return response != null && (
-                response instanceof ResolvedFile ||
-                        response instanceof File ||
-                        response instanceof Path ||
-                        response instanceof InputStream ||
-                        //handle web application exceptions thrown by the static file method
-                        (response instanceof WebApplicationException &&
-                                ((WebApplicationException) response).getSource() instanceof StaticFileMethod));
+        return isStaticFileResponse(response) ||
+                //handle web application exceptions thrown by the static file method
+                (response instanceof WebApplicationException &&
+                        ((WebApplicationException) response).getSource() instanceof StaticFileMethod);
     }
 
     @Override

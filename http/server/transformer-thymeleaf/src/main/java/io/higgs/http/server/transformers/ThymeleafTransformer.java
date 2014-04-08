@@ -26,6 +26,11 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
+import static io.higgs.http.server.resource.MediaType.APPLICATION_FORM_URLENCODED_TYPE;
+import static io.higgs.http.server.resource.MediaType.APPLICATION_XHTML_XML_TYPE;
+import static io.higgs.http.server.resource.MediaType.TEXT_HTML_TYPE;
+import static io.higgs.http.server.resource.MediaType.WILDCARD_TYPE;
+
 /**
  * See {@link io.higgs.http.server.resource.template#value()} for a list of types that will be injected by default
  *
@@ -41,31 +46,7 @@ public class ThymeleafTransformer extends BaseTransformer {
         this.config = ConfigUtil.loadYaml("thymeleaf_config.yml", TemplateConfig.class);
         tl = new Thymeleaf(this.config);
         setPriority(config.priority);
-    }
-
-    @Override
-    public boolean canTransform(Object response, HttpRequest request, MediaType mediaType,
-                                HttpMethod method, ChannelHandlerContext ctx) {
-        if (method == null) {
-            //can be true if response is an exception
-            return false;
-        }
-        //first and foremost an endpoint must have a template annotation to even be considered
-        if (!method.hasTemplate()) {
-            return false;
-        }
-        if (request.getAcceptedMediaTypes().isEmpty()) {
-            return true; //assume */*
-        }
-        for (MediaType type : request.getAcceptedMediaTypes()) {
-            if (type.isCompatible(MediaType.WILDCARD_TYPE) ||
-                    type.isCompatible(MediaType.TEXT_HTML_TYPE) ||
-                    type.isCompatible(MediaType.APPLICATION_FORM_URLENCODED_TYPE) ||
-                    type.isCompatible(MediaType.APPLICATION_XHTML_XML_TYPE)) {
-                return true;
-            }
-        }
-        return false;
+        addSupportedTypes(WILDCARD_TYPE, TEXT_HTML_TYPE, APPLICATION_FORM_URLENCODED_TYPE, APPLICATION_XHTML_XML_TYPE);
     }
 
     @Override
