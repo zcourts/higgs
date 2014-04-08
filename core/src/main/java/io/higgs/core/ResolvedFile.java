@@ -5,6 +5,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.channels.ClosedChannelException;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -17,7 +18,8 @@ public class ResolvedFile {
     protected Path path;
     protected InputStream stream;
     protected DirectoryStream<Path> dir;
-    private Path base;
+    protected Path base;
+    protected int knownSize;
 
     public void setPath(Path path) {
         setPath(path, null);
@@ -35,12 +37,20 @@ public class ResolvedFile {
                     dir = Files.newDirectoryStream(path);
                 } else {
                     stream = Files.newInputStream(path);
+                    knownSize = stream.available();
                 }
             } catch (IOException e) {
                 log.warn(String.format("Unable to open file %s for reading", path), e);
             }
         } else {
             stream = Thread.currentThread().getContextClassLoader().getResourceAsStream(path.toString());
+            if (stream != null) {
+                try {
+                    knownSize = stream.available();
+                } catch (IOException ignored) {
+                    knownSize = 0;
+                }
+            }
         }
     }
 
@@ -54,6 +64,8 @@ public class ResolvedFile {
     public int size() {
         try {
             return hasStream() ? stream.available() : -1;
+        } catch (ClosedChannelException ignored) {
+            return knownSize;
         } catch (IOException e) {
             log.warn("Failed to get available bytes on stream ", e);
         }

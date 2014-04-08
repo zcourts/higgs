@@ -7,6 +7,7 @@ import io.higgs.http.server.config.HttpConfig;
 import io.higgs.http.server.protocol.HttpMethod;
 import io.higgs.http.server.protocol.HttpProtocolConfiguration;
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.handler.codec.http.HttpResponseStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,16 +39,17 @@ public class StaticFileMethod extends HttpMethod {
     private static Logger log = LoggerFactory.getLogger(StaticFileMethod.class);
     private static final Method METHOD;
 
-    protected Path matchedFile;
+    protected ResolvedFile resolvedFile;
 
     public StaticFileMethod(Queue<ObjectFactory> factories, HttpProtocolConfiguration protocolConfig) {
         super(factories, StaticFileMethod.class, METHOD);
         this.config = protocolConfig;
-        base = Paths.get(((HttpConfig) config.getServer().getConfig()).files.public_directory);
-        if (Files.exists(base)) {
+        base = Paths.get(((HttpConfig) config.getServer().getConfig()).public_directory);
+        if (!Files.exists(base)) {
             canServe = false;
             log.warn("Public files directory that is configured does not exist. Will not serve static files");
         }
+        setPriority(Integer.MIN_VALUE);
     }
 
     static {
@@ -62,8 +64,8 @@ public class StaticFileMethod extends HttpMethod {
      * @return the {@link java.nio.file.Path} to the file that was found by
      * {@link #matches(String, io.netty.channel.ChannelHandlerContext, Object)}
      */
-    public Path getFile() {
-        return matchedFile;
+    public ResolvedFile getFile() {
+        return resolvedFile;
     }
 
     @Override
@@ -86,7 +88,7 @@ public class StaticFileMethod extends HttpMethod {
         if (uri == null) {
             return false;
         }
-        matchedFile = Paths.get(uri);
+        Path matchedFile = Paths.get(uri);
         if (Files.isDirectory(matchedFile)) {
             //get list of files, if index/default found then send it instead of listing directory
             try {
@@ -94,7 +96,7 @@ public class StaticFileMethod extends HttpMethod {
                 boolean list = true;
                 for (Path localPath : paths) {
                     Path name = localPath.getFileName();
-                    if (((HttpConfig) config.getServer().getConfig()).files.index_file.endsWith(name.toString())) {
+                    if (((HttpConfig) config.getServer().getConfig()).index_file.endsWith(name.toString())) {
                         matchedFile = name;
                         list = false;
                         break;
@@ -102,23 +104,22 @@ public class StaticFileMethod extends HttpMethod {
                 }
                 if (list) {
                     //directory listing not enabled return 404 or another error
-                    return ((HttpConfig) config.getServer().getConfig()).files.enable_directory_listing;
+                    return ((HttpConfig) config.getServer().getConfig()).enable_directory_listing;
                 }
             } catch (IOException e) {
                 log.info(String.format("Failed to list files in directory {%s}", e.getMessage()));
                 return false;
             }
         }
-        ResolvedFile in = FileUtil.resolve(base, matchedFile);
-        if (in.hasStream()) {
-            try {
-                in.getStream().close();
-            } catch (IOException e) {
-                log.warn("Failed to close stream", e);
-            }
-            return true;
+        resolvedFile = FileUtil.resolve(base, matchedFile);
+        if (!resolvedFile.exists()) {
+            //static file method is a last resort and called after all other methods failed to match
+            //if the file is found to be a static file then raise a 404
+            WebApplicationException e = new WebApplicationException(HttpResponseStatus.NOT_FOUND, request, this);
+            e.setMessage(resolvedFile.getName() + " not found");
+            throw e;
         }
-        return false;
+        return resolvedFile.hasStream();
     }
 
     public Object invoke(ChannelHandlerContext ctx, String path, Object msg, Object[] params)
@@ -132,12 +133,12 @@ public class StaticFileMethod extends HttpMethod {
         if (uri.contains("?")) {
             uri = uri.substring(0, uri.indexOf("?"));
         }
-        if (uri.equals("/") && ((HttpConfig) config.getServer().getConfig()).files.serve_index_file) {
-            uri = ((HttpConfig) config.getServer().getConfig()).files.index_file;
+        if (uri.equals("/") && ((HttpConfig) config.getServer().getConfig()).serve_index_file) {
+            uri = ((HttpConfig) config.getServer().getConfig()).index_file;
         }
-        //the URL must be from the public directory
-        if (!uri.startsWith("/")) {
-            uri = "/" + uri;
+        //remove forward slash from URIs so that they're resolved relatively
+        if (uri.startsWith("/")) {
+            uri = uri.substring(1);
         }
         return uri;
     }
@@ -153,11 +154,6 @@ public class StaticFileMethod extends HttpMethod {
                 throw new Error();
             }
         }
-
-        if (!uri.startsWith("/")) {
-            return null;
-        }
-
         // Convert file separators.
         uri = uri.replace('/', File.separatorChar);
         // TODO provide more secure checks
@@ -168,11 +164,5 @@ public class StaticFileMethod extends HttpMethod {
             return null;
         }
         return uri;
-    }
-
-
-    @Override
-    public int priority() {
-        return Integer.MIN_VALUE;
     }
 }

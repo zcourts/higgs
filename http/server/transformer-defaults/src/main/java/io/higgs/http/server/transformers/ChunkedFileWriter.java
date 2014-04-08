@@ -23,7 +23,7 @@ public class ChunkedFileWriter implements ChunkedInput<ByteBuf> {
 
     @Override
     public boolean isEndOfInput() throws Exception {
-        return stream.available() > 0;
+        return stream.available() == 0;
     }
 
     @Override
@@ -34,16 +34,8 @@ public class ChunkedFileWriter implements ChunkedInput<ByteBuf> {
     @Override
     public ByteBuf readChunk(ChannelHandlerContext ctx) throws Exception {
         ByteBuf buf = ctx.alloc().heapBuffer(chunkSize);
-        boolean release = true;
-        try {
-            int read = stream.read(buf.array());
-            buf.writerIndex(read);
-            release = false;
-            return buf;
-        } finally {
-            if (release) {
-                buf.release();
-            }
-        }
+        int read = stream.read(buf.array());
+        buf.writerIndex(read);
+        return buf;
     }
 }

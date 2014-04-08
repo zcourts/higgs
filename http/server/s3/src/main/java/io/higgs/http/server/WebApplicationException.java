@@ -1,18 +1,26 @@
 package io.higgs.http.server;
 
+import io.higgs.core.InvokableMethod;
 import io.netty.handler.codec.http.HttpResponseStatus;
 
 /**
  * @author Courtney Robinson <courtney@crlog.info>
  */
 public class WebApplicationException extends RuntimeException {
+    private InvokableMethod source;
     private HttpResponseStatus status = HttpStatus.INTERNAL_SERVER_ERROR;
-    private String template;
+    private String template, message;
     private Object response;
     private HttpRequest request;
 
     public WebApplicationException(HttpResponseStatus status) {
         this.status = status;
+    }
+
+    public WebApplicationException(HttpResponseStatus status, HttpRequest request, InvokableMethod source) {
+        this(status);
+        this.request = request;
+        this.source = source;
     }
 
     public WebApplicationException(HttpResponseStatus status, HttpRequest request) {
@@ -93,5 +101,18 @@ public class WebApplicationException extends RuntimeException {
                 ", response=" + response +
                 ", path=" + (request == null ? "null" : request.getUri()) +
                 '}';
+    }
+
+    public InvokableMethod getSource() {
+        return source;
+    }
+
+    @Override
+    public String getMessage() {
+        return message;
+    }
+
+    public void setMessage(String message) {
+        this.message = message;
     }
 }

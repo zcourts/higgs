@@ -5,7 +5,7 @@ import io.higgs.http.server.HttpRequest;
 import io.higgs.http.server.HttpResponse;
 import io.higgs.http.server.HttpStatus;
 import io.higgs.http.server.ManagedWriter;
-import io.higgs.http.server.config.HttpConfig;
+import io.higgs.http.server.transformers.conf.FilesConfig;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelFuture;
@@ -55,13 +55,13 @@ public class StaticFileWriter implements ManagedWriter {
     private final io.netty.handler.codec.http.HttpResponse res = new DefaultHttpResponse(HTTP_1_1, OK);
     private final HttpResponse higgsPreparedResponse;
     private final HttpRequest request;
-    private final HttpConfig conf;
+    private final FilesConfig conf;
 
     public boolean done;
 
     public StaticFileWriter(ChannelHandlerContext ctx, HttpResponse resIgnored, ResolvedFile file, HttpRequest request,
                             Map<String,
-                                    String> formats, HttpConfig conf) {
+                                    String> formats, FilesConfig conf) {
         this.conf = conf;
         this.ctx = ctx;
         this.file = file;
@@ -111,7 +111,7 @@ public class StaticFileWriter implements ManagedWriter {
         res.setStatus(HttpStatus.OK);
         setContentLength(res, file.size());
         ctx.write(res);
-        ChannelFuture writeFuture = ctx.write(new ChunkedFileWriter(file.getStream(), conf.files.chunk_size),
+        ChannelFuture writeFuture = ctx.write(new ChunkedFileWriter(file.getStream(), conf.chunk_size),
                 ctx.newProgressivePromise());
 
         writeFuture.addListener(new ChannelProgressiveFutureListener() {

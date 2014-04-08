@@ -28,8 +28,6 @@ import io.netty.handler.codec.http.HttpHeaders;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.handler.codec.http.HttpVersion;
 import io.netty.handler.codec.http.LastHttpContent;
-import io.netty.handler.codec.http.multipart.DiskAttribute;
-import io.netty.handler.codec.http.multipart.DiskFileUpload;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -74,14 +72,6 @@ public class HttpHandler extends MessageHandler<HttpConfig, Object> {
         protocolConfig = config;
         injector = config.getInjector();
         mediaTypeDecoders.addAll(config.getMediaTypeDecoders());
-        // should delete file
-        DiskFileUpload.deleteOnExitTemporaryFile = httpConfig.files.delete_temp_on_exit;
-        // system temp directory
-        DiskFileUpload.baseDirectory = httpConfig.files.temp_directory;
-        // should delete file on
-        DiskAttribute.deleteOnExitTemporaryFile = httpConfig.files.delete_temp_on_exit;
-        // exit (in normal exit)
-        DiskAttribute.baseDirectory = httpConfig.files.temp_directory; // system temp directory
     }
 
     public <M extends InvokableMethod> M findMethod(String path, ChannelHandlerContext ctx,

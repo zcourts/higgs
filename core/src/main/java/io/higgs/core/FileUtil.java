@@ -51,4 +51,11 @@ public class FileUtil {
         }
         return resolve(file.toPath());
     }
+
+    public static ResolvedFile resolve(Path base, File file) {
+        if (file == null) {
+            return null;
+        }
+        return resolve(base, file.toPath());
+    }
 }
