@@ -9,8 +9,8 @@ import io.higgs.http.server.protocol.HttpMethod;
 import io.higgs.http.server.protocol.mediaTypeDecoders.JsonDecoder;
 import io.higgs.http.server.resource.MediaType;
 import io.higgs.http.server.transformers.conf.JsonConfig;
-import io.higgs.spi.ProviderFor;
 import io.netty.channel.ChannelHandlerContext;
+import org.kohsuke.MetaInfServices;
 
 import static io.higgs.http.server.resource.MediaType.APPLICATION_JSON_TYPE;
 import static io.higgs.http.server.transformers.JsonResponseError.EMPTY_JSON_OBJECT;
@@ -18,7 +18,8 @@ import static io.higgs.http.server.transformers.JsonResponseError.EMPTY_JSON_OBJ
 /**
  * @author Courtney Robinson <courtney@crlog.info>
  */
-@ProviderFor(ResponseTransformer.class)
+//@ProviderFor(ResponseTransformer.class)
+@MetaInfServices(ResponseTransformer.class)
 public class JsonTransformer extends BaseTransformer {
     protected JsonConfig conf;
 

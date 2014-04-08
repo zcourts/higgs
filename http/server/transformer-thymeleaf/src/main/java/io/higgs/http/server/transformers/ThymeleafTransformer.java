@@ -11,9 +11,9 @@ import io.higgs.http.server.protocol.HttpMethod;
 import io.higgs.http.server.resource.MediaType;
 import io.higgs.http.server.transformers.thymeleaf.Thymeleaf;
 import io.higgs.http.server.transformers.thymeleaf.WebContext;
-import io.higgs.spi.ProviderFor;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.HttpHeaders;
+import org.kohsuke.MetaInfServices;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.thymeleaf.TemplateEngine;
@@ -36,7 +36,8 @@ import static io.higgs.http.server.resource.MediaType.WILDCARD_TYPE;
  *
  * @author Courtney Robinson <courtney@crlog.info>
  */
-@ProviderFor(ResponseTransformer.class)
+//@ProviderFor(ResponseTransformer.class)
+@MetaInfServices(ResponseTransformer.class)
 public class ThymeleafTransformer extends BaseTransformer {
     protected TemplateConfig config;
     protected Thymeleaf tl;

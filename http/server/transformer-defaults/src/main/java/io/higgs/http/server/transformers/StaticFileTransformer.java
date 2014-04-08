@@ -13,12 +13,12 @@ import io.higgs.http.server.config.HttpConfig;
 import io.higgs.http.server.protocol.HttpMethod;
 import io.higgs.http.server.resource.MediaType;
 import io.higgs.http.server.transformers.conf.FilesConfig;
-import io.higgs.spi.ProviderFor;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.handler.codec.http.multipart.DiskAttribute;
 import io.netty.handler.codec.http.multipart.DiskFileUpload;
+import org.kohsuke.MetaInfServices;
 
 import java.io.File;
 import java.nio.file.Path;
@@ -29,7 +29,8 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * @author Courtney Robinson <courtney@crlog.info>
  */
-@ProviderFor(ResponseTransformer.class)
+//@ProviderFor(ResponseTransformer.class)
+@MetaInfServices(ResponseTransformer.class)
 public class StaticFileTransformer extends BaseTransformer {
     private static Map<String, String> formats = new ConcurrentHashMap<>();
     private FilesConfig conf;
