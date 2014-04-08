@@ -1,3 +1,0 @@
-#if other transformers are loaded at the same time as moustache the priority decides which one is used if
-#there is another transformer which can convert the same types as moustache the one with the highest priority wins
-priority: 2
