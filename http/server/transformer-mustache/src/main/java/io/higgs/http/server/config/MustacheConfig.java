@@ -19,4 +19,8 @@ public class MustacheConfig {
      * become variables in the mustache scope with the value of the variable being that of the field
      */
     public boolean extract_pojo_fields = true;
+    /**
+     * if the template name given to the template annotation doesn't have a file extension this is appended
+     */
+    public String template = ".mustache";
 }

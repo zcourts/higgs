@@ -8,5 +8,6 @@ directory: templates
 extract_values_from_maps: true
 #If true then when an object is returned that is not a collection or primitive the fields names in the object
 #become variables in the mustache scope with the value of the variable being that of the field
-extract_pojo_fields: true;
-
+extract_pojo_fields: true
+# if the template name given to the template annotation doesn't have a file extension this is appended
+template: ".mustache"

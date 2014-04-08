@@ -12,10 +12,10 @@ import io.higgs.http.server.protocol.HttpMethod;
 import io.higgs.http.server.resource.MediaType;
 import io.higgs.http.server.transformers.BaseTransformer;
 import io.higgs.http.server.transformers.ResponseTransformer;
-import io.higgs.spi.ProviderFor;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufOutputStream;
 import io.netty.channel.ChannelHandlerContext;
+import org.kohsuke.MetaInfServices;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -39,7 +39,8 @@ import static io.netty.handler.codec.http.HttpResponseStatus.INTERNAL_SERVER_ERR
 /**
  * @author Courtney Robinson <courtney@crlog.info>
  */
-@ProviderFor(ResponseTransformer.class)
+//@ProviderFor(ResponseTransformer.class)
+@MetaInfServices(ResponseTransformer.class)
 public class MustacheTransformer extends BaseTransformer {
     protected MustacheConfig config;
     protected MustacheFactory mf;
@@ -70,7 +71,7 @@ public class MustacheTransformer extends BaseTransformer {
         ByteBuf buf = ctx.alloc().heapBuffer();
         OutputStream in = new ByteBufOutputStream(buf);
         Writer writer = new OutputStreamWriter(in);
-        Mustache mustache = mf.compile(method.getTemplate());
+        Mustache mustache = mf.compile(resoleTemplateName(method.getTemplate()));
         mustache.execute(writer, scopes(response, request, method));
         try {
             //flush data to byte buf
@@ -83,6 +84,14 @@ public class MustacheTransformer extends BaseTransformer {
             res.setStatus(INTERNAL_SERVER_ERROR);
             setResponseContent(res, new byte[0]);
         }
+    }
+
+    private String resoleTemplateName(String template) {
+        String ext = config.template;
+        if (template.endsWith(ext) || template.contains(".")) {
+            return template;
+        }
+        return template + ext;
     }
 
     private Object[] scopes(Object response, HttpRequest request, HttpMethod method) {
