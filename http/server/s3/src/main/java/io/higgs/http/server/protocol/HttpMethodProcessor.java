@@ -174,5 +174,9 @@ public class HttpMethodProcessor implements MethodProcessor {
             im.setTemplate(template.fragments());
         }
         im.setTemplate(methodTemplate);
+        if (!im.hasFragments() && !im.hasTemplate()) {
+            throw new IllegalStateException(String.format("%s in %s has template annotation but hasn't provided a " +
+                    "template or any fragments", method.getName(), klass.getName()));
+        }
     }
 }
