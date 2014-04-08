@@ -19,7 +19,7 @@
         <dependency>
             <groupId>io.higgs</groupId>
             <artifactId>spi</artifactId>
-            <version>0.2.8</version>
+            <version>0.2.9</version>
         </dependency>
         <!--Thymeleaf template support-->
         <dependency>
