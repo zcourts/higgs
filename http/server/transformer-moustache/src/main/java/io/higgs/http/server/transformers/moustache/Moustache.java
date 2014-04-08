@@ -3,8 +3,10 @@ package io.higgs.http.server.transformers.moustache;
 import com.github.mustachejava.DefaultMustacheFactory;
 import com.github.mustachejava.Mustache;
 import com.github.mustachejava.MustacheFactory;
+import io.higgs.core.ConfigUtil;
 import io.higgs.http.server.HttpRequest;
 import io.higgs.http.server.HttpResponse;
+import io.higgs.http.server.config.MoustacheConfig;
 import io.higgs.http.server.protocol.HttpMethod;
 import io.higgs.http.server.resource.MediaType;
 import io.higgs.http.server.transformers.BaseTransformer;
@@ -23,7 +25,11 @@ import java.util.HashMap;
  */
 @ProviderFor(ResponseTransformer.class)
 public class Moustache extends BaseTransformer {
+    protected MoustacheConfig config;
+
     public Moustache() {
+        config = ConfigUtil.loadYaml("moustache_config.yml", MoustacheConfig.class);
+        setPriority(config.priority);
     }
 
     static class Feature {
@@ -50,6 +56,10 @@ public class Moustache extends BaseTransformer {
 
     @Override
     public boolean canTransform(Object response, HttpRequest request, MediaType mediaType, HttpMethod method, ChannelHandlerContext ctx) {
+        if (method == null) {
+            //can be true if response is an exception
+            return false;
+        }
         //first and foremost an endpoint must have a template annotation to even be considered
         if (!method.hasTemplate()) {
             return false;
@@ -76,10 +86,5 @@ public class Moustache extends BaseTransformer {
     @Override
     public ResponseTransformer instance() {
         return this; //not stateful so we can return this safely
-    }
-
-    @Override
-    public int priority() {
-        return 1;
     }
 }

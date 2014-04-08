@@ -2,6 +2,7 @@ package io.higgs.core;
 
 import io.higgs.core.reflect.classpath.HiggsClassLoader;
 import io.higgs.core.reflect.classpath.PackageScanner;
+import io.higgs.core.reflect.dependency.DependencyProvider;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelInitializer;
@@ -63,6 +64,7 @@ public class HiggsServer {
         }
         config = ConfigUtil.loadYaml(Paths.get(configFile), klass, constructor);
         this.port = config.port;
+        DependencyProvider.global().add(config);
         return this;
     }
 

@@ -40,11 +40,16 @@ public class ThymeleafTransformer extends BaseTransformer {
     public ThymeleafTransformer() {
         this.config = ConfigUtil.loadYaml("thymeleaf_config.yml", TemplateConfig.class);
         tl = new Thymeleaf(this.config);
+        setPriority(config.priority);
     }
 
     @Override
     public boolean canTransform(Object response, HttpRequest request, MediaType mediaType,
                                 HttpMethod method, ChannelHandlerContext ctx) {
+        if (method == null) {
+            //can be true if response is an exception
+            return false;
+        }
         //first and foremost an endpoint must have a template annotation to even be considered
         if (!method.hasTemplate()) {
             return false;
@@ -165,10 +170,5 @@ public class ThymeleafTransformer extends BaseTransformer {
      */
     public TemplateEngine getTemplateEngine() {
         return tl.getTemplateEngine();
-    }
-
-    @Override
-    public int priority() {
-        return 1;
     }
 }

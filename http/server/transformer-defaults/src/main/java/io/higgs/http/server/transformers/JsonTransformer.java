@@ -1,17 +1,21 @@
 package io.higgs.http.server.transformers;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import io.higgs.core.ConfigUtil;
+import io.higgs.core.ResolvedFile;
 import io.higgs.http.server.HttpRequest;
 import io.higgs.http.server.HttpResponse;
 import io.higgs.http.server.HttpStatus;
 import io.higgs.http.server.protocol.HttpMethod;
 import io.higgs.http.server.protocol.mediaTypeDecoders.JsonDecoder;
 import io.higgs.http.server.resource.MediaType;
+import io.higgs.http.server.transformers.conf.JsonConfig;
 import io.higgs.spi.ProviderFor;
 import io.netty.channel.ChannelHandlerContext;
 
 import java.io.File;
 import java.io.InputStream;
+import java.nio.file.Path;
 
 import static io.higgs.http.server.transformers.JsonResponseError.EMPTY_JSON_OBJECT;
 
@@ -20,12 +24,22 @@ import static io.higgs.http.server.transformers.JsonResponseError.EMPTY_JSON_OBJ
  */
 @ProviderFor(ResponseTransformer.class)
 public class JsonTransformer extends BaseTransformer {
+    protected JsonConfig conf;
 
+    public JsonTransformer() {
+        conf = ConfigUtil.loadYaml("json_config.yml", JsonConfig.class);
+        setPriority(conf.priority);
+    }
 
     @Override
     public boolean canTransform(Object response, HttpRequest request, MediaType mediaType,
                                 HttpMethod method, ChannelHandlerContext ctx) {
-        if (response != null && !(response instanceof File || response instanceof InputStream)) {
+        if (response != null && !(
+                response instanceof File
+                        || response instanceof ResolvedFile
+                        || response instanceof InputStream
+                        || response instanceof Path
+        )) {
             for (MediaType type : request.getAcceptedMediaTypes()) {
                 if (type.isCompatible(MediaType.APPLICATION_JSON_TYPE)) {
                     return true;
@@ -71,12 +85,5 @@ public class JsonTransformer extends BaseTransformer {
     @Override
     public JsonTransformer instance() {
         return this;//we can return this, instead of a new instance because the JSON transformer isn't stateful
-    }
-
-    @Override
-    public int priority() {
-        //goes after the thymeleaf transformer so that wild card requests are assumed to handle HTML if
-        //the end  point as a template
-        return 0;
     }
 }
