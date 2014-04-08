@@ -20,6 +20,7 @@ public class ResolvedFile {
     protected DirectoryStream<Path> dir;
     protected Path base;
     protected int knownSize;
+    private boolean fromClassPath;
 
     public void setPath(Path path) {
         setPath(path, null);
@@ -44,6 +45,7 @@ public class ResolvedFile {
             }
         } else {
             stream = Thread.currentThread().getContextClassLoader().getResourceAsStream(path.toString());
+            fromClassPath = true;
             if (stream != null) {
                 try {
                     knownSize = stream.available();
@@ -89,7 +91,7 @@ public class ResolvedFile {
     }
 
     public boolean exists() {
-        return Files.exists(path);
+        return Files.exists(path) || (isFromClassPath() && hasStream());
     }
 
     public Path getPath() {
@@ -115,5 +117,9 @@ public class ResolvedFile {
 
     public Path getBase() {
         return base;
+    }
+
+    public boolean isFromClassPath() {
+        return fromClassPath;
     }
 }
