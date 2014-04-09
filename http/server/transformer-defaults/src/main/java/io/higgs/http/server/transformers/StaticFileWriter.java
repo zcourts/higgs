@@ -26,6 +26,7 @@ import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.GregorianCalendar;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.TimeZone;
@@ -178,8 +179,8 @@ public class StaticFileWriter implements ManagedWriter {
 
         buf.append("<ul>");
         buf.append("<li><a href=\"../\">..</a></li>\r\n");
-
-        for (Path f : file.getDirectoryStream()) {
+        List<Path> paths = file.getDirectoryIterator();
+        for (Path f : paths) {
             try {
                 if (Files.isHidden(f) || !Files.isReadable(f)) {
                     continue;

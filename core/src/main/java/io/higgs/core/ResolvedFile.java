@@ -9,6 +9,8 @@ import java.nio.channels.ClosedChannelException;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * @author Courtney Robinson <courtney@crlog.info>
@@ -17,10 +19,10 @@ public class ResolvedFile {
     protected final Logger log = LoggerFactory.getLogger(getClass());
     protected Path path;
     protected InputStream stream;
-    protected DirectoryStream<Path> dir;
     protected Path base;
     protected int knownSize;
-    private boolean fromClassPath;
+    protected boolean fromClassPath;
+    protected List<Path> dirFiles = new ArrayList<>();
 
     public void setPath(Path path) {
         setPath(path, null);
@@ -35,7 +37,10 @@ public class ResolvedFile {
         if (exists()) {
             try {
                 if (isDirectory()) {
-                    dir = Files.newDirectoryStream(path);
+                    DirectoryStream<Path> dir = Files.newDirectoryStream(path);
+                    for (Path p : dir) {
+                        dirFiles.add(p);
+                    }
                 } else {
                     stream = Files.newInputStream(path);
                     knownSize = stream.available();
@@ -78,14 +83,21 @@ public class ResolvedFile {
         return stream;
     }
 
-    public DirectoryStream<Path> getDirectoryStream() {
-        return dir;
+    public List<Path> getDirectoryIterator() {
+        return dirFiles;
     }
 
     public boolean hasStream() {
         return stream != null;
     }
 
+    /**
+     * Tests whether a file is a directory.
+     *
+     * @return {@code true} if the file is a directory; {@code false} if
+     * the file does not exist, is not a directory, or it cannot
+     * be determined if the file is a directory or not.
+     */
     public boolean isDirectory() {
         return Files.isDirectory(path);
     }
