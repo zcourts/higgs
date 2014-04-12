@@ -12,7 +12,7 @@ target
 build
 build.log
 log/*
-var/* 
+var/*
 Thumbs.db
 .DS_Store
 !.gitkeep
