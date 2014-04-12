@@ -1,0 +1,1093 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<rss version="2.0">
+<channel>
+        <title>Higgs.IO - Modern Networking library for the JVM</title>
+        <description>Higgs.IO - Modern Networking library for the JVM - Courtney Robinson</description>
+        <link>http://higgs.io</link>
+        <link>http://higgs.io</link>
+        <lastBuildDate>2014-04-12T15:38:35+01:00</lastBuildDate>
+        <pubDate>2014-04-12T15:38:35+01:00</pubDate>
+        <ttl>1800</ttl>
+
+
+
+
+
+        <item>
+                <title>Not found</title>
+                <description>
+
+Sorry this page does not exist :(
+
+Check out the other crap I&#39;ve been doing for my research though...I&#39;m sure there&#39;s something to peek your interest.
+
+## Categories
+
+&lt;ul&gt;
+  
+  
+
+
+  
+    
+  
+
+
+&lt;/ul&gt;
+
+## Posts
+&lt;div&gt;
+
+
+
+
+  
+
+
+&lt;/div&gt;
+
+## Tags
+
+&lt;ul&gt;
+  
+  
+
+
+  
+    
+  
+
+
+
+&lt;/ul&gt;
+</description>
+                <link>http://higgs.io/404.html</link>
+                <guid>http://higgs.io</guid>
+                <pubDate></pubDate>
+        </item>
+
+        <item>
+                <title>Archive</title>
+                <description>
+
+
+
+
+
+  
+
+</description>
+                <link>http://higgs.io/archive.html</link>
+                <guid>http://higgs.io</guid>
+                <pubDate></pubDate>
+        </item>
+
+        <item>
+                <title>Atom Feed</title>
+                <description>&lt;?xml version=&quot;1.0&quot; encoding=&quot;utf-8&quot;?&gt;
+&lt;feed xmlns=&quot;http://www.w3.org/2005/Atom&quot;&gt;
+ 
+ &lt;title&gt;Higgs.IO - Modern Networking library for the JVM&lt;/title&gt;
+ &lt;link href=&quot;http://higgs.io/&quot; rel=&quot;self&quot;/&gt;
+ &lt;link href=&quot;http://higgs.io&quot;/&gt;
+ &lt;updated&gt;2014-04-12T15:38:35+01:00&lt;/updated&gt;
+ &lt;id&gt;http://higgs.io&lt;/id&gt;
+ &lt;author&gt;
+   &lt;name&gt;Courtney Robinson&lt;/name&gt;
+   &lt;email&gt;higgs@crlog.info&lt;/email&gt;
+ &lt;/author&gt;
+
+ 
+
+ 
+ &lt;entry&gt;
+   &lt;title&gt;Not found&lt;/title&gt;
+   &lt;link href=&quot;http://higgs.io/404.html&quot;/&gt;
+   &lt;updated&gt;&lt;/updated&gt;
+   &lt;id&gt;http://higgs.io&lt;/id&gt;
+   &lt;content type=&quot;html&quot;&gt;
+
+Sorry this page does not exist :(
+
+Check out the other crap I&amp;#39;ve been doing for my research though...I&amp;#39;m sure there&amp;#39;s something to peek your interest.
+
+## Categories
+
+&amp;lt;ul&amp;gt;
+  
+  
+
+
+  
+    
+  
+
+
+&amp;lt;/ul&amp;gt;
+
+## Posts
+&amp;lt;div&amp;gt;
+
+
+
+
+  
+
+
+&amp;lt;/div&amp;gt;
+
+## Tags
+
+&amp;lt;ul&amp;gt;
+  
+  
+
+
+  
+    
+  
+
+
+
+&amp;lt;/ul&amp;gt;
+&lt;/content&gt;
+ &lt;/entry&gt;
+ 
+ &lt;entry&gt;
+   &lt;title&gt;Archive&lt;/title&gt;
+   &lt;link href=&quot;http://higgs.io/archive.html&quot;/&gt;
+   &lt;updated&gt;&lt;/updated&gt;
+   &lt;id&gt;http://higgs.io&lt;/id&gt;
+   &lt;content type=&quot;html&quot;&gt;
+
+
+
+
+
+  
+
+&lt;/content&gt;
+ &lt;/entry&gt;
+ 
+ &lt;entry&gt;
+   &lt;title&gt;Atom Feed&lt;/title&gt;
+   &lt;link href=&quot;http://higgs.io/atom.xml&quot;/&gt;
+   &lt;updated&gt;&lt;/updated&gt;
+   &lt;id&gt;http://higgs.io&lt;/id&gt;
+   &lt;content type=&quot;html&quot;&gt;&amp;lt;?xml version=&amp;quot;1.0&amp;quot; encoding=&amp;quot;utf-8&amp;quot;?&amp;gt;
+&amp;lt;feed xmlns=&amp;quot;http://www.w3.org/2005/Atom&amp;quot;&amp;gt;
+ 
+ &amp;lt;title&amp;gt;{{ site.title }}&amp;lt;/title&amp;gt;
+ &amp;lt;link href=&amp;quot;{{ site.production_url }}/{{ site.atom_path }}&amp;quot; rel=&amp;quot;self&amp;quot;/&amp;gt;
+ &amp;lt;link href=&amp;quot;{{ site.production_url }}&amp;quot;/&amp;gt;
+ &amp;lt;updated&amp;gt;{{ site.time | date_to_xmlschema }}&amp;lt;/updated&amp;gt;
+ &amp;lt;id&amp;gt;{{ site.production_url }}&amp;lt;/id&amp;gt;
+ &amp;lt;author&amp;gt;
+   &amp;lt;name&amp;gt;{{ site.author.name }}&amp;lt;/name&amp;gt;
+   &amp;lt;email&amp;gt;{{ site.author.email }}&amp;lt;/email&amp;gt;
+ &amp;lt;/author&amp;gt;
+
+ {% for post in site.posts %}
+ &amp;lt;entry&amp;gt;
+   &amp;lt;title&amp;gt;{{ post.title }}&amp;lt;/title&amp;gt;
+   &amp;lt;link href=&amp;quot;{{ site.production_url }}{{ post.url }}&amp;quot;/&amp;gt;
+   &amp;lt;updated&amp;gt;{{ post.date | date_to_xmlschema }}&amp;lt;/updated&amp;gt;
+   &amp;lt;id&amp;gt;{{ site.production_url }}{{ post.id }}&amp;lt;/id&amp;gt;
+   &amp;lt;content type=&amp;quot;html&amp;quot;&amp;gt;{{ post.content | xml_escape }}&amp;lt;/content&amp;gt;
+ &amp;lt;/entry&amp;gt;
+ {% endfor %}
+
+ {% for page in site.pages %}
+ &amp;lt;entry&amp;gt;
+   &amp;lt;title&amp;gt;{{ page.title }}&amp;lt;/title&amp;gt;
+   &amp;lt;link href=&amp;quot;{{ site.production_url }}{{ page.url }}&amp;quot;/&amp;gt;
+   &amp;lt;updated&amp;gt;{{ page.date }}&amp;lt;/updated&amp;gt;
+   &amp;lt;id&amp;gt;{{ site.production_url }}{{ page.id }}&amp;lt;/id&amp;gt;
+   &amp;lt;content type=&amp;quot;html&amp;quot;&amp;gt;{{ page.content | xml_escape }}&amp;lt;/content&amp;gt;
+ &amp;lt;/entry&amp;gt;
+ {% endfor %}
+ 
+&amp;lt;/feed&amp;gt;&lt;/content&gt;
+ &lt;/entry&gt;
+ 
+ &lt;entry&gt;
+   &lt;title&gt;Bibliography&lt;/title&gt;
+   &lt;link href=&quot;http://higgs.io/bibliography.html&quot;/&gt;
+   &lt;updated&gt;&lt;/updated&gt;
+   &lt;id&gt;http://higgs.io&lt;/id&gt;
+   &lt;content type=&quot;html&quot;&gt;{% include JB/setup %}
+
+{% bibliography %}&lt;/content&gt;
+ &lt;/entry&gt;
+ 
+ &lt;entry&gt;
+   &lt;title&gt;Categories&lt;/title&gt;
+   &lt;link href=&quot;http://higgs.io/categories.html&quot;/&gt;
+   &lt;updated&gt;&lt;/updated&gt;
+   &lt;id&gt;http://higgs.io&lt;/id&gt;
+   &lt;content type=&quot;html&quot;&gt;{% include JB/setup %}
+
+&amp;lt;ul class=&amp;quot;tag_box inline&amp;quot;&amp;gt;
+  {% assign categories_list = site.categories %}
+  {% include JB/categories_list %}
+&amp;lt;/ul&amp;gt;
+
+
+{% for category in site.categories %} 
+  &amp;lt;h2 id=&amp;quot;{{ category[0] }}-ref&amp;quot;&amp;gt;{{ category[0] | join: &amp;quot;/&amp;quot; }}&amp;lt;/h2&amp;gt;
+  &amp;lt;ul&amp;gt;
+    {% assign pages_list = category[1] %}  
+    {% include JB/pages_list %}
+  &amp;lt;/ul&amp;gt;
+{% endfor %}
+
+&lt;/content&gt;
+ &lt;/entry&gt;
+ 
+ &lt;entry&gt;
+   &lt;title&gt;Core Higgs module&lt;/title&gt;
+   &lt;link href=&quot;http://higgs.io/core.html&quot;/&gt;
+   &lt;updated&gt;&lt;/updated&gt;
+   &lt;id&gt;http://higgs.io&lt;/id&gt;
+   &lt;content type=&quot;html&quot;&gt;{% include JB/setup %}
+
+# Core module
+
+
+&lt;/content&gt;
+ &lt;/entry&gt;
+ 
+ &lt;entry&gt;
+   &lt;title&gt;Higgs Events&lt;/title&gt;
+   &lt;link href=&quot;http://higgs.io/events.html&quot;/&gt;
+   &lt;updated&gt;&lt;/updated&gt;
+   &lt;id&gt;http://higgs.io&lt;/id&gt;
+   &lt;content type=&quot;html&quot;&gt;{% include JB/setup %}
+
+# Higgs Events
+
+
+&lt;/content&gt;
+ &lt;/entry&gt;
+ 
+ &lt;entry&gt;
+   &lt;title&gt;Higgs HTTP client&lt;/title&gt;
+   &lt;link href=&quot;http://higgs.io/http-client.html&quot;/&gt;
+   &lt;updated&gt;&lt;/updated&gt;
+   &lt;id&gt;http://higgs.io&lt;/id&gt;
+   &lt;content type=&quot;html&quot;&gt;{% include JB/setup %}
+
+# HTTP client
+
+&lt;/content&gt;
+ &lt;/entry&gt;
+ 
+ &lt;entry&gt;
+   &lt;title&gt;Higgs HTTP, Single site server (S3)&lt;/title&gt;
+   &lt;link href=&quot;http://higgs.io/http-server.html&quot;/&gt;
+   &lt;updated&gt;&lt;/updated&gt;
+   &lt;id&gt;http://higgs.io&lt;/id&gt;
+   &lt;content type=&quot;html&quot;&gt;{% include JB/setup %}
+
+# S3
+
+
+&lt;/content&gt;
+ &lt;/entry&gt;
+ 
+ &lt;entry&gt;
+   &lt;title&gt;Higgs.IO Documentation - Modern Networking on the JVM&lt;/title&gt;
+   &lt;link href=&quot;http://higgs.io/index.html&quot;/&gt;
+   &lt;updated&gt;&lt;/updated&gt;
+   &lt;id&gt;http://higgs.io&lt;/id&gt;
+   &lt;content type=&quot;html&quot;&gt;{% include JB/setup %}
+
+
+# What?
+
+Higgs is a group of projects built on top of [Netty](http://netty.io).
+These are all currently HTTP related but there is a plan to provide a binary protocol for RPC.
+
+### Why
+
+I&amp;#39;m not a fan of JSP, servlet containers or Apache&amp;#39;s HTTP commons.
+I like [Dropwizard](http://dropwizard.io) but it&amp;#39;s too tightly coupled to Jetty&amp;#39;s life-cycle.
+I also like [Jersey](https://jersey.java.net/). That said, you can see my dilemma.
+So Higgs takes the best of Dropwizard and Jersey to provide a framework to build REST web services on top of Netty.
+
+## What&amp;#39;s included?
+
+1. [Core](/core.html)
+2. [HTTP client](/http-client.html)
+3. [HTTP server](/http-server.html)
+4. [WebSocket client](/websocket-client.html)
+5. [WebSocket server](/websocket-server.html)
+6. [Event Dispatch library](/events.html)
+
+# Pages
+
+&amp;lt;ul&amp;gt;
+  {% assign pages_list = site.pages %}
+  {% include JB/pages_list %}
+&amp;lt;/ul&amp;gt;
+
+## Categories
+
+&amp;lt;ul&amp;gt;
+  {% assign categories_list = site.categories %}
+  {% include JB/categories_list %}
+&amp;lt;/ul&amp;gt;
+
+## Posts
+&amp;lt;div&amp;gt;
+{% assign posts_collate = site.tags.homepage %}
+{% include JB/posts_collate %}
+&amp;lt;/div&amp;gt;
+
+## Tags
+
+&amp;lt;ul&amp;gt;
+  {% assign tags_list = site.tags %}
+  {% include JB/tags_list %}
+&amp;lt;/ul&amp;gt;
+
+## References
+
+{% bibliography -c %}
+
+
+Built with &amp;lt;a href=&amp;quot;http://jekyllbootstrap.com&amp;quot; target=&amp;quot;_blank&amp;quot;&amp;gt;Jekyll Bootstrap&amp;lt;/a&amp;gt; and &amp;lt;a href=&amp;quot;http://github.com/dhulihan/hooligan&amp;quot; target=&amp;quot;_blank&amp;quot;&amp;gt;The Hooligan Theme&amp;lt;/a&amp;gt;
+&lt;/content&gt;
+ &lt;/entry&gt;
+ 
+ &lt;entry&gt;
+   &lt;title&gt;JSC Demo page&lt;/title&gt;
+   &lt;link href=&quot;http://higgs.io/jsc.html&quot;/&gt;
+   &lt;updated&gt;&lt;/updated&gt;
+   &lt;id&gt;http://higgs.io&lt;/id&gt;
+   &lt;content type=&quot;html&quot;&gt;{% include JB/setup %}
+
+Mark down using cite {% cite pagh2005optimal %}, is new but invention x {% cite boom2 %} is awesome. Twas a creation of J&amp;#39;s {% cite boom3 %} {% cite kirsch2006distance %}. Do you know what {% m %}e = mc^2{% em %} actually means? But do you really?
+
+What about this ?
+
+{% math %}
+\mathbf{V}_1 \times \mathbf{V}_2 =  \begin{vmatrix}
+\mathbf{i} &amp;amp; \mathbf{j} &amp;amp; \mathbf{k} \\
+\frac{\partial X}{\partial u} &amp;amp;  \frac{\partial Y}{\partial u} &amp;amp; 0 \\
+\frac{\partial X}{\partial v} &amp;amp;  \frac{\partial Y}{\partial v} &amp;amp; 0
+\end{vmatrix} 
+{% endmath %}
+
+## References
+{% bibliography -c %}&lt;/content&gt;
+ &lt;/entry&gt;
+ 
+ &lt;entry&gt;
+   &lt;title&gt;Pages&lt;/title&gt;
+   &lt;link href=&quot;http://higgs.io/pages.html&quot;/&gt;
+   &lt;updated&gt;&lt;/updated&gt;
+   &lt;id&gt;http://higgs.io&lt;/id&gt;
+   &lt;content type=&quot;html&quot;&gt;{% include JB/setup %}
+
+&amp;lt;h2&amp;gt;All Pages&amp;lt;/h2&amp;gt;
+&amp;lt;ul&amp;gt;
+{% assign pages_list = site.pages %}
+{% include JB/pages_list %}
+&amp;lt;/ul&amp;gt;
+&lt;/content&gt;
+ &lt;/entry&gt;
+ 
+ &lt;entry&gt;
+   &lt;title&gt;RSS Feed&lt;/title&gt;
+   &lt;link href=&quot;http://higgs.io/rss.xml&quot;/&gt;
+   &lt;updated&gt;&lt;/updated&gt;
+   &lt;id&gt;http://higgs.io&lt;/id&gt;
+   &lt;content type=&quot;html&quot;&gt;&amp;lt;?xml version=&amp;quot;1.0&amp;quot; encoding=&amp;quot;UTF-8&amp;quot; ?&amp;gt;
+&amp;lt;rss version=&amp;quot;2.0&amp;quot;&amp;gt;
+&amp;lt;channel&amp;gt;
+        &amp;lt;title&amp;gt;{{ site.title }}&amp;lt;/title&amp;gt;
+        &amp;lt;description&amp;gt;{{ site.title }} - {{ site.author.name }}&amp;lt;/description&amp;gt;
+        &amp;lt;link&amp;gt;{{ site.production_url }}{{ site.rss_path }}&amp;lt;/link&amp;gt;
+        &amp;lt;link&amp;gt;{{ site.production_url }}&amp;lt;/link&amp;gt;
+        &amp;lt;lastBuildDate&amp;gt;{{ site.time | date_to_xmlschema }}&amp;lt;/lastBuildDate&amp;gt;
+        &amp;lt;pubDate&amp;gt;{{ site.time | date_to_xmlschema }}&amp;lt;/pubDate&amp;gt;
+        &amp;lt;ttl&amp;gt;1800&amp;lt;/ttl&amp;gt;
+
+{% for post in site.posts %}
+        &amp;lt;item&amp;gt;
+                &amp;lt;title&amp;gt;{{ post.title }}&amp;lt;/title&amp;gt;
+                &amp;lt;description&amp;gt;{{ post.content | xml_escape }}&amp;lt;/description&amp;gt;
+                &amp;lt;link&amp;gt;{{ site.production_url }}{{ post.url }}&amp;lt;/link&amp;gt;
+                &amp;lt;guid&amp;gt;{{ site.production_url }}{{ post.id }}&amp;lt;/guid&amp;gt;
+                &amp;lt;pubDate&amp;gt;{{ post.date | date_to_xmlschema }}&amp;lt;/pubDate&amp;gt;
+        &amp;lt;/item&amp;gt;
+{% endfor %}
+
+
+{% for page in site.pages %}
+        &amp;lt;item&amp;gt;
+                &amp;lt;title&amp;gt;{{ page.title }}&amp;lt;/title&amp;gt;
+                &amp;lt;description&amp;gt;{{ page.content | xml_escape }}&amp;lt;/description&amp;gt;
+                &amp;lt;link&amp;gt;{{ site.production_url }}{{ page.url }}&amp;lt;/link&amp;gt;
+                &amp;lt;guid&amp;gt;{{ site.production_url }}{{ page.id }}&amp;lt;/guid&amp;gt;
+                &amp;lt;pubDate&amp;gt;{{ page.date}}&amp;lt;/pubDate&amp;gt;
+        &amp;lt;/item&amp;gt;
+{% endfor %}
+
+&amp;lt;/channel&amp;gt;
+&amp;lt;/rss&amp;gt;
+&lt;/content&gt;
+ &lt;/entry&gt;
+ 
+ &lt;entry&gt;
+   &lt;title&gt;Sitemap&lt;/title&gt;
+   &lt;link href=&quot;http://higgs.io/sitemap.txt&quot;/&gt;
+   &lt;updated&gt;&lt;/updated&gt;
+   &lt;id&gt;http://higgs.io&lt;/id&gt;
+   &lt;content type=&quot;html&quot;&gt;{% for page in site.pages %}
+{{site.production_url}}{{ page.url }}{% endfor %}
+{% for post in site.posts %}
+{{site.production_url}}{{ post.url }}{% endfor %}&lt;/content&gt;
+ &lt;/entry&gt;
+ 
+ &lt;entry&gt;
+   &lt;title&gt;Tags&lt;/title&gt;
+   &lt;link href=&quot;http://higgs.io/tags.html&quot;/&gt;
+   &lt;updated&gt;&lt;/updated&gt;
+   &lt;id&gt;http://higgs.io&lt;/id&gt;
+   &lt;content type=&quot;html&quot;&gt;{% include JB/setup %}
+
+&amp;lt;ul class=&amp;quot;tag_box inline&amp;quot;&amp;gt;
+  {% assign tags_list = site.tags %}  
+  {% include JB/tags_list %}
+&amp;lt;/ul&amp;gt;
+
+
+{% for tag in site.tags %} 
+  &amp;lt;h2 id=&amp;quot;{{ tag[0] }}-ref&amp;quot;&amp;gt;{{ tag[0] }}&amp;lt;/h2&amp;gt;
+  &amp;lt;ul&amp;gt;
+    {% assign pages_list = tag[1] %}  
+    {% include JB/pages_list %}
+  &amp;lt;/ul&amp;gt;
+{% endfor %}
+&lt;/content&gt;
+ &lt;/entry&gt;
+ 
+ &lt;entry&gt;
+   &lt;title&gt;Higgs WebSocket client&lt;/title&gt;
+   &lt;link href=&quot;http://higgs.io/websocket-client.html&quot;/&gt;
+   &lt;updated&gt;&lt;/updated&gt;
+   &lt;id&gt;http://higgs.io&lt;/id&gt;
+   &lt;content type=&quot;html&quot;&gt;{% include JB/setup %}
+
+# WebSocket Client
+
+
+&lt;/content&gt;
+ &lt;/entry&gt;
+ 
+ &lt;entry&gt;
+   &lt;title&gt;Higgs WebSocket server&lt;/title&gt;
+   &lt;link href=&quot;http://higgs.io/websocket-server.html&quot;/&gt;
+   &lt;updated&gt;&lt;/updated&gt;
+   &lt;id&gt;http://higgs.io&lt;/id&gt;
+   &lt;content type=&quot;html&quot;&gt;{% include JB/setup %}
+
+# WebSocket Server
+
+
+&lt;/content&gt;
+ &lt;/entry&gt;
+ 
+ 
+&lt;/feed&gt;</description>
+                <link>http://higgs.io/atom.xml</link>
+                <guid>http://higgs.io</guid>
+                <pubDate></pubDate>
+        </item>
+
+        <item>
+                <title>Bibliography</title>
+                <description>&lt;ol class=&quot;bibliography&quot;&gt;&lt;/ol&gt;
+</description>
+                <link>http://higgs.io/bibliography.html</link>
+                <guid>http://higgs.io</guid>
+                <pubDate></pubDate>
+        </item>
+
+        <item>
+                <title>Categories</title>
+                <description>
+
+&lt;ul class=&quot;tag_box inline&quot;&gt;
+  
+  
+
+
+  
+    
+  
+
+
+&lt;/ul&gt;
+
+
+
+
+</description>
+                <link>http://higgs.io/categories.html</link>
+                <guid>http://higgs.io</guid>
+                <pubDate></pubDate>
+        </item>
+
+        <item>
+                <title>Core Higgs module</title>
+                <description>&lt;h1&gt;Core module&lt;/h1&gt;
+</description>
+                <link>http://higgs.io/core.html</link>
+                <guid>http://higgs.io</guid>
+                <pubDate></pubDate>
+        </item>
+
+        <item>
+                <title>Higgs Events</title>
+                <description>&lt;h1&gt;Higgs Events&lt;/h1&gt;
+</description>
+                <link>http://higgs.io/events.html</link>
+                <guid>http://higgs.io</guid>
+                <pubDate></pubDate>
+        </item>
+
+        <item>
+                <title>Higgs HTTP client</title>
+                <description>&lt;h1&gt;HTTP client&lt;/h1&gt;
+</description>
+                <link>http://higgs.io/http-client.html</link>
+                <guid>http://higgs.io</guid>
+                <pubDate></pubDate>
+        </item>
+
+        <item>
+                <title>Higgs HTTP, Single site server (S3)</title>
+                <description>&lt;h1&gt;S3&lt;/h1&gt;
+</description>
+                <link>http://higgs.io/http-server.html</link>
+                <guid>http://higgs.io</guid>
+                <pubDate></pubDate>
+        </item>
+
+        <item>
+                <title>Higgs.IO Documentation - Modern Networking on the JVM</title>
+                <description>&lt;h1&gt;What?&lt;/h1&gt;
+
+&lt;p&gt;Higgs is a group of projects built on top of &lt;a href=&quot;http://netty.io&quot;&gt;Netty&lt;/a&gt;.
+These are all currently HTTP related but there is a plan to provide a binary protocol for RPC.&lt;/p&gt;
+
+&lt;h3&gt;Why&lt;/h3&gt;
+
+&lt;p&gt;I&amp;#39;m not a fan of JSP, servlet containers or Apache&amp;#39;s HTTP commons.
+I like &lt;a href=&quot;http://dropwizard.io&quot;&gt;Dropwizard&lt;/a&gt; but it&amp;#39;s too tightly coupled to Jetty&amp;#39;s life-cycle.
+I also like &lt;a href=&quot;https://jersey.java.net/&quot;&gt;Jersey&lt;/a&gt;. That said, you can see my dilemma.
+So Higgs takes the best of Dropwizard and Jersey to provide a framework to build REST web services on top of Netty.&lt;/p&gt;
+
+&lt;h2&gt;What&amp;#39;s included?&lt;/h2&gt;
+
+&lt;ol&gt;
+&lt;li&gt;&lt;a href=&quot;/core.html&quot;&gt;Core&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;/http-client.html&quot;&gt;HTTP client&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;/http-server.html&quot;&gt;HTTP server&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;/websocket-client.html&quot;&gt;WebSocket client&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;/websocket-server.html&quot;&gt;WebSocket server&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;/events.html&quot;&gt;Event Dispatch library&lt;/a&gt;&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;h1&gt;Pages&lt;/h1&gt;
+
+&lt;ul&gt;
+  
+  
+
+
+  
+    
+      
+        
+        &lt;li&gt;&lt;a href=&quot;/404.html&quot;&gt;Not found&lt;/a&gt;&lt;/li&gt;
+        
+      
+    
+  
+    
+      
+        
+        &lt;li&gt;&lt;a href=&quot;/archive.html&quot;&gt;Archive&lt;/a&gt;&lt;/li&gt;
+        
+      
+    
+  
+    
+      
+        
+        &lt;li&gt;&lt;a href=&quot;/atom.xml&quot;&gt;Atom Feed&lt;/a&gt;&lt;/li&gt;
+        
+      
+    
+  
+    
+      
+        
+        &lt;li&gt;&lt;a href=&quot;/bibliography.html&quot;&gt;Bibliography&lt;/a&gt;&lt;/li&gt;
+        
+      
+    
+  
+    
+      
+        
+        &lt;li&gt;&lt;a href=&quot;/categories.html&quot;&gt;Categories&lt;/a&gt;&lt;/li&gt;
+        
+      
+    
+  
+    
+      
+        
+        &lt;li&gt;&lt;a href=&quot;/core.html&quot;&gt;Core Higgs module&lt;/a&gt;&lt;/li&gt;
+        
+      
+    
+  
+    
+      
+        
+        &lt;li&gt;&lt;a href=&quot;/events.html&quot;&gt;Higgs Events&lt;/a&gt;&lt;/li&gt;
+        
+      
+    
+  
+    
+      
+        
+        &lt;li&gt;&lt;a href=&quot;/http-client.html&quot;&gt;Higgs HTTP client&lt;/a&gt;&lt;/li&gt;
+        
+      
+    
+  
+    
+      
+        
+        &lt;li&gt;&lt;a href=&quot;/http-server.html&quot;&gt;Higgs HTTP, Single site server (S3)&lt;/a&gt;&lt;/li&gt;
+        
+      
+    
+  
+    
+      
+        
+        &lt;li class=&quot;active&quot;&gt;&lt;a href=&quot;/index.html&quot; class=&quot;active&quot;&gt;Higgs.IO Documentation - Modern Networking on the JVM&lt;/a&gt;&lt;/li&gt;
+        
+      
+    
+  
+    
+      
+        
+        &lt;li&gt;&lt;a href=&quot;/jsc.html&quot;&gt;JSC Demo page&lt;/a&gt;&lt;/li&gt;
+        
+      
+    
+  
+    
+      
+        
+        &lt;li&gt;&lt;a href=&quot;/pages.html&quot;&gt;Pages&lt;/a&gt;&lt;/li&gt;
+        
+      
+    
+  
+    
+      
+        
+        &lt;li&gt;&lt;a href=&quot;/rss.xml&quot;&gt;RSS Feed&lt;/a&gt;&lt;/li&gt;
+        
+      
+    
+  
+    
+      
+        
+        &lt;li&gt;&lt;a href=&quot;/sitemap.txt&quot;&gt;Sitemap&lt;/a&gt;&lt;/li&gt;
+        
+      
+    
+  
+    
+      
+        
+        &lt;li&gt;&lt;a href=&quot;/tags.html&quot;&gt;Tags&lt;/a&gt;&lt;/li&gt;
+        
+      
+    
+  
+    
+      
+        
+        &lt;li&gt;&lt;a href=&quot;/websocket-client.html&quot;&gt;Higgs WebSocket client&lt;/a&gt;&lt;/li&gt;
+        
+      
+    
+  
+    
+      
+        
+        &lt;li&gt;&lt;a href=&quot;/websocket-server.html&quot;&gt;Higgs WebSocket server&lt;/a&gt;&lt;/li&gt;
+        
+      
+    
+  
+
+
+
+&lt;/ul&gt;
+
+&lt;h2&gt;Categories&lt;/h2&gt;
+
+&lt;ul&gt;
+  
+  
+
+
+  
+    
+  
+
+
+&lt;/ul&gt;
+
+&lt;h2&gt;Posts&lt;/h2&gt;
+
+&lt;div&gt;
+
+
+
+
+  
+
+
+&lt;/div&gt;
+
+&lt;h2&gt;Tags&lt;/h2&gt;
+
+&lt;ul&gt;
+  
+  
+
+
+  
+    
+  
+
+
+
+&lt;/ul&gt;
+
+&lt;h2&gt;References&lt;/h2&gt;
+
+&lt;ol class=&quot;bibliography&quot;&gt;&lt;/ol&gt;
+
+&lt;p&gt;Built with &lt;a href=&quot;http://jekyllbootstrap.com&quot; target=&quot;_blank&quot;&gt;Jekyll Bootstrap&lt;/a&gt; and &lt;a href=&quot;http://github.com/dhulihan/hooligan&quot; target=&quot;_blank&quot;&gt;The Hooligan Theme&lt;/a&gt;&lt;/p&gt;
+</description>
+                <link>http://higgs.io/index.html</link>
+                <guid>http://higgs.io</guid>
+                <pubDate></pubDate>
+        </item>
+
+        <item>
+                <title>JSC Demo page</title>
+                <description>&lt;p&gt;Mark down using cite (missing reference), is new but invention x (missing reference) is awesome. Twas a creation of J&amp;#39;s (missing reference) (missing reference). Do you know what &lt;script type=&quot;text/javascript&quot; src=&quot;http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=default.js&quot;&gt;&lt;/script&gt;&lt;script type=&quot;math/tex&quot;&gt;e = mc^2&lt;/script&gt; actually means? But do you really?&lt;/p&gt;
+
+&lt;p&gt;What about this ?&lt;/p&gt;
+
+&lt;script type=&quot;math/tex; mode=display&quot;&gt;
+\mathbf{V}_1 \times \mathbf{V}_2 =  \begin{vmatrix}
+\mathbf{i} &amp; \mathbf{j} &amp; \mathbf{k} \\
+\frac{\partial X}{\partial u} &amp;  \frac{\partial Y}{\partial u} &amp; 0 \\
+\frac{\partial X}{\partial v} &amp;  \frac{\partial Y}{\partial v} &amp; 0
+\end{vmatrix} 
+&lt;/script&gt;
+
+&lt;h2&gt;References&lt;/h2&gt;
+
+&lt;ol class=&quot;bibliography&quot;&gt;&lt;li&gt;(missing reference)&lt;/li&gt;
+&lt;li&gt;(missing reference)&lt;/li&gt;
+&lt;li&gt;(missing reference)&lt;/li&gt;
+&lt;li&gt;(missing reference)&lt;/li&gt;&lt;/ol&gt;
+</description>
+                <link>http://higgs.io/jsc.html</link>
+                <guid>http://higgs.io</guid>
+                <pubDate></pubDate>
+        </item>
+
+        <item>
+                <title>Pages</title>
+                <description>
+
+&lt;h2&gt;All Pages&lt;/h2&gt;
+&lt;ul&gt;
+
+
+
+
+  
+    
+      
+      	
+      	&lt;li&gt;&lt;a href=&quot;/404.html&quot;&gt;Not found&lt;/a&gt;&lt;/li&gt;
+      	
+      
+    
+  
+    
+      
+      	
+      	&lt;li&gt;&lt;a href=&quot;/archive.html&quot;&gt;Archive&lt;/a&gt;&lt;/li&gt;
+      	
+      
+    
+  
+    
+      
+      	
+      	&lt;li&gt;&lt;a href=&quot;/atom.xml&quot;&gt;Atom Feed&lt;/a&gt;&lt;/li&gt;
+      	
+      
+    
+  
+    
+      
+      	
+      	&lt;li&gt;&lt;a href=&quot;/bibliography.html&quot;&gt;Bibliography&lt;/a&gt;&lt;/li&gt;
+      	
+      
+    
+  
+    
+      
+      	
+      	&lt;li&gt;&lt;a href=&quot;/categories.html&quot;&gt;Categories&lt;/a&gt;&lt;/li&gt;
+      	
+      
+    
+  
+    
+      
+      	
+      	&lt;li&gt;&lt;a href=&quot;/core.html&quot;&gt;Core Higgs module&lt;/a&gt;&lt;/li&gt;
+      	
+      
+    
+  
+    
+      
+      	
+      	&lt;li&gt;&lt;a href=&quot;/events.html&quot;&gt;Higgs Events&lt;/a&gt;&lt;/li&gt;
+      	
+      
+    
+  
+    
+      
+      	
+      	&lt;li&gt;&lt;a href=&quot;/http-client.html&quot;&gt;Higgs HTTP client&lt;/a&gt;&lt;/li&gt;
+      	
+      
+    
+  
+    
+      
+      	
+      	&lt;li&gt;&lt;a href=&quot;/http-server.html&quot;&gt;Higgs HTTP, Single site server (S3)&lt;/a&gt;&lt;/li&gt;
+      	
+      
+    
+  
+    
+      
+      	
+      	&lt;li&gt;&lt;a href=&quot;/index.html&quot;&gt;Higgs.IO Documentation - Modern Networking on the JVM&lt;/a&gt;&lt;/li&gt;
+      	
+      
+    
+  
+    
+      
+      	
+      	&lt;li&gt;&lt;a href=&quot;/jsc.html&quot;&gt;JSC Demo page&lt;/a&gt;&lt;/li&gt;
+      	
+      
+    
+  
+    
+      
+      	
+      	&lt;li class=&quot;active&quot;&gt;&lt;a href=&quot;/pages.html&quot; class=&quot;active&quot;&gt;Pages&lt;/a&gt;&lt;/li&gt;
+      	
+      
+    
+  
+    
+      
+      	
+      	&lt;li&gt;&lt;a href=&quot;/rss.xml&quot;&gt;RSS Feed&lt;/a&gt;&lt;/li&gt;
+      	
+      
+    
+  
+    
+      
+      	
+      	&lt;li&gt;&lt;a href=&quot;/sitemap.txt&quot;&gt;Sitemap&lt;/a&gt;&lt;/li&gt;
+      	
+      
+    
+  
+    
+      
+      	
+      	&lt;li&gt;&lt;a href=&quot;/tags.html&quot;&gt;Tags&lt;/a&gt;&lt;/li&gt;
+      	
+      
+    
+  
+    
+      
+      	
+      	&lt;li&gt;&lt;a href=&quot;/websocket-client.html&quot;&gt;Higgs WebSocket client&lt;/a&gt;&lt;/li&gt;
+      	
+      
+    
+  
+    
+      
+      	
+      	&lt;li&gt;&lt;a href=&quot;/websocket-server.html&quot;&gt;Higgs WebSocket server&lt;/a&gt;&lt;/li&gt;
+      	
+      
+    
+  
+
+
+
+&lt;/ul&gt;
+</description>
+                <link>http://higgs.io/pages.html</link>
+                <guid>http://higgs.io</guid>
+                <pubDate></pubDate>
+        </item>
+
+        <item>
+                <title>RSS Feed</title>
+                <description>&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot; ?&gt;
+&lt;rss version=&quot;2.0&quot;&gt;
+&lt;channel&gt;
+        &lt;title&gt;{{ site.title }}&lt;/title&gt;
+        &lt;description&gt;{{ site.title }} - {{ site.author.name }}&lt;/description&gt;
+        &lt;link&gt;{{ site.production_url }}{{ site.rss_path }}&lt;/link&gt;
+        &lt;link&gt;{{ site.production_url }}&lt;/link&gt;
+        &lt;lastBuildDate&gt;{{ site.time | date_to_xmlschema }}&lt;/lastBuildDate&gt;
+        &lt;pubDate&gt;{{ site.time | date_to_xmlschema }}&lt;/pubDate&gt;
+        &lt;ttl&gt;1800&lt;/ttl&gt;
+
+{% for post in site.posts %}
+        &lt;item&gt;
+                &lt;title&gt;{{ post.title }}&lt;/title&gt;
+                &lt;description&gt;{{ post.content | xml_escape }}&lt;/description&gt;
+                &lt;link&gt;{{ site.production_url }}{{ post.url }}&lt;/link&gt;
+                &lt;guid&gt;{{ site.production_url }}{{ post.id }}&lt;/guid&gt;
+                &lt;pubDate&gt;{{ post.date | date_to_xmlschema }}&lt;/pubDate&gt;
+        &lt;/item&gt;
+{% endfor %}
+
+
+{% for page in site.pages %}
+        &lt;item&gt;
+                &lt;title&gt;{{ page.title }}&lt;/title&gt;
+                &lt;description&gt;{{ page.content | xml_escape }}&lt;/description&gt;
+                &lt;link&gt;{{ site.production_url }}{{ page.url }}&lt;/link&gt;
+                &lt;guid&gt;{{ site.production_url }}{{ page.id }}&lt;/guid&gt;
+                &lt;pubDate&gt;{{ page.date}}&lt;/pubDate&gt;
+        &lt;/item&gt;
+{% endfor %}
+
+&lt;/channel&gt;
+&lt;/rss&gt;
+</description>
+                <link>http://higgs.io/rss.xml</link>
+                <guid>http://higgs.io</guid>
+                <pubDate></pubDate>
+        </item>
+
+        <item>
+                <title>Sitemap</title>
+                <description>{% for page in site.pages %}
+{{site.production_url}}{{ page.url }}{% endfor %}
+{% for post in site.posts %}
+{{site.production_url}}{{ post.url }}{% endfor %}</description>
+                <link>http://higgs.io/sitemap.txt</link>
+                <guid>http://higgs.io</guid>
+                <pubDate></pubDate>
+        </item>
+
+        <item>
+                <title>Tags</title>
+                <description>{% include JB/setup %}
+
+&lt;ul class=&quot;tag_box inline&quot;&gt;
+  {% assign tags_list = site.tags %}  
+  {% include JB/tags_list %}
+&lt;/ul&gt;
+
+
+{% for tag in site.tags %} 
+  &lt;h2 id=&quot;{{ tag[0] }}-ref&quot;&gt;{{ tag[0] }}&lt;/h2&gt;
+  &lt;ul&gt;
+    {% assign pages_list = tag[1] %}  
+    {% include JB/pages_list %}
+  &lt;/ul&gt;
+{% endfor %}
+</description>
+                <link>http://higgs.io/tags.html</link>
+                <guid>http://higgs.io</guid>
+                <pubDate></pubDate>
+        </item>
+
+        <item>
+                <title>Higgs WebSocket client</title>
+                <description>{% include JB/setup %}
+
+# WebSocket Client
+
+
+</description>
+                <link>http://higgs.io/websocket-client.html</link>
+                <guid>http://higgs.io</guid>
+                <pubDate></pubDate>
+        </item>
+
+        <item>
+                <title>Higgs WebSocket server</title>
+                <description>{% include JB/setup %}
+
+# WebSocket Server
+
+
+</description>
+                <link>http://higgs.io/websocket-server.html</link>
+                <guid>http://higgs.io</guid>
+                <pubDate></pubDate>
+        </item>
+
+
+</channel>
+</rss>

@@ -1,0 +1,418 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+ 
+ <title>Higgs.IO - Modern Networking library for the JVM</title>
+ <link href="http://higgs.io/" rel="self"/>
+ <link href="http://higgs.io"/>
+ <updated>2014-04-12T15:38:35+01:00</updated>
+ <id>http://higgs.io</id>
+ <author>
+   <name>Courtney Robinson</name>
+   <email>higgs@crlog.info</email>
+ </author>
+
+ 
+
+ 
+ <entry>
+   <title>Not found</title>
+   <link href="http://higgs.io/404.html"/>
+   <updated></updated>
+   <id>http://higgs.io</id>
+   <content type="html">
+
+Sorry this page does not exist :(
+
+Check out the other crap I&#39;ve been doing for my research though...I&#39;m sure there&#39;s something to peek your interest.
+
+## Categories
+
+&lt;ul&gt;
+  
+  
+
+
+  
+    
+  
+
+
+&lt;/ul&gt;
+
+## Posts
+&lt;div&gt;
+
+
+
+
+  
+
+
+&lt;/div&gt;
+
+## Tags
+
+&lt;ul&gt;
+  
+  
+
+
+  
+    
+  
+
+
+
+&lt;/ul&gt;
+</content>
+ </entry>
+ 
+ <entry>
+   <title>Archive</title>
+   <link href="http://higgs.io/archive.html"/>
+   <updated></updated>
+   <id>http://higgs.io</id>
+   <content type="html">
+
+
+
+
+
+  
+
+</content>
+ </entry>
+ 
+ <entry>
+   <title>Atom Feed</title>
+   <link href="http://higgs.io/atom.xml"/>
+   <updated></updated>
+   <id>http://higgs.io</id>
+   <content type="html">&lt;?xml version=&quot;1.0&quot; encoding=&quot;utf-8&quot;?&gt;
+&lt;feed xmlns=&quot;http://www.w3.org/2005/Atom&quot;&gt;
+ 
+ &lt;title&gt;{{ site.title }}&lt;/title&gt;
+ &lt;link href=&quot;{{ site.production_url }}/{{ site.atom_path }}&quot; rel=&quot;self&quot;/&gt;
+ &lt;link href=&quot;{{ site.production_url }}&quot;/&gt;
+ &lt;updated&gt;{{ site.time | date_to_xmlschema }}&lt;/updated&gt;
+ &lt;id&gt;{{ site.production_url }}&lt;/id&gt;
+ &lt;author&gt;
+   &lt;name&gt;{{ site.author.name }}&lt;/name&gt;
+   &lt;email&gt;{{ site.author.email }}&lt;/email&gt;
+ &lt;/author&gt;
+
+ {% for post in site.posts %}
+ &lt;entry&gt;
+   &lt;title&gt;{{ post.title }}&lt;/title&gt;
+   &lt;link href=&quot;{{ site.production_url }}{{ post.url }}&quot;/&gt;
+   &lt;updated&gt;{{ post.date | date_to_xmlschema }}&lt;/updated&gt;
+   &lt;id&gt;{{ site.production_url }}{{ post.id }}&lt;/id&gt;
+   &lt;content type=&quot;html&quot;&gt;{{ post.content | xml_escape }}&lt;/content&gt;
+ &lt;/entry&gt;
+ {% endfor %}
+
+ {% for page in site.pages %}
+ &lt;entry&gt;
+   &lt;title&gt;{{ page.title }}&lt;/title&gt;
+   &lt;link href=&quot;{{ site.production_url }}{{ page.url }}&quot;/&gt;
+   &lt;updated&gt;{{ page.date }}&lt;/updated&gt;
+   &lt;id&gt;{{ site.production_url }}{{ page.id }}&lt;/id&gt;
+   &lt;content type=&quot;html&quot;&gt;{{ page.content | xml_escape }}&lt;/content&gt;
+ &lt;/entry&gt;
+ {% endfor %}
+ 
+&lt;/feed&gt;</content>
+ </entry>
+ 
+ <entry>
+   <title>Bibliography</title>
+   <link href="http://higgs.io/bibliography.html"/>
+   <updated></updated>
+   <id>http://higgs.io</id>
+   <content type="html">{% include JB/setup %}
+
+{% bibliography %}</content>
+ </entry>
+ 
+ <entry>
+   <title>Categories</title>
+   <link href="http://higgs.io/categories.html"/>
+   <updated></updated>
+   <id>http://higgs.io</id>
+   <content type="html">{% include JB/setup %}
+
+&lt;ul class=&quot;tag_box inline&quot;&gt;
+  {% assign categories_list = site.categories %}
+  {% include JB/categories_list %}
+&lt;/ul&gt;
+
+
+{% for category in site.categories %} 
+  &lt;h2 id=&quot;{{ category[0] }}-ref&quot;&gt;{{ category[0] | join: &quot;/&quot; }}&lt;/h2&gt;
+  &lt;ul&gt;
+    {% assign pages_list = category[1] %}  
+    {% include JB/pages_list %}
+  &lt;/ul&gt;
+{% endfor %}
+
+</content>
+ </entry>
+ 
+ <entry>
+   <title>Core Higgs module</title>
+   <link href="http://higgs.io/core.html"/>
+   <updated></updated>
+   <id>http://higgs.io</id>
+   <content type="html">{% include JB/setup %}
+
+# Core module
+
+
+</content>
+ </entry>
+ 
+ <entry>
+   <title>Higgs Events</title>
+   <link href="http://higgs.io/events.html"/>
+   <updated></updated>
+   <id>http://higgs.io</id>
+   <content type="html">{% include JB/setup %}
+
+# Higgs Events
+
+
+</content>
+ </entry>
+ 
+ <entry>
+   <title>Higgs HTTP client</title>
+   <link href="http://higgs.io/http-client.html"/>
+   <updated></updated>
+   <id>http://higgs.io</id>
+   <content type="html">{% include JB/setup %}
+
+# HTTP client
+
+</content>
+ </entry>
+ 
+ <entry>
+   <title>Higgs HTTP, Single site server (S3)</title>
+   <link href="http://higgs.io/http-server.html"/>
+   <updated></updated>
+   <id>http://higgs.io</id>
+   <content type="html">{% include JB/setup %}
+
+# S3
+
+
+</content>
+ </entry>
+ 
+ <entry>
+   <title>Higgs.IO Documentation - Modern Networking on the JVM</title>
+   <link href="http://higgs.io/index.html"/>
+   <updated></updated>
+   <id>http://higgs.io</id>
+   <content type="html">{% include JB/setup %}
+
+
+# What?
+
+Higgs is a group of projects built on top of [Netty](http://netty.io).
+These are all currently HTTP related but there is a plan to provide a binary protocol for RPC.
+
+### Why
+
+I&#39;m not a fan of JSP, servlet containers or Apache&#39;s HTTP commons.
+I like [Dropwizard](http://dropwizard.io) but it&#39;s too tightly coupled to Jetty&#39;s life-cycle.
+I also like [Jersey](https://jersey.java.net/). That said, you can see my dilemma.
+So Higgs takes the best of Dropwizard and Jersey to provide a framework to build REST web services on top of Netty.
+
+## What&#39;s included?
+
+1. [Core](/core.html)
+2. [HTTP client](/http-client.html)
+3. [HTTP server](/http-server.html)
+4. [WebSocket client](/websocket-client.html)
+5. [WebSocket server](/websocket-server.html)
+6. [Event Dispatch library](/events.html)
+
+# Pages
+
+&lt;ul&gt;
+  {% assign pages_list = site.pages %}
+  {% include JB/pages_list %}
+&lt;/ul&gt;
+
+## Categories
+
+&lt;ul&gt;
+  {% assign categories_list = site.categories %}
+  {% include JB/categories_list %}
+&lt;/ul&gt;
+
+## Posts
+&lt;div&gt;
+{% assign posts_collate = site.tags.homepage %}
+{% include JB/posts_collate %}
+&lt;/div&gt;
+
+## Tags
+
+&lt;ul&gt;
+  {% assign tags_list = site.tags %}
+  {% include JB/tags_list %}
+&lt;/ul&gt;
+
+## References
+
+{% bibliography -c %}
+
+
+Built with &lt;a href=&quot;http://jekyllbootstrap.com&quot; target=&quot;_blank&quot;&gt;Jekyll Bootstrap&lt;/a&gt; and &lt;a href=&quot;http://github.com/dhulihan/hooligan&quot; target=&quot;_blank&quot;&gt;The Hooligan Theme&lt;/a&gt;
+</content>
+ </entry>
+ 
+ <entry>
+   <title>JSC Demo page</title>
+   <link href="http://higgs.io/jsc.html"/>
+   <updated></updated>
+   <id>http://higgs.io</id>
+   <content type="html">{% include JB/setup %}
+
+Mark down using cite {% cite pagh2005optimal %}, is new but invention x {% cite boom2 %} is awesome. Twas a creation of J&#39;s {% cite boom3 %} {% cite kirsch2006distance %}. Do you know what {% m %}e = mc^2{% em %} actually means? But do you really?
+
+What about this ?
+
+{% math %}
+\mathbf{V}_1 \times \mathbf{V}_2 =  \begin{vmatrix}
+\mathbf{i} &amp; \mathbf{j} &amp; \mathbf{k} \\
+\frac{\partial X}{\partial u} &amp;  \frac{\partial Y}{\partial u} &amp; 0 \\
+\frac{\partial X}{\partial v} &amp;  \frac{\partial Y}{\partial v} &amp; 0
+\end{vmatrix} 
+{% endmath %}
+
+## References
+{% bibliography -c %}</content>
+ </entry>
+ 
+ <entry>
+   <title>Pages</title>
+   <link href="http://higgs.io/pages.html"/>
+   <updated></updated>
+   <id>http://higgs.io</id>
+   <content type="html">{% include JB/setup %}
+
+&lt;h2&gt;All Pages&lt;/h2&gt;
+&lt;ul&gt;
+{% assign pages_list = site.pages %}
+{% include JB/pages_list %}
+&lt;/ul&gt;
+</content>
+ </entry>
+ 
+ <entry>
+   <title>RSS Feed</title>
+   <link href="http://higgs.io/rss.xml"/>
+   <updated></updated>
+   <id>http://higgs.io</id>
+   <content type="html">&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot; ?&gt;
+&lt;rss version=&quot;2.0&quot;&gt;
+&lt;channel&gt;
+        &lt;title&gt;{{ site.title }}&lt;/title&gt;
+        &lt;description&gt;{{ site.title }} - {{ site.author.name }}&lt;/description&gt;
+        &lt;link&gt;{{ site.production_url }}{{ site.rss_path }}&lt;/link&gt;
+        &lt;link&gt;{{ site.production_url }}&lt;/link&gt;
+        &lt;lastBuildDate&gt;{{ site.time | date_to_xmlschema }}&lt;/lastBuildDate&gt;
+        &lt;pubDate&gt;{{ site.time | date_to_xmlschema }}&lt;/pubDate&gt;
+        &lt;ttl&gt;1800&lt;/ttl&gt;
+
+{% for post in site.posts %}
+        &lt;item&gt;
+                &lt;title&gt;{{ post.title }}&lt;/title&gt;
+                &lt;description&gt;{{ post.content | xml_escape }}&lt;/description&gt;
+                &lt;link&gt;{{ site.production_url }}{{ post.url }}&lt;/link&gt;
+                &lt;guid&gt;{{ site.production_url }}{{ post.id }}&lt;/guid&gt;
+                &lt;pubDate&gt;{{ post.date | date_to_xmlschema }}&lt;/pubDate&gt;
+        &lt;/item&gt;
+{% endfor %}
+
+
+{% for page in site.pages %}
+        &lt;item&gt;
+                &lt;title&gt;{{ page.title }}&lt;/title&gt;
+                &lt;description&gt;{{ page.content | xml_escape }}&lt;/description&gt;
+                &lt;link&gt;{{ site.production_url }}{{ page.url }}&lt;/link&gt;
+                &lt;guid&gt;{{ site.production_url }}{{ page.id }}&lt;/guid&gt;
+                &lt;pubDate&gt;{{ page.date}}&lt;/pubDate&gt;
+        &lt;/item&gt;
+{% endfor %}
+
+&lt;/channel&gt;
+&lt;/rss&gt;
+</content>
+ </entry>
+ 
+ <entry>
+   <title>Sitemap</title>
+   <link href="http://higgs.io/sitemap.txt"/>
+   <updated></updated>
+   <id>http://higgs.io</id>
+   <content type="html">{% for page in site.pages %}
+{{site.production_url}}{{ page.url }}{% endfor %}
+{% for post in site.posts %}
+{{site.production_url}}{{ post.url }}{% endfor %}</content>
+ </entry>
+ 
+ <entry>
+   <title>Tags</title>
+   <link href="http://higgs.io/tags.html"/>
+   <updated></updated>
+   <id>http://higgs.io</id>
+   <content type="html">{% include JB/setup %}
+
+&lt;ul class=&quot;tag_box inline&quot;&gt;
+  {% assign tags_list = site.tags %}  
+  {% include JB/tags_list %}
+&lt;/ul&gt;
+
+
+{% for tag in site.tags %} 
+  &lt;h2 id=&quot;{{ tag[0] }}-ref&quot;&gt;{{ tag[0] }}&lt;/h2&gt;
+  &lt;ul&gt;
+    {% assign pages_list = tag[1] %}  
+    {% include JB/pages_list %}
+  &lt;/ul&gt;
+{% endfor %}
+</content>
+ </entry>
+ 
+ <entry>
+   <title>Higgs WebSocket client</title>
+   <link href="http://higgs.io/websocket-client.html"/>
+   <updated></updated>
+   <id>http://higgs.io</id>
+   <content type="html">{% include JB/setup %}
+
+# WebSocket Client
+
+
+</content>
+ </entry>
+ 
+ <entry>
+   <title>Higgs WebSocket server</title>
+   <link href="http://higgs.io/websocket-server.html"/>
+   <updated></updated>
+   <id>http://higgs.io</id>
+   <content type="html">{% include JB/setup %}
+
+# WebSocket Server
+
+
+</content>
+ </entry>
+ 
+ 
+</feed>
