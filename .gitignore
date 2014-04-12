@@ -1,0 +1,15 @@
+# use glob syntax.
+syntax: glob
+*.ser
+*.class
+
+# idea
+.idea
+*.iml
+
+# building
+target
+build
+build.log
+log/*
+var/*
