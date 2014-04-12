@@ -1,0 +1,30 @@
+---
+layout: page
+title: Not found
+tagline: Thinking of tomorrow, today!
+---
+{% include JB/setup %}
+
+Sorry this page does not exist :(
+
+Check out the other crap I've been doing for my research though...I'm sure there's something to peek your interest.
+
+## Categories
+
+<ul>
+  {% assign categories_list = site.categories %}
+  {% include JB/categories_list %}
+</ul>
+
+## Posts
+<div>
+{% assign posts_collate = site.tags.homepage %}
+{% include JB/posts_collate %}
+</div>
+
+## Tags
+
+<ul>
+  {% assign tags_list = site.tags %}
+  {% include JB/tags_list %}
+</ul>

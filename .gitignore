@@ -12,4 +12,11 @@ target
 build
 build.log
 log/*
-var/*
+var/* 
+Thumbs.db
+.DS_Store
+!.gitkeep
+.rbenv-version
+.rvmrc
+_theme_packages/*
+_site/*
