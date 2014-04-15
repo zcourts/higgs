@@ -1,12 +1,9 @@
 #if true a new instance of a resource is created per request otherwise, one instance serves all requests
 instance_per_request : true
 port : 3434
-add_thymeleaf_transformer : true
-add_json_transformer : true
-add_default_error_transformer : true
 log_requests : true
 #directory where sessions are persisted on disk
-session_dir = /tmp/hs3-sessions/
+session_dir : /tmp/hs3-sessions/
 session_path : /
 #ignored if null
 session_domain:
@@ -19,8 +16,6 @@ session_ports:
 default_error_template : error/default
 #add the default injector used to inject parameters into resource methods
 add_default_injector : true
-#add the default filter used to locate resources (must provide de fault if false)
-add_default_resource_filter : true
 #if true static files will be served from template_config.
 add_static_resource_filter : true
 #path to the directory from which static files will be served (relative or absolute)

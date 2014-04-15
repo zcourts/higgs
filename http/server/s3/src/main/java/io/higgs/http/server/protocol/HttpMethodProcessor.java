@@ -157,6 +157,7 @@ public class HttpMethodProcessor implements MethodProcessor {
     private void determineTemplate(Method method, Class<?> klass, HttpMethod im) {
         boolean classHasTemplate = klass.isAnnotationPresent(template.class);
         String methodTemplate = null;
+        boolean templateAnnotationFound = classHasTemplate;
         //does the method have a template?
         if (classHasTemplate) {
             template template = klass.getAnnotation(template.class);
@@ -167,6 +168,7 @@ public class HttpMethodProcessor implements MethodProcessor {
         }
         //if the method has a template and the class has one, override the class' with the template found on the method
         if (method.isAnnotationPresent(template.class)) {
+            templateAnnotationFound = true;
             template template = method.getAnnotation(template.class);
             if (template.value() != null && !template.value().isEmpty()) {
                 methodTemplate = template.value();
@@ -174,7 +176,7 @@ public class HttpMethodProcessor implements MethodProcessor {
             im.setTemplate(template.fragments());
         }
         im.setTemplate(methodTemplate);
-        if (!im.hasFragments() && !im.hasTemplate()) {
+        if (templateAnnotationFound && (!im.hasFragments() && !im.hasTemplate())) {
             throw new IllegalStateException(String.format("%s in %s has template annotation but hasn't provided a " +
                     "template or any fragments", method.getName(), klass.getName()));
         }

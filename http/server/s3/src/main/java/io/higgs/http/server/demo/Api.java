@@ -50,6 +50,7 @@ public class Api {
 
     @GET
     @method
+    @template("index")
     public String index(HttpSession session) {
         System.out.println("index");
         session.put("index-" + Math.random(), Math.random());
