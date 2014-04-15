@@ -11,3 +11,5 @@ extract_values_from_maps: true
 extract_pojo_fields: true
 # if the template name given to the template annotation doesn't have a file extension this is appended
 template: ".mustache"
+#if true a template is loaded once from disk and cached in memory, otherwise it's fetched each time it's needed
+cache_templates: true

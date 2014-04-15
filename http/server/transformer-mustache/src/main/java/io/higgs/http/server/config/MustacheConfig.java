@@ -23,4 +23,6 @@ public class MustacheConfig {
      * if the template name given to the template annotation doesn't have a file extension this is appended
      */
     public String template = ".mustache";
+
+    public boolean cache_templates = true;
 }
