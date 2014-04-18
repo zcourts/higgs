@@ -2,6 +2,8 @@ package io.higgs.core.reflect.dependency;
 
 import org.cliffc.high_scale_lib.NonBlockingHashMap;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -67,6 +69,38 @@ public class DependencyProvider {
             }
         }
         return true;
+    }
+
+    /**
+     * Removes all references of the given object from the dependency provider
+     *
+     * @param i the object to remove occurrences of
+     * @return true if the object was found and removed, false otherwise
+     */
+    public boolean remove(Object i) {
+        if (i == null) {
+            return false;
+        }
+        List<Map.Entry<Class<?>, Object>> entries = new ArrayList<>();
+        for (Map.Entry<Class<?>, Object> e : instances.entrySet()) {
+            if (e.getValue() == i) {
+                entries.add(e);
+            }
+        }
+        for (Map.Entry<Class<?>, Object> e : entries) {
+            instances.remove(e.getKey());
+        }
+        return entries.size() > 0;
+    }
+
+    /**
+     * Removes the instance of the value for the given class
+     *
+     * @param key the key to remove
+     * @return true if the value was removed, or false if key is null or doesn't exist
+     */
+    public boolean remove(Class<?> key) {
+        return key != null && instances.remove(key) != null;
     }
 
     /**
