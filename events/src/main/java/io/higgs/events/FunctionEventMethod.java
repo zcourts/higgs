@@ -2,6 +2,7 @@ package io.higgs.events;
 
 import io.higgs.core.ObjectFactory;
 import io.higgs.core.func.Function1;
+import io.higgs.core.reflect.dependency.DependencyProvider;
 import io.netty.channel.ChannelHandlerContext;
 
 import java.lang.reflect.InvocationTargetException;
@@ -30,7 +31,8 @@ public class FunctionEventMethod<A> extends EventMethod {
     }
 
     //won't use normal dependency injection because it only supports 1 parameter
-    public Object invoke(ChannelHandlerContext ctx, String path, Object msg, Object[] params)
+    public Object invoke(ChannelHandlerContext ctx, String path, Object msg, Object[] params,
+                         DependencyProvider provider)
             throws InvocationTargetException, IllegalAccessException, InstantiationException {
         try {
             Object param = null;

@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.higgs.core.InvokableMethod;
 import io.higgs.core.StaticUtil;
+import io.higgs.core.reflect.dependency.DependencyProvider;
 import io.higgs.http.server.MessagePusher;
 import io.higgs.http.server.MethodParam;
 import io.higgs.http.server.WrappedResponse;
@@ -92,7 +93,7 @@ public class DefaultWebSocketEventHandler implements WebSocketEventHandler {
         };
         injectParams(params, method, request, frame, handler, ctx, config, method, pusher);
         try {
-            Object returns = method.invoke(ctx, request.getPath(), request, params);
+            Object returns = method.invoke(ctx, request.getPath(), request, params, DependencyProvider.from());
             pusher.push(returns);
         } catch (InvocationTargetException | IllegalAccessException | InstantiationException e) {
             log.warn(String.format("Crap! Unable to invoke method %s", method), e);

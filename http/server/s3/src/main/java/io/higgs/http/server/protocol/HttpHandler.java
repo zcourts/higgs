@@ -187,12 +187,18 @@ public class HttpHandler extends MessageHandler<HttpConfig, Object> {
         };
         //inject globally available provider
         DependencyProvider provider = decoder == null ? DependencyProvider.from() : decoder.provider();
-        provider.add(pusher);
+        //take all objects in the global provider
+        provider.take(DependencyProvider.global());
+
+        provider.add(ctx, ctx.channel(), ctx.executor(), request, res,
+                request.getFormFiles(), request.getFormParam(), request.getCookies(), request.getSession(),
+                request.getQueryParams(), pusher, request.getPath());
+
         Object[] params = Injector.inject(method.method().getParameterTypes(), new Object[0], provider);
         //inject request specific provider
         injector.injectParams(method, request, res, ctx, params);
         try {
-            Object response = method.invoke(ctx, request.getUri(), method, params);
+            Object response = method.invoke(ctx, request.getUri(), method, params, provider);
             pusher.push(response);
         } catch (Throwable t) {
             if (t.getCause() instanceof WebApplicationException) {

@@ -1,6 +1,7 @@
 package io.higgs.events;
 
 import io.higgs.core.InvokableMethod;
+import io.higgs.core.reflect.dependency.DependencyProvider;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import org.slf4j.Logger;
@@ -24,7 +25,7 @@ public class EventHandler extends SimpleChannelInboundHandler<EventMessage> {
         int matches = 0;
         for (InvokableMethod method : methods) {
             if (method.matches(msg.name(), ctx, msg)) {
-                Object response = method.invoke(ctx, msg.name(), msg, msg.params());
+                Object response = method.invoke(ctx, msg.name(), msg, msg.params(), DependencyProvider.from());
                 if (response instanceof TypeMismatch) {
                     continue;
                 }

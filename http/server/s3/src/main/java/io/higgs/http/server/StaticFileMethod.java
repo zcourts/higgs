@@ -3,6 +3,7 @@ package io.higgs.http.server;
 import io.higgs.core.FileUtil;
 import io.higgs.core.ObjectFactory;
 import io.higgs.core.ResolvedFile;
+import io.higgs.core.reflect.dependency.DependencyProvider;
 import io.higgs.http.server.config.HttpConfig;
 import io.higgs.http.server.protocol.HttpMethod;
 import io.higgs.http.server.protocol.HttpProtocolConfiguration;
@@ -106,7 +107,8 @@ public class StaticFileMethod extends HttpMethod {
         return resolvedFile.exists();
     }
 
-    public Object invoke(ChannelHandlerContext ctx, String path, Object msg, Object[] params)
+    public Object invoke(ChannelHandlerContext ctx, String path, Object msg, Object[] params,
+                         DependencyProvider provider)
             throws InvocationTargetException, IllegalAccessException, InstantiationException {
         return classMethod.invoke(this, params);
     }

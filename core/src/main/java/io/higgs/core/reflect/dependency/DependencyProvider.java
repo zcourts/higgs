@@ -84,4 +84,10 @@ public class DependencyProvider {
         }
         return provider;
     }
+
+    public void take(DependencyProvider provider) {
+        if (provider != null) {
+            instances.putAll(provider.instances);
+        }
+    }
 }
