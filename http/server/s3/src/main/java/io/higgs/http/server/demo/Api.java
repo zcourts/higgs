@@ -32,6 +32,9 @@ import io.higgs.http.server.resource.MediaType;
 import io.higgs.http.server.resource.POST;
 import io.higgs.http.server.resource.Produces;
 import io.higgs.http.server.resource.template;
+import io.netty.channel.Channel;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.util.concurrent.EventExecutor;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -40,8 +43,28 @@ import java.util.Map;
  * @author Courtney Robinson <courtney@crlog.info>
  */
 @method("/api")
-@Produces({ MediaType.TEXT_HTML })
+@Produces({MediaType.TEXT_HTML})
 public class Api {
+    /**
+     * These fields can be injected automatically because an instance of the Api class is created for each request
+     * so there is no chance of conflict.
+     * Anything that needs to be kept around e.g. a connection that is expensive to established
+     * should be done outside of the resource and added to the global injector
+     */
+    // all of the following fields will be injected automatically
+    private ChannelHandlerContext ctx;
+    private Channel channel;
+    private EventExecutor executor;
+    private HttpRequest request;
+    private HttpResponse response;
+    private FormFiles formFiles;
+    private FormParams formParams;
+    private HttpCookies cookies;
+    private QueryParams queryParams;
+    private HttpSession session;
+    private ResourcePath path;
+    private MessagePusher pusher;
+    //end auto injected fields
     static int count;
     String a = "a";
     int b = 023343;
@@ -69,7 +92,7 @@ public class Api {
     //transformer is used on the response, if no transformer can convert the response a Not Acceptable status
     // is returned
     @method("test/{string:[a-z0-9]+}/{num:[0-9]+}")
-    @template(fragments = { "header", "api", "footer" }, value = "")
+    @template(fragments = {"header", "api", "footer"}, value = "")
     @GET
     @POST
     public Object test(
@@ -126,7 +149,7 @@ public class Api {
         return map;
     }
 
-    @Consumes({ MediaType.APPLICATION_JSON })
+    @Consumes({MediaType.APPLICATION_JSON})
     @method("boom")
     @GET
     @POST
