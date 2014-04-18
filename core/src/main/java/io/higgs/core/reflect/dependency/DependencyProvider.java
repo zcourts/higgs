@@ -12,11 +12,44 @@ import java.util.Map;
 public class DependencyProvider {
     private static final DependencyProvider global = new DependencyProvider();
     private NonBlockingHashMap<Class<?>, Object> instances = new NonBlockingHashMap<>();
+//    private NonBlockingHashMap<String, Object> named = new NonBlockingHashMap<>();
 
     static {
         //automatically register the global provider
         Injector.register(global);
     }
+
+    //todo finish adding support for named dependencies
+//    /**
+//     * Adds a named dependency to this provider.
+//     * A named dependency is only injected if the name of the field matches the name of this parameter
+//     *
+//     * @param name  the name which must match the field's name for this parameter to be injected
+//     * @param value the value of the parameter to be injected if the name matches
+//     * @return false if name is null or empty or if the given value is null, true otherwise
+//     */
+//    public boolean put(String name, Object value) {
+//        if (name == null || name.isEmpty() || value == null) {
+//            return false;
+//        }
+//        named.put(name, value);
+//        return true;
+//    }
+//
+//    /**
+//     * Get a named dependency
+//     *
+//     * @param name the name of the dependency to get
+//     * @param <T>  the expected type of the dependency
+//     * @return the dependency or null if a {@link java.lang.ClassCastException} occurs or the dependency doesn't exist
+//     */
+//    public <T> T get(String name) {
+//        try {
+//            return (T) named.get(name);
+//        } catch (ClassCastException cce) {
+//            return null;
+//        }
+//    }
 
     /**
      * Adds a set of instances to this provider
@@ -29,7 +62,9 @@ public class DependencyProvider {
             return false;
         }
         for (Object o : dependency) {
-            instances.put(o.getClass(), o);
+            if (o != null) {
+                instances.put(o.getClass(), o);
+            }
         }
         return true;
     }
