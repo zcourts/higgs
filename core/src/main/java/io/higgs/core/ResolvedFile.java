@@ -134,4 +134,32 @@ public class ResolvedFile {
     public boolean isFromClassPath() {
         return fromClassPath;
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        ResolvedFile file = (ResolvedFile) o;
+
+        if (fromClassPath != file.fromClassPath) return false;
+        if (knownSize != file.knownSize) return false;
+        if (base != null ? !base.equals(file.base) : file.base != null) return false;
+        if (dirFiles != null ? !dirFiles.equals(file.dirFiles) : file.dirFiles != null) return false;
+        if (path != null ? !path.equals(file.path) : file.path != null) return false;
+        if (stream != null ? !stream.equals(file.stream) : file.stream != null) return false;
+
+        return true;
+    }
+
+    @Override
+    public int hashCode() {
+        int result = path != null ? path.hashCode() : 0;
+        result = 31 * result + (stream != null ? stream.hashCode() : 0);
+        result = 31 * result + (base != null ? base.hashCode() : 0);
+        result = 31 * result + knownSize;
+        result = 31 * result + (fromClassPath ? 1 : 0);
+        result = 31 * result + (dirFiles != null ? dirFiles.hashCode() : 0);
+        return result;
+    }
 }
