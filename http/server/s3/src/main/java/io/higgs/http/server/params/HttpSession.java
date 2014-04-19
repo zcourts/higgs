@@ -1,6 +1,13 @@
 package io.higgs.http.server.params;
 
-import java.io.*;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationConfig;
+import com.fasterxml.jackson.databind.SerializationFeature;
+
+import java.io.File;
+import java.io.IOException;
+import java.io.Serializable;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -10,8 +17,14 @@ import java.util.HashMap;
  * @author Courtney Robinson <courtney@crlog.info>
  */
 public class HttpSession extends HashMap<String, Object> implements Serializable {
+    @JsonProperty
     private final HashMap<String, Object> flash = new HashMap<>();
     private File sessionFile;
+    protected static final ObjectMapper MAPPER = new ObjectMapper();
+
+//    static {
+//        MAPPER.getSerializationConfig();
+//    }
 
     private HttpSession() {
     }
@@ -36,9 +49,7 @@ public class HttpSession extends HashMap<String, Object> implements Serializable
                 sessionFile.delete();
             }
             try {
-                FileOutputStream sessionStream = new FileOutputStream(sessionFile);
-                ObjectOutputStream out = new ObjectOutputStream(sessionStream);
-                out.writeObject(this);
+                MAPPER.writeValue(sessionFile, this);
             } catch (IOException ignored) {
                 System.err.println("Unable to persist session to disk - " + ignored.getMessage());
             }
@@ -77,9 +88,7 @@ public class HttpSession extends HashMap<String, Object> implements Serializable
         if (sessionFile.exists()) {
             //load session from disk if exists
             try {
-                FileInputStream in = new FileInputStream(sessionFile);
-                ObjectInputStream oin = new ObjectInputStream(in);
-                HttpSession session = (HttpSession) oin.readObject();
+                HttpSession session = MAPPER.readValue(sessionFile, HttpSession.class);
                 if (session != null) {
                     return session;
                 } else {
