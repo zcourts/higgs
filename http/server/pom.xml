@@ -16,6 +16,7 @@
         <module>transformer-defaults</module>
         <module>transformer-thymeleaf</module>
         <module>transformer-mustache</module>
+        <module>transformer-handlebars</module>
     </modules>
     <dependencyManagement>
         <dependencies>
