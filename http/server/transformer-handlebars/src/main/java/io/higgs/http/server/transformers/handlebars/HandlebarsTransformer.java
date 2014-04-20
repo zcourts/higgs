@@ -12,6 +12,7 @@ import com.github.jknack.handlebars.context.JavaBeanValueResolver;
 import com.github.jknack.handlebars.context.MapValueResolver;
 import com.github.jknack.handlebars.context.MethodValueResolver;
 import io.higgs.core.ConfigUtil;
+import io.higgs.core.reflect.dependency.DependencyProvider;
 import io.higgs.http.server.HttpRequest;
 import io.higgs.http.server.HttpResponse;
 import io.higgs.http.server.WebApplicationException;
@@ -29,7 +30,9 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
+import java.util.HashMap;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.ServiceConfigurationError;
 import java.util.ServiceLoader;
 
@@ -47,6 +50,7 @@ import static io.netty.handler.codec.http.HttpResponseStatus.INTERNAL_SERVER_ERR
 //@ProviderFor(ResponseTransformer.class)
 @MetaInfServices(ResponseTransformer.class)
 public class HandlebarsTransformer extends BaseTransformer {
+    public static final String HANDLE_BARS = "{{handlebars}}";
     protected HandlebarsConfig config;
     protected Handlebars handlebars;
     protected HiggsTemplateLoader loader;
@@ -55,6 +59,9 @@ public class HandlebarsTransformer extends BaseTransformer {
         config = ConfigUtil.loadYaml("handlebars_config.yml", HandlebarsConfig.class);
         setPriority(config.priority);
         addSupportedTypes(WILDCARD_TYPE, TEXT_HTML_TYPE, APPLICATION_FORM_URLENCODED_TYPE, APPLICATION_XHTML_XML_TYPE);
+        if (DependencyProvider.global().get(HANDLE_BARS) == null) {
+            DependencyProvider.global().put(HANDLE_BARS, new HashMap<String, Object>());
+        }
         loader = new HiggsTemplateLoader(config);
         handlebars = new Handlebars(loader);
         loadHelpers();
@@ -129,13 +136,16 @@ public class HandlebarsTransformer extends BaseTransformer {
                 ).build();
 
         //${_query} ,${_form},${_files},${_session},${_cookies},${_request},${_response},${_server}
+        Map<String, ?> anything = DependencyProvider.global().get(HANDLE_BARS);
         ctx.data("_query", request.getQueryParams())
                 .data("_form", request.getFormParam())
                 .data("_files", request.getFormFiles())
                 .data("_session", request.getSession())
                 .data("_cookies", request.getCookies())
                 .data("_request", request)
-                .data("_response", response);
+                .data("_response", response)
+                        //add anything the user sets
+                .data(anything);
         if (method != null) {
             ctx.data("_validation", method.getValidationResult());
         }
