@@ -1,9 +1,8 @@
 package io.higgs.ws.sockjs;
 
 import io.higgs.core.method;
-import io.higgs.http.server.resource.GET;
-import io.higgs.http.server.resource.OPTIONS;
 
+import javax.ws.rs.GET;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
@@ -16,7 +15,6 @@ public class SockJSProtocol {
 
     private Random random = new Random();
 
-    @OPTIONS
     @GET
     public Map<String, Object> info() {
         Map<String, Object> data = new HashMap<>();

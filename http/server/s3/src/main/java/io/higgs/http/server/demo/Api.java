@@ -25,17 +25,17 @@ import io.higgs.http.server.params.RequiredParam;
 import io.higgs.http.server.params.SessionParam;
 import io.higgs.http.server.params.ValidationResult;
 import io.higgs.http.server.params.valid;
-import io.higgs.http.server.resource.Consumes;
-import io.higgs.http.server.resource.GET;
 import io.higgs.http.server.resource.JsonData;
 import io.higgs.http.server.resource.MediaType;
-import io.higgs.http.server.resource.POST;
-import io.higgs.http.server.resource.Produces;
 import io.higgs.http.server.resource.template;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.concurrent.EventExecutor;
 
+import javax.ws.rs.Consumes;
+import javax.ws.rs.GET;
+import javax.ws.rs.POST;
+import javax.ws.rs.Produces;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -94,7 +94,6 @@ public class Api {
     @method("test/{string:[a-z0-9]+}/{num:[0-9]+}")
     @template(fragments = {"header", "api", "footer"}, value = "")
     @GET
-    @POST
     public Object test(
             //inject these named parameters
             //for cookies, values can be a cookie String or a HttpCookie
@@ -151,7 +150,6 @@ public class Api {
 
     @Consumes({MediaType.APPLICATION_JSON})
     @method("boom")
-    @GET
     @POST
     public Object boom2() {
         //you can, and SHOULD return WebApplicationException

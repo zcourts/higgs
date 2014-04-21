@@ -8,12 +8,12 @@ import io.higgs.http.server.HttpRequest;
 import io.higgs.http.server.MethodParam;
 import io.higgs.http.server.WebApplicationException;
 import io.higgs.http.server.params.ValidationResult;
-import io.higgs.http.server.resource.Consumes;
 import io.higgs.http.server.resource.MediaType;
-import io.higgs.http.server.resource.Produces;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.HttpResponseStatus;
 
+import javax.ws.rs.Consumes;
+import javax.ws.rs.Produces;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.LinkedList;
