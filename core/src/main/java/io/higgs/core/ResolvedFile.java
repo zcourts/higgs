@@ -5,7 +5,6 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.channels.ClosedChannelException;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -23,6 +22,7 @@ public class ResolvedFile {
     protected int knownSize;
     protected boolean fromClassPath;
     protected List<Path> dirFiles = new ArrayList<>();
+    private long lastModifiedCache;
 
     public void setPath(Path path) {
         setPath(path, null);
@@ -45,6 +45,7 @@ public class ResolvedFile {
                     stream = Files.newInputStream(path);
                     knownSize = stream.available();
                 }
+                lastModifiedCache = Files.getLastModifiedTime(path).toMillis();
             } catch (IOException e) {
                 log.warn(String.format("Unable to open file %s for reading", path), e);
             }
@@ -71,12 +72,9 @@ public class ResolvedFile {
     public int size() {
         try {
             return hasStream() ? stream.available() : -1;
-        } catch (ClosedChannelException ignored) {
-            return knownSize;
         } catch (IOException e) {
-            log.warn("Failed to get available bytes on stream ", e);
+            return knownSize;
         }
-        return -2;
     }
 
     public InputStream getStream() {
@@ -118,8 +116,7 @@ public class ResolvedFile {
         try {
             return Files.getLastModifiedTime(path).toMillis();
         } catch (IOException e) {
-            log.warn("Failed to get last modification time of a file " + path, e);
-            return 0;
+            return lastModifiedCache;
         }
     }
 
