@@ -39,6 +39,7 @@
         <module>events</module>
         <module>http</module>
         <module>websocket</module>
+        <module>examples</module>
     </modules>
 
     <properties>
@@ -188,22 +189,22 @@
                     <target>1.7</target>
                 </configuration>
             </plugin>
-         <!--   <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>flatten-maven-plugin</artifactId>
-                <version>1.0.0-beta-1-SNAPSHOT</version>
-                <configuration>
-                </configuration>
-                <executions>
-                    <execution>
-                        <id>flatten</id>
-                        <phase>process-resources</phase>
-                        <goals>
-                            <goal>flatten</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>-->
+            <!--   <plugin>
+                   <groupId>org.codehaus.mojo</groupId>
+                   <artifactId>flatten-maven-plugin</artifactId>
+                   <version>1.0.0-beta-1-SNAPSHOT</version>
+                   <configuration>
+                   </configuration>
+                   <executions>
+                       <execution>
+                           <id>flatten</id>
+                           <phase>process-resources</phase>
+                           <goals>
+                               <goal>flatten</goal>
+                           </goals>
+                       </execution>
+                   </executions>
+               </plugin>-->
         </plugins>
     </build>
     <repositories>

@@ -1,6 +1,10 @@
-package io.higgs.http.client;
+package io.higgs.examples.httpClient;
 
 import io.higgs.core.func.Function2;
+import io.higgs.http.client.HttpFile;
+import io.higgs.http.client.HttpRequestBuilder;
+import io.higgs.http.client.Request;
+import io.higgs.http.client.Response;
 import io.higgs.http.client.readers.FileReader;
 import io.higgs.http.client.readers.LineReader;
 import io.higgs.http.client.readers.PageReader;
@@ -48,7 +52,8 @@ public class Demo {
                         System.out.println(s);
                         HttpRequestBuilder.shutdown();
                     }
-                }))
+                })
+        )
                 //SSLv3, TLSv1, TLSv1.1, TLSv1.2 are typical
                 .withSSLProtocols(new String[]{"SSLv3", "TLSv1"});
         //can always check what options are supported with
@@ -66,7 +71,8 @@ public class Demo {
                     public void apply(String s, final Response response) {
                         System.out.println(s);
                     }
-                }));
+                })
+        );
         req.execute();
         Request r = clone.GET(new URI("http://httpbin.org/redirect/1"),
                 new PageReader(new Function2<String, Response>() {
@@ -74,7 +80,8 @@ public class Demo {
                         System.out.println(s);
                         System.out.println(response);
                     }
-                }));
+                })
+        );
         r.execute();
 
         //keeping all previous settings on r we can make a request to a url on the same host

@@ -1,4 +1,4 @@
-package io.higgs.http.server.demo;
+package io.higgs.examples.httpServer.restService;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;

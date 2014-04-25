@@ -1,4 +1,4 @@
-package io.higgs.ws.demo;
+package io.higgs.examples.websocketServer;
 
 /**
  * Random POJO class

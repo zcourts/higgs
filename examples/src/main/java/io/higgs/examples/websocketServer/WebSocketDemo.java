@@ -1,29 +1,33 @@
-package io.higgs.http.server.demo;
+package io.higgs.examples.websocketServer;
 
 import io.higgs.core.HiggsServer;
 import io.higgs.http.server.Transcription;
 import io.higgs.http.server.config.HttpConfig;
 import io.higgs.http.server.protocol.HttpProtocolConfiguration;
+import io.higgs.ws.protocol.WebSocketConfiguration;
 
 /**
  * @author Courtney Robinson <courtney@crlog.info>
  */
-public class Demo {
-    private Demo() {
+public class WebSocketDemo {
+    private WebSocketDemo() {
     }
 
     public static void main(String... args) {
-
+        //handles HTTP GET requests
+        WebSocketConfiguration ws = new WebSocketConfiguration();
+        //handles all other HTTP requests
         HttpProtocolConfiguration http = new HttpProtocolConfiguration();
         //re-write all requests to /app/* to index.html
-        http.getTranscriber().addTranscription(new Transcription("/app((?:\\/[\\w([^\\..]{1,4}\b)\\-]+)+)",
+        ws.getTranscriber().addTranscription(new Transcription("/app((?:\\/[\\w([^\\..]{1,4}\b)\\-]+)+)",
                 "/index.html"));
+
         HiggsServer server = new HiggsServer().setConfig("config.yml", HttpConfig.class);
+        server.registerProtocol(ws);
+        //HTTP must be registered after WebSockets
         server.registerProtocol(http);
         //
-        server.registerPackage(Api.class.getPackage());
-//        server.registerClass(Api.class);
-//        server.registerObject(new Api());
+        server.registerClass(Api.class);
         server.start();
     }
 }

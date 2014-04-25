@@ -1,4 +1,4 @@
-package io.higgs.ws.demo;
+package io.higgs.examples.websocketServer;
 
 import io.higgs.core.method;
 import io.higgs.ws.JsonRequest;

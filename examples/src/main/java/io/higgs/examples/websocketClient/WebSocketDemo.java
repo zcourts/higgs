@@ -1,6 +1,10 @@
-package io.higgs.ws.client;
+package io.higgs.examples.websocketClient;
 
 import io.higgs.http.client.HttpRequestBuilder;
+import io.higgs.ws.client.WebSocketClient;
+import io.higgs.ws.client.WebSocketEventListener;
+import io.higgs.ws.client.WebSocketMessage;
+import io.higgs.ws.client.WebSocketStream;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.FullHttpResponse;
 import io.netty.handler.codec.http.websocketx.CloseWebSocketFrame;
