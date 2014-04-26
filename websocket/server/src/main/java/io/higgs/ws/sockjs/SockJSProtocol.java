@@ -1,8 +1,7 @@
 package io.higgs.ws.sockjs;
 
-import io.higgs.core.method;
-
 import javax.ws.rs.GET;
+import javax.ws.rs.Path;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
@@ -10,7 +9,7 @@ import java.util.Random;
 /**
  * @author Courtney Robinson <courtney@crlog.info>
  */
-@method("sockjs")
+@Path("sockjs")
 public class SockJSProtocol {
 
     private Random random = new Random();

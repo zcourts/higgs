@@ -1,18 +1,19 @@
 package io.higgs.examples.websocketServer;
 
-import io.higgs.core.method;
 import io.higgs.ws.JsonRequest;
 import io.higgs.ws.protocol.WebSocketConfiguration;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 
+import javax.ws.rs.Path;
+
 /**
  * @author Courtney Robinson <courtney@crlog.info>
  */
-@method("/ws")
+@Path("/ws")
 public class Api {
 
-    @method("test/{string:[a-z0-9]+}/{num:[0-9]+}")
+    @Path("test/{string:[a-z0-9]+}/{num:[0-9]+}")
     public Object test(
             JsonRequest request,
             ChannelHandlerContext ctx,

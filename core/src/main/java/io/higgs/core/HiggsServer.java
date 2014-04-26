@@ -50,7 +50,7 @@ public class HiggsServer {
     protected boolean detectGzip = true;
     protected ServerConfig config = new ServerConfig();
     protected Logger log = LoggerFactory.getLogger(getClass());
-    Class<method> methodClass = method.class;
+    Class<javax.ws.rs.Path> methodClass = javax.ws.rs.Path.class;
     protected boolean onlyRegisterAnnotatedMethods = true;
     protected int port = 8080;
 
@@ -119,7 +119,7 @@ public class HiggsServer {
 
     /**
      * Chose whether ALL methods in a registered class are registered or
-     * just the ones that have been explicitly annotated with {@link method}
+     * just the ones that have been explicitly annotated with {@link javax.ws.rs.Path}
      *
      * @param v if true only explicitly marked methods are registered
      */
@@ -262,19 +262,12 @@ public class HiggsServer {
                 return;
             }
             if (registerAllMethods) {
-                boolean hasListener = method.isAnnotationPresent(methodClass);
-                //opt out if the annotation is present and optout is set to true
-                boolean optout = hasListener && method.getAnnotation(methodClass).optout();
-                if (!optout) {
-                    //register all methods is true, the method hasn't been opted out
-                    methods.add(im);
-                    im.registered();
-                }
+                //register all methods is true
+                methods.add(im);
+                im.registered();
             } else {
-                if (method.isAnnotationPresent(methodClass)
-                        && !method.getAnnotation(methodClass).optout()) {
+                if (method.isAnnotationPresent(methodClass)) {
                     //if we're not registering all methods, AND this method has the annotation
-                    //AND optout is not set to true
                     if (methods.add(im)) {
                         im.registered();
                     } else {

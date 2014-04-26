@@ -13,41 +13,24 @@
     </parent>
     <dependencies>
         <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-            <version>4.8.2</version>
-        </dependency>
-        <dependency>
             <groupId>io.higgs</groupId>
-            <artifactId>http-server</artifactId>
-            <version>${project.version}</version>
+            <artifactId>http-s3</artifactId>
         </dependency>
         <dependency>
             <groupId>io.higgs</groupId>
             <artifactId>http-client</artifactId>
-            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>io.higgs</groupId>
             <artifactId>events</artifactId>
-            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>io.higgs</groupId>
             <artifactId>ws-client</artifactId>
-            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>io.higgs</groupId>
             <artifactId>ws-server</artifactId>
-            <version>${project.version}</version>
         </dependency>
     </dependencies>
-
-    <repositories>
-        <repository>
-            <id>boundary-site</id>
-            <url>http://maven.boundary.com/artifactory/repo</url>
-        </repository>
-    </repositories>
 </project>

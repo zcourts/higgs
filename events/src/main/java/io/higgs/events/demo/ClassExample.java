@@ -1,10 +1,11 @@
 package io.higgs.events.demo;
 
-import io.higgs.core.method;
 import io.higgs.events.EventMessage;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.concurrent.EventExecutor;
+
+import javax.ws.rs.Path;
 
 /**
  * @author Courtney Robinson <courtney@crlog.info>
@@ -42,7 +43,7 @@ public class ClassExample {
      * @param eventMessage    every time the test event is emitted a new {@link io.higgs.events.EventMessage} object will be created
      * @param executor submit background tasks to the executor
      */
-    @method("test") //subscribe to events emitted with the name "test"
+    @Path("test") //subscribe to events emitted with the name "test"
     public void test(
             ChannelHandlerContext ctx,
             String a,
@@ -61,7 +62,7 @@ public class ClassExample {
         //etc
     }
 
-    @method("test")
+    @Path("test")
     public void test2(String a, int b) {
         System.out.println(
                 Thread.currentThread().getName() +

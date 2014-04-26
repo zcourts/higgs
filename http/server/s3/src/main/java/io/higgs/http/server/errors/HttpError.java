@@ -1,12 +1,12 @@
 package io.higgs.http.server.errors;
 
-import io.higgs.core.method;
+import javax.ws.rs.Path;
 
 public class HttpError {
     public static class HttpErrorCode {
     }
 
-    @method("404")
+    @Path("404")
     public String notFound() {
         return "<h1>Not Found</h1>";
     }

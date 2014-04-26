@@ -4,7 +4,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Function;
 import io.higgs.core.ResourcePath;
-import io.higgs.core.method;
 import io.higgs.http.server.HttpRequest;
 import io.higgs.http.server.HttpResponse;
 import io.higgs.http.server.HttpStatus;
@@ -35,6 +34,7 @@ import io.netty.util.concurrent.EventExecutor;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
+import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import java.util.HashMap;
 import java.util.Map;
@@ -42,7 +42,7 @@ import java.util.Map;
 /**
  * @author Courtney Robinson <courtney@crlog.info>
  */
-@method("/api")
+@Path("/api")
 @Produces({MediaType.TEXT_HTML})
 public class Api {
     /**
@@ -72,7 +72,7 @@ public class Api {
     double d = Math.random();
 
     @GET
-    @method
+    @Path("/")
     @template("index")
     public String index(HttpSession session) {
         System.out.println("index");
@@ -81,7 +81,7 @@ public class Api {
     }
 
     @POST
-    @method("json")
+    @Path("json")
     @Consumes(MediaType.APPLICATION_JSON)
     public String acceptJson(JsonData data) {
         return "yes index";
@@ -91,7 +91,7 @@ public class Api {
     //template is the name of the HTML template to use, if no template is provided then another resource
     //transformer is used on the response, if no transformer can convert the response a Not Acceptable status
     // is returned
-    @method("test/{string:[a-z0-9]+}/{num:[0-9]+}")
+    @Path("test/{string:[a-z0-9]+}/{num:[0-9]+}")
     @template(fragments = {"header", "api", "footer"}, value = "")
     @GET
     public Object test(
@@ -137,7 +137,7 @@ public class Api {
         return new ObjectMapper().writeValueAsString(this);
     }
 
-    @method(value = "json")
+    @Path(value = "json")
     @Produces(MediaType.APPLICATION_JSON)
     @GET
     public Map<Integer, Double> json(HttpRequest request) {
@@ -149,7 +149,7 @@ public class Api {
     }
 
     @Consumes({MediaType.APPLICATION_JSON})
-    @method("boom")
+    @Path("boom")
     @POST
     public Object boom2() {
         //you can, and SHOULD return WebApplicationException
@@ -157,7 +157,7 @@ public class Api {
         return new WebApplicationException(HttpStatus.NOT_IMPLEMENTED, "error/default");
     }
 
-    @method("manual")
+    @Path("manual")
     @GET
     public Object manual() {
         //if a Function is returned then we must write the response manual

@@ -6,6 +6,7 @@ import io.netty.channel.ChannelHandlerContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.ws.rs.Path;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Queue;
@@ -33,16 +34,14 @@ public abstract class InvokableMethod implements Sortable<InvokableMethod> {
 
     protected void parsePath() {
         String classPath = null, methodPath = null;
-        boolean ignoreClassPrefix = false;
         //get any path set on the method
-        if (classMethod.isAnnotationPresent(method.class)) {
-            method path = classMethod.getAnnotation(method.class);
+        if (classMethod.isAnnotationPresent(Path.class)) {
+            Path path = classMethod.getAnnotation(Path.class);
             methodPath = path.value() != null && !path.value().isEmpty() ? path.value() : "/";
-            ignoreClassPrefix = path.ignoreClassPrefix();
         }
         //get any path set on the entire class so it can be prepended to method paths
-        if (!ignoreClassPrefix && klass.isAnnotationPresent(method.class)) {
-            method path = klass.getAnnotation(method.class);
+        if (klass.isAnnotationPresent(Path.class)) {
+            Path path = klass.getAnnotation(Path.class);
             classPath = path.value() != null && !path.value().isEmpty() ? path.value() : "/";
         }
 
@@ -58,7 +57,7 @@ public abstract class InvokableMethod implements Sortable<InvokableMethod> {
         if (!methodPath.startsWith("/") && !classPath.endsWith("/")) {
             classPath += "/";
         }
-        path = ignoreClassPrefix ? methodPath : classPath + methodPath;
+        path = classPath + methodPath;
         if (path.length() > 1 && path.endsWith("/")) {
             path = path.substring(0, path.length() - 1);
         }
