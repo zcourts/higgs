@@ -6,32 +6,26 @@ import io.higgs.core.ProtocolConfiguration;
 import io.higgs.core.ProtocolDetectorFactory;
 import io.higgs.http.server.DefaultParamInjector;
 import io.higgs.http.server.ParamInjector;
-import io.higgs.http.server.transformers.ResponseTransformer;
 import io.higgs.http.server.Transcriber;
-import io.higgs.http.server.params.HttpSession;
+import io.higgs.http.server.auth.HiggsSecurityManager;
+import io.higgs.http.server.transformers.ResponseTransformer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.HashMap;
 import java.util.Iterator;
-import java.util.Map;
 import java.util.Queue;
 import java.util.ServiceConfigurationError;
 import java.util.ServiceLoader;
 import java.util.concurrent.ConcurrentLinkedDeque;
 
 public class HttpProtocolConfiguration implements ProtocolConfiguration {
-    private final Map<String, HttpSession> sessions = new HashMap<>();
-    private final Queue<ResponseTransformer> transformers = new ConcurrentLinkedDeque<>();
-    private final Queue<MediaTypeDecoder> mediaTypeDecoders = new ConcurrentLinkedDeque<>();
-    private HiggsServer server;
-    private ParamInjector injector = new DefaultParamInjector();
-    private Transcriber transcriber = new Transcriber();
-    private Logger log = LoggerFactory.getLogger(getClass());
-
-    public Map<String, HttpSession> getSessions() {
-        return sessions;
-    }
+    protected final Queue<ResponseTransformer> transformers = new ConcurrentLinkedDeque<>();
+    protected final Queue<MediaTypeDecoder> mediaTypeDecoders = new ConcurrentLinkedDeque<>();
+    protected HiggsSecurityManager securityManager = new HiggsSecurityManager();
+    protected HiggsServer server;
+    protected ParamInjector injector = new DefaultParamInjector();
+    protected Transcriber transcriber = new Transcriber();
+    protected Logger log = LoggerFactory.getLogger(getClass());
 
     public Transcriber getTranscriber() {
         return transcriber;
@@ -73,6 +67,7 @@ public class HttpProtocolConfiguration implements ProtocolConfiguration {
     @Override
     public void initialise(HiggsServer server) {
         this.server = server;
+        securityManager.init(server);
         Iterator<ResponseTransformer> providers = ServiceLoader.load(ResponseTransformer.class).iterator();
         while (providers.hasNext()) {
             try {
@@ -83,6 +78,9 @@ public class HttpProtocolConfiguration implements ProtocolConfiguration {
                         " and has a public, no-arg constructor", sce);
             }
         }
+        if (transformers.size() == 0) {
+            log.warn("No response transformers registered, this means requests will not receive response entities");
+        }
     }
 
     public Queue<MediaTypeDecoder> getMediaTypeDecoders() {
@@ -91,5 +89,16 @@ public class HttpProtocolConfiguration implements ProtocolConfiguration {
 
     public Queue<ResponseTransformer> getTransformers() {
         return transformers;
+    }
+
+    public HiggsSecurityManager getSecurityManager() {
+        return securityManager;
+    }
+
+    public void setSecurityManager(HiggsSecurityManager securityManager) {
+        if (securityManager == null) {
+            throw new IllegalArgumentException("Security manager cannot be null");
+        }
+        this.securityManager = securityManager;
     }
 }

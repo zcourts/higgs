@@ -13,7 +13,6 @@ import io.higgs.http.server.params.FormFiles;
 import io.higgs.http.server.params.FormParams;
 import io.higgs.http.server.params.HttpCookie;
 import io.higgs.http.server.params.HttpCookies;
-import io.higgs.http.server.params.HttpSession;
 import io.higgs.http.server.params.QueryParams;
 import io.higgs.http.server.params.RequiredParam;
 import io.higgs.http.server.params.SessionParam;
@@ -25,6 +24,7 @@ import io.higgs.http.server.resource.template;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.concurrent.EventExecutor;
+import org.apache.shiro.session.Session;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.CookieParam;
@@ -61,7 +61,7 @@ public class Api {
     private FormParams formParams;
     private HttpCookies cookies;
     private QueryParams queryParams;
-    private HttpSession session;
+    private Session session;
     private ResourcePath path;
     private MessagePusher pusher;
     //end auto injected fields
@@ -74,9 +74,9 @@ public class Api {
     @GET
     @Path("/")
     @template("index")
-    public String index(HttpSession session) {
+    public String index(Session session) {
         System.out.println("index");
-        session.put("index-" + Math.random(), Math.random());
+        session.setAttribute("index-" + Math.random(), Math.random());
         return "yes index";
     }
 
@@ -114,7 +114,7 @@ public class Api {
             //all these unnamed parameters can be injected and should never be null
             HttpRequest request, HttpResponse response, FormFiles files,
             FormParams form, HttpCookies cookies,
-            QueryParams query, HttpSession session,
+            QueryParams query, Session session,
             ResourcePath path, MessagePusher pusher,
             ValidationResult validation
     ) throws JsonProcessingException {
@@ -128,11 +128,11 @@ public class Api {
         assert validation.isValid();
         assert text2.isValid();
         assert text2.getValue() == null;
-        session.put("api-" + count, Math.random());
+        session.setAttribute("api-" + count, Math.random());
         count += 1;
         System.out.println("test:" + count);
         //set something in the session
-        session.put("count", count);
+        session.setAttribute("count", count);
         response.setCookie("api-cookie", String.valueOf(true));
         return new ObjectMapper().writeValueAsString(this);
     }

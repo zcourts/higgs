@@ -7,12 +7,12 @@ import io.higgs.http.server.params.FormParams;
 import io.higgs.http.server.params.HttpCookie;
 import io.higgs.http.server.params.HttpCookies;
 import io.higgs.http.server.params.HttpFile;
-import io.higgs.http.server.params.HttpSession;
 import io.higgs.http.server.params.QueryParams;
 import io.higgs.http.server.params.RequiredParam;
 import io.higgs.http.server.params.ValidationResult;
 import io.higgs.http.server.protocol.HttpMethod;
 import io.netty.channel.ChannelHandlerContext;
+import org.apache.shiro.session.Session;
 
 import java.nio.channels.Channel;
 import java.util.List;
@@ -21,7 +21,7 @@ import java.util.List;
  * Inspect the provided method parameters and substitute supported types as parameters where necessary
  * The following can be injected:
  * {@link HttpRequest},{@link FormFiles},{@link HttpFile},{@link FormParams},
- * {@link HttpCookie},{@link QueryParams},{@link HttpSession},{@link ResourcePath}
+ * {@link HttpCookie},{@link QueryParams},{@link Session},{@link ResourcePath}
  *
  * @author Courtney Robinson <courtney@crlog.info>
  */
@@ -77,7 +77,7 @@ public class DefaultParamInjector implements ParamInjector {
     /**
      * The following can be injected:
      * {@link HttpRequest},{@link FormFiles},{@link FormParams},
-     * {@link HttpCookies},{@link QueryParams},{@link HttpSession},{@link ResourcePath},
+     * {@link HttpCookies},{@link QueryParams},{@link Session},{@link ResourcePath},
      * {@link ChannelHandlerContext} ,{@link Channel}
      */
     private Object processClasses(HttpMethod method, HttpRequest request, HttpResponse res, MethodParam param,
@@ -95,7 +95,7 @@ public class DefaultParamInjector implements ParamInjector {
             return request.getCookies();
         } else if (QueryParams.class.isAssignableFrom(param.getParameterType())) {
             return request.getQueryParams();
-        } else if (HttpSession.class.isAssignableFrom(param.getParameterType())) {
+        } else if (Session.class.isAssignableFrom(param.getParameterType())) {
             return request.getSession();
         } else if (ResourcePath.class.isAssignableFrom(param.getParameterType())) {
             return path;
@@ -123,7 +123,7 @@ public class DefaultParamInjector implements ParamInjector {
         } else if (param.isPathParam()) {
             return extractPathParam(param, path);
         } else if (param.isSessionParam()) {
-            return request.getSession() == null ? null : request.getSession().get(param.getName());
+            return request.getSession() == null ? null : request.getSession().getAttribute(param.getName());
         }
         return null;
     }

@@ -1,15 +1,33 @@
 package io.higgs.http.server;
 
 import io.higgs.core.ResourcePath;
-import io.higgs.http.server.params.*;
+import io.higgs.http.server.params.FormFiles;
+import io.higgs.http.server.params.FormParams;
+import io.higgs.http.server.params.HttpCookie;
+import io.higgs.http.server.params.HttpCookies;
+import io.higgs.http.server.params.HttpFile;
+import io.higgs.http.server.params.QueryParams;
 import io.higgs.http.server.protocol.HttpProtocolConfiguration;
 import io.higgs.http.server.resource.MediaType;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.handler.codec.http.*;
+import io.netty.handler.codec.http.Cookie;
+import io.netty.handler.codec.http.CookieDecoder;
+import io.netty.handler.codec.http.DefaultHttpRequest;
+import io.netty.handler.codec.http.FullHttpRequest;
+import io.netty.handler.codec.http.HttpHeaders;
+import io.netty.handler.codec.http.HttpMethod;
+import io.netty.handler.codec.http.HttpVersion;
+import io.netty.handler.codec.http.QueryStringDecoder;
 import io.netty.util.Attribute;
 import io.netty.util.AttributeKey;
+import org.apache.shiro.session.Session;
+import org.apache.shiro.session.SessionException;
+import org.apache.shiro.session.mgt.DefaultSessionContext;
+import org.apache.shiro.session.mgt.DefaultSessionKey;
+import org.apache.shiro.session.mgt.SessionContext;
+import org.apache.shiro.session.mgt.SessionKey;
 import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,24 +45,25 @@ import static java.lang.Integer.parseInt;
  */
 public class HttpRequest extends DefaultHttpRequest {
     public static final String SID = "HS3-ID";
-    private static final AttributeKey<String> sessionAttr = new AttributeKey<>(SID + "-attr");
-    private final QueryParams queryParams = new QueryParams();
-    private final FormFiles files = new FormFiles();
-    private final FormParams form = new FormParams();
-    private final HttpCookies cookies = new HttpCookies();
-    private final DateTime createdAt = new DateTime();
-    private Logger log = LoggerFactory.getLogger(getClass());
-    private ResourcePath path;
-    private List<MediaType> acceptedMediaTypes = new ArrayList<>();
-    private boolean newSession;
-    private String sessionId;
-    private MediaType matchedMediaType = MediaType.WILDCARD_TYPE;
-    private HttpProtocolConfiguration config;
-    private boolean multipart;
-    private boolean chunked;
-    private ByteBuf content = Unpooled.buffer(0);
-    private HttpCookie sessionCookie;
-    private List<MediaType> contentType;
+    protected static final AttributeKey<String> sessionAttr = new AttributeKey<>(SID + "-attr");
+    protected final QueryParams queryParams = new QueryParams();
+    protected final FormFiles files = new FormFiles();
+    protected final FormParams form = new FormParams();
+    protected final HttpCookies cookies = new HttpCookies();
+    protected final DateTime createdAt = new DateTime();
+    protected Logger log = LoggerFactory.getLogger(getClass());
+    protected ResourcePath path;
+    protected List<MediaType> acceptedMediaTypes = new ArrayList<>();
+    protected boolean newSession;
+    protected String sessionId;
+    protected MediaType matchedMediaType = MediaType.WILDCARD_TYPE;
+    protected HttpProtocolConfiguration config;
+    protected boolean multipart;
+    protected boolean chunked;
+    protected ByteBuf content = Unpooled.buffer(0);
+    protected HttpCookie sessionCookie;
+    protected List<MediaType> contentType;
+    protected Session session;
 
     /**
      * Creates a new instance.
@@ -98,20 +117,26 @@ public class HttpRequest extends DefaultHttpRequest {
         } else {
             sessionId = sc.getValue();
         }
-        if (sc == null || config.getSessions().get(sessionId) == null) {
+        SessionKey sessionKey = new DefaultSessionKey(sessionId);
+        try {
+            session = config.getSecurityManager().getSession(sessionKey);
+        } catch (SessionException se) {
+            session = null;
+        }
+        if (sc == null || session == null) {
             if (sc == null) {
                 //generate a new session ID
                 SecureRandom random = new SecureRandom();
                 sessionId = new BigInteger(130, random).toString(32);
 
-                HttpCookie session = new HttpCookie(SID, sessionId);
-                session.setPath(config.getServer().getConfig().session_path);
-                session.setMaxAge(config.getServer().getConfig().session_max_age);
-                session.setHttpOnly(config.getServer().getConfig().session_http_only);
+                HttpCookie sessionCookie = new HttpCookie(SID, sessionId);
+                sessionCookie.setPath(config.getServer().getConfig().session_path);
+                sessionCookie.setMaxAge(config.getServer().getConfig().session_max_age);
+                sessionCookie.setHttpOnly(config.getServer().getConfig().session_http_only);
 
                 if (config.getServer().getConfig().session_domain != null &&
                         !config.getServer().getConfig().session_domain.isEmpty()) {
-                    session.setDomain(config.getServer().getConfig().session_domain);
+                    sessionCookie.setDomain(config.getServer().getConfig().session_domain);
                 }
 
                 String sp = config.getServer().getConfig().session_ports;
@@ -125,16 +150,18 @@ public class HttpRequest extends DefaultHttpRequest {
                             log.warn(String.format("Session port config contained non-numeric value (%s)", p));
                         }
                     }
-                    session.setPorts(ports);
+                    sessionCookie.setPorts(ports);
                 }
-                this.sessionCookie = session;
+                this.sessionCookie = sessionCookie;
                 this.newSession = true;
             }
             //need to associate session ID with the channel since multiple requests can be received
             //before the session cookie is set on the client, e.g. in keep alive requests
             Attribute<String> sessAttr = ctx.channel().attr(sessionAttr);
             sessAttr.set(sessionId);
-            config.getSessions().put(sessionId, HttpSession.newSession(sessionId, config.getServer().getConfig().session_dir));
+            SessionContext sessionCtx = new DefaultSessionContext();
+            sessionCtx.setSessionId(sessionId);
+            session = config.getSecurityManager().getSessionManager().start(sessionCtx);
         }
     }
 
@@ -214,8 +241,8 @@ public class HttpRequest extends DefaultHttpRequest {
         return sessionCookie;
     }
 
-    public HttpSession getSession() {
-        return config.getSessions().get(sessionId);
+    public Session getSession() {
+        return session;
     }
 
     public void addFormField(final String name, final Object value) {
