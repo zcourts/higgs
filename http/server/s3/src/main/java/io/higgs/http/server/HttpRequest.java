@@ -1,6 +1,7 @@
 package io.higgs.http.server;
 
 import io.higgs.core.ResourcePath;
+import io.higgs.http.server.auth.HiggsSession;
 import io.higgs.http.server.params.FormFiles;
 import io.higgs.http.server.params.FormParams;
 import io.higgs.http.server.params.HttpCookie;
@@ -22,7 +23,6 @@ import io.netty.handler.codec.http.HttpVersion;
 import io.netty.handler.codec.http.QueryStringDecoder;
 import io.netty.util.Attribute;
 import io.netty.util.AttributeKey;
-import org.apache.shiro.session.Session;
 import org.apache.shiro.session.SessionException;
 import org.apache.shiro.session.mgt.DefaultSessionContext;
 import org.apache.shiro.session.mgt.DefaultSessionKey;
@@ -63,7 +63,7 @@ public class HttpRequest extends DefaultHttpRequest {
     protected ByteBuf content = Unpooled.buffer(0);
     protected HttpCookie sessionCookie;
     protected List<MediaType> contentType;
-    protected Session session;
+    protected HiggsSession session;
 
     /**
      * Creates a new instance.
@@ -241,7 +241,7 @@ public class HttpRequest extends DefaultHttpRequest {
         return sessionCookie;
     }
 
-    public Session getSession() {
+    public HiggsSession getSession() {
         return session;
     }
 

@@ -21,7 +21,7 @@ import java.util.List;
  * Inspect the provided method parameters and substitute supported types as parameters where necessary
  * The following can be injected:
  * {@link HttpRequest},{@link FormFiles},{@link HttpFile},{@link FormParams},
- * {@link HttpCookie},{@link QueryParams},{@link Session},{@link ResourcePath}
+ * {@link HttpCookie},{@link QueryParams},{@link io.higgs.http.server.auth.HiggsSession},{@link ResourcePath}
  *
  * @author Courtney Robinson <courtney@crlog.info>
  */
@@ -77,7 +77,7 @@ public class DefaultParamInjector implements ParamInjector {
     /**
      * The following can be injected:
      * {@link HttpRequest},{@link FormFiles},{@link FormParams},
-     * {@link HttpCookies},{@link QueryParams},{@link Session},{@link ResourcePath},
+     * {@link HttpCookies},{@link QueryParams},{@link io.higgs.http.server.auth.HiggsSession},{@link ResourcePath},
      * {@link ChannelHandlerContext} ,{@link Channel}
      */
     private Object processClasses(HttpMethod method, HttpRequest request, HttpResponse res, MethodParam param,

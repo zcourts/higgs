@@ -9,6 +9,7 @@ import io.higgs.http.server.HttpResponse;
 import io.higgs.http.server.HttpStatus;
 import io.higgs.http.server.MessagePusher;
 import io.higgs.http.server.WebApplicationException;
+import io.higgs.http.server.auth.HiggsSession;
 import io.higgs.http.server.params.FormFiles;
 import io.higgs.http.server.params.FormParams;
 import io.higgs.http.server.params.HttpCookie;
@@ -24,7 +25,6 @@ import io.higgs.http.server.resource.template;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.concurrent.EventExecutor;
-import org.apache.shiro.session.Session;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.CookieParam;
@@ -61,7 +61,7 @@ public class Api {
     private FormParams formParams;
     private HttpCookies cookies;
     private QueryParams queryParams;
-    private Session session;
+    private HiggsSession session;
     private ResourcePath path;
     private MessagePusher pusher;
     //end auto injected fields
@@ -74,7 +74,7 @@ public class Api {
     @GET
     @Path("/")
     @template("index")
-    public String index(Session session) {
+    public String index(HiggsSession session) {
         System.out.println("index");
         session.setAttribute("index-" + Math.random(), Math.random());
         return "yes index";
@@ -114,7 +114,7 @@ public class Api {
             //all these unnamed parameters can be injected and should never be null
             HttpRequest request, HttpResponse response, FormFiles files,
             FormParams form, HttpCookies cookies,
-            QueryParams query, Session session,
+            QueryParams query, HiggsSession session,
             ResourcePath path, MessagePusher pusher,
             ValidationResult validation
     ) throws JsonProcessingException {

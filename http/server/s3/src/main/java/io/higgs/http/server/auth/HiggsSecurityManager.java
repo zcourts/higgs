@@ -5,9 +5,13 @@ import io.higgs.http.server.config.HttpConfig;
 import org.apache.shiro.authc.Authenticator;
 import org.apache.shiro.authc.pam.AuthenticationStrategy;
 import org.apache.shiro.authc.pam.ModularRealmAuthenticator;
+import org.apache.shiro.authz.AuthorizationException;
 import org.apache.shiro.authz.Authorizer;
 import org.apache.shiro.mgt.DefaultSecurityManager;
 import org.apache.shiro.realm.Realm;
+import org.apache.shiro.session.SessionException;
+import org.apache.shiro.session.mgt.SessionContext;
+import org.apache.shiro.session.mgt.SessionKey;
 import org.apache.shiro.session.mgt.eis.SessionDAO;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,6 +36,18 @@ public class HiggsSecurityManager extends DefaultSecurityManager {
         setupRealms();
         seupAuthenticationStrategy();
         setupAuthorization();
+    }
+
+    public HiggsSessionManager getSessionManager() {
+        return this.sessionManager;
+    }
+
+    public HiggsSession start(SessionContext context) throws AuthorizationException {
+        return this.sessionManager.start(context);
+    }
+
+    public HiggsSession getSession(SessionKey key) throws SessionException {
+        return this.sessionManager.getSession(key);
     }
 
     protected void setupAuthorization() {
