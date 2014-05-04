@@ -25,6 +25,7 @@ import io.higgs.http.server.resource.template;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.concurrent.EventExecutor;
+import org.apache.shiro.subject.Subject;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.CookieParam;
@@ -61,7 +62,7 @@ public class Api {
     private FormParams formParams;
     private HttpCookies cookies;
     private QueryParams queryParams;
-    private HiggsSession session;
+    private Subject session;
     private ResourcePath path;
     private MessagePusher pusher;
     //end auto injected fields
@@ -114,7 +115,7 @@ public class Api {
             //all these unnamed parameters can be injected and should never be null
             HttpRequest request, HttpResponse response, FormFiles files,
             FormParams form, HttpCookies cookies,
-            QueryParams query, HiggsSession session,
+            QueryParams query, Subject subject,
             ResourcePath path, MessagePusher pusher,
             ValidationResult validation
     ) throws JsonProcessingException {
@@ -123,16 +124,16 @@ public class Api {
         assert form != null;
         assert cookies != null;
         assert query != null;
-        assert session != null;
+        assert subject != null;
         assert path != null;
         assert validation.isValid();
         assert text2.isValid();
         assert text2.getValue() == null;
-        session.setAttribute("api-" + count, Math.random());
+        subject.getSession().setAttribute("api-" + count, Math.random());
         count += 1;
         System.out.println("test:" + count);
         //set something in the session
-        session.setAttribute("count", count);
+        subject.getSession().setAttribute("count", count);
         response.setCookie("api-cookie", String.valueOf(true));
         return new ObjectMapper().writeValueAsString(this);
     }

@@ -103,7 +103,8 @@ public class MustacheTransformer extends BaseTransformer {
         global.put("_query", request.getQueryParams());
         global.put("_form", request.getFormParam());
         global.put("_files", request.getFormFiles());
-        global.put("_session", request.getSession());
+        global.put("_subject", request.getSubject());
+        global.put("_session", request.getSubject().getSession());
         global.put("_cookies", request.getCookies());
         global.put("_request", request);
         global.put("_response", response);

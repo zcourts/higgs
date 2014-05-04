@@ -191,8 +191,8 @@ public class HttpHandler extends MessageHandler<HttpConfig, Object> {
         provider.take(DependencyProvider.global());
 
         provider.add(ctx, ctx.channel(), ctx.executor(), request, res,
-                request.getFormFiles(), request.getFormParam(), request.getCookies(), request.getSession(),
-                request.getQueryParams(), pusher, request.getPath());
+                request.getFormFiles(), request.getFormParam(), request.getCookies(), request.getSubject(),
+                request.getSubject().getSession(), request.getQueryParams(), pusher, request.getPath());
 
         Object[] params = Injector.inject(method.method().getParameterTypes(), new Object[0], provider);
         //inject request specific provider

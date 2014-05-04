@@ -23,11 +23,15 @@ import io.netty.handler.codec.http.HttpVersion;
 import io.netty.handler.codec.http.QueryStringDecoder;
 import io.netty.util.Attribute;
 import io.netty.util.AttributeKey;
+import org.apache.shiro.session.Session;
 import org.apache.shiro.session.SessionException;
 import org.apache.shiro.session.mgt.DefaultSessionContext;
 import org.apache.shiro.session.mgt.DefaultSessionKey;
 import org.apache.shiro.session.mgt.SessionContext;
 import org.apache.shiro.session.mgt.SessionKey;
+import org.apache.shiro.subject.Subject;
+import org.apache.shiro.subject.SubjectContext;
+import org.apache.shiro.subject.support.DefaultSubjectContext;
 import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -63,7 +67,8 @@ public class HttpRequest extends DefaultHttpRequest {
     protected ByteBuf content = Unpooled.buffer(0);
     protected HttpCookie sessionCookie;
     protected List<MediaType> contentType;
-    protected HiggsSession session;
+    protected Session session;
+    protected Subject subject;
 
     /**
      * Creates a new instance.
@@ -159,10 +164,17 @@ public class HttpRequest extends DefaultHttpRequest {
             //before the session cookie is set on the client, e.g. in keep alive requests
             Attribute<String> sessAttr = ctx.channel().attr(sessionAttr);
             sessAttr.set(sessionId);
+            //setup session
             SessionContext sessionCtx = new DefaultSessionContext();
             sessionCtx.setSessionId(sessionId);
             session = config.getSecurityManager().getSessionManager().start(sessionCtx);
         }
+        //init subject
+        SubjectContext subjectCtx = new DefaultSubjectContext();
+        //associate our custom session with the subject to guarantee session ID is set on creation
+        subjectCtx.setSession(session);
+        subjectCtx.setSecurityManager(config.getSecurityManager());
+        subject = config.getSecurityManager().createSubject(subjectCtx);
     }
 
     public List<MediaType> getContentType() {
@@ -241,8 +253,8 @@ public class HttpRequest extends DefaultHttpRequest {
         return sessionCookie;
     }
 
-    public HiggsSession getSession() {
-        return session;
+    public Subject getSubject() {
+        return subject;
     }
 
     public void addFormField(final String name, final Object value) {

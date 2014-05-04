@@ -13,6 +13,7 @@ import io.higgs.http.server.params.ValidationResult;
 import io.higgs.http.server.protocol.HttpMethod;
 import io.netty.channel.ChannelHandlerContext;
 import org.apache.shiro.session.Session;
+import org.apache.shiro.subject.Subject;
 
 import java.nio.channels.Channel;
 import java.util.List;
@@ -96,7 +97,9 @@ public class DefaultParamInjector implements ParamInjector {
         } else if (QueryParams.class.isAssignableFrom(param.getParameterType())) {
             return request.getQueryParams();
         } else if (Session.class.isAssignableFrom(param.getParameterType())) {
-            return request.getSession();
+            return request.getSubject().getSession();
+        } else if (Subject.class.isAssignableFrom(param.getParameterType())) {
+            return request.getSubject();
         } else if (ResourcePath.class.isAssignableFrom(param.getParameterType())) {
             return path;
         } else if (ChannelHandlerContext.class.isAssignableFrom(param.getParameterType())) {
@@ -123,7 +126,8 @@ public class DefaultParamInjector implements ParamInjector {
         } else if (param.isPathParam()) {
             return extractPathParam(param, path);
         } else if (param.isSessionParam()) {
-            return request.getSession() == null ? null : request.getSession().getAttribute(param.getName());
+            return request.getSubject() == null ? null :
+                    request.getSubject().getSession().getAttribute(param.getName());
         }
         return null;
     }

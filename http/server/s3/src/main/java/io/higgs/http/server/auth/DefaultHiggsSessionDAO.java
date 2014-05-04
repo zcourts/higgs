@@ -40,6 +40,9 @@ public class DefaultHiggsSessionDAO extends MemorySessionDAO implements SessionD
                 throw new InvalidSessionDirectory("The configured session directory could not be created", e);
             }
         }
+        //find old sessions and delete any that cannot be ready anymore, typically because of binary incompatibility
+        //after recompiling classes that have been previously serialized
+        getActiveSessions();
     }
 
     @Override

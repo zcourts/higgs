@@ -107,7 +107,8 @@ public class ThymeleafTransformer extends BaseTransformer {
         ctx.setVariable("_query", request.getQueryParams());
         ctx.setVariable("_form", request.getFormParam());
         ctx.setVariable("_files", request.getFormFiles());
-        ctx.setVariable("_session", request.getSession());
+        ctx.setVariable("_subject", request.getSubject());
+        ctx.setVariable("_session", request.getSubject().getSession());
         ctx.setVariable("_cookies", request.getCookies());
         ctx.setVariable("_request", request);
         ctx.setVariable("_response", response);

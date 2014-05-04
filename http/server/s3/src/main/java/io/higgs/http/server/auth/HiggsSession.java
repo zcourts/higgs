@@ -1,17 +1,27 @@
 package io.higgs.http.server.auth;
 
-import org.apache.shiro.session.Session;
 import org.apache.shiro.session.mgt.SimpleSession;
 
 import java.io.Serializable;
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * @author Courtney Robinson <courtney@crlog.info>
  */
-public class HiggsSession extends SimpleSession {
+public class HiggsSession extends SimpleSession implements Map<Object, Object> {
     public HiggsSession(Serializable id) {
         setId(id);
+    }
+
+    @Override
+    public Map<Object, Object> getAttributes() {
+        if (super.getAttributes() == null) {
+            setAttributes(new HashMap<>());
+        }
+        return super.getAttributes();
     }
 
     /**
@@ -19,7 +29,7 @@ public class HiggsSession extends SimpleSession {
      * Once the object is retrieved it is automatically removed
      */
     public void flash(Object key, Object value) {
-        setAttribute(key, new FlashValue(value));
+        setAttribute(key, value instanceof FlashValue ? value : new FlashValue(value));
     }
 
     @Override
@@ -32,14 +42,63 @@ public class HiggsSession extends SimpleSession {
         return value;
     }
 
-    public void fromSession(Session session) {
-        if (session instanceof SimpleSession) {
-            setAttributes(((SimpleSession) session).getAttributes());
-        } else {
-            Collection<Object> attrs = session.getAttributeKeys();
-            for (Object key : attrs) {
-                setAttribute(key, session.getAttribute(key));
-            }
-        }
+    @Override
+    public int size() {
+        return getAttributes().size();
+    }
+
+    @Override
+    public boolean isEmpty() {
+        return getAttributes().isEmpty();
+    }
+
+    @Override
+    public boolean containsKey(Object key) {
+        return getAttributes().containsKey(key);
+    }
+
+    @Override
+    public boolean containsValue(Object value) {
+        return getAttributes().containsValue(value);
+    }
+
+    @Override
+    public Object get(Object key) {
+        return getAttributes().get(key);
+    }
+
+    @Override
+    public Object put(Object key, Object value) {
+        return getAttributes().put(key, value);
+    }
+
+    @Override
+    public Object remove(Object key) {
+        return getAttributes().remove(key);
+    }
+
+    @Override
+    public void putAll(Map<?, ?> m) {
+        getAttributes().putAll(m);
+    }
+
+    @Override
+    public void clear() {
+        getAttributes().clear();
+    }
+
+    @Override
+    public Set<Object> keySet() {
+        return getAttributes().keySet();
+    }
+
+    @Override
+    public Collection<Object> values() {
+        return getAttributes().values();
+    }
+
+    @Override
+    public Set<Entry<Object, Object>> entrySet() {
+        return getAttributes().entrySet();
     }
 }
