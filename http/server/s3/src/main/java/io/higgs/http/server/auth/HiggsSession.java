@@ -1,5 +1,6 @@
 package io.higgs.http.server.auth;
 
+import org.apache.shiro.session.Session;
 import org.apache.shiro.session.mgt.SimpleSession;
 
 import java.io.Serializable;
@@ -12,8 +13,26 @@ import java.util.Set;
  * @author Courtney Robinson <courtney@crlog.info>
  */
 public class HiggsSession extends SimpleSession implements Map<Object, Object> {
+    /**
+     * Intended for MsgPack's use only, use {@link #HiggsSession(java.io.Serializable)} instead.
+     */
+    public HiggsSession() {
+        //MsgPack
+    }
+
     public HiggsSession(Serializable id) {
         setId(id);
+    }
+
+    /**
+     * Copy constructor. Used for serialization to convert to HiggsSession
+     *
+     * @param that the session to copy from
+     */
+    public HiggsSession(Session that) {
+        for (Object o : that.getAttributeKeys()) {
+            setAttribute(o, that.getAttribute(o));
+        }
     }
 
     @Override
