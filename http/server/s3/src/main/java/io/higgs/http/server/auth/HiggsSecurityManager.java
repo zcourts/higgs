@@ -21,12 +21,15 @@ import java.util.Set;
 /**
  * @author Courtney Robinson <courtney@crlog.info>
  */
-public class HiggsSecurityManager extends DefaultSecurityManager {
-    protected final Logger log = LoggerFactory.getLogger(getClass());
-    protected HiggsSessionManager sessionManager = new HiggsSessionManager();
-    private HttpConfig config;
+public class HiggsSecurityManager {
+    protected static Logger log = LoggerFactory.getLogger(HiggsSecurityManager.class);
+    protected static DefaultSecurityManager securityManager;
+    protected static HiggsSessionManager sessionManager = new HiggsSessionManager();
+    protected static HttpConfig config;
 
-    public void init(HiggsServer server) {
+
+    public static void configure(HiggsServer server, DefaultSecurityManager securityManager) {
+        HiggsSecurityManager.securityManager = securityManager;
         config = server.getConfig();
         setupSessions();
         setupRealms();
@@ -34,24 +37,24 @@ public class HiggsSecurityManager extends DefaultSecurityManager {
         setupAuthorization();
     }
 
-    protected void setupAuthorization() {
+    protected static void setupAuthorization() {
         Set<Authorizer> authorizers = getServices(Authorizer.class);
         if (authorizers.size() > 0) {
             Iterator<Authorizer> it = authorizers.iterator();
             Authorizer auth = it.next();
-            setAuthorizer(auth);
+            securityManager.setAuthorizer(auth);
             if (it.hasNext()) {
                 log.warn(String.format("Multiple authorizers configured, ONLY %s is being used",
                         auth.getClass().getName()));
             }
-        } else {
+        } else if (securityManager.getAuthorizer() == null) {
             log.info("No authorization service setup on the class path");
         }
     }
 
-    protected void setupSessions() {
+    protected static void setupSessions() {
         sessionManager.setSessionFactory(new HiggsSessionFactory());
-        setSessionManager(sessionManager);
+        securityManager.setSessionManager(sessionManager);
         Set<SessionDAO> sessionDAO = getServices(SessionDAO.class);
         if (sessionDAO.size() > 0) {
             Iterator<SessionDAO> it = sessionDAO.iterator();
@@ -65,25 +68,30 @@ public class HiggsSecurityManager extends DefaultSecurityManager {
         }
     }
 
-    protected void setupRealms() {
+    protected static void setupRealms() {
         Set<Realm> realms = getServices(Realm.class);
         if (realms.size() > 0) {
-            setRealms(realms);
-        } else {
+            // if realms are found they probably came from the config, keep them in addition to the ones discovered
+            //note that the ones discovered via SPI takes precedence
+            if (securityManager.getRealms() != null) {
+                realms.addAll(securityManager.getRealms());
+            }
+            securityManager.setRealms(realms);
+        } else if (securityManager.getRealms() == null || securityManager.getRealms().size() == 0) {
             log.info("No Realm services setup on the class path, this means if authorization or authentication is " +
                     "configured they may not work as expected");
         }
     }
 
-    protected void seupAuthenticationStrategy() {
+    protected static void seupAuthenticationStrategy() {
         Set<AuthenticationStrategy> authenticators = getServices(AuthenticationStrategy.class);
         if (authenticators.size() > 0) {
             ModularRealmAuthenticator mod = new ModularRealmAuthenticator();
-            Authenticator auth = getAuthenticator();
+            Authenticator auth = securityManager.getAuthenticator();
             if (auth instanceof ModularRealmAuthenticator) {
                 mod = (ModularRealmAuthenticator) auth;
             } else {
-                setAuthenticator(mod);
+                securityManager.setAuthenticator(mod);
             }
             Iterator<AuthenticationStrategy> it = authenticators.iterator();
             AuthenticationStrategy strategy = it.next();
@@ -97,7 +105,7 @@ public class HiggsSecurityManager extends DefaultSecurityManager {
         }
     }
 
-    protected <T> Set<T> getServices(Class<T> klass) {
+    protected static <T> Set<T> getServices(Class<T> klass) {
         Iterator<T> providers = ServiceLoader.load(klass).iterator();
         HashSet<T> services = new HashSet<>();
         while (providers.hasNext()) {

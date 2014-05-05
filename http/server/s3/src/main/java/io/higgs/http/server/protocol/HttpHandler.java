@@ -103,7 +103,7 @@ public class HttpHandler extends MessageHandler<HttpConfig, Object> {
             protocolConfig.getTranscriber().transcribe(request);
             //must always set protocol config before anything uses the request
             request.setConfig(protocolConfig);
-            //initialise request, setting cookies, media types etc
+            //initialize request, setting cookies, media types etc
             request.init(ctx);
             method = findMethod(request.getUri(), ctx, request, methodClass);
             if (method == null) {
@@ -192,7 +192,8 @@ public class HttpHandler extends MessageHandler<HttpConfig, Object> {
 
         provider.add(ctx, ctx.channel(), ctx.executor(), request, res,
                 request.getFormFiles(), request.getFormParam(), request.getCookies(), request.getSubject(),
-                request.getSubject().getSession(), request.getQueryParams(), pusher, request.getPath());
+                request.getSubject().getSession(), protocolConfig.getSecurityManager(), request.getQueryParams(),
+                pusher, request.getPath());
 
         Object[] params = Injector.inject(method.method().getParameterTypes(), new Object[0], provider);
         //inject request specific provider

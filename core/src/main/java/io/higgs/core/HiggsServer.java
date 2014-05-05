@@ -129,7 +129,7 @@ public class HiggsServer {
 
     public void registerProtocol(ProtocolConfiguration protocolConfiguration) {
         protocolConfigurations.add(protocolConfiguration);
-        protocolConfiguration.initialise(this);
+        protocolConfiguration.initialize(this);
         registerProtocolDetectorFactory(protocolConfiguration.getProtocol());
         registerMethodProcessor(protocolConfiguration.getMethodProcessor());
     }

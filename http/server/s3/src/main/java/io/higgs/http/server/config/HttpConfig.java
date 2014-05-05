@@ -16,6 +16,7 @@ public class HttpConfig extends ServerConfig {
     public boolean serve_index_file = true;
     public boolean enable_directory_listing = true;
     public String public_directory = "public";
+    public String security_config_path = "classpath:shiro.ini";
 
     public HttpConfig() {
     }

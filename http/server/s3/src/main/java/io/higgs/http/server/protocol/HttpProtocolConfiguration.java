@@ -8,7 +8,11 @@ import io.higgs.http.server.DefaultParamInjector;
 import io.higgs.http.server.ParamInjector;
 import io.higgs.http.server.Transcriber;
 import io.higgs.http.server.auth.HiggsSecurityManager;
+import io.higgs.http.server.config.HttpConfig;
 import io.higgs.http.server.transformers.ResponseTransformer;
+import org.apache.shiro.config.IniSecurityManagerFactory;
+import org.apache.shiro.mgt.DefaultSecurityManager;
+import org.apache.shiro.mgt.SecurityManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -21,7 +25,7 @@ import java.util.concurrent.ConcurrentLinkedDeque;
 public class HttpProtocolConfiguration implements ProtocolConfiguration {
     protected final Queue<ResponseTransformer> transformers = new ConcurrentLinkedDeque<>();
     protected final Queue<MediaTypeDecoder> mediaTypeDecoders = new ConcurrentLinkedDeque<>();
-    protected HiggsSecurityManager securityManager = new HiggsSecurityManager();
+    protected SecurityManager securityManager;
     protected HiggsServer server;
     protected ParamInjector injector = new DefaultParamInjector();
     protected Transcriber transcriber = new Transcriber();
@@ -65,9 +69,16 @@ public class HttpProtocolConfiguration implements ProtocolConfiguration {
     }
 
     @Override
-    public void initialise(HiggsServer server) {
+    public void initialize(HiggsServer server) {
         this.server = server;
-        securityManager.init(server);
+        String path = ((HttpConfig) server.getConfig()).security_config_path;
+        IniSecurityManagerFactory factory = new IniSecurityManagerFactory(path);
+        securityManager = factory.getInstance();
+
+        if (securityManager instanceof DefaultSecurityManager) {
+            HiggsSecurityManager.configure(server, (DefaultSecurityManager) securityManager);
+        }
+
         Iterator<ResponseTransformer> providers = ServiceLoader.load(ResponseTransformer.class).iterator();
         while (providers.hasNext()) {
             try {
@@ -91,11 +102,11 @@ public class HttpProtocolConfiguration implements ProtocolConfiguration {
         return transformers;
     }
 
-    public HiggsSecurityManager getSecurityManager() {
+    public SecurityManager getSecurityManager() {
         return securityManager;
     }
 
-    public void setSecurityManager(HiggsSecurityManager securityManager) {
+    public void setSecurityManager(SecurityManager securityManager) {
         if (securityManager == null) {
             throw new IllegalArgumentException("Security manager cannot be null");
         }

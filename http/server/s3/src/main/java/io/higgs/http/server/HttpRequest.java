@@ -167,7 +167,7 @@ public class HttpRequest extends DefaultHttpRequest {
             //setup session
             SessionContext sessionCtx = new DefaultSessionContext();
             sessionCtx.setSessionId(sessionId);
-            session = config.getSecurityManager().getSessionManager().start(sessionCtx);
+            session = config.getSecurityManager().start(sessionCtx);
         }
         //init subject
         SubjectContext subjectCtx = new DefaultSubjectContext();

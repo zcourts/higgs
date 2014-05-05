@@ -13,5 +13,5 @@ public interface ProtocolConfiguration {
      *
      * @param server the server instance this protocol is being registered to
      */
-    void initialise(HiggsServer server);
+    void initialize(HiggsServer server);
 }
