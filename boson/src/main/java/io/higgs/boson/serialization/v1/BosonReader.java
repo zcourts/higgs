@@ -5,8 +5,7 @@ import io.higgs.boson.serialization.InvalidDataException;
 import io.higgs.boson.serialization.InvalidRequestResponseTypeException;
 import io.higgs.boson.serialization.UnsupportedBosonTypeException;
 import io.higgs.boson.serialization.mutators.WriteMutator;
-import io.higgs.reflect.ReflectionUtil;
-import io.higgs.util.StringUtil;
+import io.higgs.core.reflect.ReflectionUtil;
 import io.netty.buffer.ByteBuf;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -14,6 +13,7 @@ import org.slf4j.LoggerFactory;
 import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -48,37 +48,32 @@ import static io.higgs.boson.BosonType.STRING;
  * @author Courtney Robinson <courtney@crlog.info>
  */
 public class BosonReader {
-    /**
-     * The maximum number of times methods can invoked themselves.
-     */
-    public static final int MAX_RECURSION_DEPTH = 10;
-    protected final ReflectionUtil reflection = new ReflectionUtil(MAX_RECURSION_DEPTH);
     protected final Set<WriteMutator> mutators;
     protected Logger log = LoggerFactory.getLogger(getClass());
     protected ClassLoader loader = Thread.currentThread().getContextClassLoader();
-    // new BosonClassLoader(Thread.currentThread().getContextClassLoader())
-    protected BosonMessage msg = new BosonMessage();
-    protected ByteBuf data;
     protected IdentityHashMap<Integer, Object> references = new IdentityHashMap<>();
-    protected int msgSize;
 
-    public BosonReader(ByteBuf msg) {
-        this(new HashSet<WriteMutator>(), msg);
+    public BosonReader() {
+        this(null);
     }
 
-    public BosonReader(Set<WriteMutator> mutators, ByteBuf msg) {
-        this.data = msg;
-        this.mutators = mutators;
+    public BosonReader(Set<WriteMutator> mutators) {
+        this.mutators = mutators == null ? new HashSet<WriteMutator>() : mutators;
     }
 
-    public BosonMessage deSerialize() {
+    public <T> T deSerialize(ByteBuf buf) {
+        Object obj = readType(buf);
+        return (T) obj;
+    }
+
+    public void deSerialize(ByteBuf data, BosonMessage msg) {
         //reset reder index, BosonDecoder would have set to writerIndex
         data.readerIndex(0);
         //protocol version and message size is not a part of the message so read before loop
         //advance reader index by 1
         msg.protocolVersion = data.readByte();
         //move reader index forward by 4
-        msgSize = data.readInt();
+        int msgSize = data.readInt();
         //so read until the reader index == obj.length
         while (data.isReadable()) {
             //read request/response types
@@ -86,34 +81,70 @@ public class BosonReader {
 
             switch (type) {
                 case RESPONSE_METHOD_NAME: {
-                    msg.method = readString(false, 0);
+                    msg.method = readString(data, false, 0);
                     break;
                 }
                 case RESPONSE_PARAMETERS: {
-                    msg.arguments = readArray(false, 0);
+                    msg.arguments = readArray(data, false, 0);
                     break;
                 }
                 case REQUEST_METHOD_NAME: {
-                    msg.method = readString(false, 0);
+                    msg.method = readString(data, false, 0);
                     break;
                 }
                 case REQUEST_CALLBACK: {
-                    msg.callback = readString(false, 0);
+                    msg.callback = readString(data, false, 0);
                     break;
                 }
                 case REQUEST_PARAMETERS: {
-                    msg.arguments = readArray(false, 0);
+                    msg.arguments = readArray(data, false, 0);
                     break;
                 }
                 default:
                     throw new InvalidRequestResponseTypeException(String.
                             format("The type %s does not match any of the supported" +
-                                    " response or request types (method,callback,parameter)" +
-                                    "\n data: \n %s",
-                                    type, new String(data.array())), null);
+                                            " response or request types (method,callback,parameter)" +
+                                            "\n data: \n %s",
+                                    type, new String(data.array())
+                            ), null);
             }
         }
-        return msg;
+    }
+
+    public Object readType(ByteBuf buffer) {
+        byte type = buffer.readByte();
+        switch (type) {
+            case BYTE:
+                return readByte(buffer, true, BYTE);
+            case SHORT:
+                return readShort(buffer, true, SHORT);
+            case INT:
+                return readInt(buffer, true, INT);
+            case LONG:
+                return readLong(buffer, true, LONG);
+            case FLOAT:
+                return readFloat(buffer, true, FLOAT);
+            case DOUBLE:
+                return readDouble(buffer, true, FLOAT);
+            case BOOLEAN:
+                return readBoolean(buffer, true, BOOLEAN);
+            case CHAR:
+                return readChar(buffer, true, CHAR);
+            case STRING:
+                return readString(buffer, true, STRING);
+            case LIST:
+                return readList(buffer, true, LIST);
+            case SET:
+                return readSet(buffer, true, SET);
+            case MAP:
+                return readMap(buffer, true, MAP);
+            case ARRAY:
+                return readArray(buffer, true, ARRAY);
+            case POLO:
+                return readPolo(buffer, true, POLO);
+            default:
+                throw new UnsupportedBosonTypeException(String.format("Cannot decode object from type %s", type), null);
+        }
     }
 
     /**
@@ -122,7 +153,7 @@ public class BosonReader {
      *
      * @throws InvalidDataException if buffer is not readable
      */
-    public void verifyReadable() {
+    public void verifyReadable(ByteBuf data) {
         if (!data.isReadable()) {
             throw new InvalidDataException("BosonReader tried to read additional data from an unreadable buffer. " +
                     "Possible data corruption.", null);
@@ -132,18 +163,19 @@ public class BosonReader {
     /**
      * Read a UTF-8 string from the buffer
      *
+     * @param data
      * @param verified     if true then the verifiedType param is used to match the type, if false then
      *                     a single byte is read from the buffer to determine the type
      * @param verifiedType the data type to be de-serialized
      * @return the string
      */
-    public String readString(boolean verified, int verifiedType) {
+    public String readString(ByteBuf data, boolean verified, int verifiedType) {
         int type = verifiedType;
         if (!verified) {
             type = data.readByte();
         }
         if (STRING == type) {
-            verifyReadable();
+            verifyReadable(data);
             //read size of type - how many bytes are in the string
             int size = data.readInt();
             if (size == 0) {
@@ -153,7 +185,7 @@ public class BosonReader {
             ByteBuf buf = data.readBytes(size);
             byte[] arr = new byte[buf.writerIndex()];
             buf.getBytes(0, arr);
-            return new StringUtil().getString(arr);
+            return new String(arr, Charset.forName("utf8"));
         } else {
             throw new UnsupportedBosonTypeException(String.format("type %s is not a Boson STRING", type), null);
         }
@@ -167,13 +199,13 @@ public class BosonReader {
      * @param verifiedType the data type to be de-serialized
      * @return the byte
      */
-    public byte readByte(boolean verified, int verifiedType) {
+    public byte readByte(ByteBuf data, boolean verified, int verifiedType) {
         int type = verifiedType;
         if (!verified) {
             type = data.readByte();
         }
         if (BYTE == type) {
-            verifyReadable();
+            verifyReadable(data);
             return data.readByte();
         } else {
             throw new UnsupportedBosonTypeException(String.format("type %s is not a Boson BYTE", type), null);
@@ -188,13 +220,13 @@ public class BosonReader {
      * @param verifiedType the data type to be de-serialized
      * @return the short
      */
-    public short readShort(boolean verified, int verifiedType) {
+    public short readShort(ByteBuf data, boolean verified, int verifiedType) {
         int type = verifiedType;
         if (!verified) {
             type = data.readByte();
         }
         if (SHORT == type) {
-            verifyReadable();
+            verifyReadable(data);
             return data.readShort();
         } else {
             throw new UnsupportedBosonTypeException(String.format("type %s is not a Boson SHORT", type), null);
@@ -209,13 +241,13 @@ public class BosonReader {
      * @param verifiedType the data type to be de-serialized
      * @return the int
      */
-    public int readInt(boolean verified, int verifiedType) {
+    public int readInt(ByteBuf data, boolean verified, int verifiedType) {
         int type = verifiedType;
         if (!verified) {
             type = data.readByte();
         }
         if (INT == type) {
-            verifyReadable();
+            verifyReadable(data);
             return data.readInt();
         } else {
             throw new UnsupportedBosonTypeException(String.format("type %s is not a Boson INT", type), null);
@@ -230,13 +262,13 @@ public class BosonReader {
      * @param verifiedType the data type to be de-serialized
      * @return the long
      */
-    public long readLong(boolean verified, int verifiedType) {
+    public long readLong(ByteBuf data, boolean verified, int verifiedType) {
         int type = verifiedType;
         if (!verified) {
             type = data.readByte();
         }
         if (LONG == type) {
-            verifyReadable();
+            verifyReadable(data);
             return data.readLong();
         } else {
             throw new UnsupportedBosonTypeException(String.format("type %s is not a Boson LONG", type), null);
@@ -251,13 +283,13 @@ public class BosonReader {
      * @param verifiedType the data type to be de-serialized
      * @return the float
      */
-    public float readFloat(boolean verified, int verifiedType) {
+    public float readFloat(ByteBuf data, boolean verified, int verifiedType) {
         int type = verifiedType;
         if (!verified) {
             type = data.readByte();
         }
         if (FLOAT == type) {
-            verifyReadable();
+            verifyReadable(data);
             return data.readFloat();
         } else {
             throw new UnsupportedBosonTypeException(String.format("type %s is not a Boson FLOAT", type), null);
@@ -272,13 +304,13 @@ public class BosonReader {
      * @param verifiedType the data type to be de-serialized
      * @return the double
      */
-    public double readDouble(boolean verified, int verifiedType) {
+    public double readDouble(ByteBuf data, boolean verified, int verifiedType) {
         int type = verifiedType;
         if (!verified) {
             type = data.readByte();
         }
         if (DOUBLE == type) {
-            verifyReadable();
+            verifyReadable(data);
             return data.readDouble();
         } else {
             throw new UnsupportedBosonTypeException(String.format("type %s is not a Boson DOUBLE", type), null);
@@ -293,13 +325,13 @@ public class BosonReader {
      * @param verifiedType the data type to be de-serialized
      * @return the boolean
      */
-    public boolean readBoolean(boolean verified, int verifiedType) {
+    public boolean readBoolean(ByteBuf data, boolean verified, int verifiedType) {
         int type = verifiedType;
         if (!verified) {
             type = data.readByte();
         }
         if (BOOLEAN == type) {
-            verifyReadable();
+            verifyReadable(data);
             return data.readByte() != 0;
         } else {
             throw new UnsupportedBosonTypeException(String.format("type %s is not a Boson BOOLEAN", type), null);
@@ -314,13 +346,13 @@ public class BosonReader {
      * @param verifiedType the data type to be de-serialized
      * @return the char
      */
-    public char readChar(boolean verified, int verifiedType) {
+    public char readChar(ByteBuf data, boolean verified, int verifiedType) {
         int type = verifiedType;
         if (!verified) {
             type = data.readByte();
         }
         if (CHAR == type) {
-            verifyReadable();
+            verifyReadable(data);
             return data.readChar();
         } else {
             throw new UnsupportedBosonTypeException(String.format("type %s is not a Boson CHAR", type), null);
@@ -330,12 +362,13 @@ public class BosonReader {
     /**
      * Read an array from the buffer
      *
+     * @param data
      * @param verified     if true then the verifiedType param is used to match the type, if false then
      *                     a single byte is read from the buffer to determine the type
      * @param verifiedType the data type to be de-serialized
      * @return the array
      */
-    public Object[] readArray(boolean verified, int verifiedType) {
+    public Object[] readArray(ByteBuf data, boolean verified, int verifiedType) {
         int type = verifiedType;
         if (!verified) {
             type = data.readByte();
@@ -346,7 +379,7 @@ public class BosonReader {
             Object[] arr = new Object[size];
             for (int i = 0; i < size; i++) {
                 type = data.readByte();
-                arr[i] = readType(type);
+                arr[i] = readType(data, type);
             }
             return arr;
         } else {
@@ -362,7 +395,7 @@ public class BosonReader {
      * @param verifiedType the data type to be de-serialized
      * @return the list
      */
-    public List<Object> readList(boolean verified, int verifiedType) {
+    public List<Object> readList(ByteBuf data, boolean verified, int verifiedType) {
         int type = verifiedType;
         if (!verified) {
             type = data.readByte();
@@ -372,11 +405,11 @@ public class BosonReader {
             int size = data.readInt();
             List<Object> arr = new ArrayList<>();
             for (int i = 0; i < size; i++) {
-                verifyReadable();
+                verifyReadable(data);
                 //get type of this element in the array
                 type = data.readByte();
                 //at this stage only basic data types are allowed
-                arr.add(readType(type));
+                arr.add(readType(data, type));
             }
             return arr;
         } else {
@@ -384,7 +417,7 @@ public class BosonReader {
         }
     }
 
-    public Set<Object> readSet(boolean verified, int verifiedType) {
+    public Set<Object> readSet(ByteBuf data, boolean verified, int verifiedType) {
         int type = verifiedType;
         if (!verified) {
             type = data.readByte();
@@ -394,11 +427,11 @@ public class BosonReader {
             int size = data.readInt();
             Set<Object> set = new HashSet<>();
             for (int i = 0; i < size; i++) {
-                verifyReadable();
+                verifyReadable(data);
                 //get type of this element in the array
                 type = data.readByte();
                 //at this stage only basic data types are allowed
-                set.add(readType(type));
+                set.add(readType(data, type));
             }
             return set;
         } else {
@@ -414,7 +447,7 @@ public class BosonReader {
      * @param verifiedType the data type to be de-serialized
      * @return the map
      */
-    public Map<Object, Object> readMap(boolean verified, int verifiedType) {
+    public Map<Object, Object> readMap(ByteBuf data, boolean verified, int verifiedType) {
         int type = verifiedType;
         if (!verified) {
             type = data.readByte();
@@ -423,11 +456,11 @@ public class BosonReader {
             int size = data.readInt();
             Map<Object, Object> kv = new HashMap<>();
             for (int i = 0; i < size; i++) {
-                verifyReadable();
+                verifyReadable(data);
                 int keyType = data.readByte();
-                Object key = readType(keyType);
+                Object key = readType(data, keyType);
                 int valueType = data.readByte();
-                Object value = readType(valueType);
+                Object value = readType(data, valueType);
                 kv.put(key, value);
             }
             return kv;
@@ -436,17 +469,17 @@ public class BosonReader {
         }
     }
 
-    public Object readPolo(boolean verified, int verifiedType) {
+    public Object readPolo(ByteBuf data, boolean verified, int verifiedType) {
         int type = verifiedType;
         if (!verified) {
             type = data.readByte();
         }
         if (POLO == type) {
-            verifyReadable();
+            verifyReadable(data);
             //get reference
             int ref = data.readInt();
             //get class name
-            String poloClassName = readString(false, -1);
+            String poloClassName = readString(data, false, -1);
             if (poloClassName == null || poloClassName.isEmpty()) {
                 throw new InvalidDataException("Cannot de-serialise a POLO without it's fully qualified class name " +
                         "being provided", null);
@@ -461,32 +494,32 @@ public class BosonReader {
                 }
             }
             if (mutator != null) {
-                return readPoloMutator(mutator, poloClassName, ref, size);
+                return readPoloMutator(data, mutator, poloClassName, ref, size);
             } else {
-                return readPoloReflection(poloClassName, ref, size);
+                return readPoloReflection(data, poloClassName, ref, size);
             }
         } else {
             throw new UnsupportedBosonTypeException(String.format("type %s is not a Boson POLO", type), null);
         }
     }
 
-    private Object readPoloMutator(WriteMutator mutator, String className, int ref, int size) {
+    private Object readPoloMutator(ByteBuf data, WriteMutator mutator, String className, int ref, int size) {
         Object instance = mutator.newInstance(className);
         references.put(ref, instance);
         for (int i = 0; i < size; i++) {
-            verifyReadable();
+            verifyReadable(data);
             //polo keys are required to be strings
-            String key = readString(false, 0);
-            verifyReadable();
+            String key = readString(data, false, 0);
+            verifyReadable(data);
             int valueType = data.readByte();
-            Object value = readType(valueType);
+            Object value = readType(data, valueType);
             //TODO if false is returned try to set the field via reflection
             mutator.set(instance, key, value);
         }
         return instance;
     }
 
-    private Object readPoloReflection(String poloClassName, int ref, int size) {
+    private Object readPoloReflection(ByteBuf data, String poloClassName, int ref, int size) {
         //try to load the class if available
         try {
             Class<?> klass;
@@ -500,7 +533,7 @@ public class BosonReader {
             //Put the instance in the reference table
             references.put(ref, instance);
             //get ALL (public,private,protect,package) fields declared in the class - excludes inherited fields
-            List<Field> fields = reflection.getAllFields(new ArrayList<Field>(), klass, 0);
+            Set<Field> fields = ReflectionUtil.getAllFields(new HashSet<Field>(), klass, 0);
             //create a map of fields names -> Field
             Map<String, Field> fieldset = new HashMap<>();
             for (Field field : fields) {
@@ -510,12 +543,12 @@ public class BosonReader {
                 }
             }
             for (int i = 0; i < size; i++) {
-                verifyReadable();
+                verifyReadable(data);
                 //polo keys are required to be strings
-                String key = readString(false, 0);
-                verifyReadable();
+                String key = readString(data, false, 0);
+                verifyReadable(data);
                 int valueType = data.readByte();
-                Object value = readType(valueType);
+                Object value = readType(data, valueType);
                 Field field = fieldset.get(key);
                 if (field != null && value != null) {
                     field.setAccessible(true);
@@ -534,8 +567,9 @@ public class BosonReader {
                                     Array.set(arr, j, arrayValue); //set the value at the current index, i
                                 } catch (IllegalArgumentException iae) {
                                     log.warn(String.format("Field \":%s\" of class \"%s\" is an array but " +
-                                            "failed to set value at index \"%s\" - type \"%s\"",
-                                            key, klass.getName(), j, cname));
+                                                    "failed to set value at index \"%s\" - type \"%s\"",
+                                            key, klass.getName(), j, cname
+                                    ));
                                 }
                             }
                             try {
@@ -554,8 +588,9 @@ public class BosonReader {
                         } catch (IllegalArgumentException iae) {
                             String vclass = value.getClass().getName();
                             log.warn(String.format("Field \"%s\" of class \"%s\" is of type %s " +
-                                    "but value received is \"%s\" of type \"%s\"",
-                                    key, klass.getName(), vclass, value, cname));
+                                            "but value received is \"%s\" of type \"%s\"",
+                                    key, klass.getName(), vclass, value, cname
+                            ));
                         } catch (IllegalAccessException e) {
                             log.debug(String.format("Unable to access field \"%s\" of class \"%s\" ",
                                     key, klass.getName()));
@@ -577,7 +612,7 @@ public class BosonReader {
         return null;
     }
 
-    public Object readReference(final boolean verified, int verifiedType) {
+    public Object readReference(ByteBuf data, final boolean verified, int verifiedType) {
         int type = verifiedType;
         if (!verified) {
             type = data.readByte();
@@ -599,47 +634,43 @@ public class BosonReader {
      * @param type the 1 byte integer representing a Boson type
      * @return the type
      */
-    public Object readType(int type) {
+    public Object readType(ByteBuf data, int type) {
         switch (type) {
             case BYTE:
-                return readByte(true, type);
+                return readByte(data, true, type);
             case SHORT:
-                return readShort(true, type);
+                return readShort(data, true, type);
             case INT:
-                return readInt(true, type);
+                return readInt(data, true, type);
             case LONG:
-                return readLong(true, type);
+                return readLong(data, true, type);
             case FLOAT:
-                return readFloat(true, type);
+                return readFloat(data, true, type);
             case DOUBLE:
-                return readDouble(true, type);
+                return readDouble(data, true, type);
             case BOOLEAN:
-                return readBoolean(true, type);
+                return readBoolean(data, true, type);
             case CHAR:
-                return readChar(true, type);
+                return readChar(data, true, type);
             case NULL:
                 return null;
             case STRING:
-                return readString(true, type);
+                return readString(data, true, type);
             case ARRAY:
-                return readArray(true, type);
+                return readArray(data, true, type);
             case LIST:
-                return readList(true, type);
+                return readList(data, true, type);
             case SET:
-                return readSet(true, type);
+                return readSet(data, true, type);
             case MAP:
-                return readMap(true, type);
+                return readMap(data, true, type);
             case POLO:
-                return readPolo(true, type);
+                return readPolo(data, true, type);
             case REFERENCE:
-                return readReference(true, type);
+                return readReference(data, true, type);
             default: {
                 throw new UnsupportedBosonTypeException(String.format("type %s is not a valid boson type", type), null);
             }
         }
-    }
-
-    public int getMsgSize() {
-        return msgSize;
     }
 }

@@ -1,13 +1,20 @@
-package io.higgs.boson.demo;
+package io.higgs.examples.boson;
 
 import java.lang.reflect.Field;
-import java.util.Arrays;
-import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 
+public class NestedField {
+    int a;
+    long b;
+    double c;
+    float d;
+    Map map = new HashMap();
 
-public class Nested {
-    NestedField[] array = new NestedField[]{ new NestedField(), new NestedField(), new NestedField() };
-    List list = Arrays.asList("a", "b", "c", "d");
+    public NestedField() {
+        map.put("a", 2);
+        map.put(1, "123");
+    }
 
     public String toString() {
         StringBuilder buf = new StringBuilder();

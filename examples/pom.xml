@@ -32,5 +32,9 @@
             <groupId>io.higgs</groupId>
             <artifactId>ws-server</artifactId>
         </dependency>
+        <dependency>
+            <groupId>io.higgs</groupId>
+            <artifactId>boson</artifactId>
+        </dependency>
     </dependencies>
 </project>

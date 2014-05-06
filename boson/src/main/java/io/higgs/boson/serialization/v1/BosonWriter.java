@@ -3,7 +3,7 @@ package io.higgs.boson.serialization.v1;
 import io.higgs.boson.BosonMessage;
 import io.higgs.boson.serialization.BosonProperty;
 import io.higgs.boson.serialization.mutators.ReadMutator;
-import io.higgs.reflect.ReflectionUtil;
+import io.higgs.core.reflect.ReflectionUtil;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import org.slf4j.Logger;
@@ -12,7 +12,6 @@ import org.slf4j.LoggerFactory;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.nio.charset.Charset;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -53,21 +52,39 @@ public class BosonWriter {
     public static final Charset utf8 = Charset.forName("utf-8");
     protected final HashMap<Object, Integer> references = new HashMap<>();
     protected final AtomicInteger reference = new AtomicInteger();
-    protected final BosonMessage msg;
-    protected final ReflectionUtil reflection = new ReflectionUtil(MAX_RECURSION_DEPTH);
     protected final Set<ReadMutator> mutators;
     private Logger log = LoggerFactory.getLogger(getClass());
 
-    public BosonWriter(BosonMessage msg) {
-        this(new HashSet<ReadMutator>(), msg);
+    public BosonWriter() {
+        this(null);
     }
 
-    public BosonWriter(Set<ReadMutator> mutators, BosonMessage msg) {
-        this.msg = msg;
-        this.mutators = mutators;
+    public BosonWriter(Set<ReadMutator> mutators) {
+        this.mutators = mutators == null ? new HashSet<ReadMutator>() : mutators;
     }
 
-    public ByteBuf serialize() {
+    /**
+     * Serialize any object to a series of bytes.
+     * This is the same as {@link #serialize(io.higgs.boson.BosonMessage)} except it doesn't contain
+     * any Boson headers required for network transport
+     *
+     * @param msg the message to serialize
+     * @return a series of bytes representing the message
+     */
+    public ByteBuf serialize(Object msg) {
+        ByteBuf buffer = Unpooled.buffer();
+        validateAndWriteType(buffer, msg);
+        buffer.readerIndex(0);
+        return buffer;
+    }
+
+    /**
+     * Serializes a {@link io.higgs.boson.BosonMessage} to the wire format specified by the protocol spec
+     *
+     * @param msg the message to serialize
+     * @return the message serialized to a series of bytes
+     */
+    public ByteBuf serialize(BosonMessage msg) {
         ByteBuf buffer = Unpooled.buffer();
         //first thing to write is the protocol version
         buffer.writeByte(msg.protocolVersion);
@@ -76,10 +93,10 @@ public class BosonWriter {
         //then write the message itself
         if (msg.callback != null && !msg.callback.isEmpty()) {
             //otherwise its a request
-            serializeRequest(buffer);
+            serializeRequest(buffer, msg);
         } else {
             //if there's no callback then its a response...responses don't send callbacks
-            serializeResponse(buffer);
+            serializeResponse(buffer, msg);
         }
         //calculate the total size of the message. we wrote 5 bytes to the buffer before serializing
         //this means byte 6 until buffer.writerIndex() = total message size
@@ -89,7 +106,7 @@ public class BosonWriter {
         return buffer;
     }
 
-    private void serializeResponse(ByteBuf buffer) {
+    protected void serializeResponse(ByteBuf buffer, BosonMessage msg) {
         //write the method name
         buffer.writeByte(RESPONSE_METHOD_NAME); //write type/flag - 1 byte
         writeString(buffer, msg.method);
@@ -98,7 +115,7 @@ public class BosonWriter {
         validateAndWriteType(buffer, msg.arguments); //write the size/length and payload
     }
 
-    private void serializeRequest(ByteBuf buffer) {
+    protected void serializeRequest(ByteBuf buffer, BosonMessage msg) {
         buffer.writeByte(REQUEST_METHOD_NAME); //write type/flag - 1 byte
         //write the method name
         writeString(buffer, msg.method);
@@ -270,7 +287,7 @@ public class BosonWriter {
             ignoreInheritedFields = klass.getAnnotation(propertyClass).ignoreInheritedFields();
         }
         //get ALL (public,private,protect,package) fields declared in the class - includes inherited fields
-        List<Field> fields = reflection.getAllFields(new ArrayList<Field>(), klass, 0);
+        Set<Field> fields = ReflectionUtil.getAllFields(new HashSet<Field>(), klass, 0);
         for (Field field : fields) {
             //if inherited fields are to be ignored then fields must be declared in the current class
             if (ignoreInheritedFields && klass != field.getDeclaringClass()) {

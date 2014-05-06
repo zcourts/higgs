@@ -26,10 +26,11 @@ public class BosonWriterTest {
             b[i].init();
         }
         BosonMessage original = new BosonMessage(b, "test", "callback");
-        BosonWriter writer = new BosonWriter(original);
-        ByteBuf obj = writer.serialize();
-        BosonReader reader = new BosonReader(obj);
-        BosonMessage msg = reader.deSerialize();
+        BosonWriter writer = new BosonWriter();
+        ByteBuf obj = writer.serialize(original);
+        BosonReader reader = new BosonReader();
+        BosonMessage msg = new BosonMessage();
+        reader.deSerialize(obj, msg);
         //first verify what we serialize
         assertTrue("At least 1 instance required", original.arguments.length > 0);
         Object arg = original.arguments[0];
@@ -117,7 +118,7 @@ public class BosonWriterTest {
 
     @Test
     public void testWriteMap() throws Exception {
-        BosonWriter writer = new BosonWriter(new BosonMessage());
+        BosonWriter writer = new BosonWriter();
         String intStr = "int";
         Map<String, Map<String, Object>> map = new HashMap<>();
         Map intMap = new HashMap<>();
@@ -172,9 +173,12 @@ public class BosonWriterTest {
         stringMap.put("a", "a");
         stringMap.put("b", "ab");
         stringMap.put("c", "abc");
-        BosonWriter writer = new BosonWriter(new BosonMessage(new Object[]{ map }, "test"));
-        BosonReader r = new BosonReader(writer.serialize());
-        BosonMessage m = r.deSerialize();
+        BosonMessage msg = new BosonMessage(new Object[]{map}, "test");
+        BosonWriter writer = new BosonWriter();
+        BosonReader r = new BosonReader();
+        BosonMessage m = new BosonMessage();
+        ByteBuf buf = writer.serialize(msg);
+        r.deSerialize(buf, m);
         assertEquals(map, m.arguments[0]);
     }
 

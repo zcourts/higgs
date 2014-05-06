@@ -1,26 +1,13 @@
-package io.higgs.boson.demo;
-
-import io.higgs.boson.serialization.BosonProperty;
+package io.higgs.examples.boson;
 
 import java.lang.reflect.Field;
+import java.util.Arrays;
+import java.util.List;
 
-public class PoloExample {
-    public PoloExample() {
-    }
 
-    public PoloExample(int j) {
-        i = j;
-    }
-
-    public static boolean dont = true;
-    public static boolean stillDont;
-    @BosonProperty
-    int i;
-    String name = "Test non-annotated field";
-    private String str = "Test private non-annotated field";
-    @BosonProperty(ignore = true)
-    String ignored;
-    Nested nested = new Nested();
+public class Nested {
+    NestedField[] array = new NestedField[]{new NestedField(), new NestedField(), new NestedField()};
+    List list = Arrays.asList("a", "b", "c", "d");
 
     public String toString() {
         StringBuilder buf = new StringBuilder();
@@ -46,5 +33,4 @@ public class PoloExample {
         buf.append("]");
         return buf.toString();
     }
-
 }

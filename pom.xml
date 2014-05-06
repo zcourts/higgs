@@ -89,6 +89,11 @@
                 <artifactId>ws-server</artifactId>
                 <version>${project.version}</version>
             </dependency>
+            <dependency>
+                <groupId>io.higgs</groupId>
+                <artifactId>boson</artifactId>
+                <version>${project.version}</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 

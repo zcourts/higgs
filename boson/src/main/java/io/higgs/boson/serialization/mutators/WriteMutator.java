@@ -14,7 +14,7 @@ public interface WriteMutator extends ClassMutator {
      * @param field    the field to be set
      * @param value    the value to set the field to
      * @return true if successfully set
-     *         TODO: if false is returned then an attempt will be made to set the field via reflection
+     * TODO: if false is returned then an attempt will be made to set the field via reflection
      */
     <T> boolean set(T instance, String field, Object value);
 
