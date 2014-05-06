@@ -39,6 +39,7 @@
         <module>events</module>
         <module>http</module>
         <module>websocket</module>
+        <module>boson</module>
         <module>examples</module>
     </modules>
 
