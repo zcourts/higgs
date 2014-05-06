@@ -27,7 +27,6 @@ import java.util.Map;
         setterVisibility = JsonAutoDetect.Visibility.ANY,
         creatorVisibility = JsonAutoDetect.Visibility.ANY,
         fieldVisibility = JsonAutoDetect.Visibility.ANY)
-@Json
 public class HiggsSession implements ValidatingSession, Serializable {//, Map<Object, Object> {
     protected transient static final Logger log = LoggerFactory.getLogger(HiggsSession.class);
 
