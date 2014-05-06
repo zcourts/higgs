@@ -1,10 +1,12 @@
 package io.higgs.http.server.auth;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import org.apache.shiro.session.Session;
 import org.apache.shiro.session.UnknownSessionException;
 import org.apache.shiro.session.mgt.eis.MemorySessionDAO;
 import org.apache.shiro.session.mgt.eis.SessionDAO;
-import org.msgpack.MessagePack;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,13 +33,13 @@ import java.util.concurrent.TimeUnit;
 public class DefaultHiggsSessionDAO extends MemorySessionDAO implements SessionDAO {
     protected final Path sessionDir;
     private Logger log = LoggerFactory.getLogger(getClass());
-    protected MessagePack msgpack = new MessagePack();
     protected Session session;
     protected static final ScheduledExecutorService service = Executors.newSingleThreadScheduledExecutor();
-    private Class<HiggsSession> sessionClass = HiggsSession.class;
+    protected static final ObjectMapper MAPPER = new ObjectMapper();
 
     public DefaultHiggsSessionDAO(String sessionDirName) {
-        msgpack.register(HiggsSession.class);
+        MAPPER.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        MAPPER.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
         sessionDir = Paths.get(sessionDirName == null ? "/tmp/hs3-sessions" : sessionDirName);
         if (!sessionDir.toFile().exists()) {
             try {
@@ -90,17 +92,26 @@ public class DefaultHiggsSessionDAO extends MemorySessionDAO implements SessionD
             created = false;
             log.warn("Failed to create new session file", x);
         }
+        FileOutputStream out;
         try {
-            if (created) {
-                FileOutputStream out = new FileOutputStream(sessionFile);
-                //always write out a HiggsSession object since that's the one we have control over
-                msgpack.write(out, session instanceof HiggsSession ? session : new HiggsSession(session));
-            }
+            out = new FileOutputStream(sessionFile);
         } catch (FileNotFoundException e) {
             //should never happen because we raise error above if the file isn't created
             throw new IllegalStateException("Unable to find session data", e);
+        }
+        try {
+            if (created) {
+                MAPPER.writeValue(out, session);
+            }
         } catch (IOException e) {
             throw new IllegalStateException("Failed to save session data", e);
+        } finally {
+            try {
+                out.flush();
+                out.close();
+            } catch (IOException e) {
+                log.warn("Failed to flush session data to disk", e);
+            }
         }
     }
 
@@ -108,11 +119,13 @@ public class DefaultHiggsSessionDAO extends MemorySessionDAO implements SessionD
     public Session readSession(Serializable sessionId) throws UnknownSessionException {
         Path sessionPath = sessionDir.resolve(sessionId.toString());
         if (!sessionPath.toFile().exists()) {
+//            throw new UnknownSessionException();
             session = new HiggsSession(sessionId);
             writeSession();
         }
         session = readSession(sessionPath);
-        if (session == null) {
+        if (session == null || session.getId() == null || session.getId().toString().isEmpty()) {
+//            throw new UnknownSessionException();
             session = new HiggsSession(sessionId);
             writeSession();
         }
@@ -120,11 +133,20 @@ public class DefaultHiggsSessionDAO extends MemorySessionDAO implements SessionD
     }
 
     private HiggsSession readSession(Path sessionPath) {
+        FileInputStream in = null;
         try {
-            FileInputStream in = new FileInputStream(sessionPath.toFile());
-            return msgpack.read(in, sessionClass);
+            in = new FileInputStream(sessionPath.toFile());
+            return MAPPER.readValue(in, HiggsSession.class);
         } catch (Exception e) {
             return null;
+        } finally {
+            if (in != null) {
+                try {
+                    in.close();
+                } catch (IOException e) {
+                    log.warn("Error closing session file", e);
+                }
+            }
         }
     }
 
