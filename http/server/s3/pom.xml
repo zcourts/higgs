@@ -16,6 +16,10 @@
     </parent>
     <dependencies>
         <dependency>
+            <groupId>io.higgs</groupId>
+            <artifactId>boson</artifactId>
+        </dependency>
+        <dependency>
             <groupId>org.apache.shiro</groupId>
             <artifactId>shiro-core</artifactId>
             <version>1.2.3</version>
