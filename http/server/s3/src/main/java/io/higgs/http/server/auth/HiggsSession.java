@@ -1,10 +1,7 @@
 package io.higgs.http.server.auth;
 
-import com.fasterxml.jackson.annotation.JsonAutoDetect;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import org.apache.shiro.session.ExpiredSessionException;
 import org.apache.shiro.session.InvalidSessionException;
-import org.apache.shiro.session.Session;
 import org.apache.shiro.session.StoppedSessionException;
 import org.apache.shiro.session.mgt.DefaultSessionManager;
 import org.apache.shiro.session.mgt.ValidatingSession;
@@ -21,32 +18,18 @@ import java.util.Map;
 /**
  * @author Courtney Robinson <courtney@crlog.info>
  */
-@JsonAutoDetect(
-        getterVisibility = JsonAutoDetect.Visibility.ANY,
-        isGetterVisibility = JsonAutoDetect.Visibility.ANY,
-        setterVisibility = JsonAutoDetect.Visibility.ANY,
-        creatorVisibility = JsonAutoDetect.Visibility.ANY,
-        fieldVisibility = JsonAutoDetect.Visibility.ANY)
 public class HiggsSession implements ValidatingSession, Serializable {//, Map<Object, Object> {
     protected transient static final Logger log = LoggerFactory.getLogger(HiggsSession.class);
 
     protected static final long MILLIS_PER_SECOND = 1000;
     protected static final long MILLIS_PER_MINUTE = 60 * MILLIS_PER_SECOND;
-    @JsonProperty
     protected Serializable id;
-    @JsonProperty
     protected final Date startTimestamp;
-    @JsonProperty
     protected Date stopTimestamp;
-    @JsonProperty
     protected Date lastAccessTime;
-    @JsonProperty
     protected long timeout;
-    @JsonProperty
     protected boolean expired;
-    @JsonProperty
     protected String host;
-    @JsonProperty
     protected Map<Object, Object> attributes = new HashMap<>();
 
     public HiggsSession() {
@@ -59,25 +42,6 @@ public class HiggsSession implements ValidatingSession, Serializable {//, Map<Ob
         this();
         setId(id);
     }
-
-    /**
-     * Copy constructor. Used for serialization to convert to HiggsSession
-     *
-     * @param that the session to copy from
-     */
-    public HiggsSession(Session that) {
-        this();
-        try {
-            if (that != null && that.getAttributeKeys() != null) {
-                for (Object o : that.getAttributeKeys()) {
-                    setAttribute(o, that.getAttribute(o));
-                }
-            }
-        } catch (Exception e) {
-            log.warn("Failed to copy session - " + e.getMessage());
-        }
-    }
-
 
     /**
      * Adds a key value pair to the session which is good for one use.

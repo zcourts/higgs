@@ -1,8 +1,9 @@
 package io.higgs.http.server.auth;
 
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
+import io.higgs.boson.serialization.v1.BosonReader;
+import io.higgs.boson.serialization.v1.BosonWriter;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 import org.apache.shiro.session.Session;
 import org.apache.shiro.session.UnknownSessionException;
 import org.apache.shiro.session.mgt.eis.MemorySessionDAO;
@@ -21,7 +22,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -33,13 +36,11 @@ import java.util.concurrent.TimeUnit;
 public class DefaultHiggsSessionDAO extends MemorySessionDAO implements SessionDAO {
     protected final Path sessionDir;
     private Logger log = LoggerFactory.getLogger(getClass());
-    protected Session session;
+    protected Map<Serializable, Session> sessions = new HashMap<>();
     protected static final ScheduledExecutorService service = Executors.newSingleThreadScheduledExecutor();
-    protected static final ObjectMapper MAPPER = new ObjectMapper();
+//    protected static final ObjectMapper MAPPER = new ObjectMapper();
 
     public DefaultHiggsSessionDAO(String sessionDirName) {
-        MAPPER.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-        MAPPER.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
         sessionDir = Paths.get(sessionDirName == null ? "/tmp/hs3-sessions" : sessionDirName);
         if (!sessionDir.toFile().exists()) {
             try {
@@ -55,16 +56,18 @@ public class DefaultHiggsSessionDAO extends MemorySessionDAO implements SessionD
         service.scheduleAtFixedRate(new Runnable() {
             @Override
             public void run() {
-                writeSession();
+                for (Map.Entry<Serializable, Session> e : sessions.entrySet()) {
+                    writeSession(e.getValue());
+                }
             }
         }, 10, 30, TimeUnit.SECONDS);
     }
 
     @Override
     public Serializable create(Session session) {
-        if (createOrUpdateSession(session)) {
-            return super.create(session);
-        }
+        createOrUpdateSession(session);
+        //when we create we should flush straight away
+        writeSession(session);
         return session.getId();
     }
 
@@ -72,11 +75,11 @@ public class DefaultHiggsSessionDAO extends MemorySessionDAO implements SessionD
         if (!(session instanceof Serializable)) {
             return true;
         }
-        this.session = session;
+        sessions.put(session.getId(), session);
         return false;
     }
 
-    private void writeSession() {
+    private void writeSession(Session session) {
         if (session == null || session.getId() == null || session.getId().toString().isEmpty()) {
             return;
         }
@@ -90,7 +93,7 @@ public class DefaultHiggsSessionDAO extends MemorySessionDAO implements SessionD
             created = sessionFile.createNewFile();
         } catch (IOException x) {
             created = false;
-            log.warn("Failed to create new session file", x);
+            log.debug("Failed to create new session file", x);
         }
         FileOutputStream out;
         try {
@@ -101,7 +104,9 @@ public class DefaultHiggsSessionDAO extends MemorySessionDAO implements SessionD
         }
         try {
             if (created) {
-                MAPPER.writeValue(out, session);
+                BosonWriter writer = new BosonWriter();
+                ByteBuf msg = writer.serialize(session).slice();
+                out.write(msg.array());
             }
         } catch (IOException e) {
             throw new IllegalStateException("Failed to save session data", e);
@@ -119,15 +124,15 @@ public class DefaultHiggsSessionDAO extends MemorySessionDAO implements SessionD
     public Session readSession(Serializable sessionId) throws UnknownSessionException {
         Path sessionPath = sessionDir.resolve(sessionId.toString());
         if (!sessionPath.toFile().exists()) {
-//            throw new UnknownSessionException();
-            session = new HiggsSession(sessionId);
-            writeSession();
+            throw new UnknownSessionException();
+//            session = new HiggsSession(sessionId);
+//            writeSession();
         }
-        session = readSession(sessionPath);
+        Session session = readSession(sessionPath);
         if (session == null || session.getId() == null || session.getId().toString().isEmpty()) {
-//            throw new UnknownSessionException();
-            session = new HiggsSession(sessionId);
-            writeSession();
+            throw new UnknownSessionException();
+//            session = new HiggsSession(sessionId);
+//            writeSession();
         }
         return session;
     }
@@ -135,8 +140,12 @@ public class DefaultHiggsSessionDAO extends MemorySessionDAO implements SessionD
     private HiggsSession readSession(Path sessionPath) {
         FileInputStream in = null;
         try {
-            in = new FileInputStream(sessionPath.toFile());
-            return MAPPER.readValue(in, HiggsSession.class);
+            File f = sessionPath.toFile();
+            in = new FileInputStream(f);
+            BosonReader reader = new BosonReader();
+            byte[] data = new byte[(int) f.length()];
+            in.read(data);
+            return reader.deSerialize(Unpooled.wrappedBuffer(data));
         } catch (Exception e) {
             return null;
         } finally {
@@ -152,9 +161,7 @@ public class DefaultHiggsSessionDAO extends MemorySessionDAO implements SessionD
 
     @Override
     public void update(Session session) throws UnknownSessionException {
-        if (createOrUpdateSession(session)) {
-            super.create(session);
-        }
+        createOrUpdateSession(session);
     }
 
     @Override
