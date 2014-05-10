@@ -27,6 +27,7 @@ import static io.higgs.boson.BosonType.BOOLEAN;
 import static io.higgs.boson.BosonType.BYTE;
 import static io.higgs.boson.BosonType.CHAR;
 import static io.higgs.boson.BosonType.DOUBLE;
+import static io.higgs.boson.BosonType.ENUM;
 import static io.higgs.boson.BosonType.FLOAT;
 import static io.higgs.boson.BosonType.INT;
 import static io.higgs.boson.BosonType.LIST;
@@ -111,42 +112,6 @@ public class BosonReader {
         }
     }
 
-    public Object readType(ByteBuf buffer) {
-        byte type = buffer.readByte();
-        switch (type) {
-            case BYTE:
-                return readByte(buffer, true, BYTE);
-            case SHORT:
-                return readShort(buffer, true, SHORT);
-            case INT:
-                return readInt(buffer, true, INT);
-            case LONG:
-                return readLong(buffer, true, LONG);
-            case FLOAT:
-                return readFloat(buffer, true, FLOAT);
-            case DOUBLE:
-                return readDouble(buffer, true, FLOAT);
-            case BOOLEAN:
-                return readBoolean(buffer, true, BOOLEAN);
-            case CHAR:
-                return readChar(buffer, true, CHAR);
-            case STRING:
-                return readString(buffer, true, STRING);
-            case LIST:
-                return readList(buffer, true, LIST);
-            case SET:
-                return readSet(buffer, true, SET);
-            case MAP:
-                return readMap(buffer, true, MAP);
-            case ARRAY:
-                return readArray(buffer, true, ARRAY);
-            case POLO:
-                return readPolo(buffer, true, POLO);
-            default:
-                throw new UnsupportedBosonTypeException(String.format("Cannot decode object from type %s", type), null);
-        }
-    }
-
     /**
      * Check that the backing buffer is readable.
      * If it isn't throws an InvalidDataException
@@ -188,6 +153,48 @@ public class BosonReader {
             return new String(arr, Charset.forName("utf8"));
         } else {
             throw new UnsupportedBosonTypeException(String.format("type %s is not a Boson STRING", type), null);
+        }
+    }
+
+    public Enum readEnum(ByteBuf data, boolean verified, int verifiedType) {
+        int type = verifiedType;
+        if (!verified) {
+            type = data.readByte();
+        }
+        if (ENUM == type) {
+            verifyReadable(data);
+            String enumClassName = readString(data, false, -1);
+            String enumValue = readString(data, false, -1);
+            WriteMutator mutator = null;
+            for (WriteMutator m : mutators) {
+                if (m.canCreate(enumClassName)) {
+                    mutator = m;
+                    break;
+                }
+            }
+            if (mutator != null) {
+                return mutator.get(enumClassName, enumValue);
+            } else {
+                Class<?> klass;
+                try {
+                    klass = loader.loadClass(enumClassName);
+                } catch (ClassNotFoundException e) {
+                    throw new IllegalArgumentException(String.format("Cannot load the requested class %s",
+                            enumClassName), e);
+                }
+                Enum[] vals = (Enum[]) klass.getEnumConstants();
+                if (vals != null && vals.length > 0) {
+                    for (Enum e : vals) {
+                        if (e.toString().equals(enumValue)) {
+                            return e;
+                        }
+                    }
+                }
+                //TODO review what happens if enum type not found when de-serializing
+                return null;
+            }
+        } else {
+            throw new UnsupportedBosonTypeException(String.format("type %s is not a Boson ENUM", type), null);
         }
     }
 
@@ -668,9 +675,16 @@ public class BosonReader {
                 return readPolo(data, true, type);
             case REFERENCE:
                 return readReference(data, true, type);
+            case ENUM:
+                return readEnum(data, true, ENUM);
             default: {
                 throw new UnsupportedBosonTypeException(String.format("type %s is not a valid boson type", type), null);
             }
         }
     }
+
+    public Object readType(ByteBuf buffer) {
+        return readType(buffer, buffer.readByte());
+    }
+
 }

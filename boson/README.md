@@ -30,6 +30,7 @@ See [Java datatypes](http://docs.oracle.com/javase/tutorial/java/nutsandbolts/da
 + __list__ => An un-ordered group of items, the items can be any valid Boson data type
 + __set__ => An un-ordered group of __unique__ items, the items can be any valid Boson data type
 + __map__ => A set of key value pairs, both keys and values can be any valid Boson data type, including map itself
++ __enum__ => An enumeration of fixed/predefined values
 + __POLO__ => __P__lain __O__ld __L__anguage __O__bject - A POLO is any object whose fields are valid Boson types.
 
 # Miscellaneous
@@ -83,6 +84,7 @@ To indicate a type use a single byte which corresponds to the following data typ
 + __POLO__ => 14
 + __REFERENCE__ => 15
 + __set__ => 16
++ __enum__ => 17
 
 ### Indicating size
 
@@ -108,6 +110,7 @@ of the message.
 + __map__ => 4 bytes  - This is __not the total bytes__ it is a __count/sum__ of how many items are in the map
 + __POLO__ => 4 bytes - This is __not the total bytes of the object__, it is a __count/sum__ of how many fields from the
 			object is serialized
++ __enum__ N/A see writing data structures below
 + __REFERENCE__ => 5 bytes, the first Byte is 15 (the boson type for a reference) and the following for bytes is an integer
                    representing the numeric reference.
 
@@ -135,6 +138,15 @@ A map contains a __unordered__ set of tuples (key value pairs). Both keys and va
 4. then write the value according to the rules for its type.
 
 Both key and value can be empty. If either are empty then a the boson type null, should be written.
+
+#### enum
+
+An enum is made up of 3 components.
+1. The Boson type for an enum as given above
+2. The fully qualified name of the enum class, as a string
+3. The string value of the enum constant that can be used to get the typed value back using .valueOf
+
+These three are written in sequence. The rules for writing a string applies when writing the class name and value.
 
 #### POLO
 A POLO contains a __unordered__ set of fields. These fields have a name and a value.

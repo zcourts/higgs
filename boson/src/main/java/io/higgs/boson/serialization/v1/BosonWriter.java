@@ -24,6 +24,7 @@ import static io.higgs.boson.BosonType.BOOLEAN;
 import static io.higgs.boson.BosonType.BYTE;
 import static io.higgs.boson.BosonType.CHAR;
 import static io.higgs.boson.BosonType.DOUBLE;
+import static io.higgs.boson.BosonType.ENUM;
 import static io.higgs.boson.BosonType.FLOAT;
 import static io.higgs.boson.BosonType.INT;
 import static io.higgs.boson.BosonType.LIST;
@@ -106,7 +107,7 @@ public class BosonWriter {
         return buffer;
     }
 
-    protected void serializeResponse(ByteBuf buffer, BosonMessage msg) {
+    public void serializeResponse(ByteBuf buffer, BosonMessage msg) {
         //write the method name
         buffer.writeByte(RESPONSE_METHOD_NAME); //write type/flag - 1 byte
         writeString(buffer, msg.method);
@@ -115,7 +116,7 @@ public class BosonWriter {
         validateAndWriteType(buffer, msg.arguments); //write the size/length and payload
     }
 
-    protected void serializeRequest(ByteBuf buffer, BosonMessage msg) {
+    public void serializeRequest(ByteBuf buffer, BosonMessage msg) {
         buffer.writeByte(REQUEST_METHOD_NAME); //write type/flag - 1 byte
         //write the method name
         writeString(buffer, msg.method);
@@ -182,6 +183,12 @@ public class BosonWriter {
         buffer.writeBytes(str); //payload
     }
 
+    public void writeEnum(ByteBuf buf, Enum param) {
+        buf.writeByte(ENUM); //type
+        writeString(buf, param.getClass().getName()); //enum class type
+        writeString(buf, param.toString()); //enum value
+    }
+
     public void writeList(ByteBuf buffer, List<Object> value) {
         buffer.writeByte(LIST); //type
         buffer.writeInt(value.size()); //size
@@ -238,7 +245,6 @@ public class BosonWriter {
      *
      * @param obj the object to write
      * @param ref
-     * @return true on success
      */
     public void writePolo(ByteBuf buffer, Object obj, int ref) {
         if (obj == null) {
@@ -360,6 +366,8 @@ public class BosonWriter {
             } else if (param.getClass().isArray()) {
                 //array values can be reference types but not the arrays themselves
                 writeArray(buffer, (Object[]) param);
+            } else if (param instanceof Enum || Enum.class.isAssignableFrom(param.getClass())) {
+                writeEnum(buffer, (Enum) param);
             } else {
                 if (param instanceof Throwable) {
                     throw new UnsupportedOperationException("Cannot serialize throwable", (Throwable) param);

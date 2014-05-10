@@ -33,4 +33,6 @@ public interface WriteMutator extends ClassMutator {
      * @return true if it can create new instances, false otherwise.
      */
     boolean canCreate(String className);
+
+    Enum get(String enumClassName, String enumStringName);
 }

@@ -23,6 +23,7 @@ public class BosonType {
     public static final int POLO = 14;
     public static final int REFERENCE = 15;
     public static final int SET = 16;
+    public static final int ENUM = 17;
     //request response flags
     public static final int REQUEST_METHOD_NAME = -127;
     public static final int REQUEST_PARAMETERS = -126;
