@@ -42,14 +42,7 @@ public class DefaultHiggsSessionDAO extends MemorySessionDAO implements SessionD
 
     public DefaultHiggsSessionDAO(String sessionDirName) {
         sessionDir = Paths.get(sessionDirName == null ? "/tmp/hs3-sessions" : sessionDirName);
-        if (!sessionDir.toFile().exists()) {
-            try {
-                //create session directory including any non-existent parents
-                Files.createDirectories(sessionDir);
-            } catch (IOException e) {
-                throw new InvalidSessionDirectory("The configured session directory could not be created", e);
-            }
-        }
+        ensurePathExists();
         //find old sessions and delete any that cannot be ready anymore, typically because of binary incompatibility
         //after recompiling classes that have been previously serialized
         getActiveSessions();
@@ -61,6 +54,17 @@ public class DefaultHiggsSessionDAO extends MemorySessionDAO implements SessionD
                 }
             }
         }, 10, 30, TimeUnit.SECONDS);
+    }
+
+    protected void ensurePathExists() {
+        if (!sessionDir.toFile().exists()) {
+            try {
+                //create session directory including any non-existent parents
+                Files.createDirectories(sessionDir);
+            } catch (IOException e) {
+                throw new InvalidSessionDirectory("The configured session directory could not be created", e);
+            }
+        }
     }
 
     @Override
@@ -83,6 +87,7 @@ public class DefaultHiggsSessionDAO extends MemorySessionDAO implements SessionD
         if (session == null || session.getId() == null || session.getId().toString().isEmpty()) {
             return;
         }
+        ensurePathExists();
         Path sessionPath = sessionDir.resolve(session.getId().toString());
         File sessionFile = sessionPath.toFile();
         if (sessionFile.exists()) {
