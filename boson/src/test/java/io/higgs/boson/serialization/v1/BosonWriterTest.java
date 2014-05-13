@@ -193,7 +193,43 @@ public class BosonWriterTest {
     }
 
     @Test
-    public void testValidateAndWriteType() throws Exception {
+    public void testSerializingEnum() throws Exception {
+        BosonWriter writer = new BosonWriter();
+        BosonReader reader = new BosonReader();
+        EnumEnclosingType obj = new EnumEnclosingType(SomeType.B);
+        ByteBuf out = writer.serialize(obj);
+        EnumEnclosingType in = reader.deSerialize(out);
+        assertNotNull(in);
+        assertEquals(obj.value, in.value);
+    }
 
+    @Test
+    public void testSerializingEnumInNestedPOLO() throws Exception {
+        BosonWriter writer = new BosonWriter();
+        BosonReader reader = new BosonReader();
+        OuterEnclosingType obj = new OuterEnclosingType();
+        ByteBuf out = writer.serialize(obj);
+        OuterEnclosingType in = reader.deSerialize(out);
+        assertNotNull(in);
+        assertEquals(obj.type.value, in.type.value);
+    }
+
+    public static class EnumEnclosingType {
+        private SomeType value;
+
+        EnumEnclosingType(SomeType value) {
+            this.value = value;
+        }
+
+        EnumEnclosingType() {
+        }
+    }
+
+    public static class OuterEnclosingType {
+        private EnumEnclosingType type = new EnumEnclosingType(SomeType.C);
+    }
+
+    enum SomeType {
+        A, B, C
     }
 }
