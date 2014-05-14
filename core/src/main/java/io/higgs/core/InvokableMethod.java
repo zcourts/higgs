@@ -91,12 +91,8 @@ public abstract class InvokableMethod implements Sortable<InvokableMethod> {
         Injector.inject(instance, deps);
 
         Object[] depParams = injectParameters(ctx, msg, params, instance, deps);
-        try {
-            Method init = instance.getClass().getMethod("init");
-            init.invoke(instance);
-        } catch (InvocationTargetException | NoSuchMethodException ignored) {
-            //empty catch not allowed  by style settings so do return
-            return classMethod.invoke(instance, depParams);
+        if (instance instanceof EventListenerMethod) {
+            ((EventListenerMethod) instance).init();
         }
         return classMethod.invoke(instance, depParams);
     }

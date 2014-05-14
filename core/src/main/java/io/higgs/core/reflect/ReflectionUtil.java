@@ -11,18 +11,13 @@ public class ReflectionUtil {
     }
 
     public static Set<Field> getAllFields(Set<Field> fields, Class<?> type) {
-        return getAllFields(fields, type, MAX_RECURSION_DEPTH);
+        return getAllFields(fields, type, 0);
     }
 
     public static Set<Field> getAllFields(Set<Field> fields, Class<?> type, int depth) {
         //first get inherited fields
         if (type.getSuperclass() != null && depth <= MAX_RECURSION_DEPTH) {
-            Set<Field> superFields = getAllFields(fields, type.getSuperclass(), ++depth);
-            for (Field field : superFields) {
-                if (!fields.contains(field)) {
-                    fields.add(field);
-                }
-            }
+            getAllFields(fields, type.getSuperclass(), ++depth);
         }
         //now add all "local" fields
         Collections.addAll(fields, type.getDeclaredFields());
