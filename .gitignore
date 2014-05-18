@@ -13,3 +13,4 @@ build
 build.log
 log/*
 **/var/*
+**.log
