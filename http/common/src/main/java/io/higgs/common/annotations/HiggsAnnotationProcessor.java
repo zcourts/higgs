@@ -92,8 +92,6 @@ public abstract class HiggsAnnotationProcessor extends AbstractProcessor {
 //                    return false;
 //                }
                 for (Class<?> t : indexedTypes) {
-                    indexType(t.getName(), el);
-
                     if (t.isAnnotation()) {
                         Class<? extends Annotation> t2 = (Class<? extends Annotation>) t;
                         Annotation annotation = el.getAnnotation(t2);

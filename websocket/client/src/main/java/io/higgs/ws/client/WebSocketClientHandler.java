@@ -100,7 +100,8 @@ public class WebSocketClientHandler extends SimpleChannelInboundHandler<Object> 
         } else if (frame instanceof PongWebSocketFrame) {
             Logger.getLogger(getClass()).warn(
                     String.format("WebSocketClient received a PongWebSocketFrame, that shouldn't happen! Data : %s",
-                            frame.content().toString(CharsetUtil.UTF_8)));
+                            frame.content().toString(CharsetUtil.UTF_8))
+            );
         } else if (frame instanceof CloseWebSocketFrame) {
             ch.close();
             for (WebSocketEventListener l : listensers) {

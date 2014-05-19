@@ -82,7 +82,6 @@ public class POST extends Request {
      *
      * @param multipart if true then a multipart encoder is created
      * @throws HttpPostRequestEncoder.ErrorDataEncoderException
-     *
      */
     protected void newEncoder(boolean multipart) throws HttpPostRequestEncoder.ErrorDataEncoderException {
         factory = new DefaultHttpDataFactory(minSize);

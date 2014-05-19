@@ -27,8 +27,8 @@ public interface HiggsInterceptor {
      *
      * @param request The incoming request to be intercepted
      * @return true if the interceptor is successfully able to process the request false otherwise.
-     *         If false is returned the request may be passed to another interceptor or left to the origin
-     *         {@link MessageHandler}
+     * If false is returned the request may be passed to another interceptor or left to the origin
+     * {@link MessageHandler}
      */
     boolean intercept(ChannelHandlerContext ctx, Object request);
 }

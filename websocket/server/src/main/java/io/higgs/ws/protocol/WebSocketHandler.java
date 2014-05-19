@@ -124,7 +124,7 @@ public class WebSocketHandler extends HttpHandler {
         }
 
         // Send the response and close the connection if necessary.
-        ChannelFuture f = StaticUtil.write(ctx.channel(),res);
+        ChannelFuture f = StaticUtil.write(ctx.channel(), res);
         if (!isKeepAlive(req) || res.getStatus().code() != 200) {
             f.addListener(ChannelFutureListener.CLOSE);
         }

@@ -34,7 +34,8 @@ public class ProxyDemo {
                     public void apply(String s, final Response response) {
                         System.out.println(s);
                     }
-                }));
+                })
+        );
 
         //this request will be tunneled because it uses HTTPS
         Request req2 = proxied.GET(new URI("https://api.datasift.com/v1/usage"),
@@ -43,7 +44,8 @@ public class ProxyDemo {
                         System.out.println(s);
                         HttpRequestBuilder.shutdown();
                     }
-                }));
+                })
+        );
         req.execute();
         req2.execute();
     }

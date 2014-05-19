@@ -44,11 +44,11 @@ public class HttpMethod extends InvokableMethod {
         if (klass.isAnnotationPresent(Produces.class)) {
             Produces produces = klass.getAnnotation(Produces.class);
             classProduces = produces.value() != null ?
-                    produces.value() : new String[]{ MediaType.WILDCARD };
+                    produces.value() : new String[]{MediaType.WILDCARD};
         }
         if (classMethod.isAnnotationPresent(Produces.class)) {
             Produces path = classMethod.getAnnotation(Produces.class);
-            methodProduces = path.value() != null ? path.value() : new String[]{ MediaType.WILDCARD };
+            methodProduces = path.value() != null ? path.value() : new String[]{MediaType.WILDCARD};
         }
         String[] mTypes = new String[classProduces.length + methodProduces.length];
         System.arraycopy(classProduces, 0, mTypes, 0, classProduces.length);
@@ -62,11 +62,11 @@ public class HttpMethod extends InvokableMethod {
         if (klass.isAnnotationPresent(Consumes.class)) {
             Consumes consumes = klass.getAnnotation(Consumes.class);
             classConsumes = consumes.value() != null ?
-                    consumes.value() : new String[]{ MediaType.WILDCARD };
+                    consumes.value() : new String[]{MediaType.WILDCARD};
         }
         if (classMethod.isAnnotationPresent(Consumes.class)) {
             Consumes path = classMethod.getAnnotation(Consumes.class);
-            methodConsumes = path.value() != null ? path.value() : new String[]{ MediaType.WILDCARD };
+            methodConsumes = path.value() != null ? path.value() : new String[]{MediaType.WILDCARD};
         }
         String[] consumesTypes = new String[classConsumes.length + methodConsumes.length];
         System.arraycopy(classConsumes, 0, consumesTypes, 0, classConsumes.length);

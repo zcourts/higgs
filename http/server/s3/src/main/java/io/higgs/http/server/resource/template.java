@@ -12,7 +12,7 @@ import java.lang.annotation.Target;
  * @author Courtney Robinson <courtney@crlog.info>
  */
 @Retention(RetentionPolicy.RUNTIME)
-@Target({ ElementType.METHOD, ElementType.TYPE })
+@Target({ElementType.METHOD, ElementType.TYPE})
 public @interface template {
 
     /**
@@ -75,7 +75,7 @@ public @interface template {
      * </pre>
      *
      * @return The path to a template that the resource's response is mapped to.
-     *         The response can be any collection, POJO, array or primitive (inc strings).
+     * The response can be any collection, POJO, array or primitive (inc strings).
      */
     String value();
 
@@ -89,5 +89,5 @@ public @interface template {
      *
      * @return an empty array or a list of template fragments to merge into one
      */
-    String[] fragments() default { };
+    String[] fragments() default {};
 }

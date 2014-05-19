@@ -27,8 +27,9 @@ public class WebSocketDemo implements WebSocketEventListener {
     public static void main(String... args) throws URISyntaxException {
         WebSocketClient.maxFramePayloadLength = 655360 * 20;
         WebSocketStream stream = WebSocketClient.connect(new URI("ws://websocket.datasift.com/multi?username=" +
-                "zcourts&api_key=bc753994e3b3630556c7cf5c3f600d70"), true,
-                HttpRequestBuilder.getSupportedSSLProtocols());
+                        "zcourts&api_key=bc753994e3b3630556c7cf5c3f600d70"), true,
+                HttpRequestBuilder.getSupportedSSLProtocols()
+        );
         stream.subscribe(new WebSocketDemo(stream));
 
         //via a proxy...wholly a bad idea but should work almost always ;)  - ONLY WSS will work in most cases

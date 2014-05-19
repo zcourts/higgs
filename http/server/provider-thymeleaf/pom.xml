@@ -1,7 +1,7 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
-    <artifactId>transformer-thymeleaf</artifactId>
+    <artifactId>provider-thymeleaf</artifactId>
     <name>${project.artifactId}</name>
     <description>Higgs HTTP S3 (Single Site Server)</description>
     <packaging>jar</packaging>
@@ -16,27 +16,11 @@
             <groupId>io.higgs</groupId>
             <artifactId>http-s3</artifactId>
         </dependency>
-        <!-- <dependency>
-             <groupId>io.higgs</groupId>
-             <artifactId>spi</artifactId>
-             <version>0.2.9</version>
-         </dependency>-->
-        <dependency>
-            <groupId>org.kohsuke.metainf-services</groupId>
-            <artifactId>metainf-services</artifactId>
-            <version>1.1</version>
-            <optional>true</optional>
-        </dependency>
         <!--Thymeleaf template support-->
         <dependency>
             <groupId>org.thymeleaf</groupId>
             <artifactId>thymeleaf</artifactId>
             <version>2.0.15</version>
-        </dependency>
-        <dependency>
-            <groupId>com.github.spullara.mustache.java</groupId>
-            <artifactId>compiler</artifactId>
-            <version>0.8.14</version>
         </dependency>
     </dependencies>
 

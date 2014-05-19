@@ -248,7 +248,7 @@ public class MediaType {
         if (other == null) {
             return false;
         }
-        if(other.type == null || other.subtype == null){
+        if (other.type == null || other.subtype == null) {
             return false;
         }
 

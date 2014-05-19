@@ -1,7 +1,6 @@
 package io.higgs.http.server;
 
 import io.higgs.core.ResourcePath;
-import io.higgs.http.server.auth.HiggsSession;
 import io.higgs.http.server.params.FormFiles;
 import io.higgs.http.server.params.FormParams;
 import io.higgs.http.server.params.HttpCookie;

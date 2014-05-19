@@ -22,7 +22,8 @@ public class SSLContextFactory {
             if (sslConfiguration.getTrustStorePath() != null) {
                 trustStore.load(new FileInputStream(sslConfiguration.getTrustStorePath()),
                         sslConfiguration.getTrustStorePassword() == null ? "".toCharArray() :
-                                sslConfiguration.getTrustStorePassword().toCharArray());
+                                sslConfiguration.getTrustStorePassword().toCharArray()
+                );
                 tmf = TrustManagerFactory.getInstance(sslConfiguration.getTrustManagerFactoryType());
                 tmf.init(trustStore);
                 useTrustStore = true;
@@ -41,7 +42,8 @@ public class SSLContextFactory {
             if (sslConfiguration.getKeyStorePath() != null) {
                 clientKeyStore.load(new FileInputStream(sslConfiguration.getKeyStorePath()),
                         sslConfiguration.getKeyStorePassword() == null ? "".toCharArray() :
-                                sslConfiguration.getKeyStorePassword().toCharArray());
+                                sslConfiguration.getKeyStorePassword().toCharArray()
+                );
                 kmf = KeyManagerFactory.getInstance(sslConfiguration.getKeyManagerFactoryType());
                 kmf.init(clientKeyStore, sslConfiguration.getKeyPassword() == null ? "".toCharArray() :
                         sslConfiguration.getKeyPassword().toCharArray());

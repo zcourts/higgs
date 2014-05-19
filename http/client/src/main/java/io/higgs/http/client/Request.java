@@ -213,7 +213,8 @@ public class Request {
         return new ClientIntializer(useSSL, newInboundHandler(),
                 //if proxy request exists then initializer should add it instead of the normal handler
                 isProxyEnabled() && proxyRequest != null ?
-                        new ConnectHandler(tunneling, request, newInboundHandler(), factory) : null, sslProtocols);
+                        new ConnectHandler(tunneling, request, newInboundHandler(), factory) : null, sslProtocols
+        );
     }
 
     protected SimpleChannelInboundHandler<Object> newInboundHandler() {
