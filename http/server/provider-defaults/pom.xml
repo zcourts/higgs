@@ -16,11 +16,11 @@
             <groupId>io.higgs</groupId>
             <artifactId>http-s3</artifactId>
         </dependency>
-      <!--  <dependency>
-            <groupId>io.higgs</groupId>
-            <artifactId>spi</artifactId>
-            <version>0.2.9</version>
-        </dependency> -->
+        <!--  <dependency>
+              <groupId>io.higgs</groupId>
+              <artifactId>spi</artifactId>
+              <version>0.2.9</version>
+          </dependency> -->
         <dependency>
             <groupId>org.kohsuke.metainf-services</groupId>
             <artifactId>metainf-services</artifactId>

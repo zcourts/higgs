@@ -23,11 +23,11 @@
             <optional>true</optional>
         </dependency>
 
-       <!-- <dependency>
-            <groupId>io.higgs</groupId>
-            <artifactId>spi</artifactId>
-            <version>0.2.9</version>
-        </dependency>-->
+        <!-- <dependency>
+             <groupId>io.higgs</groupId>
+             <artifactId>spi</artifactId>
+             <version>0.2.9</version>
+         </dependency>-->
         <dependency>
             <groupId>com.github.spullara.mustache.java</groupId>
             <artifactId>compiler</artifactId>

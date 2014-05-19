@@ -13,10 +13,10 @@
     </parent>
     <modules>
         <module>s3</module>
-        <module>transformer-defaults</module>
-        <module>transformer-thymeleaf</module>
-        <module>transformer-mustache</module>
-        <module>transformer-handlebars</module>
+        <module>provider-defaults</module>
+        <module>provider-thymeleaf</module>
+        <module>provider-mustache</module>
+        <module>provider-handlebars</module>
     </modules>
     <dependencyManagement>
         <dependencies>

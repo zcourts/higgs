@@ -119,8 +119,9 @@ public class Thymeleaf {
                 File parent = file.getParentFile();
                 if (!parent.exists() && !parent.mkdirs()) {
                     throw new IllegalStateException(String.format("Unable to create directory structure for fragments" +
-                            " '%s'",
-                            file.getAbsolutePath()));
+                                    " '%s'",
+                            file.getAbsolutePath()
+                    ));
                 }
                 if (!file.createNewFile()) {
                     throw new IllegalStateException(String.format("Unable to create template file from fragments '%s'",
