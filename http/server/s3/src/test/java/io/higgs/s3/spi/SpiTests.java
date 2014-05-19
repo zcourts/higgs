@@ -1,8 +1,5 @@
 package io.higgs.s3.spi;
 
-import io.higgs.common.annotations.tests.SpiAnnotation;
-import io.higgs.common.annotations.tests.SpiClass;
-import io.higgs.common.annotations.tests.SpiInterface;
 import org.junit.Test;
 
 import java.io.InputStream;
