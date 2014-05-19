@@ -30,6 +30,7 @@
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>exec-maven-plugin</artifactId>
+                <version>1.2.1</version>
                 <configuration>
                     <mainClass>io.higgs.http.client.demo.Demo</mainClass>
                     <includePluginDependencies>false</includePluginDependencies>
