@@ -11,6 +11,8 @@ import io.higgs.http.server.StaticFileMethod;
 import io.higgs.http.server.WebApplicationException;
 import io.higgs.http.server.config.HttpConfig;
 import io.higgs.http.server.protocol.HttpMethod;
+import io.higgs.http.server.providers.BaseTransformer;
+import io.higgs.http.server.providers.ResponseTransformer;
 import io.higgs.http.server.resource.MediaType;
 import io.higgs.http.server.transformers.conf.FilesConfig;
 import io.netty.buffer.ByteBuf;

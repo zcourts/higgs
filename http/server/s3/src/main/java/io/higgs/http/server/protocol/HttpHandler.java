@@ -17,7 +17,7 @@ import io.higgs.http.server.WrappedResponse;
 import io.higgs.http.server.config.HttpConfig;
 import io.higgs.http.server.protocol.mediaTypeDecoders.FormUrlEncodedDecoder;
 import io.higgs.http.server.protocol.mediaTypeDecoders.JsonDecoder;
-import io.higgs.http.server.transformers.ResponseTransformer;
+import io.higgs.http.server.providers.ResponseTransformer;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;

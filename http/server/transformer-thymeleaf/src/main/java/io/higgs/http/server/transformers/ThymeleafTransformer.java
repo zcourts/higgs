@@ -8,6 +8,8 @@ import io.higgs.http.server.HttpStatus;
 import io.higgs.http.server.WebApplicationException;
 import io.higgs.http.server.config.TemplateConfig;
 import io.higgs.http.server.protocol.HttpMethod;
+import io.higgs.http.server.providers.BaseTransformer;
+import io.higgs.http.server.providers.ResponseTransformer;
 import io.higgs.http.server.resource.MediaType;
 import io.higgs.http.server.transformers.thymeleaf.Thymeleaf;
 import io.higgs.http.server.transformers.thymeleaf.WebContext;

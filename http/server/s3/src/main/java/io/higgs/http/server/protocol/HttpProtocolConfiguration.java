@@ -9,7 +9,7 @@ import io.higgs.http.server.ParamInjector;
 import io.higgs.http.server.Transcriber;
 import io.higgs.http.server.auth.HiggsSecurityManager;
 import io.higgs.http.server.config.HttpConfig;
-import io.higgs.http.server.transformers.ResponseTransformer;
+import io.higgs.http.server.providers.ResponseTransformer;
 import org.apache.shiro.config.IniSecurityManagerFactory;
 import org.apache.shiro.mgt.DefaultSecurityManager;
 import org.apache.shiro.mgt.SecurityManager;

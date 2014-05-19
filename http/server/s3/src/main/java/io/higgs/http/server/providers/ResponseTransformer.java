@@ -1,4 +1,4 @@
-package io.higgs.http.server.transformers;
+package io.higgs.http.server.providers;
 
 import io.higgs.core.Sortable;
 import io.higgs.http.server.HttpRequest;

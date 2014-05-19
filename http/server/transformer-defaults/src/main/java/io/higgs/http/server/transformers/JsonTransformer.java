@@ -7,6 +7,8 @@ import io.higgs.http.server.HttpResponse;
 import io.higgs.http.server.HttpStatus;
 import io.higgs.http.server.protocol.HttpMethod;
 import io.higgs.http.server.protocol.mediaTypeDecoders.JsonDecoder;
+import io.higgs.http.server.providers.BaseTransformer;
+import io.higgs.http.server.providers.ResponseTransformer;
 import io.higgs.http.server.resource.MediaType;
 import io.higgs.http.server.transformers.conf.JsonConfig;
 import io.netty.channel.ChannelHandlerContext;
