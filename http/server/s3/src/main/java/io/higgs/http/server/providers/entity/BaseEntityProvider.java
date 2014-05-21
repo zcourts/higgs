@@ -1,10 +1,11 @@
-package io.higgs.http.server.providers;
+package io.higgs.http.server.providers.entity;
 
 import io.higgs.core.ResolvedFile;
 import io.higgs.http.server.HttpRequest;
 import io.higgs.http.server.HttpResponse;
 import io.higgs.http.server.WebApplicationException;
 import io.higgs.http.server.protocol.HttpMethod;
+import io.higgs.http.server.providers.ResponseTransformer;
 import io.higgs.http.server.resource.MediaType;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.HttpHeaders;
@@ -22,7 +23,7 @@ import java.util.Set;
 /**
  * @author Courtney Robinson <courtney@crlog.info>
  */
-public abstract class BaseProvider implements ResponseTransformer {
+public abstract class BaseEntityProvider implements ResponseTransformer {
     protected Logger log = LoggerFactory.getLogger(getClass());
     protected int priority;
     protected Set<MediaType> supportedTypes = new HashSet<>();
