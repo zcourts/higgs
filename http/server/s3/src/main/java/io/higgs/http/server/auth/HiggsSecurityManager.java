@@ -1,6 +1,7 @@
 package io.higgs.http.server.auth;
 
 import io.higgs.core.HiggsServer;
+import io.higgs.http.server.Util;
 import io.higgs.http.server.config.HttpConfig;
 import org.apache.shiro.authc.Authenticator;
 import org.apache.shiro.authc.pam.AuthenticationStrategy;
@@ -12,10 +13,7 @@ import org.apache.shiro.session.mgt.eis.SessionDAO;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.HashSet;
 import java.util.Iterator;
-import java.util.ServiceConfigurationError;
-import java.util.ServiceLoader;
 import java.util.Set;
 
 /**
@@ -38,7 +36,7 @@ public class HiggsSecurityManager {
     }
 
     protected static void setupAuthorization() {
-        Set<Authorizer> authorizers = getServices(Authorizer.class);
+        Set<Authorizer> authorizers = Util.getServices(Authorizer.class);
         if (authorizers.size() > 0) {
             Iterator<Authorizer> it = authorizers.iterator();
             Authorizer auth = it.next();
@@ -55,7 +53,7 @@ public class HiggsSecurityManager {
     protected static void setupSessions() {
         sessionManager.setSessionFactory(new HiggsSessionFactory());
         securityManager.setSessionManager(sessionManager);
-        Set<SessionDAO> sessionDAO = getServices(SessionDAO.class);
+        Set<SessionDAO> sessionDAO = Util.getServices(SessionDAO.class);
         if (sessionDAO.size() > 0) {
             Iterator<SessionDAO> it = sessionDAO.iterator();
             SessionDAO dao = it.next();
@@ -69,7 +67,7 @@ public class HiggsSecurityManager {
     }
 
     protected static void setupRealms() {
-        Set<Realm> realms = getServices(Realm.class);
+        Set<Realm> realms = Util.getServices(Realm.class);
         if (realms.size() > 0) {
             // if realms are found they probably came from the config, keep them in addition to the ones discovered
             //note that the ones discovered via SPI takes precedence
@@ -84,7 +82,7 @@ public class HiggsSecurityManager {
     }
 
     protected static void seupAuthenticationStrategy() {
-        Set<AuthenticationStrategy> authenticators = getServices(AuthenticationStrategy.class);
+        Set<AuthenticationStrategy> authenticators = Util.getServices(AuthenticationStrategy.class);
         if (authenticators.size() > 0) {
             ModularRealmAuthenticator mod = new ModularRealmAuthenticator();
             Authenticator auth = securityManager.getAuthenticator();
@@ -104,18 +102,4 @@ public class HiggsSecurityManager {
             log.info("No authentication service setup on the class path");
         }
     }
-
-    protected static <T> Set<T> getServices(Class<T> klass) {
-        Iterator<T> providers = ServiceLoader.load(klass).iterator();
-        HashSet<T> services = new HashSet<>();
-        while (providers.hasNext()) {
-            try {
-                services.add(providers.next());
-            } catch (ServiceConfigurationError sce) {
-                log.warn("Unable to register Realm", sce);
-            }
-        }
-        return services;
-    }
-
 }
