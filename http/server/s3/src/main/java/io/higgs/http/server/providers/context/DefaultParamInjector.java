@@ -1,7 +1,10 @@
-package io.higgs.http.server;
+package io.higgs.http.server.providers.context;
 
 import io.higgs.core.ResourcePath;
 import io.higgs.core.reflect.ReflectionUtil;
+import io.higgs.http.server.HttpRequest;
+import io.higgs.http.server.HttpResponse;
+import io.higgs.http.server.MethodParam;
 import io.higgs.http.server.params.FormFiles;
 import io.higgs.http.server.params.FormParams;
 import io.higgs.http.server.params.HttpCookie;
@@ -21,7 +24,7 @@ import java.util.List;
 /**
  * Inspect the provided method parameters and substitute supported types as parameters where necessary
  * The following can be injected:
- * {@link HttpRequest},{@link FormFiles},{@link HttpFile},{@link FormParams},
+ * {@link io.higgs.http.server.HttpRequest},{@link FormFiles},{@link HttpFile},{@link FormParams},
  * {@link HttpCookie},{@link QueryParams},{@link io.higgs.http.server.auth.HiggsSession},{@link ResourcePath}
  *
  * @author Courtney Robinson <courtney@crlog.info>
