@@ -10,7 +10,7 @@ import io.higgs.http.server.HttpRequest;
 import io.higgs.http.server.HttpResponse;
 import io.higgs.http.server.HttpStatus;
 import io.higgs.http.server.MessagePusher;
-import io.higgs.http.server.ParamInjector;
+import io.higgs.http.server.providers.context.ParamInjector;
 import io.higgs.http.server.StaticFileMethod;
 import io.higgs.http.server.WebApplicationException;
 import io.higgs.http.server.WrappedResponse;
@@ -48,7 +48,6 @@ import static io.netty.handler.codec.http.HttpHeaders.setContentLength;
  */
 public class HttpHandler extends MessageHandler<HttpConfig, Object> {
     protected static final Class<HttpMethod> methodClass = HttpMethod.class;
-    protected final Queue<MediaTypeDecoder> mediaTypeDecoders = new ConcurrentLinkedDeque<>();
     protected final HttpConfig httpConfig;
     /**
      * The current HTTP request
@@ -60,7 +59,6 @@ public class HttpHandler extends MessageHandler<HttpConfig, Object> {
      * If no method matches this will be null
      */
     protected HttpMethod method;
-    protected ParamInjector injector;
     protected HttpProtocolConfiguration protocolConfig;
     protected boolean replied;
     protected MediaTypeDecoder decoder;
@@ -70,8 +68,6 @@ public class HttpHandler extends MessageHandler<HttpConfig, Object> {
         super(config.getServer().<HttpConfig>getConfig());
         httpConfig = config.getServer().getConfig();
         protocolConfig = config;
-        injector = config.getInjector();
-        mediaTypeDecoders.addAll(config.getMediaTypeDecoders());
     }
 
     public <M extends InvokableMethod> M findMethod(String path, ChannelHandlerContext ctx,
@@ -185,6 +181,23 @@ public class HttpHandler extends MessageHandler<HttpConfig, Object> {
                 return ctx;
             }
         };
+        //todo
+        /**
+         * Ultimately we convert from bytes to objects or from objects to bytes.
+         * Dependency injection needs to change so that for all MessageBodyReader
+         * providers discovered via SPI, an attempt is made to use them to convert the bytes to object
+         * if their readFrom method and @consumes annotation allows
+         *
+         *  like wise, MessageBodyWriter needs to be used to convert responses to byte[] or bytebufs
+         *
+         *  in both cases, if the SPI approach fails or no matching ones are found then we fall back to the current
+         *  implementation.
+         *
+         *  Use SPI to discover any usage of @Context annotation.
+         *  Any class which uses @Context should only have the fields annotated be set. All other fields should be left
+         *  alone by the injector. The same goes for method parameters when injecting, unless a provider can produce the
+         *  type of the parameter expected the param is not injected if the @Context annotation is set on it
+         */
         //inject globally available provider
         DependencyProvider provider = decoder == null ? DependencyProvider.from() : decoder.provider();
         //take all objects in the global provider

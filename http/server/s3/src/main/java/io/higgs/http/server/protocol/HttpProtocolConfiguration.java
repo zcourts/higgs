@@ -4,43 +4,40 @@ import io.higgs.core.HiggsServer;
 import io.higgs.core.MethodProcessor;
 import io.higgs.core.ProtocolConfiguration;
 import io.higgs.core.ProtocolDetectorFactory;
-import io.higgs.http.server.DefaultParamInjector;
-import io.higgs.http.server.ParamInjector;
-import io.higgs.http.server.Transcriber;
+import io.higgs.http.server.Util;
 import io.higgs.http.server.auth.HiggsSecurityManager;
 import io.higgs.http.server.config.HttpConfig;
-import io.higgs.http.server.providers.ResponseTransformer;
+import io.higgs.http.server.providers.filters.HiggsFilter;
 import org.apache.shiro.config.IniSecurityManagerFactory;
 import org.apache.shiro.mgt.DefaultSecurityManager;
 import org.apache.shiro.mgt.SecurityManager;
+import org.cliffc.high_scale_lib.NonBlockingHashSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Iterator;
-import java.util.Queue;
-import java.util.ServiceConfigurationError;
-import java.util.ServiceLoader;
-import java.util.concurrent.ConcurrentLinkedDeque;
+import javax.ws.rs.ext.ContextResolver;
+import javax.ws.rs.ext.ExceptionMapper;
+import javax.ws.rs.ext.MessageBodyReader;
+import javax.ws.rs.ext.MessageBodyWriter;
+import javax.ws.rs.ext.Provider;
+import java.util.Set;
 
+/**
+ * JAX-RS has three main types of providers.
+ * Entity, Context and Exception, see https://jsr311.java.net/nonav/releases/1.1/spec/spec3.html#x3-390004
+ * Auto discoverable and manually configurable
+ */
 public class HttpProtocolConfiguration implements ProtocolConfiguration {
-    protected final Queue<ResponseTransformer> transformers = new ConcurrentLinkedDeque<>();
-    protected final Queue<MediaTypeDecoder> mediaTypeDecoders = new ConcurrentLinkedDeque<>();
+    //Providers
+    protected final Set<MessageBodyWriter> writers = new NonBlockingHashSet<>();
+    protected final Set<MessageBodyReader> readers = new NonBlockingHashSet<>();
+    protected final Set<ContextResolver> contextProviders = new NonBlockingHashSet<>();
+    protected final Set<ExceptionMapper> exceptionMappers = new NonBlockingHashSet<>();
+    protected final Set<HiggsFilter> filters = new NonBlockingHashSet<>();
+    //
     protected SecurityManager securityManager;
     protected HiggsServer server;
-    protected ParamInjector injector = new DefaultParamInjector();
-    protected Transcriber transcriber = new Transcriber();
     protected Logger log = LoggerFactory.getLogger(getClass());
-
-    public Transcriber getTranscriber() {
-        return transcriber;
-    }
-
-    public void setTranscriber(Transcriber transcriber) {
-        if (transcriber == null) {
-            throw new IllegalArgumentException("Null transcriber");
-        }
-        this.transcriber = transcriber;
-    }
 
     public HiggsServer getServer() {
         return server;
@@ -48,14 +45,6 @@ public class HttpProtocolConfiguration implements ProtocolConfiguration {
 
     public void setServer(HiggsServer server) {
         this.server = server;
-    }
-
-    public ParamInjector getInjector() {
-        return injector;
-    }
-
-    public void setInjector(ParamInjector injector) {
-        this.injector = injector;
     }
 
     @Override
@@ -78,28 +67,53 @@ public class HttpProtocolConfiguration implements ProtocolConfiguration {
         if (securityManager instanceof DefaultSecurityManager) {
             HiggsSecurityManager.configure(server, (DefaultSecurityManager) securityManager);
         }
-
-        Iterator<ResponseTransformer> providers = ServiceLoader.load(ResponseTransformer.class).iterator();
-        while (providers.hasNext()) {
-            try {
-                ResponseTransformer transformer = providers.next();
-                transformers.add(transformer);
-            } catch (ServiceConfigurationError sce) {
-                log.warn("Unable to register a transformer. Please ensure it implements the interface correctly" +
-                        " and has a public, no-arg constructor", sce);
+        //todo make auto discovery configurable, allowing users to disable it
+        log.debug("Attempting to discover providers");
+        Set providers = Util.getServices(Provider.class);
+        for (Object o : providers) {
+            if (o instanceof MessageBodyReader) {
+                readers.add((MessageBodyReader) o);
+            } else if (o instanceof MessageBodyWriter) {
+                writers.add((MessageBodyWriter) o);
+            } else if (o instanceof ContextResolver) {
+                contextProviders.add((ContextResolver) o);
+            } else if (o instanceof ExceptionMapper) {
+                exceptionMappers.add((ExceptionMapper) o);
+            } else if (o instanceof HiggsFilter) {
+                filters.add((HiggsFilter) o);
+            } else {
+                log.warn(String.format("Discovered unsupported Provider type %s, only MessageBodyReader," +
+                                "MessageBodyWriter,ContextResolver and ExceptionMapper implementations are valid.",
+                        o.getClass().getName()
+                ));
             }
         }
-        if (transformers.size() == 0) {
-            log.warn("No response transformers registered, this means requests will not receive response entities");
-        }
+        filters.addAll(Util.getServices(HiggsFilter.class));
+//todo add config option to enable discovery of any implementation of the following (wouldn't be jsr-311 compliant)
+//        readers.addAll(Util.getServices(MessageBodyReader.class));
+//        writers.addAll(Util.getServices(MessageBodyWriter.class));
+//        contextProviders.addAll(Util.getServices(ContextResolver.class));
+//        exceptionMappers.addAll(Util.getServices(ExceptionMapper.class));
     }
 
-    public Queue<MediaTypeDecoder> getMediaTypeDecoders() {
-        return mediaTypeDecoders;
+    public Set<HiggsFilter> getFilters() {
+        return filters;
     }
 
-    public Queue<ResponseTransformer> getTransformers() {
-        return transformers;
+    public Set<MessageBodyWriter> getWriters() {
+        return writers;
+    }
+
+    public Set<MessageBodyReader> getReaders() {
+        return readers;
+    }
+
+    public Set<ContextResolver> getContextProviders() {
+        return contextProviders;
+    }
+
+    public Set<ExceptionMapper> getExceptionMappers() {
+        return exceptionMappers;
     }
 
     public SecurityManager getSecurityManager() {
