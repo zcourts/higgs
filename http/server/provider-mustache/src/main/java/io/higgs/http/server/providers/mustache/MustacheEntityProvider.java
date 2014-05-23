@@ -9,7 +9,7 @@ import io.higgs.http.server.HttpResponse;
 import io.higgs.http.server.WebApplicationException;
 import io.higgs.http.server.config.MustacheConfig;
 import io.higgs.http.server.protocol.HttpMethod;
-import io.higgs.http.server.providers.BaseProvider;
+import io.higgs.http.server.providers.entity.BaseEntityProvider;
 import io.higgs.http.server.providers.ResponseTransformer;
 import io.higgs.http.server.resource.MediaType;
 import io.netty.buffer.ByteBuf;
@@ -40,11 +40,11 @@ import static io.netty.handler.codec.http.HttpResponseStatus.INTERNAL_SERVER_ERR
  * @author Courtney Robinson <courtney@crlog.info>
  */
 @Provider
-public class MustacheProvider extends BaseProvider {
+public class MustacheEntityProvider extends BaseEntityProvider {
     protected MustacheConfig config;
     protected MustacheFactory mf;
 
-    public MustacheProvider() {
+    public MustacheEntityProvider() {
         config = ConfigUtil.loadYaml("mustache_config.yml", MustacheConfig.class);
         setPriority(config.priority);
         addSupportedTypes(WILDCARD_TYPE, TEXT_HTML_TYPE, APPLICATION_FORM_URLENCODED_TYPE, APPLICATION_XHTML_XML_TYPE);
@@ -142,6 +142,6 @@ public class MustacheProvider extends BaseProvider {
 
     @Override
     public ResponseTransformer instance() {
-        return new MustacheProvider();
+        return new MustacheEntityProvider();
     }
 }

@@ -11,6 +11,7 @@ import io.higgs.http.server.StaticFileMethod;
 import io.higgs.http.server.WebApplicationException;
 import io.higgs.http.server.config.HttpConfig;
 import io.higgs.http.server.protocol.HttpMethod;
+import io.higgs.http.server.providers.entity.BaseEntityProvider;
 import io.higgs.http.server.resource.MediaType;
 import io.higgs.http.server.providers.conf.FilesConfig;
 import io.netty.buffer.ByteBuf;
@@ -30,13 +31,13 @@ import java.util.concurrent.ConcurrentHashMap;
  * @author Courtney Robinson <courtney@crlog.info>
  */
 @Provider
-public class StaticFileProvider extends BaseProvider {
+public class StaticFileEntityProvider extends BaseEntityProvider {
     private static Map<String, String> formats = new ConcurrentHashMap<>();
     private FilesConfig conf;
     protected HttpConfig config;
     protected Path base;
 
-    public StaticFileProvider() {
+    public StaticFileEntityProvider() {
         //inject HttpConfig
         Injector.inject(this, DependencyProvider.global());
         conf = ConfigUtil.loadYaml("static_file_config.yml", FilesConfig.class);
@@ -66,7 +67,7 @@ public class StaticFileProvider extends BaseProvider {
 
     /**
      * Overrides the default behaviour in
-     * {@link io.higgs.http.server.providers.BaseProvider#canTransform(Object, HttpRequest, MediaType, HttpMethod, ChannelHandlerContext)}
+     * {@link BaseEntityProvider#canTransform(Object, HttpRequest, MediaType, HttpMethod, ChannelHandlerContext)}
      * for a custom check on static files
      */
     @Override
@@ -117,6 +118,6 @@ public class StaticFileProvider extends BaseProvider {
 
     @Override
     public ResponseTransformer instance() {
-        return new StaticFileProvider();
+        return new StaticFileEntityProvider();
     }
 }

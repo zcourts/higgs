@@ -7,6 +7,7 @@ import io.higgs.http.server.HttpResponse;
 import io.higgs.http.server.HttpStatus;
 import io.higgs.http.server.protocol.HttpMethod;
 import io.higgs.http.server.protocol.mediaTypeDecoders.JsonDecoder;
+import io.higgs.http.server.providers.entity.BaseEntityProvider;
 import io.higgs.http.server.resource.MediaType;
 import io.higgs.http.server.providers.conf.JsonConfig;
 import io.netty.channel.ChannelHandlerContext;
@@ -20,10 +21,10 @@ import static io.higgs.http.server.providers.JsonResponseError.EMPTY_JSON_OBJECT
  * @author Courtney Robinson <courtney@crlog.info>
  */
 @Provider
-public class JsonProvider extends BaseProvider {
+public class JsonEntityProvider extends BaseEntityProvider {
     protected JsonConfig conf;
 
-    public JsonProvider() {
+    public JsonEntityProvider() {
         conf = ConfigUtil.loadYaml("json_config.yml", JsonConfig.class);
         setPriority(conf.priority);
         addSupportedTypes(APPLICATION_JSON_TYPE);
@@ -63,7 +64,7 @@ public class JsonProvider extends BaseProvider {
     }
 
     @Override
-    public JsonProvider instance() {
+    public JsonEntityProvider instance() {
         return this;//we can return this, instead of a new instance because the JSON transformer isn't stateful
     }
 }

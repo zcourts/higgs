@@ -15,10 +15,11 @@ import io.higgs.core.ConfigUtil;
 import io.higgs.core.reflect.dependency.DependencyProvider;
 import io.higgs.http.server.HttpRequest;
 import io.higgs.http.server.HttpResponse;
+import io.higgs.http.server.Util;
 import io.higgs.http.server.WebApplicationException;
 import io.higgs.http.server.config.HandlebarsConfig;
 import io.higgs.http.server.protocol.HttpMethod;
-import io.higgs.http.server.providers.BaseProvider;
+import io.higgs.http.server.providers.entity.BaseEntityProvider;
 import io.higgs.http.server.providers.ResponseTransformer;
 import io.higgs.http.server.resource.MediaType;
 import io.netty.buffer.ByteBuf;
@@ -31,10 +32,8 @@ import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map;
-import java.util.ServiceConfigurationError;
-import java.util.ServiceLoader;
+import java.util.Set;
 
 import static io.higgs.http.server.resource.MediaType.APPLICATION_FORM_URLENCODED_TYPE;
 import static io.higgs.http.server.resource.MediaType.APPLICATION_XHTML_XML_TYPE;
@@ -48,13 +47,13 @@ import static io.netty.handler.codec.http.HttpResponseStatus.INTERNAL_SERVER_ERR
  * @author Courtney Robinson <courtney@crlog.info>
  */
 @Provider
-public class HandlebarsProvider extends BaseProvider {
+public class HandlebarsEntityProvider extends BaseEntityProvider {
     public static final String HANDLE_BARS = "{{handlebars}}";
     protected HandlebarsConfig config;
     protected Handlebars handlebars;
     protected HiggsTemplateLoader loader;
 
-    public HandlebarsProvider() {
+    public HandlebarsEntityProvider() {
         config = ConfigUtil.loadYaml("handlebars_config.yml", HandlebarsConfig.class);
         setPriority(config.priority);
         addSupportedTypes(WILDCARD_TYPE, TEXT_HTML_TYPE, APPLICATION_FORM_URLENCODED_TYPE, APPLICATION_XHTML_XML_TYPE);
@@ -79,14 +78,9 @@ public class HandlebarsProvider extends BaseProvider {
     }
 
     protected void loadHelpers() {
-        Iterator<HandlebarHelper> providers = ServiceLoader.load(HandlebarHelper.class).iterator();
-        while (providers.hasNext()) {
-            try {
-                HandlebarHelper helper = providers.next();
-                handlebars.registerHelper(helper.getName(), helper);
-            } catch (ServiceConfigurationError sce) {
-                log.warn("Unable to register Handlebar helper factory", sce);
-            }
+        Set<HandlebarHelper> providers = Util.getServices(HandlebarHelper.class);
+        for (HandlebarHelper helper : providers) {
+            handlebars.registerHelper(helper.getName(), helper);
         }
     }
 
@@ -154,6 +148,6 @@ public class HandlebarsProvider extends BaseProvider {
 
     @Override
     public ResponseTransformer instance() {
-        return new HandlebarsProvider();
+        return new HandlebarsEntityProvider();
     }
 }

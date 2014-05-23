@@ -8,6 +8,7 @@ import io.higgs.http.server.HttpStatus;
 import io.higgs.http.server.WebApplicationException;
 import io.higgs.http.server.config.TemplateConfig;
 import io.higgs.http.server.protocol.HttpMethod;
+import io.higgs.http.server.providers.entity.BaseEntityProvider;
 import io.higgs.http.server.resource.MediaType;
 import io.higgs.http.server.providers.thymeleaf.Thymeleaf;
 import io.higgs.http.server.providers.thymeleaf.WebContext;
@@ -37,12 +38,12 @@ import static io.higgs.http.server.resource.MediaType.WILDCARD_TYPE;
  * @author Courtney Robinson <courtney@crlog.info>
  */
 @Provider
-public class ThymeleafProvider extends BaseProvider {
+public class ThymeleafEntityProvider extends BaseEntityProvider {
     protected TemplateConfig config;
     protected Thymeleaf tl;
     private Logger log = LoggerFactory.getLogger(getClass());
 
-    public ThymeleafProvider() {
+    public ThymeleafEntityProvider() {
         this.config = ConfigUtil.loadYaml("thymeleaf_config.yml", TemplateConfig.class);
         tl = new Thymeleaf(this.config);
         setPriority(config.priority);
@@ -50,8 +51,8 @@ public class ThymeleafProvider extends BaseProvider {
     }
 
     @Override
-    public ThymeleafProvider instance() {
-        return new ThymeleafProvider();
+    public ThymeleafEntityProvider instance() {
+        return new ThymeleafEntityProvider();
     }
 
     public void transform(Object response, HttpRequest request, HttpResponse res, MediaType mediaType,
