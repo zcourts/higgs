@@ -1,4 +1,4 @@
-package io.higgs.http.server;
+package io.higgs.http.server.util;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
