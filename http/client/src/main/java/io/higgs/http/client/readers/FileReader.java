@@ -20,7 +20,7 @@ public class FileReader extends Reader<File> {
         this(null);
     }
 
-    public FileReader(Function2<File, Response> function) throws IOException {
+    public FileReader(Function2<File, Response, Void> function) throws IOException {
         if (function != null) {
             listen(function);
         }
@@ -46,7 +46,7 @@ public class FileReader extends Reader<File> {
         } catch (IOException e) {
             log.warn("Unable to close output stream of the downloaded file", e);
         }
-        for (Function2<File, Response> function : functions) {
+        for (Function2<File, Response, Void> function : functions) {
             function.apply(file, response);
         }
     }

@@ -91,7 +91,7 @@ public class Events {
     /**
      * @deprecated
      */
-    public <A> void on(Function1<A> function, final String... events) {
+    public <A> void on(Function1<A, Void> function, final String... events) {
         Event[] e = new Event[events.length];
         for (int i = 0; i < events.length; i++) {
             final int finalI = i;
@@ -112,7 +112,7 @@ public class Events {
      * @param events   a set of events to subscribe the function to
      * @param <A>      the type the function accepts, only events matching this type will cause invocation
      */
-    public <A> void on(Function1<A> function, Event... events) {
+    public <A> void on(Function1<A, Void> function, Event... events) {
         if (events.length == 0)
             throw new IllegalArgumentException("At least one event is required");
         for (Event event : events) {

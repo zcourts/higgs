@@ -30,9 +30,10 @@ public class Demo {
         // event instances of the same class (but they'll all be invoked if the event topic matches)...
         events.subscribe(new ClassExample());
         //subscribe this function to these events execute this function
-        events.on(new Function1<String>() {
-            public void apply(String s) {
+        events.on(new Function1<String, Void>() {
+            public Void apply(String s) {
                 System.out.println(Thread.currentThread().getName() + " Event received : " + s);
+                return null;
             }
         }, "event-name", "test", "event3");
 

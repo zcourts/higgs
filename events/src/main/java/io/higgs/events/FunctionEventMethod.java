@@ -12,9 +12,9 @@ import java.util.LinkedList;
  * @author Courtney Robinson <courtney@crlog.info>
  */
 public class FunctionEventMethod<A> extends EventMethod {
-    private final Function1<A> function;
+    private final Function1<A, Void> function;
 
-    public FunctionEventMethod(String event, Function1<A> function) {
+    public FunctionEventMethod(String event, Function1<A, Void> function) {
         //dummy values, the invoke method is overriden so these aren't used
         super(new LinkedList<ObjectFactory>(), Function1.class,
                 Function1.class.getMethods()[0]);

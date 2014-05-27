@@ -23,14 +23,14 @@ public abstract class Reader<T> {
     protected static final Charset utf8 = Charset.forName("UTF-8");
     protected ByteBuf buffer = Unpooled.buffer();
     protected ByteBufInputStream data = new ByteBufInputStream(buffer);
-    protected Set<Function2<T, Response>> functions = new HashSet<>();
+    protected Set<Function2<T, Response, Void>> functions = new HashSet<>();
     private boolean completed;
     protected Response response;
 
     public Reader() {
     }
 
-    public Reader(Function2<T, Response> function) {
+    public Reader(Function2<T, Response, Void> function) {
         if (function == null) {
             throw new IllegalArgumentException("Function cannot be null, use another constructor");
         }
@@ -85,7 +85,7 @@ public abstract class Reader<T> {
     /**
      * @param function Adds a function to be invoked by this reader
      */
-    public void listen(Function2<T, Response> function) {
+    public void listen(Function2<T, Response, Void> function) {
         if (function != null) {
             functions.add(function);
         }

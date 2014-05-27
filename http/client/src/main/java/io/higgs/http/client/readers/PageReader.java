@@ -10,7 +10,7 @@ import io.higgs.http.client.Response;
  * @author Courtney Robinson <courtney@crlog.info>
  */
 public class PageReader extends Reader<String> {
-    public PageReader(Function2<String, Response> function) {
+    public PageReader(Function2<String, Response, Void> function) {
         super(function);
     }
 
@@ -20,7 +20,7 @@ public class PageReader extends Reader<String> {
     @Override
     public void done() {
         String str = buffer.toString(0, buffer.writerIndex(), utf8);
-        for (Function2<String, Response> function : functions) {
+        for (Function2<String, Response, Void> function : functions) {
             function.apply(str, response);
         }
         //we read the entire stream

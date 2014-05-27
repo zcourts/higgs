@@ -30,19 +30,21 @@ public class ProxyDemo {
         HttpRequestBuilder proxied = defaults.copy();
         proxied.proxy("localhost", 3128, "a", "b");
         Request req = proxied.GET(new URI("http://api.datasift.com/v1/usage?username=zcourts&api_key=abc123"),
-                new PageReader(new Function2<String, Response>() {
-                    public void apply(String s, final Response response) {
+                new PageReader(new Function2<String, Response, Void>() {
+                    public Void apply(String s, final Response response) {
                         System.out.println(s);
+                        return null;
                     }
                 })
         );
 
         //this request will be tunneled because it uses HTTPS
         Request req2 = proxied.GET(new URI("https://api.datasift.com/v1/usage"),
-                new PageReader(new Function2<String, Response>() {
-                    public void apply(String s, final Response response) {
+                new PageReader(new Function2<String, Response, Void>() {
+                    public Void apply(String s, final Response response) {
                         System.out.println(s);
                         HttpRequestBuilder.shutdown();
+                        return null;
                     }
                 })
         );

@@ -47,10 +47,11 @@ public class Demo {
         });
 
         Request req3 = HttpRequestBuilder.instance().GET(new URI("https://api.datasift.com/v1.1/dpu"),
-                new PageReader(new Function2<String, Response>() {
-                    public void apply(String s, final Response response) {
+                new PageReader(new Function2<String, Response, Void>() {
+                    public Void apply(String s, final Response response) {
                         System.out.println(s);
                         HttpRequestBuilder.shutdown();
+                        return null;
                     }
                 })
         )
@@ -67,18 +68,20 @@ public class Demo {
         HttpRequestBuilder clone = defaults.copy();
         // could remove all redirect statuses with copy.redirectOn().clear();
         Request req = clone.GET(new URI("http://httpbin.org/relative-redirect/1"),
-                new PageReader(new Function2<String, Response>() {
-                    public void apply(String s, final Response response) {
+                new PageReader(new Function2<String, Response, Void>() {
+                    public Void apply(String s, final Response response) {
                         System.out.println(s);
+                        return null;
                     }
                 })
         );
         req.execute();
         Request r = clone.GET(new URI("http://httpbin.org/redirect/1"),
-                new PageReader(new Function2<String, Response>() {
-                    public void apply(String s, Response response) {
+                new PageReader(new Function2<String, Response, Void>() {
+                    public Void apply(String s, Response response) {
                         System.out.println(s);
                         System.out.println(response);
+                        return null;
                     }
                 })
         );
@@ -91,10 +94,11 @@ public class Demo {
 
         //to read an entire page
         PageReader page = new PageReader();
-        page.listen(new Function2<String, Response>() {
-            public void apply(String data, Response response) {
+        page.listen(new Function2<String, Response, Void>() {
+            public Void apply(String data, Response response) {
                 System.out.println("----------------------------------- SIMPLE GET ----------------------------------");
                 System.out.println(data);
+                return null;
             }
         });
         //by using copy we create a new instance which keeps the global settings configured on defaults
@@ -119,9 +123,10 @@ public class Demo {
 
         //to read a url line by line such as a Twitter or other API stream
         //use alternative constructor
-        LineReader lineReader = new LineReader(new Function2<String, Response>() {
-            public void apply(String line, Response response) {
+        LineReader lineReader = new LineReader(new Function2<String, Response, Void>() {
+            public Void apply(String line, Response response) {
                 System.out.println("LINE: " + line);
+                return null;
             }
         });
         defaults.GET(new
@@ -129,8 +134,8 @@ public class Demo {
                 execute();
 
         //to download a file
-        FileReader fileReader = new FileReader(new Function2<File, Response>() {
-            public void apply(File file, Response response) {
+        FileReader fileReader = new FileReader(new Function2<File, Response, Void>() {
+            public Void apply(File file, Response response) {
                 System.out.println("--------------------------------- DOWNLOAD FILE ---------------------------------");
                 System.out.print("NAME:");
                 System.out.println(file.getName());
@@ -138,15 +143,17 @@ public class Demo {
                 System.out.println(file.getPath());
                 System.out.print("SIZE:");
                 System.out.println(file.getTotalSpace());
+                return null;
             }
         });
         defaults.GET(new URI("https://codeload.github.com/zcourts/higgs/zip/master"), fileReader).execute();
 
         //url encoded POST request
-        PageReader post = new PageReader(new Function2<String, Response>() {
-            public void apply(String data, Response response) {
+        PageReader post = new PageReader(new Function2<String, Response, Void>() {
+            public Void apply(String data, Response response) {
                 System.out.println("------------------------------- URL-ENCODED POST --------------------------------");
                 System.out.println(data);
+                return null;
             }
         });
 
@@ -157,10 +164,11 @@ public class Demo {
                 .execute();
 
         //multi part http post request
-        PageReader postReader = new PageReader(new Function2<String, Response>() {
-            public void apply(String data, Response response) {
+        PageReader postReader = new PageReader(new Function2<String, Response, Void>() {
+            public Void apply(String data, Response response) {
                 System.out.println("----------------------------------- MULTIPART -----------------------------------");
                 System.out.println(data);
+                return null;
             }
         });
         File tmpFile = Files.createTempFile("upload", ".txt").toFile();

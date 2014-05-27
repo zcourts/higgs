@@ -17,7 +17,7 @@ import java.io.IOException;
  * @author Courtney Robinson <courtney@crlog.info>
  */
 public class LineReader extends PageReader {
-    public LineReader(Function2<String, Response> function) {
+    public LineReader(Function2<String, Response, Void> function) {
         super(function);
     }
 
@@ -28,7 +28,7 @@ public class LineReader extends PageReader {
 // everything is received to ensure entire content is read
 
     public void writeLine(String line) {
-        for (Function2<String, Response> function : functions) {
+        for (Function2<String, Response, Void> function : functions) {
             function.apply(line, response);
         }
     }
