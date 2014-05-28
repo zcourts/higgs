@@ -2,6 +2,7 @@ package io.higgs.core.reflect.dependency;
 
 import org.cliffc.high_scale_lib.NonBlockingHashMap;
 
+import javax.ws.rs.ext.ContextResolver;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -11,7 +12,7 @@ import java.util.Map;
  *
  * @author Courtney Robinson <courtney@crlog.info>
  */
-public class DependencyProvider {
+public class DependencyProvider implements ContextResolver<Object> {
     private static final DependencyProvider global = new DependencyProvider();
     private NonBlockingHashMap<Class<?>, Object> instances = new NonBlockingHashMap<>();
     private NonBlockingHashMap<String, Object> named = new NonBlockingHashMap<>();
@@ -220,5 +221,10 @@ public class DependencyProvider {
             instances.putAll(provider.instances);
             named.putAll(provider.named);
         }
+    }
+
+    @Override
+    public Object getContext(Class<?> type) {
+        return get(type);
     }
 }
