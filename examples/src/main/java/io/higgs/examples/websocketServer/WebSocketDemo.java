@@ -19,8 +19,8 @@ public class WebSocketDemo {
         //handles all other HTTP requests
         HttpProtocolConfiguration http = new HttpProtocolConfiguration();
         //re-write all requests to /app/* to index.html
-        ws.getTranscriber().addTranscription(new Transcription("/app((?:\\/[\\w([^\\..]{1,4}\b)\\-]+)+)",
-                "/index.html"));
+//        ws.getTranscriber().addTranscription(new Transcription("/app((?:\\/[\\w([^\\..]{1,4}\b)\\-]+)+)",
+//                "/index.html"));
 
         HiggsServer server = new HiggsServer().setConfig("config.yml", HttpConfig.class);
         server.registerProtocol(ws);

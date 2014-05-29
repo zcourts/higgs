@@ -15,7 +15,7 @@ import io.higgs.core.ConfigUtil;
 import io.higgs.core.reflect.dependency.DependencyProvider;
 import io.higgs.http.server.HttpRequest;
 import io.higgs.http.server.HttpResponse;
-import io.higgs.http.server.Util;
+import io.higgs.http.server.util.Util;
 import io.higgs.http.server.WebApplicationException;
 import io.higgs.http.server.config.HandlebarsConfig;
 import io.higgs.http.server.protocol.HttpMethod;

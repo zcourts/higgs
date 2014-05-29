@@ -1,7 +1,7 @@
 package io.higgs.http.server.auth;
 
 import io.higgs.core.HiggsServer;
-import io.higgs.http.server.Util;
+import io.higgs.http.server.util.Util;
 import io.higgs.http.server.config.HttpConfig;
 import org.apache.shiro.authc.Authenticator;
 import org.apache.shiro.authc.pam.AuthenticationStrategy;

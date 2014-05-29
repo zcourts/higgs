@@ -1,12 +1,13 @@
 package io.higgs.http.server.util;
 
+import io.higgs.http.server.providers.ProviderContainer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.ws.rs.ext.ContextResolver;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.ServiceConfigurationError;
-import java.util.ServiceLoader;
 import java.util.Set;
 
 /**
@@ -15,8 +16,8 @@ import java.util.Set;
 public class Util {
     private static Logger log = LoggerFactory.getLogger(Util.class);
 
-    public static <T> Set<T> getServices(Class<T> klass) {
-        Iterator<T> providers = ServiceLoader.load(klass).iterator();
+    public static <T> Set<T> getServices(Class<T> klass, Set<ProviderContainer<ContextResolver>> resolvers) {
+        Iterator<T> providers = HiggsServiceLoader.load(klass, resolvers).iterator();
         HashSet<T> services = new HashSet<>();
         while (providers.hasNext()) {
             try {
