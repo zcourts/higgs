@@ -5,6 +5,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.ws.rs.ext.ContextResolver;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.ServiceConfigurationError;
@@ -15,6 +16,10 @@ import java.util.Set;
  */
 public class Util {
     private static Logger log = LoggerFactory.getLogger(Util.class);
+
+    public static <T> Set<T> getServices(Class<T> klass, ContextResolver resolver) {
+        return getServices(klass, new HashSet<>(Arrays.asList(new ProviderContainer<>(resolver))));
+    }
 
     public static <T> Set<T> getServices(Class<T> klass, Set<ProviderContainer<ContextResolver>> resolvers) {
         Iterator<T> providers = HiggsServiceLoader.load(klass, resolvers).iterator();

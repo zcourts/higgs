@@ -40,7 +40,7 @@ public class HiggsServiceLoader<S> implements Iterable<S> {
 
     // The current lazy-lookup iterator
     private LazyIterator lookupIterator;
-    private Set<ProviderContainer<ContextResolver>> contextProviders;
+    private final Set<ProviderContainer<ContextResolver>> contextProviders;
 
     /**
      * Clear this loader's provider cache so that all providers will be
@@ -58,9 +58,10 @@ public class HiggsServiceLoader<S> implements Iterable<S> {
         lookupIterator = new LazyIterator(service, loader);
     }
 
-    private HiggsServiceLoader(Class<S> svc, ClassLoader cl) {
+    private HiggsServiceLoader(Class<S> svc, ClassLoader cl, Set<ProviderContainer<ContextResolver>> ctxProviders) {
         service = svc;
         loader = cl;
+        this.contextProviders = ctxProviders;
         reload();
     }
 
@@ -225,7 +226,9 @@ public class HiggsServiceLoader<S> implements Iterable<S> {
                             //inject if context is present
                             if (paramType.getAnnotation(Context.class) != null) {
                                 for (ProviderContainer<ContextResolver> resolver : contextProviders) {
-                                    if (resolver.get().getContext(paramType) != null) {
+                                    Object val = resolver.get().getContext(paramType);
+                                    if (val != null) {
+                                        providers.put(cn, (S) val);
 
                                     }
                                 }
@@ -327,8 +330,9 @@ public class HiggsServiceLoader<S> implements Iterable<S> {
      * @return A new service loader
      */
     public static <S> HiggsServiceLoader<S> load(Class<S> service,
-                                                 ClassLoader loader) {
-        return new HiggsServiceLoader<>(service, loader);
+                                                 ClassLoader loader,
+                                                 Set<ProviderContainer<ContextResolver>> ctxProviders) {
+        return new HiggsServiceLoader<>(service, loader, ctxProviders);
     }
 
     /**
@@ -350,9 +354,10 @@ public class HiggsServiceLoader<S> implements Iterable<S> {
      * @param service The interface or abstract class representing the service
      * @return A new service loader
      */
-    public static <S> HiggsServiceLoader<S> load(Class<S> service) {
+    public static <S> HiggsServiceLoader<S> load(Class<S> service,
+                                                 Set<ProviderContainer<ContextResolver>> ctxProviders) {
         ClassLoader cl = Thread.currentThread().getContextClassLoader();
-        return HiggsServiceLoader.load(service, cl);
+        return HiggsServiceLoader.load(service, cl, ctxProviders);
     }
 
     /**
@@ -377,14 +382,15 @@ public class HiggsServiceLoader<S> implements Iterable<S> {
      * @param service The interface or abstract class representing the service
      * @return A new service loader
      */
-    public static <S> HiggsServiceLoader<S> loadInstalled(Class<S> service) {
+    public static <S> HiggsServiceLoader<S> loadInstalled(Class<S> service,
+                                                          Set<ProviderContainer<ContextResolver>> ctxProviders) {
         ClassLoader cl = ClassLoader.getSystemClassLoader();
         ClassLoader prev = null;
         while (cl != null) {
             prev = cl;
             cl = cl.getParent();
         }
-        return HiggsServiceLoader.load(service, prev);
+        return HiggsServiceLoader.load(service, prev, ctxProviders);
     }
 
     /**
@@ -394,10 +400,5 @@ public class HiggsServiceLoader<S> implements Iterable<S> {
      */
     public String toString() {
         return "java.util.HiggsServiceLoader[" + service.getName() + "]";
-    }
-
-    public HiggsServiceLoader<S> load(Class<S> service, Set<ProviderContainer<ContextResolver>> contextProviders) {
-        this.contextProviders = contextProviders;
-        return load(service);
     }
 }

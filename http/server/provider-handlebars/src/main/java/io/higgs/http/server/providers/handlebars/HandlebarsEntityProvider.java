@@ -15,13 +15,13 @@ import io.higgs.core.ConfigUtil;
 import io.higgs.core.reflect.dependency.DependencyProvider;
 import io.higgs.http.server.HttpRequest;
 import io.higgs.http.server.HttpResponse;
-import io.higgs.http.server.util.Util;
 import io.higgs.http.server.WebApplicationException;
 import io.higgs.http.server.config.HandlebarsConfig;
 import io.higgs.http.server.protocol.HttpMethod;
-import io.higgs.http.server.providers.entity.BaseEntityProvider;
 import io.higgs.http.server.providers.ResponseTransformer;
+import io.higgs.http.server.providers.entity.BaseEntityProvider;
 import io.higgs.http.server.resource.MediaType;
+import io.higgs.http.server.util.Util;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufOutputStream;
 import io.netty.channel.ChannelHandlerContext;
@@ -78,7 +78,7 @@ public class HandlebarsEntityProvider extends BaseEntityProvider {
     }
 
     protected void loadHelpers() {
-        Set<HandlebarHelper> providers = Util.getServices(HandlebarHelper.class);
+        Set<HandlebarHelper> providers = Util.getServices(HandlebarHelper.class, DependencyProvider.global());
         for (HandlebarHelper helper : providers) {
             handlebars.registerHelper(helper.getName(), helper);
         }

@@ -1,8 +1,9 @@
 package io.higgs.http.server.auth;
 
 import io.higgs.core.HiggsServer;
-import io.higgs.http.server.util.Util;
+import io.higgs.core.reflect.dependency.DependencyProvider;
 import io.higgs.http.server.config.HttpConfig;
+import io.higgs.http.server.util.Util;
 import org.apache.shiro.authc.Authenticator;
 import org.apache.shiro.authc.pam.AuthenticationStrategy;
 import org.apache.shiro.authc.pam.ModularRealmAuthenticator;
@@ -36,7 +37,7 @@ public class HiggsSecurityManager {
     }
 
     protected static void setupAuthorization() {
-        Set<Authorizer> authorizers = Util.getServices(Authorizer.class);
+        Set<Authorizer> authorizers = Util.getServices(Authorizer.class, DependencyProvider.global());
         if (authorizers.size() > 0) {
             Iterator<Authorizer> it = authorizers.iterator();
             Authorizer auth = it.next();
@@ -53,7 +54,7 @@ public class HiggsSecurityManager {
     protected static void setupSessions() {
         sessionManager.setSessionFactory(new HiggsSessionFactory());
         securityManager.setSessionManager(sessionManager);
-        Set<SessionDAO> sessionDAO = Util.getServices(SessionDAO.class);
+        Set<SessionDAO> sessionDAO = Util.getServices(SessionDAO.class, DependencyProvider.global());
         if (sessionDAO.size() > 0) {
             Iterator<SessionDAO> it = sessionDAO.iterator();
             SessionDAO dao = it.next();
@@ -67,7 +68,7 @@ public class HiggsSecurityManager {
     }
 
     protected static void setupRealms() {
-        Set<Realm> realms = Util.getServices(Realm.class);
+        Set<Realm> realms = Util.getServices(Realm.class, DependencyProvider.global());
         if (realms.size() > 0) {
             // if realms are found they probably came from the config, keep them in addition to the ones discovered
             //note that the ones discovered via SPI takes precedence
@@ -82,7 +83,8 @@ public class HiggsSecurityManager {
     }
 
     protected static void seupAuthenticationStrategy() {
-        Set<AuthenticationStrategy> authenticators = Util.getServices(AuthenticationStrategy.class);
+        Set<AuthenticationStrategy> authenticators = Util.getServices(AuthenticationStrategy.class
+                , DependencyProvider.global());
         if (authenticators.size() > 0) {
             ModularRealmAuthenticator mod = new ModularRealmAuthenticator();
             Authenticator auth = securityManager.getAuthenticator();
