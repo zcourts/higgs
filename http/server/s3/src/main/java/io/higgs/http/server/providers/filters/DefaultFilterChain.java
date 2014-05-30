@@ -3,6 +3,7 @@ package io.higgs.http.server.providers.filters;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.NavigableSet;
+import java.util.Set;
 import java.util.concurrent.ConcurrentSkipListSet;
 
 /**
@@ -12,13 +13,16 @@ public class DefaultFilterChain implements HiggsFilterChain {
     protected final NavigableSet<HiggsFilter> filters;
     protected HiggsFilter current;
 
-    public DefaultFilterChain() {
-        filters = new ConcurrentSkipListSet<>(new Comparator<HiggsFilter>() {
+    public DefaultFilterChain(Set<HiggsFilter> defaultFilters) {
+        this.filters = new ConcurrentSkipListSet<>(new Comparator<HiggsFilter>() {
             @Override
             public int compare(HiggsFilter o1, HiggsFilter o2) {
                 return o2.priority() - o1.priority();
             }
         });
+        if (defaultFilters != null) {
+            this.filters.addAll(defaultFilters);
+        }
     }
 
     @Override
