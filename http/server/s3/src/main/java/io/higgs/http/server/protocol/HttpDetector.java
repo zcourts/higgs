@@ -50,6 +50,7 @@ public class HttpDetector implements ProtocolDetector {
 //            }
 //        });
 //        p.addLast("deflater", new HttpContentCompressor());
+        p.addLast("mapped-handler", new MMappedDecoder());
         p.addLast("handler", h);
         return h;
     }

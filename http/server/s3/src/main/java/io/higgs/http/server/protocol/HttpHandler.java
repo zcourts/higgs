@@ -1,40 +1,28 @@
 package io.higgs.http.server.protocol;
 
-import io.higgs.core.FixedSortedList;
 import io.higgs.core.InvokableMethod;
 import io.higgs.core.MessageHandler;
 import io.higgs.core.ResolvedFile;
-import io.higgs.core.reflect.dependency.DependencyProvider;
-import io.higgs.core.reflect.dependency.Injector;
 import io.higgs.http.server.HttpRequest;
 import io.higgs.http.server.HttpResponse;
-import io.higgs.http.server.HttpStatus;
-import io.higgs.http.server.MessagePusher;
-import io.higgs.http.server.providers.context.ParamInjector;
 import io.higgs.http.server.StaticFileMethod;
-import io.higgs.http.server.WebApplicationException;
-import io.higgs.http.server.WrappedResponse;
 import io.higgs.http.server.config.HttpConfig;
-import io.higgs.http.server.protocol.mediaTypeDecoders.FormUrlEncodedDecoder;
-import io.higgs.http.server.protocol.mediaTypeDecoders.JsonDecoder;
-import io.higgs.http.server.providers.ResponseTransformer;
-import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.handler.codec.http.FullHttpRequest;
-import io.netty.handler.codec.http.HttpContent;
 import io.netty.handler.codec.http.HttpHeaders;
-import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.handler.codec.http.HttpVersion;
-import io.netty.handler.codec.http.LastHttpContent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.BufferedOutputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.net.SocketAddress;
-import java.util.List;
-import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.ThreadFactory;
 
 import static io.netty.handler.codec.http.HttpHeaders.Names.CONNECTION;
 import static io.netty.handler.codec.http.HttpHeaders.getHeader;
@@ -63,6 +51,13 @@ public class HttpHandler extends MessageHandler<HttpConfig, Object> {
     protected boolean replied;
     protected MediaTypeDecoder decoder;
     private Logger requestLogger = LoggerFactory.getLogger("request_logger");
+    private static int readerThreads;
+    private static ScheduledExecutorService executor = new ScheduledThreadPoolExecutor(4, new ThreadFactory() {
+        @Override
+        public Thread newThread(Runnable r) {
+            return new Thread(r, "stream-reader-" + (readerThreads++));
+        }
+    });
 
     public HttpHandler(HttpProtocolConfiguration config) {
         super(config.getServer().<HttpConfig>getConfig());
@@ -84,72 +79,99 @@ public class HttpHandler extends MessageHandler<HttpConfig, Object> {
     }
 
     public void channelRead0(ChannelHandlerContext ctx, Object msg) throws Exception {
-        if (msg instanceof LastHttpContent && !(msg instanceof FullHttpRequest) && replied) {
-            return;  //can happen if exception was thrown before last http content received
-        }
-        replied = false;
-        if (msg instanceof HttpRequest || msg instanceof FullHttpRequest) {
-            if (msg instanceof HttpRequest) {
-                request = (HttpRequest) msg;
-            } else {
-                request = new HttpRequest((FullHttpRequest) msg);
-            }
-            res = new HttpResponse(Unpooled.buffer());
-            //apply transcriptions
-            protocolConfig.getTranscriber().transcribe(request);
-            //must always set protocol config before anything uses the request
-            request.setConfig(protocolConfig);
-            //initialize request, setting cookies, media types etc
-            request.init(ctx);
-            method = findMethod(request.getUri(), ctx, request, methodClass);
-            if (method == null) {
-                //404
-                throw new WebApplicationException(HttpStatus.NOT_FOUND, request);
-            }
-            if (isEntityRequest()) {
-                if (httpConfig.add_form_url_decoder) {
-                    mediaTypeDecoders.add(new FormUrlEncodedDecoder(request));
-                }
-                if (httpConfig.add_json_decoder) {
-                    mediaTypeDecoders.add(new JsonDecoder(request));
-                }
-            }
-        }
-        if (request == null || method == null) {
-            log.warn(String.format("Method or request is null \n method \n%s \n request \n%s",
-                    method, request));
-            throw new WebApplicationException(HttpStatus.INTERNAL_SERVER_ERROR, request);
-        }
-        //we have a request and it matches a registered method
-        if (!isEntityRequest()) {
-            if (msg instanceof LastHttpContent) {
-                //only post and put requests  are allowed to send form data so everything else just returns
-                invoke(ctx);
-            }
-        } else {
-            if (decoder == null) {
-                for (MediaTypeDecoder d : mediaTypeDecoders) {
-                    if (d.canDecode(request.getContentType())) {
-                        decoder = d;
-                        break;
+        if (msg instanceof HttpRequest) {
+            request = (HttpRequest) msg;
+            executor.submit(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        InputStream stream = request.getStream();
+                        int data;
+                        BufferedOutputStream out = new BufferedOutputStream(new FileOutputStream("some-crap.txt"));
+                        while ((data = stream.read()) != -1) {
+                            out.write(data);
+                            //System.out.print((char) data);
+                        }
+                        out.flush();
+                        out.close();
+                    } catch (IOException e) {
+                        log.warn("Failed to read request stream");
                     }
+                    System.out.println("Stream ended, exiting read thread");
                 }
-                if (decoder == null) {
-                    throw new WebApplicationException(HttpResponseStatus.NOT_ACCEPTABLE);
-                }
-            }
-            //decoder is created if it doesn't exist, can decode all if entire message received
-            request.setChunked(HttpHeaders.isTransferEncodingChunked(request));
-            if (msg instanceof HttpContent) {
-                // New chunk is received
-                HttpContent chunk = (HttpContent) msg;
-                decoder.offer(chunk);
-                if (chunk instanceof LastHttpContent) {
-                    decoder.finished(ctx);
-                    invoke(ctx);
-                }
-            }
+            });
         }
+        /**
+         if (msg instanceof LastHttpContent && !(msg instanceof FullHttpRequest) && replied) {
+         return;  //can happen if exception was thrown before last http content received
+         }
+         replied = false;
+         if (msg instanceof HttpRequest || msg instanceof FullHttpRequest) {
+         if (msg instanceof HttpRequest) {
+         request = (HttpRequest) msg;
+         } else {
+         request = new HttpRequest((FullHttpRequest) msg);
+         }
+         res = new HttpResponse(Unpooled.buffer());
+         //must always set protocol config before anything uses the request
+         request.setConfig(protocolConfig);
+         //initialize request, setting cookies, media types etc
+         request.init(ctx);
+         //apply filters before attempting to find a matching method, filters can dynamically register new methods
+         DefaultFilterChain chain = new DefaultFilterChain(protocolConfig.getFilters());
+         HiggsFilter filter = chain.next();
+         Response response;
+         if (filter != null && (response = filter.filterRequest(request, chain)) != null) {
+         writeResponse(ctx, response);
+         return; // if a filter in the chain returns a response then we stop
+         }
+
+         method = findMethod(request.getUri(), ctx, request, methodClass);
+         if (method == null) {
+         //404
+         throw new WebApplicationException(HttpStatus.NOT_FOUND, request);
+         }
+         }
+         if (request == null || method == null) {
+         log.warn(String.format("Method or request is null \n method \n%s \n request \n%s",
+         method, request));
+         throw new WebApplicationException(HttpStatus.INTERNAL_SERVER_ERROR, request);
+         }
+         Set<ProviderContainer<MessageBodyReader>> readers=protocolConfig.getReaders();
+         for(ProviderContainer<MessageBodyReader> reader:readers){
+         reader.get().isReadable()
+         }
+         //we have a request and it matches a registered method
+         if (!isEntityRequest()) {
+         if (msg instanceof LastHttpContent) {
+         //only post and put requests  are allowed to send form data so everything else just returns
+         invoke(ctx);
+         }
+         } else {
+         if (decoder == null) {
+         for (MediaTypeDecoder d : mediaTypeDecoders) {
+         if (d.canDecode(request.getContentType())) {
+         decoder = d;
+         break;
+         }
+         }
+         if (decoder == null) {
+         throw new WebApplicationException(HttpResponseStatus.NOT_ACCEPTABLE);
+         }
+         }
+         //decoder is created if it doesn't exist, can decode all if entire message received
+         request.setChunked(HttpHeaders.isTransferEncodingChunked(request));
+         if (msg instanceof HttpContent) {
+         // New chunk is received
+         HttpContent chunk = (HttpContent) msg;
+         decoder.offer(chunk);
+         if (chunk instanceof LastHttpContent) {
+         decoder.finished(ctx);
+         invoke(ctx);
+         }
+         }
+         }
+         */
     }
 
     /**
@@ -161,7 +183,7 @@ public class HttpHandler extends MessageHandler<HttpConfig, Object> {
     }
 
     protected void invoke(final ChannelHandlerContext ctx) {
-        MessagePusher pusher = new MessagePusher() {
+        /*MessagePusher pusher = new MessagePusher() {
             @Override
             public ChannelFuture push(Object message) {
                 //http methods can return null or void and still have the response injected and modified
@@ -180,7 +202,7 @@ public class HttpHandler extends MessageHandler<HttpConfig, Object> {
             public ChannelHandlerContext ctx() {
                 return ctx;
             }
-        };
+        };*/
         //todo
         /**
          * Ultimately we convert from bytes to objects or from objects to bytes.
@@ -198,7 +220,7 @@ public class HttpHandler extends MessageHandler<HttpConfig, Object> {
          *  alone by the injector. The same goes for method parameters when injecting, unless a provider can produce the
          *  type of the parameter expected the param is not injected if the @Context annotation is set on it
          */
-        //inject globally available provider
+    /*    //inject globally available provider
         DependencyProvider provider = decoder == null ? DependencyProvider.from() : decoder.provider();
         //take all objects in the global provider
         provider.take(DependencyProvider.global());
@@ -221,11 +243,11 @@ public class HttpHandler extends MessageHandler<HttpConfig, Object> {
                 logDetailedFailMessage(true, params, t, method.method());
                 throw new WebApplicationException(HttpStatus.INTERNAL_SERVER_ERROR, request, t);
             }
-        }
+        }*/
     }
 
-    protected ChannelFuture writeResponse(ChannelHandlerContext ctx, Object response, Queue<ResponseTransformer> t) {
-        if (res.isRedirect()) {
+    protected ChannelFuture writeResponse(ChannelHandlerContext ctx, Object response) {
+      /*  if (res.isRedirect()) {
             return doWrite(ctx);
         }
 
@@ -246,7 +268,7 @@ public class HttpHandler extends MessageHandler<HttpConfig, Object> {
         }
         if (notAcceptable) {
             res.setStatus(HttpStatus.NOT_ACCEPTABLE);
-        }
+        }*/
         return doWrite(ctx);
     }
 
@@ -303,7 +325,8 @@ public class HttpHandler extends MessageHandler<HttpConfig, Object> {
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
-        try {
+        cause.printStackTrace();
+       /* try {
             if (cause instanceof WebApplicationException) {
                 writeResponse(ctx, cause, protocolConfig.getTransformers());
             } else {
@@ -317,6 +340,6 @@ public class HttpHandler extends MessageHandler<HttpConfig, Object> {
             log.warn(String.format("Uncaught error while processing request %s", request), cause);
             res.setStatus(HttpStatus.INTERNAL_SERVER_ERROR);
             doWrite(ctx);
-        }
+        }*/
     }
 }

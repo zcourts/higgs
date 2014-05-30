@@ -35,6 +35,7 @@ import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.InputStream;
 import java.math.BigInteger;
 import java.security.SecureRandom;
 import java.util.ArrayList;
@@ -68,6 +69,8 @@ public class HttpRequest extends DefaultHttpRequest {
     protected List<MediaType> contentType;
     protected Session session;
     protected Subject subject;
+    private InputStream stream;
+    private HttpResponse response;
 
     /**
      * Creates a new instance.
@@ -85,6 +88,20 @@ public class HttpRequest extends DefaultHttpRequest {
         headers().add(msg.headers());
         content = Unpooled.copiedBuffer(msg.content());
         setDecoderResult(msg.getDecoderResult());
+    }
+
+    public HttpRequest(InputStream stream, HttpResponse response) {
+        this(HttpVersion.HTTP_1_1, HttpMethod.GET, "/");
+        this.stream = stream;
+        this.response = response;
+    }
+
+    public InputStream getStream() {
+        return stream;
+    }
+
+    public HttpResponse getResponse() {
+        return response;
     }
 
     /**
