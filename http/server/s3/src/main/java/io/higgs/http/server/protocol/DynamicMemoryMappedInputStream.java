@@ -26,6 +26,7 @@ public class DynamicMemoryMappedInputStream extends InputStream {
     protected final ChannelHandlerContext ctx;
     protected final MMappedDecoder decoder;
     protected final FileChannel fileChannel;
+    protected boolean done;
     /**
      * The position of the current read offset
      */
@@ -36,6 +37,14 @@ public class DynamicMemoryMappedInputStream extends InputStream {
         this.ctx = ctx;
         this.decoder = decoder;
         this.fileChannel = fc;
+    }
+
+    public boolean isDone() {
+        return (done || !ctx.channel().isOpen()) && available() < 1;
+    }
+
+    public void setDone(boolean done) {
+        this.done = done;
     }
 
     @Override
@@ -83,23 +92,8 @@ public class DynamicMemoryMappedInputStream extends InputStream {
     }
 
     public int read() throws IOException {
-        if (!ctx.channel().isOpen()) {
-            return -1;
-        }
-        return decoder.syncAndRun(new Function1<MappedByteBuffer, Integer>() {
-            @Override
-            public Integer apply(MappedByteBuffer buf) {
-                if (available() < 1) {
-                    decoder.waitOnBuffer();
-                    try {
-                        return read();
-                    } catch (IOException e) {
-                        throw new RuntimeException(e);
-                    }
-                }
-                return buf.get(readPosition++) & 0xFF;
-            }
-        });
+        byte[] bytes = new byte[1];
+        return read(bytes) == -1 ? -1 : bytes[0] & 0xFF;
     }
 
     @Override
@@ -108,7 +102,7 @@ public class DynamicMemoryMappedInputStream extends InputStream {
     }
 
     public int read(final byte[] bytes, final int offset, final int length) throws IOException {
-        if (!ctx.channel().isOpen()) {
+        if (isDone()) {
             return -1;
         }
         return decoder.syncAndRun(new Function1<MappedByteBuffer, Integer>() {
@@ -118,12 +112,24 @@ public class DynamicMemoryMappedInputStream extends InputStream {
                 if (available() < 1) {
                     decoder.waitOnBuffer();
                     try {
-                        return read(bytes, offset, l);
+                        return read(bytes, offset, length);
                     } catch (IOException e) {
                         throw new RuntimeException(e);
                     }
                 }
-                buffer.get(bytes, offset, l);
+                int oldPos = buffer.position();
+                buffer.position(offset  );
+                try {
+                    buffer.get(bytes, offset, l);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    System.out.println(String.format("offset = %s length = %s available = %s position = %s limit = %s",
+                            offset, l, available(), buffer.position(), buffer.limit()));
+                    System.out.println("Dying");
+//                    System.exit(-1);
+                }
+                buffer.position(oldPos);
+                readPosition += l;
                 return l;
             }
         });
