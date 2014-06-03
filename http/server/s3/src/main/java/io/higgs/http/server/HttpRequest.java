@@ -7,6 +7,7 @@ import io.higgs.http.server.params.HttpCookie;
 import io.higgs.http.server.params.HttpCookies;
 import io.higgs.http.server.params.HttpFile;
 import io.higgs.http.server.params.QueryParams;
+import io.higgs.http.server.protocol.DynamicMemoryMappedInputStream;
 import io.higgs.http.server.protocol.HttpProtocolConfiguration;
 import io.higgs.http.server.resource.MediaType;
 import io.netty.buffer.ByteBuf;
@@ -49,7 +50,7 @@ import static java.lang.Integer.parseInt;
  */
 public class HttpRequest extends DefaultHttpRequest {
     public static final String SID = "HS3-ID";
-    protected static final AttributeKey<String> sessionAttr = new AttributeKey<>(SID + "-attr");
+    protected static final AttributeKey<String> sessionAttr = AttributeKey.valueOf(SID + "-attr");
     protected final QueryParams queryParams = new QueryParams();
     protected final FormFiles files = new FormFiles();
     protected final FormParams form = new FormParams();
@@ -362,5 +363,13 @@ public class HttpRequest extends DefaultHttpRequest {
 
     public ByteBuf content() {
         return content;
+    }
+
+    public void setResponse(HttpResponse response) {
+        this.response = response;
+    }
+
+    public void setInputStream(DynamicMemoryMappedInputStream inputStream) {
+        this.stream = inputStream;
     }
 }
