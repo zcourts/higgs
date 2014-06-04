@@ -20,6 +20,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.SocketAddress;
+import java.nio.charset.Charset;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.ThreadFactory;
@@ -81,25 +82,39 @@ public class HttpHandler extends MessageHandler<HttpConfig, Object> {
     public void channelRead0(ChannelHandlerContext ctx, Object msg) throws Exception {
         if (msg instanceof HttpRequest) {
             request = (HttpRequest) msg;
-            executor.submit(new Runnable() {
+            request.setConfig(protocolConfig);
+//            request.init(ctx);
+//            executor.submit();
+            new Thread(new Runnable() {
                 @Override
                 public void run() {
                     try {
                         InputStream stream = request.getStream();
-                        int data;
                         BufferedOutputStream out = new BufferedOutputStream(new FileOutputStream("some-crap.txt"));
-                        while ((data = stream.read()) != -1) {
-                            out.write(data);
-                            //System.out.print((char) data);
+                        while (true) {
+                            byte[] data = new byte[stream.available()];
+                            int read = stream.read(data);
+                            if (read == -1) {
+                                break;
+                            }
+                            if (read < 1)
+                                continue;
+//                            out.write(data);
+                            System.out.print(new String(data, Charset.forName("utf8")));
                         }
-                        out.flush();
-                        out.close();
+//                        int data;
+//                        while ((data = stream.read()) != -1) {
+//                            out.write(data);
+//                            //System.out.print((char) data);
+//                        }
+//                        out.flush();
+//                        out.close();
                     } catch (IOException e) {
                         log.warn("Failed to read request stream");
                     }
                     System.out.println("Stream ended, exiting read thread");
                 }
-            });
+            }).start();
         }
         /**
          if (msg instanceof LastHttpContent && !(msg instanceof FullHttpRequest) && replied) {

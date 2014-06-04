@@ -95,9 +95,9 @@ public class HttpProtocolConfiguration implements ProtocolConfiguration {
         for (ContextResolver m : Util.getServices(ContextResolver.class, DependencyProvider.global())) {
             contextProviders.add(new ProviderContainer<>(m));
         }
-        for (MessageBodyReader m : Util.getServices(MessageBodyReader.class, DependencyProvider.global())) {
-            readers.add(new ProviderContainer<>(m));
-        }
+//        for (MessageBodyReader m : Util.getServices(MessageBodyReader.class, DependencyProvider.global())) {
+//            readers.add(new ProviderContainer<>(m));
+//        }
 //        for (MessageBodyWriter m : Util.getServices(MessageBodyWriter.class)) {
 //            writers.add(new ProviderContainer<>(m));
 //        }
