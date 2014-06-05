@@ -7,7 +7,6 @@ import io.higgs.http.server.params.HttpCookie;
 import io.higgs.http.server.params.HttpCookies;
 import io.higgs.http.server.params.HttpFile;
 import io.higgs.http.server.params.QueryParams;
-import io.higgs.http.server.protocol.DynamicMemoryMappedInputStream;
 import io.higgs.http.server.protocol.HttpProtocolConfiguration;
 import io.higgs.http.server.resource.MediaType;
 import io.netty.buffer.ByteBuf;
@@ -369,7 +368,7 @@ public class HttpRequest extends DefaultHttpRequest {
         this.response = response;
     }
 
-    public void setInputStream(DynamicMemoryMappedInputStream inputStream) {
+    public void setInputStream(InputStream inputStream) {
         this.stream = inputStream;
     }
 }

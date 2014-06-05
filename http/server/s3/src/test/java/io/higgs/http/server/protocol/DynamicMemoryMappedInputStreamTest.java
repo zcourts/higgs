@@ -60,17 +60,17 @@ public class DynamicMemoryMappedInputStreamTest {
                 }
             }
         });
-        when(mockedDecoder.syncAndRun(new Function1<MappedByteBuffer, Object>() {
-            @Override
-            public Object apply(MappedByteBuffer buffer) {
-                return null;
-            }
-        }));
+//        when(mockedDecoder.syncAndRun(new Function1<MappedByteBuffer, Object>() {
+//            @Override
+//            public Object apply(MappedByteBuffer buffer) {
+//                return null;
+//            }
+//        }));
         //
         underlyingFile = Files.createTempFile("hs3-mapped-file-", "-test-run");
         rand = new RandomAccessFile(underlyingFile.toFile(), "rw");
         fileChannel = rand.getChannel();
-        stream = new DynamicMemoryMappedInputStream(ctx, mockedDecoder, fileChannel);
+//        stream = new DynamicMemoryMappedInputStream(ctx, mockedDecoder, fileChannel);
     }
 
     @After

@@ -99,7 +99,8 @@ public class HttpHandler extends MessageHandler<HttpConfig, Object> {
                             }
                             if (read < 1)
                                 continue;
-//                            out.write(data);
+                            out.write(data);
+                            out.flush();
                             System.out.print(new String(data, Charset.forName("utf8")));
                         }
 //                        int data;
@@ -107,10 +108,9 @@ public class HttpHandler extends MessageHandler<HttpConfig, Object> {
 //                            out.write(data);
 //                            //System.out.print((char) data);
 //                        }
-//                        out.flush();
-//                        out.close();
+                        out.close();
                     } catch (IOException e) {
-                        log.warn("Failed to read request stream");
+                        log.warn("Failed to read request stream", e);
                     }
                     System.out.println("Stream ended, exiting read thread");
                 }
