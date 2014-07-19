@@ -13,24 +13,18 @@ public class WebApplicationException extends RuntimeException {
     private Object response;
     private HttpRequest request;
 
-    public WebApplicationException(HttpResponseStatus status) {
-        this.status = status;
-    }
-
     public WebApplicationException(HttpResponseStatus status, HttpRequest request, InvokableMethod source) {
         this(status);
         this.request = request;
         this.source = source;
     }
 
-    public WebApplicationException(HttpResponseStatus status, HttpRequest request) {
-        this(status);
-        this.request = request;
+    public WebApplicationException(HttpResponseStatus status) {
+        this.status = status;
     }
 
-    public WebApplicationException(HttpResponseStatus status, String template, HttpRequest request) {
-        this(status, request);
-        this.template = template;
+    public WebApplicationException(HttpResponseStatus status, Object response, HttpRequest request) {
+        this(status, response, request, null);
     }
 
     public WebApplicationException(HttpResponseStatus status, Object response,
@@ -39,12 +33,50 @@ public class WebApplicationException extends RuntimeException {
         this.response = response;
     }
 
-    public WebApplicationException(HttpResponseStatus status, Object response, HttpRequest request) {
-        this(status, response, request, null);
+    public WebApplicationException(HttpResponseStatus status, String template, HttpRequest request) {
+        this(status, request);
+        this.template = template;
+    }
+
+    public WebApplicationException(HttpResponseStatus status, HttpRequest request) {
+        this(status);
+        this.request = request;
     }
 
     public WebApplicationException(WebApplicationException cause) {
         this(cause.getStatus(), cause.getResponse(), cause.getRequest(), cause.getTemplate());
+    }
+
+    public HttpResponseStatus getStatus() {
+        return status;
+    }
+
+    public Object getResponse() {
+        return response;
+    }
+
+    public HttpRequest getRequest() {
+        return request;
+    }
+
+    public void setRequest(final HttpRequest request) {
+        this.request = request;
+    }
+
+    public String getTemplate() {
+        return template;
+    }
+
+    public void setTemplate(final String template) {
+        this.template = template;
+    }
+
+    public void setResponse(final Object response) {
+        this.response = response;
+    }
+
+    public void setStatus(final HttpResponseStatus status) {
+        this.status = status;
     }
 
     public WebApplicationException(final HttpResponseStatus status, final String template) {
@@ -57,40 +89,17 @@ public class WebApplicationException extends RuntimeException {
         this.request = request;
     }
 
-    public HttpRequest getRequest() {
-        return request;
-    }
-
     public boolean hasRequest() {
         return request != null;
     }
 
-    public void setRequest(final HttpRequest request) {
-        this.request = request;
+    public InvokableMethod getSource() {
+        return source;
     }
 
-    public HttpResponseStatus getStatus() {
-        return status;
-    }
-
-    public String getTemplate() {
-        return template;
-    }
-
-    public Object getResponse() {
-        return response;
-    }
-
-    public void setStatus(final HttpResponseStatus status) {
-        this.status = status;
-    }
-
-    public void setTemplate(final String template) {
-        this.template = template;
-    }
-
-    public void setResponse(final Object response) {
-        this.response = response;
+    @Override
+    public String getMessage() {
+        return message;
     }
 
     @Override
@@ -101,15 +110,6 @@ public class WebApplicationException extends RuntimeException {
                 ", response=" + response +
                 ", path=" + (request == null ? "null" : request.getUri()) +
                 '}';
-    }
-
-    public InvokableMethod getSource() {
-        return source;
-    }
-
-    @Override
-    public String getMessage() {
-        return message;
     }
 
     public void setMessage(String message) {

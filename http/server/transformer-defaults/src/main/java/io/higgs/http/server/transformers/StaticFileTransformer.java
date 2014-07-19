@@ -33,9 +33,9 @@ import java.util.concurrent.ConcurrentHashMap;
 @MetaInfServices(ResponseTransformer.class)
 public class StaticFileTransformer extends BaseTransformer {
     private static Map<String, String> formats = new ConcurrentHashMap<>();
-    private FilesConfig conf;
     protected HttpConfig config;
     protected Path base;
+    private FilesConfig conf;
 
     public StaticFileTransformer() {
         //inject HttpConfig

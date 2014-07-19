@@ -26,13 +26,13 @@ public class JsonRequest {
     @JsonProperty
     protected String callback = "";
 
+    public JsonRequest() {
+        this("", null);
+    }
+
     public JsonRequest(String path, JsonNode obj) {
         this.path = path;
         message = obj;
-    }
-
-    public JsonRequest() {
-        this("", null);
     }
 
     public String getPath() {
@@ -85,12 +85,11 @@ public class JsonRequest {
         return DefaultWebSocketEventHandler.mapper.treeToValue(node, klass);
     }
 
-    public String toString() {
-        return "JsonEvent{" +
-                "\nTopic='" + path + '\'' +
-                "\nClient callback='" + callback + '\'' +
-                ",\nMessage='" + message + '\'' +
-                "\n}";
+    public int hashCode() {
+        int result = message != null ? message.hashCode() : 0;
+        result = 31 * result + (path != null ? path.hashCode() : 0);
+        result = 31 * result + (callback != null ? callback.hashCode() : 0);
+        return result;
     }
 
     public boolean equals(final Object o) {
@@ -114,10 +113,11 @@ public class JsonRequest {
         return true;
     }
 
-    public int hashCode() {
-        int result = message != null ? message.hashCode() : 0;
-        result = 31 * result + (path != null ? path.hashCode() : 0);
-        result = 31 * result + (callback != null ? callback.hashCode() : 0);
-        return result;
+    public String toString() {
+        return "JsonEvent{" +
+                "\nTopic='" + path + '\'' +
+                "\nClient callback='" + callback + '\'' +
+                ",\nMessage='" + message + '\'' +
+                "\n}";
     }
 }

@@ -34,16 +34,12 @@ public abstract class BaseTransformer implements ResponseTransformer {
         }
     }
 
-    protected boolean isError(Object response) {
-        return response instanceof Throwable;
-    }
-
     protected void determineErrorStatus(HttpResponse res, Throwable response) {
         HttpResponseStatus status = null;
         if (response == null) {
             status = HttpResponseStatus.NO_CONTENT;
         } else if (response instanceof WebApplicationException) {
-            WebApplicationException wae = ((WebApplicationException) response);
+            WebApplicationException wae = (WebApplicationException) response;
             status = wae.getStatus() == null ? HttpResponseStatus.INTERNAL_SERVER_ERROR : wae.getStatus();
         }
         res.setStatus(status);
@@ -78,20 +74,6 @@ public abstract class BaseTransformer implements ResponseTransformer {
     }
 
     /**
-     * Checks if a the given object is one of the types considered to be a static file response. Currently the following
-     * {@link java.io.File}|{@link io.higgs.core.ResolvedFile}|{@link java.io.InputStream}|{@link java.nio.file.Path}
-     *
-     * @param response the response object to check
-     * @return true if the type is considered a static file resource
-     */
-    public boolean isStaticFileResponse(Object response) {
-        return response instanceof File
-                || response instanceof ResolvedFile
-                || response instanceof InputStream
-                || response instanceof Path;
-    }
-
-    /**
      * Checks if the this transformer supports the {@link io.higgs.http.server.resource.MediaType}s supported by the
      * request.
      *
@@ -111,6 +93,24 @@ public abstract class BaseTransformer implements ResponseTransformer {
             }
         }
         return false;
+    }
+
+    protected boolean isError(Object response) {
+        return response instanceof Throwable;
+    }
+
+    /**
+     * Checks if a the given object is one of the types considered to be a static file response. Currently the following
+     * {@link java.io.File}|{@link io.higgs.core.ResolvedFile}|{@link java.io.InputStream}|{@link java.nio.file.Path}
+     *
+     * @param response the response object to check
+     * @return true if the type is considered a static file resource
+     */
+    public boolean isStaticFileResponse(Object response) {
+        return response instanceof File
+                || response instanceof ResolvedFile
+                || response instanceof InputStream
+                || response instanceof Path;
     }
 
     /**

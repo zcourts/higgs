@@ -8,10 +8,6 @@ import java.util.HashMap;
 public class ValidationResult extends HashMap<String, Object> {
     private boolean valid = true;
 
-    public void setValid(boolean valid) {
-        this.valid = valid;
-    }
-
     /**
      * Mark this validation as invalid
      */
@@ -24,6 +20,10 @@ public class ValidationResult extends HashMap<String, Object> {
      */
     public boolean isValid() {
         return valid;
+    }
+
+    public void setValid(boolean valid) {
+        this.valid = valid;
     }
 
     @Override

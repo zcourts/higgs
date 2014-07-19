@@ -88,6 +88,72 @@ public class StaticFileWriter implements ManagedWriter {
         }
     }
 
+    private void sendListing() {
+        StringBuilder buf = new StringBuilder();
+        String dirPath = file.getPath().toString();
+        if (file.hasBase()) {
+            dirPath = dirPath.replace(file.getBase().toString(), "");
+        }
+        buf.append("<!DOCTYPE html>\r\n");
+        buf.append("<html><head><title>");
+        buf.append("Listing of: ");
+        buf.append(dirPath);
+        buf.append("</title></head><body>\r\n");
+
+        buf.append("<h3>Listing of: ");
+        buf.append(dirPath);
+        buf.append("</h3>\r\n");
+
+        buf.append("<ul>");
+        buf.append("<li><a href=\"../\">..</a></li>\r\n");
+        List<Path> paths = file.getDirectoryIterator();
+        for (Path f : paths) {
+            try {
+                if (Files.isHidden(f) || !Files.isReadable(f)) {
+                    continue;
+                }
+            } catch (IOException e) {
+                continue;
+            }
+
+            String name = f.toString();
+            if (!ALLOWED_FILE_NAME.matcher(name).matches()) {
+                continue;
+            }
+
+            buf.append("<li><a href=\"");
+            buf.append(dirPath);
+            buf.append("/");
+            buf.append(name);
+            buf.append("\">");
+            buf.append(name);
+            buf.append("</a></li>\r\n");
+        }
+
+        buf.append("</ul></body></html>\r\n");
+        ByteBuf buffer = Unpooled.copiedBuffer(buf, CharsetUtil.UTF_8);
+        higgsPreparedResponse.content().writeBytes(buffer);
+        higgsPreparedResponse.headers().set(CONTENT_TYPE, "text/html; charset=UTF-8");
+        HttpHeaders.setContentLength(res, buffer.writerIndex());
+        HttpHeaders.setKeepAlive(res, false);
+    }
+
+    private void setDateAndCacheHeaders() {
+        SimpleDateFormat dateFormatter = new SimpleDateFormat(HTTP_DATE_FORMAT, Locale.US);
+        dateFormatter.setTimeZone(TimeZone.getTimeZone(HTTP_DATE_GMT_TIMEZONE));
+
+        // Date header
+        Calendar time = new GregorianCalendar();
+        res.headers().set(DATE, dateFormatter.format(time.getTime()));
+
+        // Add cache headers
+        time.add(Calendar.SECOND, HTTP_CACHE_SECONDS);
+        res.headers().set(EXPIRES, dateFormatter.format(time.getTime()));
+        res.headers().set(CACHE_CONTROL, "private, max-age=" + HTTP_CACHE_SECONDS);
+        res.headers().set(
+                LAST_MODIFIED, dateFormatter.format(new Date(file.lastModified())));
+    }
+
     /**
      * If the file is a directory then the response object Higgs created is sent. Notice that
      * {@link HttpResponse} extends {@link io.netty.handler.codec.http.DefaultFullHttpResponse}
@@ -144,72 +210,4 @@ public class StaticFileWriter implements ManagedWriter {
     public ResolvedFile getFile() {
         return file;
     }
-
-    private void setDateAndCacheHeaders() {
-        SimpleDateFormat dateFormatter = new SimpleDateFormat(HTTP_DATE_FORMAT, Locale.US);
-        dateFormatter.setTimeZone(TimeZone.getTimeZone(HTTP_DATE_GMT_TIMEZONE));
-
-        // Date header
-        Calendar time = new GregorianCalendar();
-        res.headers().set(DATE, dateFormatter.format(time.getTime()));
-
-        // Add cache headers
-        time.add(Calendar.SECOND, HTTP_CACHE_SECONDS);
-        res.headers().set(EXPIRES, dateFormatter.format(time.getTime()));
-        res.headers().set(CACHE_CONTROL, "private, max-age=" + HTTP_CACHE_SECONDS);
-        res.headers().set(
-                LAST_MODIFIED, dateFormatter.format(new Date(file.lastModified())));
-    }
-
-    private void sendListing() {
-        StringBuilder buf = new StringBuilder();
-        String dirPath = file.getPath().toString();
-        if (file.hasBase()) {
-            dirPath = dirPath.replace(file.getBase().toString(), "");
-        }
-        buf.append("<!DOCTYPE html>\r\n");
-        buf.append("<html><head><title>");
-        buf.append("Listing of: ");
-        buf.append(dirPath);
-        buf.append("</title></head><body>\r\n");
-
-        buf.append("<h3>Listing of: ");
-        buf.append(dirPath);
-        buf.append("</h3>\r\n");
-
-        buf.append("<ul>");
-        buf.append("<li><a href=\"../\">..</a></li>\r\n");
-        List<Path> paths = file.getDirectoryIterator();
-        for (Path f : paths) {
-            try {
-                if (Files.isHidden(f) || !Files.isReadable(f)) {
-                    continue;
-                }
-            } catch (IOException e) {
-                continue;
-            }
-
-            String name = f.toString();
-            if (!ALLOWED_FILE_NAME.matcher(name).matches()) {
-                continue;
-            }
-
-            buf.append("<li><a href=\"");
-            buf.append(dirPath);
-            buf.append("/");
-            buf.append(name);
-            buf.append("\">");
-            buf.append(name);
-            buf.append("</a></li>\r\n");
-        }
-
-        buf.append("</ul></body></html>\r\n");
-        ByteBuf buffer = Unpooled.copiedBuffer(buf, CharsetUtil.UTF_8);
-        higgsPreparedResponse.content().writeBytes(buffer);
-        higgsPreparedResponse.headers().set(CONTENT_TYPE, "text/html; charset=UTF-8");
-        HttpHeaders.setContentLength(res, buffer.writerIndex());
-        HttpHeaders.setKeepAlive(res, false);
-    }
-
-
 }

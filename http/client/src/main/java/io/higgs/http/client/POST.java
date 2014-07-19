@@ -45,23 +45,6 @@ public class POST extends Request {
         request = encoder.finalizeRequest();
     }
 
-    private void addFileParams() throws HttpPostRequestEncoder.ErrorDataEncoderException {
-        for (HttpFile file : files) {
-            if (file.isSingle()) {
-                encoder.addBodyFileUpload(file.name(), file.file(), file.contentType(), file.isText());
-            } else {
-                encoder.addBodyFileUploads(file.name(), file.fileSet(), file.contentTypes(), file.isTextSet());
-            }
-        }
-    }
-
-    private void addFormParams() throws HttpPostRequestEncoder.ErrorDataEncoderException {
-        // add Form attribute
-        for (Map.Entry<String, Object> e : form.entrySet()) {
-            encoder.addBodyAttribute(e.getKey(), String.valueOf(e.getValue() == null ? "" : e.getValue()));
-        }
-    }
-
     protected ChannelFuture makeTheRequest() {
         return !encoder.isChunked() ? super.makeTheRequest() : doRequest();
     }
@@ -82,12 +65,28 @@ public class POST extends Request {
      *
      * @param multipart if true then a multipart encoder is created
      * @throws HttpPostRequestEncoder.ErrorDataEncoderException
-     *
      */
     protected void newEncoder(boolean multipart) throws HttpPostRequestEncoder.ErrorDataEncoderException {
         factory = new DefaultHttpDataFactory(minSize);
         // Use the PostBody encoder
         encoder = new HttpPostRequestEncoder(factory, request, multipart);
+    }
+
+    private void addFormParams() throws HttpPostRequestEncoder.ErrorDataEncoderException {
+        // add Form attribute
+        for (Map.Entry<String, Object> e : form.entrySet()) {
+            encoder.addBodyAttribute(e.getKey(), String.valueOf(e.getValue() == null ? "" : e.getValue()));
+        }
+    }
+
+    private void addFileParams() throws HttpPostRequestEncoder.ErrorDataEncoderException {
+        for (HttpFile file : files) {
+            if (file.isSingle()) {
+                encoder.addBodyFileUpload(file.name(), file.file(), file.contentType(), file.isText());
+            } else {
+                encoder.addBodyFileUploads(file.name(), file.fileSet(), file.contentTypes(), file.isTextSet());
+            }
+        }
     }
 
     public long getMinSize() {

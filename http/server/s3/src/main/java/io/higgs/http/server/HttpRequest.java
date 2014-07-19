@@ -1,7 +1,6 @@
 package io.higgs.http.server;
 
 import io.higgs.core.ResourcePath;
-import io.higgs.http.server.auth.HiggsSession;
 import io.higgs.http.server.params.FormFiles;
 import io.higgs.http.server.params.FormParams;
 import io.higgs.http.server.params.HttpCookie;
@@ -70,6 +69,13 @@ public class HttpRequest extends DefaultHttpRequest {
     protected Session session;
     protected Subject subject;
 
+    public HttpRequest(FullHttpRequest msg) {
+        this(msg.getProtocolVersion(), msg.getMethod(), msg.getUri());
+        headers().add(msg.headers());
+        content = Unpooled.copiedBuffer(msg.content());
+        setDecoderResult(msg.getDecoderResult());
+    }
+
     /**
      * Creates a new instance.
      *
@@ -79,13 +85,6 @@ public class HttpRequest extends DefaultHttpRequest {
      */
     public HttpRequest(HttpVersion httpVersion, HttpMethod method, String uri) {
         super(httpVersion, method, uri);
-    }
-
-    public HttpRequest(FullHttpRequest msg) {
-        this(msg.getProtocolVersion(), msg.getMethod(), msg.getUri());
-        headers().add(msg.headers());
-        content = Unpooled.copiedBuffer(msg.content());
-        setDecoderResult(msg.getDecoderResult());
     }
 
     /**
@@ -177,6 +176,10 @@ public class HttpRequest extends DefaultHttpRequest {
         subject = config.getSecurityManager().createSubject(subjectCtx);
     }
 
+    public HttpCookie getCookie(String name) {
+        return cookies.get(name);
+    }
+
     public List<MediaType> getContentType() {
         return contentType;
     }
@@ -215,10 +218,6 @@ public class HttpRequest extends DefaultHttpRequest {
 
     public void setPath(final ResourcePath path) {
         this.path = path;
-    }
-
-    public HttpCookie getCookie(String name) {
-        return cookies.get(name);
     }
 
     public HttpCookies getCookies() {

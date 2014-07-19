@@ -24,14 +24,10 @@ import java.util.Set;
  * or Thread.currentThread().getContextClassLoader() [preferred]
  */
 public class HiggsClassLoader extends ClassLoader {
-    Logger log = LoggerFactory.getLogger(getClass());
     private static final HiggsClassPathCache cache = new HiggsClassPathCache(".*.class");
     private static final Map<String, Class<?>> defined = new HashMap<>();
+    Logger log = LoggerFactory.getLogger(getClass());
     private String separator = System.getProperty("file.separator");
-
-    public HiggsClassPathCache cache() {
-        return cache;
-    }
 
     /**
      * Get all classes in the given package and it's sub packages
@@ -68,40 +64,8 @@ public class HiggsClassLoader extends ClassLoader {
         return set;
     }
 
-    /**
-     * Loads a given class from .class file just like
-     * the default ClassLoader. This method could be
-     * changed to load the class over network from some
-     * other server or from the database.
-     *
-     * @param name Full class name
-     */
-    public Class<?> getClass(String name, String file) {
-        //never try to load core classes
-        if (file.startsWith("java") || file.startsWith("/java")
-                || file.startsWith("com/sun") || file.startsWith("/com/sun")
-                || file.startsWith("com/oracle") || file.startsWith("/com/oracle")) {
-            return null;
-        }
-        Class<?> klass = defined.get(name);
-        if (klass != null) {
-            return klass;
-        }
-        byte[] bytes;
-        // This loads the byte code data from the file
-        bytes = loadClassData(file);
-        if (bytes != null) {
-            try {
-                // defineClass is inherited from the ClassLoader class
-                // and converts the byte array into a Class
-                Class<?> c = defineClass(name, bytes, 0, bytes.length);
-                resolveClass(c);
-                return c;
-            } catch (Throwable t) {
-                throw new RuntimeException("", t);
-            }
-        }
-        return null;
+    public HiggsClassPathCache cache() {
+        return cache;
     }
 
     /**
@@ -136,6 +100,42 @@ public class HiggsClassLoader extends ClassLoader {
             }
         }
         return klass;
+    }
+
+    /**
+     * Loads a given class from .class file just like
+     * the default ClassLoader. This method could be
+     * changed to load the class over network from some
+     * other server or from the database.
+     *
+     * @param name Full class name
+     */
+    public Class<?> getClass(String name, String file) {
+        //never try to load core classes
+        if (file.startsWith("java") || file.startsWith("/java")
+                || file.startsWith("com/sun") || file.startsWith("/com/sun")
+                || file.startsWith("com/oracle") || file.startsWith("/com/oracle")) {
+            return null;
+        }
+        Class<?> klass = defined.get(name);
+        if (klass != null) {
+            return klass;
+        }
+        byte[] bytes;
+        // This loads the byte code data from the file
+        bytes = loadClassData(file);
+        if (bytes != null) {
+            try {
+                // defineClass is inherited from the ClassLoader class
+                // and converts the byte array into a Class
+                Class<?> c = defineClass(name, bytes, 0, bytes.length);
+                resolveClass(c);
+                return c;
+            } catch (Throwable t) {
+                throw new RuntimeException("", t);
+            }
+        }
+        return null;
     }
 
     /**

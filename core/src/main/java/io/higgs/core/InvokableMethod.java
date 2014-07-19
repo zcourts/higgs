@@ -15,10 +15,10 @@ import java.util.Queue;
  * @author Courtney Robinson <courtney@crlog.info>
  */
 public abstract class InvokableMethod implements Sortable<InvokableMethod> {
-    protected Logger log = LoggerFactory.getLogger(getClass());
     protected final Method classMethod;
     protected final Queue<ObjectFactory> factories;
     protected final Class<?> klass;
+    protected Logger log = LoggerFactory.getLogger(getClass());
     protected String path;
     protected int priority;
 
@@ -61,10 +61,6 @@ public abstract class InvokableMethod implements Sortable<InvokableMethod> {
         if (path.length() > 1 && path.endsWith("/")) {
             path = path.substring(0, path.length() - 1);
         }
-    }
-
-    public ResourcePath path() {
-        return new ResourcePath(path);
     }
 
     public String rawPath() {
@@ -147,13 +143,16 @@ public abstract class InvokableMethod implements Sortable<InvokableMethod> {
         return priority;
     }
 
-
     /**
      * Invoked when a method has been registered
      */
     public void registered() {
         log.info(String.format("REGISTERED > %1$-20s | %2$-30s | %3$-50s", classMethod.getName(),
                 path(), classMethod.getReturnType().getName()));
+    }
+
+    public ResourcePath path() {
+        return new ResourcePath(path);
     }
 
     /**
@@ -167,13 +166,12 @@ public abstract class InvokableMethod implements Sortable<InvokableMethod> {
     public abstract boolean matches(String path, ChannelHandlerContext ctx, Object msg);
 
     @Override
-    public String toString() {
-        return "InvokableMethod{" +
-                "\n path='" + path + '\'' +
-                ",\n classMethod=" + classMethod +
-                ",\n factories=" + factories +
-                ",\n klass=" + klass.getName() +
-                '}';
+    public int hashCode() {
+        int result = classMethod.hashCode();
+        result = 31 * result + (factories.hashCode());
+        result = 31 * result + (klass.hashCode());
+        result = 31 * result + (path != null ? path.hashCode() : 0);
+        return result;
     }
 
     @Override
@@ -203,11 +201,12 @@ public abstract class InvokableMethod implements Sortable<InvokableMethod> {
     }
 
     @Override
-    public int hashCode() {
-        int result = classMethod.hashCode();
-        result = 31 * result + (factories.hashCode());
-        result = 31 * result + (klass.hashCode());
-        result = 31 * result + (path != null ? path.hashCode() : 0);
-        return result;
+    public String toString() {
+        return "InvokableMethod{" +
+                "\n path='" + path + '\'' +
+                ",\n classMethod=" + classMethod +
+                ",\n factories=" + factories +
+                ",\n klass=" + klass.getName() +
+                '}';
     }
 }

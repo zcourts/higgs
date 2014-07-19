@@ -18,13 +18,13 @@ import java.util.Map;
 /**
  * @author Courtney Robinson <courtney@crlog.info>
  */
-public class HiggsSession implements ValidatingSession, Serializable {//, Map<Object, Object> {
-    protected transient static final Logger log = LoggerFactory.getLogger(HiggsSession.class);
+public class HiggsSession implements ValidatingSession, Serializable {
+    protected static final transient Logger log = LoggerFactory.getLogger(HiggsSession.class);
 
     protected static final long MILLIS_PER_SECOND = 1000;
     protected static final long MILLIS_PER_MINUTE = 60 * MILLIS_PER_SECOND;
-    protected Serializable id;
     protected final Date startTimestamp;
+    protected Serializable id;
     protected Date stopTimestamp;
     protected Date lastAccessTime;
     protected long timeout;
@@ -32,15 +32,16 @@ public class HiggsSession implements ValidatingSession, Serializable {//, Map<Ob
     protected String host;
     protected Map<Object, Object> attributes = new HashMap<>();
 
-    public HiggsSession() {
-        this.timeout = DefaultSessionManager.DEFAULT_GLOBAL_SESSION_TIMEOUT; //TODO - remove concrete reference to DefaultSessionManager
-        this.startTimestamp = new Date();
-        this.lastAccessTime = this.startTimestamp;
-    }
-
     public HiggsSession(Serializable id) {
         this();
         setId(id);
+    }
+
+    public HiggsSession() {
+        //TODO - remove concrete reference to DefaultSessionManager
+        this.timeout = DefaultSessionManager.DEFAULT_GLOBAL_SESSION_TIMEOUT;
+        this.startTimestamp = new Date();
+        this.lastAccessTime = this.startTimestamp;
     }
 
     /**
@@ -51,28 +52,31 @@ public class HiggsSession implements ValidatingSession, Serializable {//, Map<Ob
         setAttribute(key, value instanceof FlashValue ? value : new FlashValue(value));
     }
 
-    @Override
-    public Object getAttribute(Object key) {
-        Object value = attributes.get(key);
-        if (value instanceof FlashValue) {
-            removeAttribute(key);
-            return ((FlashValue) value).getValue();
-        }
-        return value;
+    public void setAttributes(Map<Object, Object> attributes) {
+        this.attributes = attributes;
     }
 
     //============================================ Almost straight copy from SimpleSession =============================
 
-    public Serializable getId() {
-        return this.id;
+    /**
+     * @since 0.9
+     */
+    public boolean isValid() {
+        return !isStopped() && !isExpired();
     }
 
-    public void setId(Serializable id) {
-        this.id = id;
+    protected boolean isStopped() {
+        return getStopTimestamp() != null;
     }
 
-    public Date getStartTimestamp() {
-        return startTimestamp;
+    /**
+     * Returns true if this session has expired, false otherwise.  If the session has
+     * expired, no further user interaction with the system may be done under this session.
+     *
+     * @return true if this session has expired, false otherwise.
+     */
+    public boolean isExpired() {
+        return expired;
     }
 
     /**
@@ -100,116 +104,8 @@ public class HiggsSession implements ValidatingSession, Serializable {//, Map<Ob
         this.stopTimestamp = stopTimestamp;
     }
 
-    public Date getLastAccessTime() {
-        return lastAccessTime;
-    }
-
-    public void setLastAccessTime(Date lastAccessTime) {
-        this.lastAccessTime = lastAccessTime;
-    }
-
-    /**
-     * Returns true if this session has expired, false otherwise.  If the session has
-     * expired, no further user interaction with the system may be done under this session.
-     *
-     * @return true if this session has expired, false otherwise.
-     */
-    public boolean isExpired() {
-        return expired;
-    }
-
     public void setExpired(boolean expired) {
         this.expired = expired;
-    }
-
-    public long getTimeout() {
-        return timeout;
-    }
-
-    public void setTimeout(long timeout) {
-        this.timeout = timeout;
-    }
-
-    public String getHost() {
-        return host;
-    }
-
-    public void setHost(String host) {
-        this.host = host;
-    }
-
-    public void setAttributes(Map<Object, Object> attributes) {
-        this.attributes = attributes;
-    }
-
-    public void touch() {
-        this.lastAccessTime = new Date();
-    }
-
-    public void stop() {
-        if (this.stopTimestamp == null) {
-            this.stopTimestamp = new Date();
-        }
-    }
-
-    protected boolean isStopped() {
-        return getStopTimestamp() != null;
-    }
-
-    protected void expire() {
-        stop();
-        this.expired = true;
-    }
-
-    /**
-     * @since 0.9
-     */
-    public boolean isValid() {
-        return !isStopped() && !isExpired();
-    }
-
-    /**
-     * Determines if this session is expired.
-     *
-     * @return true if the specified session has expired, false otherwise.
-     */
-    protected boolean isTimedOut() {
-
-        if (isExpired()) {
-            return true;
-        }
-
-        long timeout = getTimeout();
-
-        if (timeout >= 0l) {
-
-            Date lastAccessTime = getLastAccessTime();
-
-            if (lastAccessTime == null) {
-                String msg = "session.lastAccessTime for session with id [" +
-                        getId() + "] is null.  This value must be set at " +
-                        "least once, preferably at least upon instantiation.  Please check the " +
-                        getClass().getName() + " implementation and ensure " +
-                        "this value will be set (perhaps in the constructor?)";
-                throw new IllegalStateException(msg);
-            }
-
-            // Calculate at what time a session would have been last accessed
-            // for it to be expired at this point.  In other words, subtract
-            // from the current time the amount of time that a session can
-            // be inactive before expiring.  If the session was last accessed
-            // before this time, it is expired.
-            long expireTimeMillis = System.currentTimeMillis() - timeout;
-            Date expireTime = new Date(expireTimeMillis);
-            return lastAccessTime.before(expireTime);
-        } else {
-            if (log.isTraceEnabled()) {
-                log.trace("No timeout for session with id [" + getId() +
-                        "].  Session is not considered expired.");
-            }
-        }
-
-        return false;
     }
 
     public void validate() throws InvalidSessionException {
@@ -245,9 +141,64 @@ public class HiggsSession implements ValidatingSession, Serializable {//, Map<Ob
         }
     }
 
+    public Serializable getId() {
+        return this.id;
+    }
+
+    public void setId(Serializable id) {
+        this.id = id;
+    }
+
+    public Date getStartTimestamp() {
+        return startTimestamp;
+    }
+
+    public Date getLastAccessTime() {
+        return lastAccessTime;
+    }
+
+    public void setLastAccessTime(Date lastAccessTime) {
+        this.lastAccessTime = lastAccessTime;
+    }
+
+    public long getTimeout() {
+        return timeout;
+    }
+
+    public void setTimeout(long timeout) {
+        this.timeout = timeout;
+    }
+
+    public String getHost() {
+        return host;
+    }
+
+    public void setHost(String host) {
+        this.host = host;
+    }
+
+    public void touch() {
+        this.lastAccessTime = new Date();
+    }
+
+    public void stop() {
+        if (this.stopTimestamp == null) {
+            this.stopTimestamp = new Date();
+        }
+    }
 
     public Collection<Object> getAttributeKeys() throws InvalidSessionException {
         return attributes.keySet();
+    }
+
+    @Override
+    public Object getAttribute(Object key) {
+        Object value = attributes.get(key);
+        if (value instanceof FlashValue) {
+            removeAttribute(key);
+            return ((FlashValue) value).getValue();
+        }
+        return value;
     }
 
     public void setAttribute(Object key, Object value) {
@@ -260,6 +211,81 @@ public class HiggsSession implements ValidatingSession, Serializable {//, Map<Ob
 
     public Object removeAttribute(Object key) {
         return attributes.remove(key);
+    }
+
+    /**
+     * Determines if this session is expired.
+     *
+     * @return true if the specified session has expired, false otherwise.
+     */
+    protected boolean isTimedOut() {
+
+        if (isExpired()) {
+            return true;
+        }
+
+        long timeout = getTimeout();
+
+        if (timeout >= 0L) {
+
+            Date lastAccessTime = getLastAccessTime();
+
+            if (lastAccessTime == null) {
+                String msg = "session.lastAccessTime for session with id [" +
+                        getId() + "] is null.  This value must be set at " +
+                        "least once, preferably at least upon instantiation.  Please check the " +
+                        getClass().getName() + " implementation and ensure " +
+                        "this value will be set (perhaps in the constructor?)";
+                throw new IllegalStateException(msg);
+            }
+
+            // Calculate at what time a session would have been last accessed
+            // for it to be expired at this point.  In other words, subtract
+            // from the current time the amount of time that a session can
+            // be inactive before expiring.  If the session was last accessed
+            // before this time, it is expired.
+            long expireTimeMillis = System.currentTimeMillis() - timeout;
+            Date expireTime = new Date(expireTimeMillis);
+            return lastAccessTime.before(expireTime);
+        } else {
+            if (log.isTraceEnabled()) {
+                log.trace("No timeout for session with id [" + getId() +
+                        "].  Session is not considered expired.");
+            }
+        }
+
+        return false;
+    }
+
+    protected void expire() {
+        stop();
+        this.expired = true;
+    }
+
+    /**
+     * Returns the hashCode.  If the {@link #getId() id} is not {@code null}, its hashcode is returned immediately.
+     * If it is {@code null}, an attributes-based hashCode will be calculated and returned.
+     * <p/>
+     * Do your best to ensure {@code HiggsSession} instances receive an ID very early in their lifecycle to
+     * avoid the more expensive attributes-based calculation.
+     *
+     * @return this object's hashCode
+     * @since 1.0
+     */
+    @Override
+    public int hashCode() {
+        Serializable id = getId();
+        if (id != null) {
+            return id.hashCode();
+        }
+        int hashCode = getStartTimestamp() != null ? getStartTimestamp().hashCode() : 0;
+        hashCode = 31 * hashCode + (getStopTimestamp() != null ? getStopTimestamp().hashCode() : 0);
+        hashCode = 31 * hashCode + (getLastAccessTime() != null ? getLastAccessTime().hashCode() : 0);
+        hashCode = 31 * hashCode + Long.valueOf(Math.max(getTimeout(), 0)).hashCode();
+        hashCode = 31 * hashCode + Boolean.valueOf(isExpired()).hashCode();
+        hashCode = 31 * hashCode + (getHost() != null ? getHost().hashCode() : 0);
+        hashCode = 31 * hashCode + (attributes != null ? attributes.hashCode() : 0);
+        return hashCode;
     }
 
     /**
@@ -302,39 +328,16 @@ public class HiggsSession implements ValidatingSession, Serializable {//, Map<Ob
      * @since 1.0
      */
     protected boolean onEquals(HiggsSession ss) {
-        return (getStartTimestamp() != null ? getStartTimestamp().equals(ss.getStartTimestamp()) : ss.getStartTimestamp() == null) &&
-                (getStopTimestamp() != null ? getStopTimestamp().equals(ss.getStopTimestamp()) : ss.getStopTimestamp() == null) &&
-                (getLastAccessTime() != null ? getLastAccessTime().equals(ss.getLastAccessTime()) : ss.getLastAccessTime() == null) &&
+        return (getStartTimestamp() != null ? getStartTimestamp().equals(ss.getStartTimestamp()) :
+                ss.getStartTimestamp() == null) &&
+                (getStopTimestamp() != null ? getStopTimestamp().equals(ss.getStopTimestamp()) :
+                        ss.getStopTimestamp() == null) &&
+                (getLastAccessTime() != null ? getLastAccessTime().equals(ss.getLastAccessTime()) :
+                        ss.getLastAccessTime() == null) &&
                 (getTimeout() == ss.getTimeout()) &&
                 (isExpired() == ss.isExpired()) &&
                 (getHost() != null ? getHost().equals(ss.getHost()) : ss.getHost() == null) &&
                 (attributes != null ? attributes.equals(ss.attributes) : ss.attributes == null);
-    }
-
-    /**
-     * Returns the hashCode.  If the {@link #getId() id} is not {@code null}, its hashcode is returned immediately.
-     * If it is {@code null}, an attributes-based hashCode will be calculated and returned.
-     * <p/>
-     * Do your best to ensure {@code HiggsSession} instances receive an ID very early in their lifecycle to
-     * avoid the more expensive attributes-based calculation.
-     *
-     * @return this object's hashCode
-     * @since 1.0
-     */
-    @Override
-    public int hashCode() {
-        Serializable id = getId();
-        if (id != null) {
-            return id.hashCode();
-        }
-        int hashCode = getStartTimestamp() != null ? getStartTimestamp().hashCode() : 0;
-        hashCode = 31 * hashCode + (getStopTimestamp() != null ? getStopTimestamp().hashCode() : 0);
-        hashCode = 31 * hashCode + (getLastAccessTime() != null ? getLastAccessTime().hashCode() : 0);
-        hashCode = 31 * hashCode + Long.valueOf(Math.max(getTimeout(), 0)).hashCode();
-        hashCode = 31 * hashCode + Boolean.valueOf(isExpired()).hashCode();
-        hashCode = 31 * hashCode + (getHost() != null ? getHost().hashCode() : 0);
-        hashCode = 31 * hashCode + (attributes != null ? attributes.hashCode() : 0);
-        return hashCode;
     }
 
     /**

@@ -50,9 +50,9 @@ public class HiggsServer {
     protected boolean detectGzip = true;
     protected ServerConfig config = new ServerConfig();
     protected Logger log = LoggerFactory.getLogger(getClass());
-    Class<javax.ws.rs.Path> methodClass = javax.ws.rs.Path.class;
     protected boolean onlyRegisterAnnotatedMethods = true;
     protected int port = 8080;
+    Class<javax.ws.rs.Path> methodClass = javax.ws.rs.Path.class;
 
     public <C extends ServerConfig> HiggsServer setConfig(String configFile, Class<C> klass) {
         return setConfig(configFile, klass, null);
@@ -134,13 +134,6 @@ public class HiggsServer {
         registerMethodProcessor(protocolConfiguration.getMethodProcessor());
     }
 
-    public void registerMethodProcessor(MethodProcessor processor) {
-        if (processor == null) {
-            throw new IllegalArgumentException("Method processor cannot be null");
-        }
-        methodProcessors.add(processor);
-    }
-
     /**
      * Registers a new protocol for the server to detect and handle
      *
@@ -150,6 +143,13 @@ public class HiggsServer {
         detectors.add(factory);
     }
 
+    public void registerMethodProcessor(MethodProcessor processor) {
+        if (processor == null) {
+            throw new IllegalArgumentException("Method processor cannot be null");
+        }
+        methodProcessors.add(processor);
+    }
+
     /**
      * Discover all this package's classes, including sub packages and register them
      *
@@ -157,16 +157,6 @@ public class HiggsServer {
      */
     public void registerPackageAndSubpackages(Package p) {
         for (Class<?> c : HIGGS_CLASS_LOADER.loadPackage(p)) {
-            registerObjectFactoryOrClass(c);
-        }
-    }
-
-    public void registerPackage(Package p) {
-        registerPackage(p.getName());
-    }
-
-    public void registerPackage(String name) {
-        for (Class<?> c : PackageScanner.get(name)) {
             registerObjectFactoryOrClass(c);
         }
     }
@@ -193,43 +183,15 @@ public class HiggsServer {
         }
     }
 
+    public void registerClass(Class<?> c) {
+        registerMethods(c);
+    }
+
     public void registerObjectFactory(ObjectFactory factory) {
         if (factory == null) {
             throw new IllegalArgumentException("Cannot register a null object factories");
         }
         factories.add(factory);
-    }
-
-    /**
-     * Remove all referentially equal object factories
-     *
-     * @param factory the factory to remove
-     */
-    public void deRegister(ObjectFactory factory) {
-        for (ObjectFactory f : factories) {
-            if (factory == f) {
-                factories.remove(f);
-            }
-        }
-    }
-
-    public void registerClass(Class<?> c) {
-        registerMethods(c);
-    }
-
-    /**
-     * Remove all *identical* registered methods of this class
-     * An identical class in one which matches registeredClass.equals(klass)
-     * If such a match is found then all the methods registered for this class are removed
-     *
-     * @param klass the class whose methods are to be removed
-     */
-    public void deRegister(Class<?> klass) {
-        for (InvokableMethod method : methods) {
-            if (method.klass().equals(klass)) {
-                methods.remove(method);
-            }
-        }
     }
 
     /**
@@ -275,6 +237,44 @@ public class HiggsServer {
                                 "\n for path \n%s", im, im.path().getUri()));
                     }
                 }
+            }
+        }
+    }
+
+    public void registerPackage(Package p) {
+        registerPackage(p.getName());
+    }
+
+    public void registerPackage(String name) {
+        for (Class<?> c : PackageScanner.get(name)) {
+            registerObjectFactoryOrClass(c);
+        }
+    }
+
+    /**
+     * Remove all referentially equal object factories
+     *
+     * @param factory the factory to remove
+     */
+    public void deRegister(ObjectFactory factory) {
+        for (ObjectFactory f : factories) {
+            if (factory == f) {
+                factories.remove(f);
+            }
+        }
+    }
+
+    /**
+     * Remove all *identical* registered methods of this class
+     * An identical class in one which matches registeredClass.equals(klass)
+     * If such a match is found then all the methods registered for this class are removed
+     *
+     * @param klass the class whose methods are to be removed
+     */
+    public void deRegister(Class<?> klass) {
+        for (InvokableMethod method : methods) {
+            if (method.klass().equals(klass)) {
+                methods.remove(method);
             }
         }
     }

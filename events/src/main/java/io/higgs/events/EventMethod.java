@@ -15,13 +15,13 @@ public class EventMethod extends InvokableMethod {
         super(factories, klass, classMethod);
     }
 
-    @Override
-    public boolean matches(String path, ChannelHandlerContext ctx, Object msg) {
-        return path().matches(path);
-    }
-
     public void registered() {
         log.info(String.format("REGISTERED > %1$-20s | %2$-30s | %3$-50s", classMethod.getName(),
                 path(), classMethod.getReturnType().getName()));
+    }
+
+    @Override
+    public boolean matches(String path, ChannelHandlerContext ctx, Object msg) {
+        return path().matches(path);
     }
 }

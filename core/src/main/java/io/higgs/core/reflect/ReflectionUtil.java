@@ -4,7 +4,7 @@ import java.lang.reflect.Field;
 import java.util.Collections;
 import java.util.Set;
 
-public class ReflectionUtil {
+public final class ReflectionUtil {
     public static int MAX_RECURSION_DEPTH = 10;
 
     private ReflectionUtil() {

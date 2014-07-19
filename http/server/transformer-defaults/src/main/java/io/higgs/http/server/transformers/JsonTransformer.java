@@ -53,7 +53,7 @@ public class JsonTransformer extends BaseTransformer {
     protected Object convertErrorToResponseObject(HttpResponse res, Throwable response) {
         determineErrorStatus(res, response);
         if (response instanceof JsonResponseError) {
-            JsonResponseError je = ((JsonResponseError) response);
+            JsonResponseError je = (JsonResponseError) response;
             res.setStatus(je.getStatus());
             return je.getContent();
         }
@@ -64,6 +64,6 @@ public class JsonTransformer extends BaseTransformer {
 
     @Override
     public JsonTransformer instance() {
-        return this;//we can return this, instead of a new instance because the JSON transformer isn't stateful
+        return this; //we can return this, instead of a new instance because the JSON transformer isn't stateful
     }
 }

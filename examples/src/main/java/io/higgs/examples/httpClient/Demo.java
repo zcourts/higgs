@@ -23,7 +23,7 @@ import java.nio.file.Files;
 /**
  * @author Courtney Robinson <courtney@crlog.info>
  */
-public class Demo {
+public final class Demo {
     private static HttpRequestBuilder defaults = new HttpRequestBuilder();
     private static Logger log = LoggerFactory.getLogger(Demo.class);
 
@@ -55,7 +55,7 @@ public class Demo {
                 })
         )
                 //SSLv3, TLSv1, TLSv1.1, TLSv1.2 are typical
-                .withSSLProtocols(new String[]{"SSLv3", "TLSv1"});
+                .withSSLProtocols(new String[]{ "SSLv3", "TLSv1" });
         //can always check what options are supported with
         HttpRequestBuilder.getSupportedSSLProtocols();
         //check if a specific version is supported

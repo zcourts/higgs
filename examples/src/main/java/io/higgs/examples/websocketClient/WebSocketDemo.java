@@ -17,7 +17,7 @@ import java.nio.charset.Charset;
 /**
  * @author Courtney Robinson <courtney.robinson@datasift.com>
  */
-public class WebSocketDemo implements WebSocketEventListener {
+public final class WebSocketDemo implements WebSocketEventListener {
     private final WebSocketStream stream;
 
     private WebSocketDemo(WebSocketStream stream) {
@@ -27,7 +27,7 @@ public class WebSocketDemo implements WebSocketEventListener {
     public static void main(String... args) throws URISyntaxException {
         WebSocketClient.maxFramePayloadLength = 655360 * 20;
         WebSocketStream stream = WebSocketClient.connect(new URI("ws://websocket.datasift.com/multi?username=" +
-                "zcourts&api_key=bc753994e3b3630556c7cf5c3f600d70"), true,
+                        "zcourts&api_key=bc753994e3b3630556c7cf5c3f600d70"), true,
                 HttpRequestBuilder.getSupportedSSLProtocols());
         stream.subscribe(new WebSocketDemo(stream));
 

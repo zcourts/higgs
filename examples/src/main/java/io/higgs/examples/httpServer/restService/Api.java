@@ -44,8 +44,14 @@ import java.util.Map;
  * @author Courtney Robinson <courtney@crlog.info>
  */
 @Path("/api")
-@Produces({MediaType.TEXT_HTML})
+@Produces({ MediaType.TEXT_HTML })
 public class Api {
+    //end auto injected fields
+    static int count;
+    String a = "a";
+    int b = 023343;
+    long c = 999999999;
+    double d = Math.random();
     /**
      * These fields can be injected automatically because an instance of the Api class is created for each request
      * so there is no chance of conflict.
@@ -65,12 +71,6 @@ public class Api {
     private Subject session;
     private ResourcePath path;
     private MessagePusher pusher;
-    //end auto injected fields
-    static int count;
-    String a = "a";
-    int b = 023343;
-    long c = 999999999;
-    double d = Math.random();
 
     @GET
     @Path("/")
@@ -93,7 +93,7 @@ public class Api {
     //transformer is used on the response, if no transformer can convert the response a Not Acceptable status
     // is returned
     @Path("test/{string:[a-z0-9]+}/{num:[0-9]+}")
-    @template(fragments = {"header", "api", "footer"}, value = "")
+    @template(fragments = { "header", "api", "footer" }, value = "")
     @GET
     public Object test(
             //inject these named parameters
@@ -149,7 +149,7 @@ public class Api {
         return map;
     }
 
-    @Consumes({MediaType.APPLICATION_JSON})
+    @Consumes({ MediaType.APPLICATION_JSON })
     @Path("boom")
     @POST
     public Object boom2() {

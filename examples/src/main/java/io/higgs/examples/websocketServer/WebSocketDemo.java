@@ -9,7 +9,7 @@ import io.higgs.ws.protocol.WebSocketConfiguration;
 /**
  * @author Courtney Robinson <courtney@crlog.info>
  */
-public class WebSocketDemo {
+public final class WebSocketDemo {
     private WebSocketDemo() {
     }
 

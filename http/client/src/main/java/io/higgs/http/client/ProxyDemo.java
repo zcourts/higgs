@@ -11,7 +11,7 @@ import java.net.URI;
 /**
  * @author Courtney Robinson <courtney@crlog.info>
  */
-public class ProxyDemo {
+public final class ProxyDemo {
     private static HttpRequestBuilder defaults = new HttpRequestBuilder();
     private static Logger log = LoggerFactory.getLogger(ProxyDemo.class);
 

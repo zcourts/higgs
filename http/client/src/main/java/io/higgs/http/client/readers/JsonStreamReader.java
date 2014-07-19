@@ -24,6 +24,5 @@ public class JsonStreamReader extends Reader<String> {
 
     @Override
     public void done() {
-
     }
 }

@@ -62,16 +62,6 @@ public class Injector {
     }
 
     /**
-     * Get a named dependency provider
-     *
-     * @param name the name of he provider
-     * @return the provider or null if the provider isn't registered
-     */
-    public DependencyProvider get(String name) {
-        return namedProviders.get(name);
-    }
-
-    /**
      * Given all the known providers (both named and unnamed) AND
      * given the set of expected parameters as well as the set of provided parameters
      * populate the set of expected parameters such that:
@@ -228,5 +218,15 @@ public class Injector {
         } catch (Throwable e) {
             return false;
         }
+    }
+
+    /**
+     * Get a named dependency provider
+     *
+     * @param name the name of he provider
+     * @return the provider or null if the provider isn't registered
+     */
+    public DependencyProvider get(String name) {
+        return namedProviders.get(name);
     }
 }

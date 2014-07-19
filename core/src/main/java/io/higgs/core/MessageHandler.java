@@ -16,9 +16,9 @@ import java.util.Queue;
  */
 public abstract class MessageHandler<C extends ServerConfig, T> extends SimpleChannelInboundHandler<T> {
 
+    protected final C config;
     protected Queue<InvokableMethod> methods;
     protected Logger log = LoggerFactory.getLogger(getClass());
-    protected final C config;
 
     public MessageHandler(C config) {
         this.config = config;
@@ -46,12 +46,16 @@ public abstract class MessageHandler<C extends ServerConfig, T> extends SimpleCh
                     return (M) method;
                 } else {
                     log.debug(String.format("%s matches %s but types are incompatible." +
-                            " Registered method %s and expected method %s",
+                                    " Registered method %s and expected method %s",
                             path, method.path().getUri(), method.getClass().getName(), methodClass.getName()));
                 }
             }
         }
         return null;
+    }
+
+    protected void logDetailedFailMessage(Object[] args, Throwable e, Method method) {
+        logDetailedFailMessage(false, args, e, method);
     }
 
     protected void logDetailedFailMessage(boolean uncaught, Object[] args, Throwable e, Method method) {
@@ -71,15 +75,11 @@ public abstract class MessageHandler<C extends ServerConfig, T> extends SimpleCh
         actual += "]";
         String argvalues = Arrays.deepToString(args);
         log.warn(String.format("%sError invoking method %s with arguments %s : Path to method %s The method \n" +
-                "expected: %s \n" +
-                "received: %s", uncaught ? "Uncaught exception while invoking method - " : "",
-                method.getName(), argvalues,
-                method.getDeclaringClass().getName() + "." + method.getName(),
-                expected, actual),
+                                "expected: %s \n" +
+                                "received: %s", uncaught ? "Uncaught exception while invoking method - " : "",
+                        method.getName(), argvalues,
+                        method.getDeclaringClass().getName() + "." + method.getName(),
+                        expected, actual),
                 e instanceof InvocationTargetException && e.getCause() != null ? e.getCause() : e);
-    }
-
-    protected void logDetailedFailMessage(Object[] args, Throwable e, Method method) {
-        logDetailedFailMessage(false, args, e, method);
     }
 }

@@ -9,7 +9,7 @@ import io.netty.channel.ChannelPipeline;
 import io.netty.handler.codec.ByteToMessageDecoder;
 import io.netty.handler.codec.compression.ZlibCodecFactory;
 import io.netty.handler.codec.compression.ZlibWrapper;
-import io.netty.handler.ssl.*;
+import io.netty.handler.ssl.SslHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -23,11 +23,11 @@ import java.util.Queue;
  * SSL or GZIP.
  */
 public class Transducer extends ByteToMessageDecoder {
+    private final Queue<ProtocolDetectorFactory> factories;
+    private final Queue<InvokableMethod> methods;
     private Logger log = LoggerFactory.getLogger(getClass());
     private boolean detectSsl;
     private boolean detectGzip;
-    private final Queue<ProtocolDetectorFactory> factories;
-    private final Queue<InvokableMethod> methods;
 
     public Transducer(boolean detectSsl, boolean detectGzip, Queue<ProtocolDetectorFactory> f,
                       Queue<InvokableMethod> methods) {

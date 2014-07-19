@@ -130,30 +130,6 @@ public class HttpMethodProcessor implements MethodProcessor {
         return im;
     }
 
-    private void processVerbs(HttpMethod im, Method method) {
-        Annotation[] annotations = method.getAnnotations(); //o length array if none so safe from null
-        for (Annotation a : annotations) {
-            if (GET.class.isAssignableFrom(a.annotationType())) {
-                im.addVerb(HttpMethod.VERB.GET);
-            }
-            if (POST.class.isAssignableFrom(a.annotationType())) {
-                im.addVerb(HttpMethod.VERB.POST);
-            }
-            if (PUT.class.isAssignableFrom(a.annotationType())) {
-                im.addVerb(HttpMethod.VERB.PUT);
-            }
-            if (DELETE.class.isAssignableFrom(a.annotationType())) {
-                im.addVerb(HttpMethod.VERB.DELETE);
-            }
-            if (HEAD.class.isAssignableFrom(a.annotationType())) {
-                im.addVerb(HttpMethod.VERB.HEAD);
-            }
-            if (OPTIONS.class.isAssignableFrom(a.annotationType())) {
-                im.addVerb(HttpMethod.VERB.OPTIONS);
-            }
-        }
-    }
-
     private void determineTemplate(Method method, Class<?> klass, HttpMethod im) {
         boolean classHasTemplate = klass.isAnnotationPresent(template.class);
         String methodTemplate = null;
@@ -179,6 +155,30 @@ public class HttpMethodProcessor implements MethodProcessor {
         if (templateAnnotationFound && (!im.hasFragments() && !im.hasTemplate())) {
             throw new IllegalStateException(String.format("%s in %s has template annotation but hasn't provided a " +
                     "template or any fragments", method.getName(), klass.getName()));
+        }
+    }
+
+    private void processVerbs(HttpMethod im, Method method) {
+        Annotation[] annotations = method.getAnnotations(); //o length array if none so safe from null
+        for (Annotation a : annotations) {
+            if (GET.class.isAssignableFrom(a.annotationType())) {
+                im.addVerb(HttpMethod.VERB.GET);
+            }
+            if (POST.class.isAssignableFrom(a.annotationType())) {
+                im.addVerb(HttpMethod.VERB.POST);
+            }
+            if (PUT.class.isAssignableFrom(a.annotationType())) {
+                im.addVerb(HttpMethod.VERB.PUT);
+            }
+            if (DELETE.class.isAssignableFrom(a.annotationType())) {
+                im.addVerb(HttpMethod.VERB.DELETE);
+            }
+            if (HEAD.class.isAssignableFrom(a.annotationType())) {
+                im.addVerb(HttpMethod.VERB.HEAD);
+            }
+            if (OPTIONS.class.isAssignableFrom(a.annotationType())) {
+                im.addVerb(HttpMethod.VERB.OPTIONS);
+            }
         }
     }
 }

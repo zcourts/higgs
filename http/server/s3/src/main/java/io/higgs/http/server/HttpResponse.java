@@ -31,27 +31,6 @@ public class HttpResponse extends DefaultFullHttpResponse {
     private DecoderResult result;
     private boolean redirect;
 
-    public HttpResponse(HttpVersion version, HttpResponseStatus status, ByteBuf content) {
-        super(version, status);
-        this.version = version;
-        this.status = status;
-        this.content = content;
-    }
-
-    /**
-     * Creates a new instance.
-     *
-     * @param version the HTTP version of this response
-     * @param status  the status of this response
-     */
-    public HttpResponse(HttpVersion version, HttpResponseStatus status) {
-        this(version, status, Unpooled.buffer());
-    }
-
-    public HttpResponse(HttpResponseStatus status) {
-        this(HttpVersion.HTTP_1_1, status);
-    }
-
     /**
      * Initializes a response with 200 status and sets the connection header to whatever the client
      * requested. If no connection header is found in the client request then it is set to CLOSE
@@ -70,10 +49,41 @@ public class HttpResponse extends DefaultFullHttpResponse {
     }
 
     /**
+     * Creates a new instance.
+     *
+     * @param version the HTTP version of this response
+     * @param status  the status of this response
+     */
+    public HttpResponse(HttpVersion version, HttpResponseStatus status) {
+        this(version, status, Unpooled.buffer());
+    }
+
+    @Override
+    public HttpHeaders headers() {
+        return headers;
+    }
+
+    public HttpResponse(HttpVersion version, HttpResponseStatus status, ByteBuf content) {
+        super(version, status);
+        this.version = version;
+        this.status = status;
+        this.content = content;
+    }
+
+    @Override
+    public HttpVersion getProtocolVersion() {
+        return version;
+    }
+
+    /**
      * creates a 200 ok response
      */
     public HttpResponse() {
         this(HttpResponseStatus.OK);
+    }
+
+    public HttpResponse(HttpResponseStatus status) {
+        this(HttpVersion.HTTP_1_1, status);
     }
 
     public HttpResponse(final ByteBuf buffer) {
@@ -86,6 +96,18 @@ public class HttpResponse extends DefaultFullHttpResponse {
 
     public ByteBuf content() {
         return content;
+    }
+
+    @Override
+    public FullHttpResponse setProtocolVersion(HttpVersion version) {
+        this.version = version;
+        return this;
+    }
+
+    @Override
+    public FullHttpResponse setStatus(HttpResponseStatus status) {
+        this.status = status;
+        return this;
     }
 
     public void setCookies(final Map<String, HttpCookie> cookies) {
@@ -136,39 +158,17 @@ public class HttpResponse extends DefaultFullHttpResponse {
         return null;
     }
 
-    public void setManagedWriter(ManagedWriter managedWriter) {
-        this.managedWriter = managedWriter;
-    }
-
     public ManagedWriter getManagedWriter() {
         return managedWriter;
+    }
+
+    public void setManagedWriter(ManagedWriter managedWriter) {
+        this.managedWriter = managedWriter;
     }
 
     @Override
     public HttpResponseStatus getStatus() {
         return status;
-    }
-
-    @Override
-    public FullHttpResponse setStatus(HttpResponseStatus status) {
-        this.status = status;
-        return this;
-    }
-
-    @Override
-    public HttpVersion getProtocolVersion() {
-        return version;
-    }
-
-    @Override
-    public FullHttpResponse setProtocolVersion(HttpVersion version) {
-        this.version = version;
-        return this;
-    }
-
-    @Override
-    public HttpHeaders headers() {
-        return headers;
     }
 
     @Override

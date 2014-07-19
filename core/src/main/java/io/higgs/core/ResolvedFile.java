@@ -85,10 +85,6 @@ public class ResolvedFile {
         return dirFiles;
     }
 
-    public boolean hasStream() {
-        return stream != null;
-    }
-
     /**
      * Tests whether a file is a directory.
      *
@@ -104,8 +100,16 @@ public class ResolvedFile {
         return Files.exists(path) || (isFromClassPath() && hasStream());
     }
 
+    public boolean isFromClassPath() {
+        return fromClassPath;
+    }
+
     public Path getPath() {
         return path;
+    }
+
+    public boolean hasStream() {
+        return stream != null;
     }
 
     public String getName() {
@@ -128,27 +132,6 @@ public class ResolvedFile {
         return base;
     }
 
-    public boolean isFromClassPath() {
-        return fromClassPath;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-
-        ResolvedFile file = (ResolvedFile) o;
-
-        if (fromClassPath != file.fromClassPath) return false;
-        if (knownSize != file.knownSize) return false;
-        if (base != null ? !base.equals(file.base) : file.base != null) return false;
-        if (dirFiles != null ? !dirFiles.equals(file.dirFiles) : file.dirFiles != null) return false;
-        if (path != null ? !path.equals(file.path) : file.path != null) return false;
-        if (stream != null ? !stream.equals(file.stream) : file.stream != null) return false;
-
-        return true;
-    }
-
     @Override
     public int hashCode() {
         int result = path != null ? path.hashCode() : 0;
@@ -158,5 +141,38 @@ public class ResolvedFile {
         result = 31 * result + (fromClassPath ? 1 : 0);
         result = 31 * result + (dirFiles != null ? dirFiles.hashCode() : 0);
         return result;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+
+        ResolvedFile file = (ResolvedFile) o;
+
+        if (fromClassPath != file.fromClassPath) {
+            return false;
+        }
+        if (knownSize != file.knownSize) {
+            return false;
+        }
+        if (base != null ? !base.equals(file.base) : file.base != null) {
+            return false;
+        }
+        if (dirFiles != null ? !dirFiles.equals(file.dirFiles) : file.dirFiles != null) {
+            return false;
+        }
+        if (path != null ? !path.equals(file.path) : file.path != null) {
+            return false;
+        }
+        if (stream != null ? !stream.equals(file.stream) : file.stream != null) {
+            return false;
+        }
+
+        return true;
     }
 }

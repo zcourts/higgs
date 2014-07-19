@@ -51,11 +51,6 @@ public class ThymeleafTransformer extends BaseTransformer {
     }
 
     @Override
-    public ThymeleafTransformer instance() {
-        return new ThymeleafTransformer();
-    }
-
-    @Override
     public boolean canTransform(Object response, HttpRequest request, MediaType mediaType,
                                 HttpMethod method, ChannelHandlerContext ctx) {
         return method.hasTemplate() && super.canTransform(response, request, mediaType, method, ctx);
@@ -96,15 +91,9 @@ public class ThymeleafTransformer extends BaseTransformer {
         setResponseContent(res, data);
     }
 
-    protected String determineErrorTemplate(HttpResponse res, Object response) {
-        Throwable err = response instanceof Throwable ? (Throwable) response : null;
-        determineErrorStatus(res, err);
-        String tpl = "error/default";
-        if (response instanceof WebApplicationException) {
-            WebApplicationException e = (WebApplicationException) response;
-            tpl = e.getTemplate() == null || e.getTemplate().isEmpty() ? tpl : e.getTemplate();
-        }
-        return tpl;
+    @Override
+    public ThymeleafTransformer instance() {
+        return new ThymeleafTransformer();
     }
 
     private void populateContext(final WebContext ctx, Object response, HttpRequest request, HttpMethod method) {
@@ -146,6 +135,17 @@ public class ThymeleafTransformer extends BaseTransformer {
                 }
             }
         }
+    }
+
+    protected String determineErrorTemplate(HttpResponse res, Object response) {
+        Throwable err = response instanceof Throwable ? (Throwable) response : null;
+        determineErrorStatus(res, err);
+        String tpl = "error/default";
+        if (response instanceof WebApplicationException) {
+            WebApplicationException e = (WebApplicationException) response;
+            tpl = e.getTemplate() == null || e.getTemplate().isEmpty() ? tpl : e.getTemplate();
+        }
+        return tpl;
     }
 
     public TemplateConfig getConfig() {

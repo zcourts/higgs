@@ -10,7 +10,7 @@ import java.io.IOException;
 /**
  * @author Courtney Robinson <courtney@crlog.info>
  */
-public class Demo {
+public final class Demo {
     private Demo() {
     }
 

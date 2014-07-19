@@ -33,14 +33,6 @@ public class ResourcePath {
         parsePath();
     }
 
-    public String getUri() {
-        return uri;
-    }
-
-    public Component[] getComponents() {
-        return components;
-    }
-
     private void parsePath() {
         String[] parts = uri.split("/");
         components = new Component[parts.length];
@@ -73,6 +65,14 @@ public class ResourcePath {
             components[index] = component;
             index++;
         }
+    }
+
+    public String getUri() {
+        return uri;
+    }
+
+    public Component[] getComponents() {
+        return components;
     }
 
     /**
@@ -221,10 +221,6 @@ public class ResourcePath {
             return isPattern;
         }
 
-        public void setPattern(final boolean pattern) {
-            isPattern = pattern;
-        }
-
         public String getName() {
             return name;
         }
@@ -233,13 +229,17 @@ public class ResourcePath {
             this.name = name;
         }
 
+        public Pattern getPattern() {
+            return pattern;
+        }
+
+        public void setPattern(final boolean pattern) {
+            isPattern = pattern;
+        }
+
         public void setPattern(final String pattern) {
             this.pattern = Pattern.compile(pattern, Pattern.CASE_INSENSITIVE | Pattern.DOTALL);
             setPattern(true);
-        }
-
-        public Pattern getPattern() {
-            return pattern;
         }
 
         /**

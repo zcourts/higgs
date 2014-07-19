@@ -8,7 +8,7 @@ import io.higgs.http.server.protocol.HttpProtocolConfiguration;
 /**
  * @author Courtney Robinson <courtney@crlog.info>
  */
-public class Demo {
+public final class Demo {
     private Demo() {
     }
 

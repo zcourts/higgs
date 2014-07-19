@@ -54,7 +54,7 @@ public class ConnectHandler extends SimpleChannelInboundHandler<Object> {
         ctx.channel().writeAndFlush(request);
     }
 
-    public static interface InitFactory {
+    public interface InitFactory {
         ClientIntializer newInstance(boolean ssl, SimpleChannelInboundHandler<Object> handler, ConnectHandler ch);
     }
 }

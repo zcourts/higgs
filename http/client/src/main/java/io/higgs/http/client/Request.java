@@ -88,6 +88,20 @@ public class Request {
         headers().set(HttpHeaders.Names.ACCEPT, builder.acceptedMimeTypes);
     }
 
+    /**
+     * @param delete should delete  temp file on exit (on normal exit) if true
+     */
+    public void deleteTempFileOnExit(boolean delete) {
+        DiskFileUpload.deleteOnExitTemporaryFile = delete;
+    }
+
+    /**
+     * @param baseDir system temp directory by default
+     */
+    public void baseDirectory(String baseDir) {
+        DiskFileUpload.baseDirectory = baseDir;
+    }
+
     protected void newNettyRequest(URI uri, HttpMethod method, HttpVersion version) {
         request = new DefaultFullHttpRequest(version, method, uri.getRawPath());
         headers().set(HttpHeaders.Names.REFERER, originalUri == null ? uri.toString() : originalUri.toString());
@@ -104,6 +118,10 @@ public class Request {
             redirectStatusCodes.add(code);
         }
         return this;
+    }
+
+    public HttpHeaders headers() {
+        return request.headers();
     }
 
     /**
@@ -174,20 +192,12 @@ public class Request {
         return future;
     }
 
-    public Channel getChannel() {
-        return channel;
-    }
-
-    protected String getHost() {
-        return uri.getHost() == null ? "localhost" : uri.getHost();
-    }
-
     protected String getScheme() {
         return uri.getScheme() == null ? "http" : uri.getScheme();
     }
 
-    protected boolean isSSLScheme(String scheme) {
-        return "https".equalsIgnoreCase(scheme);
+    protected String getHost() {
+        return uri.getHost() == null ? "localhost" : uri.getHost();
     }
 
     protected int getPort(String scheme) {
@@ -197,73 +207,8 @@ public class Request {
         return 80;
     }
 
-    protected ChannelFuture connect(String host, int port, Bootstrap bootstrap) {
-        connectFuture = bootstrap.connect(host, port);
-        return connectFuture;
-    }
-
-    protected ChannelHandler newInitializer() {
-        ConnectHandler.InitFactory factory = new ConnectHandler.InitFactory() {
-            @Override
-            public ClientIntializer newInstance(boolean ssl, SimpleChannelInboundHandler<Object>
-                    handler, ConnectHandler h) {
-                return new ClientIntializer(ssl, handler, h, sslProtocols);
-            }
-        };
-        return new ClientIntializer(useSSL, newInboundHandler(),
-                //if proxy request exists then initializer should add it instead of the normal handler
-                isProxyEnabled() && proxyRequest != null ?
-                        new ConnectHandler(tunneling, request, newInboundHandler(), factory) : null, sslProtocols);
-    }
-
-    protected SimpleChannelInboundHandler<Object> newInboundHandler() {
-        return new ClientHandler(response, future);
-    }
-
-    protected ChannelFuture makeTheRequest() {
-        if (isProxyEnabled() && proxyRequest != null) {
-            return StaticUtil.write(channel, proxyRequest);
-        } else {
-            return StaticUtil.write(channel, request);
-        }
-    }
-
-    protected void configureProxy(boolean ssl) {
-        //http://tools.ietf.org/html/rfc2817#section-5.2 - authority and host required
-        String authority = uri.getHost() + ":" + uri.getPort();
-        //if we're making an SSL connection or using any method other than GET or POST then request a tunnel
-        if (ssl || tunneling || !(HttpMethod.GET.equals(method) || HttpMethod.POST.equals(method))) {
-            proxyRequest = new DefaultFullHttpRequest(HttpVersion.HTTP_1_1, HttpMethod.CONNECT, authority);
-            proxyRequest.headers().set(HttpHeaders.Names.HOST, authority);
-            proxyRequest.headers().set(HttpHeaders.Names.CONNECTION, HttpHeaders.Values.KEEP_ALIVE);
-            proxyRequest.headers().set("Proxy-Connection", HttpHeaders.Values.KEEP_ALIVE);
-            tunneling = true;
-        } else {
-            String proxyURL = getProxyPath();
-            request.setUri(proxyURL);
-            request.headers().set(HttpHeaders.Names.HOST, uri.getHost() == null ? "localhost" : uri.getHost());
-        }
-        //provide authorization if configured
-        if (proxyUser != null && !proxyUser.isEmpty()) {
-            String encoded = printBase64Binary((proxyUser + ":" + proxyPass).getBytes(UTF8));
-            String auth = "Basic " + encoded;
-            (proxyRequest == null ? request : proxyRequest).headers().set(HttpHeaders.Names.PROXY_AUTHORIZATION, auth);
-        }
-    }
-
-    protected String getProxyPath() {
-        //proxy requests require the full URL
-        //can stick http:// in because ssl connections will never use this method
-        return getScheme() + "://" + uri.getHost() + request.getUri();
-    }
-
-    /**
-     * Uses the proxy host to determine if proxy is enabled for this request.
-     *
-     * @return true if {@link #proxyHost} is not null and is not empty
-     */
-    public boolean isProxyEnabled() {
-        return proxyHost != null && !proxyHost.isEmpty();
+    protected boolean isSSLScheme(String scheme) {
+        return "https".equalsIgnoreCase(scheme);
     }
 
     protected void configure() throws Exception {
@@ -289,6 +234,79 @@ public class Request {
             }
         }
         request.setUri(encoder.toString());
+    }
+
+    /**
+     * Uses the proxy host to determine if proxy is enabled for this request.
+     *
+     * @return true if {@link #proxyHost} is not null and is not empty
+     */
+    public boolean isProxyEnabled() {
+        return proxyHost != null && !proxyHost.isEmpty();
+    }
+
+    protected void configureProxy(boolean ssl) {
+        //http://tools.ietf.org/html/rfc2817#section-5.2 - authority and host required
+        String authority = uri.getHost() + ":" + uri.getPort();
+        //if we're making an SSL connection or using any method other than GET or POST then request a tunnel
+        if (ssl || tunneling || !(HttpMethod.GET.equals(method) || HttpMethod.POST.equals(method))) {
+            proxyRequest = new DefaultFullHttpRequest(HttpVersion.HTTP_1_1, HttpMethod.CONNECT, authority);
+            proxyRequest.headers().set(HttpHeaders.Names.HOST, authority);
+            proxyRequest.headers().set(HttpHeaders.Names.CONNECTION, HttpHeaders.Values.KEEP_ALIVE);
+            proxyRequest.headers().set("Proxy-Connection", HttpHeaders.Values.KEEP_ALIVE);
+            tunneling = true;
+        } else {
+            String proxyURL = getProxyPath();
+            request.setUri(proxyURL);
+            request.headers().set(HttpHeaders.Names.HOST, uri.getHost() == null ? "localhost" : uri.getHost());
+        }
+        //provide authorization if configured
+        if (proxyUser != null && !proxyUser.isEmpty()) {
+            String encoded = printBase64Binary((proxyUser + ":" + proxyPass).getBytes(UTF8));
+            String auth = "Basic " + encoded;
+            (proxyRequest == null ? request : proxyRequest).headers().set(HttpHeaders.Names.PROXY_AUTHORIZATION, auth);
+        }
+    }
+
+    protected ChannelHandler newInitializer() {
+        ConnectHandler.InitFactory factory = new ConnectHandler.InitFactory() {
+            @Override
+            public ClientIntializer newInstance(boolean ssl, SimpleChannelInboundHandler<Object>
+                    handler, ConnectHandler h) {
+                return new ClientIntializer(ssl, handler, h, sslProtocols);
+            }
+        };
+        return new ClientIntializer(useSSL, newInboundHandler(),
+                //if proxy request exists then initializer should add it instead of the normal handler
+                isProxyEnabled() && proxyRequest != null ?
+                        new ConnectHandler(tunneling, request, newInboundHandler(), factory) : null, sslProtocols);
+    }
+
+    protected ChannelFuture connect(String host, int port, Bootstrap bootstrap) {
+        connectFuture = bootstrap.connect(host, port);
+        return connectFuture;
+    }
+
+    protected ChannelFuture makeTheRequest() {
+        if (isProxyEnabled() && proxyRequest != null) {
+            return StaticUtil.write(channel, proxyRequest);
+        } else {
+            return StaticUtil.write(channel, request);
+        }
+    }
+
+    protected String getProxyPath() {
+        //proxy requests require the full URL
+        //can stick http:// in because ssl connections will never use this method
+        return getScheme() + "://" + uri.getHost() + request.getUri();
+    }
+
+    protected SimpleChannelInboundHandler<Object> newInboundHandler() {
+        return new ClientHandler(response, future);
+    }
+
+    public Channel getChannel() {
+        return channel;
     }
 
     public Request proxy(String host, int port) {
@@ -321,20 +339,6 @@ public class Request {
     }
 
     /**
-     * @param baseDir system temp directory by default
-     */
-    public void baseDirectory(String baseDir) {
-        DiskFileUpload.baseDirectory = baseDir;
-    }
-
-    /**
-     * @param delete should delete  temp file on exit (on normal exit) if true
-     */
-    public void deleteTempFileOnExit(boolean delete) {
-        DiskFileUpload.deleteOnExitTemporaryFile = delete;
-    }
-
-    /**
      * Set a header on this request
      *
      * @return this
@@ -362,10 +366,6 @@ public class Request {
     public Request header(String name, String value) {
         headers().set(name, value);
         return this;
-    }
-
-    public HttpHeaders headers() {
-        return request.headers();
     }
 
     /**

@@ -34,8 +34,8 @@ import static io.netty.handler.codec.http.HttpVersion.HTTP_1_1;
  * @author Courtney Robinson <courtney@crlog.info>
  */
 public class WebSocketHandler extends HttpHandler {
-    protected WebSocketConfiguration protocolConfig;
     private final String WEBSOCKET_PATH;
+    protected WebSocketConfiguration protocolConfig;
     private WebSocketServerHandshaker handshaker;
 
     public WebSocketHandler(WebSocketConfiguration config) {
@@ -124,7 +124,7 @@ public class WebSocketHandler extends HttpHandler {
         }
 
         // Send the response and close the connection if necessary.
-        ChannelFuture f = StaticUtil.write(ctx.channel(),res);
+        ChannelFuture f = StaticUtil.write(ctx.channel(), res);
         if (!isKeepAlive(req) || res.getStatus().code() != 200) {
             f.addListener(ChannelFutureListener.CLOSE);
         }

@@ -27,6 +27,8 @@ public class HiggsSecurityManager {
     protected static HiggsSessionManager sessionManager = new HiggsSessionManager();
     protected static HttpConfig config;
 
+    protected HiggsSecurityManager() {
+    }
 
     public static void configure(HiggsServer server, DefaultSecurityManager securityManager) {
         HiggsSecurityManager.securityManager = securityManager;
@@ -35,21 +37,6 @@ public class HiggsSecurityManager {
         setupRealms();
         seupAuthenticationStrategy();
         setupAuthorization();
-    }
-
-    protected static void setupAuthorization() {
-        Set<Authorizer> authorizers = getServices(Authorizer.class);
-        if (authorizers.size() > 0) {
-            Iterator<Authorizer> it = authorizers.iterator();
-            Authorizer auth = it.next();
-            securityManager.setAuthorizer(auth);
-            if (it.hasNext()) {
-                log.warn(String.format("Multiple authorizers configured, ONLY %s is being used",
-                        auth.getClass().getName()));
-            }
-        } else if (securityManager.getAuthorizer() == null) {
-            log.info("No authorization service setup on the class path");
-        }
     }
 
     protected static void setupSessions() {
@@ -102,6 +89,21 @@ public class HiggsSecurityManager {
             }
         } else {
             log.info("No authentication service setup on the class path");
+        }
+    }
+
+    protected static void setupAuthorization() {
+        Set<Authorizer> authorizers = getServices(Authorizer.class);
+        if (authorizers.size() > 0) {
+            Iterator<Authorizer> it = authorizers.iterator();
+            Authorizer auth = it.next();
+            securityManager.setAuthorizer(auth);
+            if (it.hasNext()) {
+                log.warn(String.format("Multiple authorizers configured, ONLY %s is being used",
+                        auth.getClass().getName()));
+            }
+        } else if (securityManager.getAuthorizer() == null) {
+            log.info("No authorization service setup on the class path");
         }
     }
 

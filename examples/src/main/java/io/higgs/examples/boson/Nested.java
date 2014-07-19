@@ -6,7 +6,7 @@ import java.util.List;
 
 
 public class Nested {
-    NestedField[] array = new NestedField[]{new NestedField(), new NestedField(), new NestedField()};
+    NestedField[] array = new NestedField[]{ new NestedField(), new NestedField(), new NestedField() };
     List list = Arrays.asList("a", "b", "c", "d");
 
     public String toString() {

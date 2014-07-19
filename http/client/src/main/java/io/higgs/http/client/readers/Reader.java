@@ -19,13 +19,13 @@ import java.util.Set;
  * @author Courtney Robinson <courtney@crlog.info>
  */
 public abstract class Reader<T> {
-    protected final Logger log = LoggerFactory.getLogger(Reader.class.getName());
     protected static final Charset utf8 = Charset.forName("UTF-8");
+    protected final Logger log = LoggerFactory.getLogger(Reader.class.getName());
     protected ByteBuf buffer = Unpooled.buffer();
     protected ByteBufInputStream data = new ByteBufInputStream(buffer);
     protected Set<Function2<T, Response>> functions = new HashSet<>();
-    private boolean completed;
     protected Response response;
+    private boolean completed;
 
     public Reader() {
     }
@@ -38,6 +38,15 @@ public abstract class Reader<T> {
     }
 
     /**
+     * @param function Adds a function to be invoked by this reader
+     */
+    public void listen(Function2<T, Response> function) {
+        if (function != null) {
+            functions.add(function);
+        }
+    }
+
+    /**
      * Invoked each time a block of data is received
      *
      * @param data the data
@@ -45,11 +54,6 @@ public abstract class Reader<T> {
     public void data(ByteBuf data) {
         buffer.writeBytes(data);
     }
-
-    /**
-     * Called once at the end of a stream when all data is received
-     */
-    public abstract void done();
 
     /**
      * @param status the HTTP status the server responded with
@@ -71,6 +75,10 @@ public abstract class Reader<T> {
     public void onHeaders(HttpHeaders headers) {
     }
 
+    public boolean isCompleted() {
+        return completed;
+    }
+
     public void setCompleted(boolean completed) {
         this.completed = completed;
         if (completed) {
@@ -78,18 +86,10 @@ public abstract class Reader<T> {
         }
     }
 
-    public boolean isCompleted() {
-        return completed;
-    }
-
     /**
-     * @param function Adds a function to be invoked by this reader
+     * Called once at the end of a stream when all data is received
      */
-    public void listen(Function2<T, Response> function) {
-        if (function != null) {
-            functions.add(function);
-        }
-    }
+    public abstract void done();
 
     public Response response() {
         return response;

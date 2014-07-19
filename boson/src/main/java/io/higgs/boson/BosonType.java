@@ -4,9 +4,6 @@ package io.higgs.boson;
  * @author Courtney Robinson <courtney@crlog.info>
  */
 public class BosonType {
-    protected BosonType() {
-    }
-
     public static final int BYTE = 1;
     public static final int SHORT = 2;
     public static final int INT = 3;
@@ -30,4 +27,7 @@ public class BosonType {
     public static final int REQUEST_CALLBACK = -125;
     public static final int RESPONSE_METHOD_NAME = -124;
     public static final int RESPONSE_PARAMETERS = -123;
+
+    protected BosonType() {
+    }
 }

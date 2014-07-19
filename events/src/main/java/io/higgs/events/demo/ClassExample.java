@@ -37,11 +37,12 @@ public class ClassExample {
      * if the order wasn't enforced when something like
      * Events.emit(1,2,"a","b") is emitted then b could go in place of a or 1 in place of 2
      *
-     * @param ctx      the channel context, each event has 1 context which is paired with an
-     *                 event name, in this case "test" so all test events emitted will have the same context
-     * @param channel  like channel context there is 1 channel per event
-     * @param eventMessage    every time the test event is emitted a new {@link io.higgs.events.EventMessage} object will be created
-     * @param executor submit background tasks to the executor
+     * @param ctx          the channel context, each event has 1 context which is paired with an
+     *                     event name, in this case "test" so all test events emitted will have the same context
+     * @param channel      like channel context there is 1 channel per event
+     * @param eventMessage every time the test event is emitted a new {@link io.higgs.events.EventMessage} object
+     *                     will be created
+     * @param executor     submit background tasks to the executor
      */
     @Path("test") //subscribe to events emitted with the name "test"
     public void test(

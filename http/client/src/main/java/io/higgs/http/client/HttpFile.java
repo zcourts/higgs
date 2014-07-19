@@ -9,8 +9,8 @@ import java.util.List;
  * @author Courtney Robinson <courtney@crlog.info>
  */
 public class HttpFile {
-    private List<File> files = new ArrayList<>();
     private final String name;
+    private List<File> files = new ArrayList<>();
     private List<String> contentTypes = new ArrayList<>();
     private List<Boolean> texts = new ArrayList<>();
     private MimetypesFileTypeMap mimeTypesMap = new MimetypesFileTypeMap();

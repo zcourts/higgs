@@ -22,8 +22,8 @@ import java.util.Set;
  * @author Courtney Robinson <courtney@crlog.info>
  */
 public class Thymeleaf {
-    private TemplateEngine templateEngine = new TemplateEngine();
     private final TemplateConfig config;
+    private TemplateEngine templateEngine = new TemplateEngine();
     //
     private HashSet<ITemplateResolver> resolvers = new HashSet<>();
     private ClassLoaderTemplateResolver clResolver = new ClassLoaderTemplateResolver();
@@ -119,7 +119,7 @@ public class Thymeleaf {
                 File parent = file.getParentFile();
                 if (!parent.exists() && !parent.mkdirs()) {
                     throw new IllegalStateException(String.format("Unable to create directory structure for fragments" +
-                            " '%s'",
+                                    " '%s'",
                             file.getAbsolutePath()));
                 }
                 if (!file.createNewFile()) {
@@ -129,8 +129,8 @@ public class Thymeleaf {
                 BufferedWriter out = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(file)));
                 for (String frag : fragements) {
                     String fragmentPath = config.prefix + frag + config.suffix;
-                    BufferedReader stream = new BufferedReader(new FileReader(HiggsServer.BASE_PATH.resolve
-                            (fragmentPath).toFile()));
+                    BufferedReader stream = new BufferedReader(new FileReader(HiggsServer.BASE_PATH.
+                            resolve(fragmentPath).toFile()));
                     String line;
                     while ((line = stream.readLine()) != null) {
                         out.append(line);

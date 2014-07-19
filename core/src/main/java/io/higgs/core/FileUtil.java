@@ -17,10 +17,6 @@ public class FileUtil {
         return resolve(baseDir == null ? null : Paths.get(baseDir), file == null ? null : Paths.get(file));
     }
 
-    public static ResolvedFile resolve(Path file) {
-        return resolve(null, file);
-    }
-
     /**
      * Given a path, try locating the file/directory represented by it.
      * First check the file system, then check class path.
@@ -50,6 +46,10 @@ public class FileUtil {
             return null;
         }
         return resolve(file.toPath());
+    }
+
+    public static ResolvedFile resolve(Path file) {
+        return resolve(null, file);
     }
 
     public static ResolvedFile resolve(Path base, File file) {

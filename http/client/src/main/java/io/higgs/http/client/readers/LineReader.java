@@ -27,12 +27,6 @@ public class LineReader extends PageReader {
 //NOTE: we don't override done because it is required to be invoked once
 // everything is received to ensure entire content is read
 
-    public void writeLine(String line) {
-        for (Function2<String, Response> function : functions) {
-            function.apply(line, response);
-        }
-    }
-
     @Override
     public void data(ByteBuf content) {
         super.data(content);
@@ -44,6 +38,12 @@ public class LineReader extends PageReader {
             buffer.discardReadBytes();
         } catch (IOException e) {
             log.info(e.getMessage());
+        }
+    }
+
+    public void writeLine(String line) {
+        for (Function2<String, Response> function : functions) {
+            function.apply(line, response);
         }
     }
 }

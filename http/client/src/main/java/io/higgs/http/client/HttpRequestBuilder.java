@@ -29,11 +29,6 @@ public class HttpRequestBuilder {
     protected String acceptedEncodings = HttpHeaders.Values.GZIP + ',' + HttpHeaders.Values.DEFLATE;
     protected String connectionHeader = HttpHeaders.Values.CLOSE;
 
-    public HttpRequestBuilder() {
-        //http://en.wikipedia.org/wiki/List_of_HTTP_status_codes#3xx_Redirection
-        redirectStatusCodes.addAll(Arrays.asList(301, 302, 303, 307, 308));
-    }
-
     public HttpRequestBuilder(HttpRequestBuilder that) {
         this();
         redirectStatusCodes.addAll(that.redirectStatusCodes);
@@ -43,6 +38,11 @@ public class HttpRequestBuilder {
         acceptedLanguages = that.acceptedLanguages;
         acceptedMimeTypes = that.acceptedMimeTypes;
         connectionHeader = that.connectionHeader;
+    }
+
+    public HttpRequestBuilder() {
+        //http://en.wikipedia.org/wiki/List_of_HTTP_status_codes#3xx_Redirection
+        redirectStatusCodes.addAll(Arrays.asList(301, 302, 303, 307, 308));
     }
 
     /**
@@ -56,24 +56,13 @@ public class HttpRequestBuilder {
         return group;
     }
 
-    public static void shutdown() {
-        group.shutdownGracefully();
-    }
-
     public static void restart() {
         shutdown();
         group = new NioEventLoopGroup();
     }
 
-    /**
-     * Gets the list of SSL protocols supported by the current JVM
-     *
-     * @return e.g. [SSLv2Hello, SSLv3, TLSv1, TLSv1.1, TLSv1.2]
-     */
-    public static String[] getSupportedSSLProtocols() {
-        SSLEngine engine = SSLContextFactory.getSSLSocket(SSLConfigFactory.sslConfiguration).createSSLEngine();
-        engine.setUseClientMode(true);
-        return engine.getSupportedProtocols();
+    public static void shutdown() {
+        group.shutdownGracefully();
     }
 
     /**
@@ -93,6 +82,17 @@ public class HttpRequestBuilder {
             }
         }
         return false;
+    }
+
+    /**
+     * Gets the list of SSL protocols supported by the current JVM
+     *
+     * @return e.g. [SSLv2Hello, SSLv3, TLSv1, TLSv1.1, TLSv1.2]
+     */
+    public static String[] getSupportedSSLProtocols() {
+        SSLEngine engine = SSLContextFactory.getSSLSocket(SSLConfigFactory.sslConfiguration).createSSLEngine();
+        engine.setUseClientMode(true);
+        return engine.getSupportedProtocols();
     }
 
     public HttpRequestBuilder proxy(String host, int port) {
@@ -152,6 +152,12 @@ public class HttpRequestBuilder {
     public Request GET(URI uri, HttpVersion version, Reader reader) {
         checkGroup();
         return new Request(this, group, uri, HttpMethod.GET, version, reader);
+    }
+
+    private void checkGroup() {
+        if (group.isShuttingDown() || group.isShutdown()) {
+            group = new NioEventLoopGroup();
+        }
     }
 
     /**
@@ -292,12 +298,6 @@ public class HttpRequestBuilder {
     public Request CONNECT(URI uri, HttpVersion version, Reader reader) {
         checkGroup();
         return new Request(this, group, uri, HttpMethod.CONNECT, version, reader);
-    }
-
-    private void checkGroup() {
-        if (group.isShuttingDown() || group.isShutdown()) {
-            group = new NioEventLoopGroup();
-        }
     }
 
     public HttpRequestBuilder acceptedLanguages(String acceptedLanguages) {

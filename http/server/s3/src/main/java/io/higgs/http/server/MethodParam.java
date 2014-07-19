@@ -28,6 +28,10 @@ public class MethodParam {
         return name;
     }
 
+    public void setName(final String name) {
+        this.name = name;
+    }
+
     public boolean isNamed() {
         return name != null;
     }
@@ -46,10 +50,6 @@ public class MethodParam {
 
     public void setValidationRequired(boolean validationRequired) {
         this.validationRequired = validationRequired;
-    }
-
-    public void setName(final String name) {
-        this.name = name;
     }
 
     public boolean isQueryParam() {
@@ -104,16 +104,12 @@ public class MethodParam {
                 '}';
     }
 
-    public void setParameterType(Class<?> parameterType) {
-        this.parameterType = parameterType;
-    }
-
     public Class<?> getParameterType() {
         return parameterType;
     }
 
-    public void setPosition(int position) {
-        this.position = position;
+    public void setParameterType(Class<?> parameterType) {
+        this.parameterType = parameterType;
     }
 
     /**
@@ -123,12 +119,16 @@ public class MethodParam {
         return position;
     }
 
-    public void setSessionParam(boolean sessionParam) {
-        this.sessionParam = sessionParam;
+    public void setPosition(int position) {
+        this.position = position;
     }
 
     public boolean isSessionParam() {
         return sessionParam;
+    }
+
+    public void setSessionParam(boolean sessionParam) {
+        this.sessionParam = sessionParam;
     }
 }
 

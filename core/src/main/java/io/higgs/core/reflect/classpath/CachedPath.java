@@ -36,15 +36,15 @@ public class CachedPath {
         return filename;
     }
 
+    public void setFilename(final String filename) {
+        this.filename = filename;
+    }
+
     /**
      * @return Fully qualified class name e.g. com.domain.product.MyClass
      */
     public String getClassName() {
         return className;
-    }
-
-    public void setFilename(final String filename) {
-        this.filename = filename;
     }
 
     /**

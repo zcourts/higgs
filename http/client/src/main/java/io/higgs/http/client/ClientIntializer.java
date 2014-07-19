@@ -42,24 +42,11 @@ public class ClientIntializer extends ChannelInitializer<SocketChannel> {
         this.sslProtocols = sslProtocols;
     }
 
-    /**
-     * Adds an SSL engine to the given pipeline.
-     *
-     * @param pipeline     the pipeline to add SSL support to
-     * @param forceToFront if true then the SSL handler is added to the front of the pipeline otherwise it is added
-     *                     at the end
-     */
-    public static void addSSL(ChannelPipeline pipeline, boolean forceToFront, String[] sslProtocols) {
-        SSLEngine engine = SSLContextFactory.getSSLSocket(SSLConfigFactory.sslConfiguration).createSSLEngine();
-        engine.setUseClientMode(true);
-        if (sslProtocols != null && sslProtocols.length > 0) {
-            engine.setEnabledProtocols(sslProtocols);
-        }
-        if (forceToFront) {
-            pipeline.addFirst("ssl", new SslHandler(engine));
-        } else {
-            pipeline.addLast("ssl", new SslHandler(engine));
-        }
+    @Override
+    public void initChannel(SocketChannel ch) throws Exception {
+        // Create a default pipeline implementation.
+        ChannelPipeline pipeline = ch.pipeline();
+        configurePipeline(pipeline);
     }
 
     public void configurePipeline(ChannelPipeline pipeline) {
@@ -90,10 +77,23 @@ public class ClientIntializer extends ChannelInitializer<SocketChannel> {
         }
     }
 
-    @Override
-    public void initChannel(SocketChannel ch) throws Exception {
-        // Create a default pipeline implementation.
-        ChannelPipeline pipeline = ch.pipeline();
-        configurePipeline(pipeline);
+    /**
+     * Adds an SSL engine to the given pipeline.
+     *
+     * @param pipeline     the pipeline to add SSL support to
+     * @param forceToFront if true then the SSL handler is added to the front of the pipeline otherwise it is added
+     *                     at the end
+     */
+    public static void addSSL(ChannelPipeline pipeline, boolean forceToFront, String[] sslProtocols) {
+        SSLEngine engine = SSLContextFactory.getSSLSocket(SSLConfigFactory.sslConfiguration).createSSLEngine();
+        engine.setUseClientMode(true);
+        if (sslProtocols != null && sslProtocols.length > 0) {
+            engine.setEnabledProtocols(sslProtocols);
+        }
+        if (forceToFront) {
+            pipeline.addFirst("ssl", new SslHandler(engine));
+        } else {
+            pipeline.addLast("ssl", new SslHandler(engine));
+        }
     }
 }

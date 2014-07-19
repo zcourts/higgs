@@ -27,11 +27,11 @@ import java.util.List;
  * @author Courtney Robinson <courtney.robinson@datasift.com>
  */
 public class JsonDecoder implements MediaTypeDecoder {
+    public static final ObjectMapper mapper = new ObjectMapper();
     private static final String UTF8 = "utf-8";
     ByteBuf content = Unpooled.buffer();
     DependencyProvider provider = new DependencyProvider();
     private HttpRequest request;
-    public static final ObjectMapper mapper = new ObjectMapper();
 
     public JsonDecoder(HttpRequest request) {
         this.request = request;

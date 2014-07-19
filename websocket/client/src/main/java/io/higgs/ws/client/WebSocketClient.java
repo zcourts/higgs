@@ -71,12 +71,12 @@ public class WebSocketClient extends Request {
      * The maximum size a websocket frame can be - in bytes
      */
     public static int maxFramePayloadLength = 65536 * 10;
+    protected final WebSocketClientHandler handler;
     protected NonBlockingHashSet<WebSocketEventListener> listeners = new NonBlockingHashSet<>();
     protected WebSocketClientHandshaker handshaker;
-    protected final WebSocketClientHandler handler;
-    protected boolean allowExtensions = false;
+    protected boolean allowExtensions;
     protected WebSocketVersion version = WebSocketVersion.V13;
-    protected String subprotocol = null;
+    protected String subprotocol;
     protected HttpHeaders customHeaderSet = new DefaultHttpHeaders();
     protected int maxContentLength = 8192;
     protected WebSocketStream stream;
@@ -130,22 +130,26 @@ public class WebSocketClient extends Request {
         return client.stream();
     }
 
-    public WebSocketStream stream() {
-        return stream;
-    }
-
     public FutureResponse execute() {
         FutureResponse res = super.execute();
         this.stream = new WebSocketStream(uri, connectFuture, listeners);
         return res;
     }
 
-    protected ChannelFuture makeTheRequest() {
-        if (isProxyEnabled() && proxyRequest != null) {
-            return StaticUtil.write(channel, proxyRequest);
-        }
-        //don't write the normal HTTP request...
-        return null;
+    public WebSocketStream stream() {
+        return stream;
+    }
+
+    protected String getScheme() {
+        return uri.getScheme() == null ? "ws" : uri.getScheme();
+    }
+
+    protected String getHost() {
+        return uri.getHost() == null ? "localhost" : uri.getHost();
+    }
+
+    protected boolean isSSLScheme(String scheme) {
+        return "wss".equalsIgnoreCase(scheme);
     }
 
     protected ChannelHandler newInitializer() {
@@ -174,16 +178,12 @@ public class WebSocketClient extends Request {
         return new WebSocketInitializer(maxContentLength, useSSL, handler, connectHandler, fullUrl, sslProtocols);
     }
 
-    protected String getHost() {
-        return uri.getHost() == null ? "localhost" : uri.getHost();
-    }
-
-    protected String getScheme() {
-        return uri.getScheme() == null ? "ws" : uri.getScheme();
-    }
-
-    protected boolean isSSLScheme(String scheme) {
-        return "wss".equalsIgnoreCase(scheme);
+    protected ChannelFuture makeTheRequest() {
+        if (isProxyEnabled() && proxyRequest != null) {
+            return StaticUtil.write(channel, proxyRequest);
+        }
+        //don't write the normal HTTP request...
+        return null;
     }
 
     protected SimpleChannelInboundHandler<Object> newInboundHandler() {

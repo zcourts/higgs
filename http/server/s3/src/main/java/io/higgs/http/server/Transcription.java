@@ -13,12 +13,23 @@ import java.util.regex.Pattern;
  * a predefined premise is true.
  */
 public class Transcription implements Sortable<Transcription> {
-    private Pattern pattern;
     private final long createdAt = System.nanoTime();
+    protected int priority;
+    private Pattern pattern;
     private boolean replaceWholeRequest;
     private String replacementPath;
     private boolean replaceFirstOccurrence;
-    protected int priority;
+
+    /**
+     * Rewrites/replaced a request based on the provided options
+     *
+     * @param regex             a regex to match
+     * @param replaceWith       a replacement string to be used to replace matches
+     * @param replaceEntirePath if true the request's entire path is replaced with the replacement string
+     */
+    public Transcription(String regex, String replaceWith, boolean replaceEntirePath) {
+        this(Pattern.compile(regex), replaceWith, replaceEntirePath, false);
+    }
 
     /**
      * Convenience method which creates a {@link Transcription} with a {@link java.util.regex.Pattern} criteria.
@@ -44,17 +55,6 @@ public class Transcription implements Sortable<Transcription> {
         setReplacementPath(replaceWith);
         setReplaceWholeRequest(replaceEntirePath);
         setReplaceFirstOccurrence(firstOccurrenceOnly);
-    }
-
-    /**
-     * Rewrites/replaced a request based on the provided options
-     *
-     * @param regex             a regex to match
-     * @param replaceWith       a replacement string to be used to replace matches
-     * @param replaceEntirePath if true the request's entire path is replaced with the replacement string
-     */
-    public Transcription(String regex, String replaceWith, boolean replaceEntirePath) {
-        this(Pattern.compile(regex), replaceWith, replaceEntirePath, false);
     }
 
     /**
@@ -98,16 +98,16 @@ public class Transcription implements Sortable<Transcription> {
         replaceWholeRequest = replace;
     }
 
+    public String replaceAllMatches(String uri) {
+        return pattern.matcher(uri).replaceAll(getReplacementPath());
+    }
+
     public String getReplacementPath() {
         return replacementPath;
     }
 
     public void setReplacementPath(final String replaceWith) {
         replacementPath = replaceWith;
-    }
-
-    public String replaceAllMatches(String uri) {
-        return pattern.matcher(uri).replaceAll(getReplacementPath());
     }
 
     public String replaceFirstMatch(String uri) {
@@ -120,6 +120,15 @@ public class Transcription implements Sortable<Transcription> {
 
     public void setReplaceFirstOccurrence(final boolean firstOccurrenceOnly) {
         this.replaceFirstOccurrence = firstOccurrenceOnly;
+    }
+
+    public int hashCode() {
+        int result = pattern != null ? pattern.hashCode() : 0;
+        result = 31 * result + (int) (createdAt ^ (createdAt >>> 32));
+        result = 31 * result + (replaceWholeRequest ? 1 : 0);
+        result = 31 * result + (replacementPath != null ? replacementPath.hashCode() : 0);
+        result = 31 * result + (replaceFirstOccurrence ? 1 : 0);
+        return result;
     }
 
     public boolean equals(final Object o) {
@@ -144,15 +153,6 @@ public class Transcription implements Sortable<Transcription> {
         }
         return !(replacementPath != null ? !replacementPath.equals(that.replacementPath) :
                 that.replacementPath != null);
-    }
-
-    public int hashCode() {
-        int result = pattern != null ? pattern.hashCode() : 0;
-        result = 31 * result + (int) (createdAt ^ (createdAt >>> 32));
-        result = 31 * result + (replaceWholeRequest ? 1 : 0);
-        result = 31 * result + (replacementPath != null ? replacementPath.hashCode() : 0);
-        result = 31 * result + (replaceFirstOccurrence ? 1 : 0);
-        return result;
     }
 
     @Override

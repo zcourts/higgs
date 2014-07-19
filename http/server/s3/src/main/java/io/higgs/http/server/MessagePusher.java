@@ -18,7 +18,7 @@ public interface MessagePusher {
      *
      * @param message the message to push to the client
      * @return a future which is notified when the message is successfully sent, cancelled or otherwise interrupted
-     *         due to failure. This includes if the underlying connection has been closed.
+     * due to failure. This includes if the underlying connection has been closed.
      */
     ChannelFuture push(Object message);
 

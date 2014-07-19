@@ -30,7 +30,6 @@ public class FormUrlEncodedDecoder implements MediaTypeDecoder {
     protected HttpPostRequestDecoder decoder;
     protected Logger log = LoggerFactory.getLogger(getClass());
 
-
     public FormUrlEncodedDecoder(HttpRequest request) {
         this.request = request;
         try {
@@ -43,40 +42,6 @@ public class FormUrlEncodedDecoder implements MediaTypeDecoder {
             throw new WebApplicationException(HttpStatus.BAD_REQUEST, request);
         }
         request.setMultipart(decoder.isMultipart());
-    }
-
-    private void writeHttpData(InterfaceHttpData data) {
-        //check if is file upload or attribute, attributes go into form params and file uploads to file params
-        if (data.getHttpDataType() == InterfaceHttpData.HttpDataType.Attribute) {
-            io.netty.handler.codec.http.multipart.Attribute field =
-                    (io.netty.handler.codec.http.multipart.Attribute) data;
-            try {
-                //the [] detection adds support for PHPism where name[] is used on radio buttons
-                //add form param
-                String name = field.getName();
-                int idx = name.indexOf("[");
-                if (idx != -1 && name.endsWith("]")) {
-                    String realName = name.substring(0, idx);
-                    String fieldName = name.substring(idx + 1).replace(']', ' ').trim();
-                    if (request.getFormParam().get(realName) == null) {
-                        request.getFormParam().put(realName, new HashMap<String, String>());
-                    }
-                    ((HashMap<String, String>) request.getFormParam().get(realName)).put(fieldName, field.getValue());
-                } else {
-                    request.addFormField(name, field.getValue());
-                }
-            } catch (IOException e) {
-                log.warn(String.format("unable to extract form field's value, field name = %s", field.getName()));
-            }
-        } else {
-            if (data instanceof FileUpload) {
-                //add form file
-                request.addFormFile(new HttpFile((FileUpload) data));
-            } else {
-                log.warn(String.format("Unknown form type encountered Class: %s,data type:%s,name:%s",
-                        data.getClass().getName(), data.getHttpDataType().name(), data.getName()));
-            }
-        }
     }
 
     @Override
@@ -110,6 +75,40 @@ public class FormUrlEncodedDecoder implements MediaTypeDecoder {
             }
         } catch (HttpPostRequestDecoder.EndOfDataDecoderException e1) {
             // end
+        }
+    }
+
+    private void writeHttpData(InterfaceHttpData data) {
+        //check if is file upload or attribute, attributes go into form params and file uploads to file params
+        if (data.getHttpDataType() == InterfaceHttpData.HttpDataType.Attribute) {
+            io.netty.handler.codec.http.multipart.Attribute field =
+                    (io.netty.handler.codec.http.multipart.Attribute) data;
+            try {
+                //the [] detection adds support for PHPism where name[] is used on radio buttons
+                //add form param
+                String name = field.getName();
+                int idx = name.indexOf("[");
+                if (idx != -1 && name.endsWith("]")) {
+                    String realName = name.substring(0, idx);
+                    String fieldName = name.substring(idx + 1).replace(']', ' ').trim();
+                    if (request.getFormParam().get(realName) == null) {
+                        request.getFormParam().put(realName, new HashMap<String, String>());
+                    }
+                    ((HashMap<String, String>) request.getFormParam().get(realName)).put(fieldName, field.getValue());
+                } else {
+                    request.addFormField(name, field.getValue());
+                }
+            } catch (IOException e) {
+                log.warn(String.format("unable to extract form field's value, field name = %s", field.getName()));
+            }
+        } else {
+            if (data instanceof FileUpload) {
+                //add form file
+                request.addFormFile(new HttpFile((FileUpload) data));
+            } else {
+                log.warn(String.format("Unknown form type encountered Class: %s,data type:%s,name:%s",
+                        data.getClass().getName(), data.getHttpDataType().name(), data.getName()));
+            }
         }
     }
 

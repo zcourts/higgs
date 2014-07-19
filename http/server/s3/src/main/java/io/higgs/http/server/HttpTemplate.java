@@ -20,8 +20,8 @@ public class HttpTemplate {
 
     /**
      * @return the URI used to match this template e.g. /404-not-found
-     *         if this a path is not set then the {@link #getCode()} is returned.
-     *         If this is not an error template then {@link #getCode()} is always 0
+     * if this a path is not set then the {@link #getCode()} is returned.
+     * If this is not an error template then {@link #getCode()} is always 0
      */
     public String getPath() {
         return path == null ? String.valueOf(getCode()) : path;

@@ -22,19 +22,22 @@ public class DependencyProvider {
     }
 
     /**
-     * Adds a named dependency to this provider.
-     * A named dependency is only injected if the name of the field matches the name of this parameter
-     *
-     * @param name  the name which must match the field's name for this parameter to be injected
-     * @param value the value of the parameter to be injected if the name matches
-     * @return false if name is null or empty or if the given value is null, true otherwise
+     * @return A singleton provider that can be used globally
      */
-    public boolean put(String name, Object value) {
-        if (name == null || name.isEmpty() || value == null) {
-            return false;
+    public static DependencyProvider global() {
+        return global;
+    }
+
+    /**
+     * @param objs a set of dependencies
+     * @return a new provider with the dependencies provided
+     */
+    public static DependencyProvider from(Object... objs) {
+        DependencyProvider provider = new DependencyProvider();
+        for (Object o : objs) {
+            provider.add(o);
         }
-        named.put(name, value);
-        return true;
+        return provider;
     }
 
     /**
@@ -52,6 +55,22 @@ public class DependencyProvider {
                 instances.put(o.getClass(), o);
             }
         }
+        return true;
+    }
+
+    /**
+     * Adds a named dependency to this provider.
+     * A named dependency is only injected if the name of the field matches the name of this parameter
+     *
+     * @param name  the name which must match the field's name for this parameter to be injected
+     * @param value the value of the parameter to be injected if the name matches
+     * @return false if name is null or empty or if the given value is null, true otherwise
+     */
+    public boolean put(String name, Object value) {
+        if (name == null || name.isEmpty() || value == null) {
+            return false;
+        }
+        named.put(name, value);
         return true;
     }
 
@@ -188,25 +207,6 @@ public class DependencyProvider {
             }
         }
         return null;
-    }
-
-    /**
-     * @return A singleton provider that can be used globally
-     */
-    public static DependencyProvider global() {
-        return global;
-    }
-
-    /**
-     * @param objs a set of dependencies
-     * @return a new provider with the dependencies provided
-     */
-    public static DependencyProvider from(Object... objs) {
-        DependencyProvider provider = new DependencyProvider();
-        for (Object o : objs) {
-            provider.add(o);
-        }
-        return provider;
     }
 
     /**

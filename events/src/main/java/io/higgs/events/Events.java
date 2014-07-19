@@ -61,13 +61,6 @@ public class Events {
     }
 
     /**
-     * @return The event loop used to schedule tasks
-     */
-    public EventLoop eventLoop() {
-        return server.channel().eventLoop();
-    }
-
-    /**
      * Execute a task in the event loop
      *
      * @param task the task
@@ -79,6 +72,13 @@ public class Events {
                 task.apply();
             }
         });
+    }
+
+    /**
+     * @return The event loop used to schedule tasks
+     */
+    public EventLoop eventLoop() {
+        return server.channel().eventLoop();
     }
 
     /**
@@ -113,8 +113,9 @@ public class Events {
      * @param <A>      the type the function accepts, only events matching this type will cause invocation
      */
     public <A> void on(Function1<A> function, Event... events) {
-        if (events.length == 0)
+        if (events.length == 0) {
             throw new IllegalArgumentException("At least one event is required");
+        }
         for (Event event : events) {
             server.registerMethod(new FunctionEventMethod<>(event.name(), function));
         }

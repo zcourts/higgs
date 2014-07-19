@@ -75,6 +75,26 @@ public class DefaultParamInjector implements ParamInjector {
         return args;
     }
 
+    private Object processAnnotations(HttpMethod method, HttpRequest request, MethodParam param, MethodParam[] params,
+                                      ResourcePath path, ResourcePath.Component[] components,
+                                      ChannelHandlerContext ctx) {
+        if (param.isCookieParam()) {
+            return extractCookieParam(param, request);
+        } else if (param.isHeaderParam()) {
+            return extractHeaderParam(param, request);
+        } else if (param.isFormParam()) {
+            return extractFormParam(param, request);
+        } else if (param.isQueryParam()) {
+            return extractQueryParam(param, request);
+        } else if (param.isPathParam()) {
+            return extractPathParam(param, path);
+        } else if (param.isSessionParam()) {
+            return request.getSubject() == null ? null :
+                    request.getSubject().getSession().getAttribute(param.getName());
+        }
+        return null;
+    }
+
     /**
      * The following can be injected:
      * {@link HttpRequest},{@link FormFiles},{@link FormParams},
@@ -112,68 +132,20 @@ public class DefaultParamInjector implements ParamInjector {
         }
     }
 
-    private Object processAnnotations(HttpMethod method, HttpRequest request, MethodParam param, MethodParam[] params,
-                                      ResourcePath path, ResourcePath.Component[] components,
-                                      ChannelHandlerContext ctx) {
-        if (param.isCookieParam()) {
-            return extractCookieParam(param, request);
-        } else if (param.isHeaderParam()) {
-            return extractHeaderParam(param, request);
-        } else if (param.isFormParam()) {
-            return extractFormParam(param, request);
-        } else if (param.isQueryParam()) {
-            return extractQueryParam(param, request);
-        } else if (param.isPathParam()) {
-            return extractPathParam(param, path);
-        } else if (param.isSessionParam()) {
-            return request.getSubject() == null ? null :
-                    request.getSubject().getSession().getAttribute(param.getName());
+    protected Object extractCookieParam(MethodParam param, HttpRequest request) {
+        HttpCookie cookie = request.getCookie(param.getName());
+        if (cookie == null) {
+            return null;
         }
-        return null;
-    }
-
-    protected Object extractPathParam(MethodParam param, ResourcePath path) {
-        ResourcePath.Component component = path.getComponent(param.getName());
         if (String.class.isAssignableFrom(param.getParameterType())) {
-            if (component != null) {
-                return component.getRuntimeValue();
-            }
+            return cookie.getValue();
+        } else if (HttpCookie.class.isAssignableFrom(param.getParameterType())) {
+            return cookie;
+        } else if (ReflectionUtil.isNumeric(param.getParameterType())) {
+            //if param is a number then try to handle with NumberType.parseType
+            return extractNumberParam(param, cookie.getValue());
         } else {
-            if (ReflectionUtil.isNumeric(param.getParameterType())) {
-                //if param is a number then try to handle with NumberType.parseType
-                return extractNumberParam(param, component == null ? null : component.getRuntimeValue());
-            }
-        }
-        return null;
-    }
-
-    protected Object extractQueryParam(MethodParam param, HttpRequest request) {
-        //query string param can be a list or string, if neither set to null
-        if (List.class.isAssignableFrom(param.getParameterType())) {
-            return request.getQueryParams().get(param.getName());
-        } else if (String.class.isAssignableFrom(param.getParameterType())) {
-            return request.getQueryParams().getFirst(param.getName());
-        } else {
-            if (ReflectionUtil.isNumeric(param.getParameterType())) {
-                //if param is a number then try to handle with NumberType.parseType
-                return extractNumberParam(param, request.getQueryParams().getFirst(param.getName()));
-            } else {
-                return null;
-            }
-        }
-    }
-
-    protected Object extractFormParam(MethodParam param, HttpRequest request) {
-        Object obj = request.getFormParam().get(param.getName());
-        if (obj != null && param.getParameterType().isAssignableFrom(obj.getClass())) {
-            return obj;
-        } else {
-            if (ReflectionUtil.isNumeric(param.getParameterType())) {
-                //if param is a number then try to handle with NumberType.parseType
-                return extractNumberParam(param, (String) request.getFormParam().get(param.getName()));
-            } else {
-                return null;
-            }
+            return null;
         }
     }
 
@@ -195,21 +167,49 @@ public class DefaultParamInjector implements ParamInjector {
         }
     }
 
-    protected Object extractCookieParam(MethodParam param, HttpRequest request) {
-        HttpCookie cookie = request.getCookie(param.getName());
-        if (cookie == null) {
-            return null;
-        }
-        if (String.class.isAssignableFrom(param.getParameterType())) {
-            return cookie.getValue();
-        } else if (HttpCookie.class.isAssignableFrom(param.getParameterType())) {
-            return cookie;
-        } else if (ReflectionUtil.isNumeric(param.getParameterType())) {
-            //if param is a number then try to handle with NumberType.parseType
-            return extractNumberParam(param, cookie.getValue());
+    protected Object extractFormParam(MethodParam param, HttpRequest request) {
+        Object obj = request.getFormParam().get(param.getName());
+        if (obj != null && param.getParameterType().isAssignableFrom(obj.getClass())) {
+            return obj;
         } else {
-            return null;
+            if (ReflectionUtil.isNumeric(param.getParameterType())) {
+                //if param is a number then try to handle with NumberType.parseType
+                return extractNumberParam(param, (String) request.getFormParam().get(param.getName()));
+            } else {
+                return null;
+            }
         }
+    }
+
+    protected Object extractQueryParam(MethodParam param, HttpRequest request) {
+        //query string param can be a list or string, if neither set to null
+        if (List.class.isAssignableFrom(param.getParameterType())) {
+            return request.getQueryParams().get(param.getName());
+        } else if (String.class.isAssignableFrom(param.getParameterType())) {
+            return request.getQueryParams().getFirst(param.getName());
+        } else {
+            if (ReflectionUtil.isNumeric(param.getParameterType())) {
+                //if param is a number then try to handle with NumberType.parseType
+                return extractNumberParam(param, request.getQueryParams().getFirst(param.getName()));
+            } else {
+                return null;
+            }
+        }
+    }
+
+    protected Object extractPathParam(MethodParam param, ResourcePath path) {
+        ResourcePath.Component component = path.getComponent(param.getName());
+        if (String.class.isAssignableFrom(param.getParameterType())) {
+            if (component != null) {
+                return component.getRuntimeValue();
+            }
+        } else {
+            if (ReflectionUtil.isNumeric(param.getParameterType())) {
+                //if param is a number then try to handle with NumberType.parseType
+                return extractNumberParam(param, component == null ? null : component.getRuntimeValue());
+            }
+        }
+        return null;
     }
 
     /**

@@ -64,6 +64,29 @@ public class WebSocketClientHandler extends SimpleChannelInboundHandler<Object> 
     }
 
     @Override
+    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
+        if (!handshakeFuture.isDone()) {
+            handshakeFuture.setFailure(cause);
+        }
+        for (WebSocketEventListener l : listensers) {
+            l.onError(ctx, cause, response);
+        }
+        ctx.close();
+    }
+
+    protected void doHandshake(final ChannelHandlerContext ctx) {
+        this.ctx = ctx;
+        handshaker.handshake(ctx.channel()).addListener(new GenericFutureListener<ChannelFuture>() {
+            @Override
+            public void operationComplete(ChannelFuture future) throws Exception {
+                if (!future.isSuccess()) {
+                    exceptionCaught(ctx, future.cause());
+                }
+            }
+        });
+    }
+
+    @Override
     public void channelRead0(final ChannelHandlerContext c, Object msg) throws Exception {
         Channel ch = ctx.channel();
         if (response == null) {
@@ -109,18 +132,6 @@ public class WebSocketClientHandler extends SimpleChannelInboundHandler<Object> 
         }
     }
 
-    protected void doHandshake(final ChannelHandlerContext ctx) {
-        this.ctx = ctx;
-        handshaker.handshake(ctx.channel()).addListener(new GenericFutureListener<ChannelFuture>() {
-            @Override
-            public void operationComplete(ChannelFuture future) throws Exception {
-                if (!future.isSuccess()) {
-                    exceptionCaught(ctx, future.cause());
-                }
-            }
-        });
-    }
-
     protected boolean completeHandshake(ChannelHandlerContext ctx) {
         if (!handshaker.isHandshakeComplete()) {
             if (response != null && response.getStatus().code() > 299) {
@@ -137,17 +148,6 @@ public class WebSocketClientHandler extends SimpleChannelInboundHandler<Object> 
             return true;
         }
         return false;
-    }
-
-    @Override
-    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
-        if (!handshakeFuture.isDone()) {
-            handshakeFuture.setFailure(cause);
-        }
-        for (WebSocketEventListener l : listensers) {
-            l.onError(ctx, cause, response);
-        }
-        ctx.close();
     }
 
     private static class WSResponse extends DefaultFullHttpResponse implements FullHttpResponse {

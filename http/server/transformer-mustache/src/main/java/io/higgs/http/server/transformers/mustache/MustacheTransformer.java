@@ -71,7 +71,8 @@ public class MustacheTransformer extends BaseTransformer {
         }
         if (!method.hasTemplate()) {
             WebApplicationException e = new WebApplicationException(FAILED_DEPENDENCY, request, method);
-            e.setMessage("MustacheTransformer only supports a template value, to use fragments use mustacheTransformer's inheritance");
+            e.setMessage("MustacheTransformer only supports a template value, " +
+                    "to use fragments use mustacheTransformer's inheritance");
             throw e;
         }
         ByteBuf buf = ctx.alloc().heapBuffer();

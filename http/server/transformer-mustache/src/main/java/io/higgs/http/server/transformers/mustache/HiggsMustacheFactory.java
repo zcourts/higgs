@@ -28,6 +28,15 @@ public class HiggsMustacheFactory extends DefaultMustacheFactory implements Must
         base = Paths.get(config.directory);
     }
 
+    @Override
+    public Reader getReader(String resourceName) {
+        ResolvedFile file = FileUtil.resolve(base, Paths.get(resourceName));
+        if (!file.exists()) {
+            throw new MustacheException(resourceName + " not found");
+        }
+        return new BufferedReader(new InputStreamReader(file.getStream(), Charsets.UTF_8));
+    }
+
     public Mustache compile(String name) {
         if (config.cache_templates) {
             return super.compile(name);
@@ -47,14 +56,5 @@ public class HiggsMustacheFactory extends DefaultMustacheFactory implements Must
             return (MustacheException) cause;
         }
         return new MustacheException(cause);
-    }
-
-    @Override
-    public Reader getReader(String resourceName) {
-        ResolvedFile file = FileUtil.resolve(base, Paths.get(resourceName));
-        if (!file.exists()) {
-            throw new MustacheException(resourceName + " not found");
-        }
-        return new BufferedReader(new InputStreamReader(file.getStream(), Charsets.UTF_8));
     }
 }

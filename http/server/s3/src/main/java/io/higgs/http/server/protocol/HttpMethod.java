@@ -75,7 +75,36 @@ public class HttpMethod extends InvokableMethod {
             List<MediaType> mediaTypeList = MediaType.valueOf(mType);
             consumesMediaTypes.addAll(mediaTypeList);
         }
+    }
 
+    public LinkedList<MediaType> getConsumesMediaTypes() {
+        return consumesMediaTypes;
+    }
+
+    public boolean produces(MediaType... mediaTypes) {
+        for (MediaType mt : producesMediaTypes) {
+            for (MediaType mt2 : mediaTypes) {
+                if (mt.isCompatible(mt2)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    public boolean hasProduces() {
+        return getProducesMediaTypes().size() > 0;
+    }
+
+    public LinkedList<MediaType> getProducesMediaTypes() {
+        return producesMediaTypes;
+    }
+
+    @Override
+    protected Object[] injectParameters(ChannelHandlerContext ctx, Object msg, Object[] params, Object instance,
+                                        DependencyProvider deps) {
+        //http handler has already injected everything it needs to
+        return params;
     }
 
     @Override
@@ -138,35 +167,19 @@ public class HttpMethod extends InvokableMethod {
         return false;
     }
 
-    public LinkedList<MediaType> getProducesMediaTypes() {
-        return producesMediaTypes;
-    }
-
-    public LinkedList<MediaType> getConsumesMediaTypes() {
-        return consumesMediaTypes;
-    }
-
-    public boolean produces(MediaType... mediaTypes) {
-        for (MediaType mt : producesMediaTypes) {
-            for (MediaType mt2 : mediaTypes) {
-                if (mt.isCompatible(mt2)) {
-                    return true;
-                }
+    public boolean matchesVerb(String verb) {
+        if (verbs.isEmpty()) {
+            //by default if no verb annotation is specified the method responds to everything
+            return true;
+        }
+        //if any one of the verb annotations match return true
+        for (VERB v : verbs) {
+            if (v.matches(verb)) {
+                return true;
             }
         }
+        //all else fails return false
         return false;
-    }
-
-    public boolean hasProduces() {
-        return getProducesMediaTypes().size() > 0;
-    }
-
-
-    @Override
-    protected Object[] injectParameters(ChannelHandlerContext ctx, Object msg, Object[] params, Object instance,
-                                        DependencyProvider deps) {
-        //http handler has already injected everything it needs to
-        return params;
     }
 
     /**
@@ -219,33 +232,18 @@ public class HttpMethod extends InvokableMethod {
         return fragments.length > 0;
     }
 
-    public void setValidationResult(ValidationResult validationResult) {
-        this.validationResult = validationResult;
-    }
-
     public ValidationResult getValidationResult() {
         return validationResult;
+    }
+
+    public void setValidationResult(ValidationResult validationResult) {
+        this.validationResult = validationResult;
     }
 
     public void addVerb(VERB a) {
         if (a != null) {
             verbs.add(a);
         }
-    }
-
-    public boolean matchesVerb(String verb) {
-        if (verbs.isEmpty()) {
-            //by default if no verb annotation is specified the method responds to everything
-            return true;
-        }
-        //if any one of the verb annotations match return true
-        for (VERB v : verbs) {
-            if (v.matches(verb)) {
-                return true;
-            }
-        }
-        //all else fails return false
-        return false;
     }
 
     public static enum VERB {

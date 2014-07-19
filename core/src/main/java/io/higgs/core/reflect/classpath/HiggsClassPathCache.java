@@ -65,18 +65,6 @@ public class HiggsClassPathCache {
         return cache.containsKey(file);
     }
 
-    public static File getFile(String path) {
-        try {
-            URL url = Thread.currentThread().getContextClassLoader().getResource(path);
-            if (url == null) {
-                return null;
-            }
-            return new File(url.toURI());
-        } catch (URISyntaxException e) {
-            return null;
-        }
-    }
-
     public Class<?> loadClass(CachedPath path, File base) {
         if (!base.exists()) {
             throw new IllegalArgumentException("Base directory must exist");
@@ -92,6 +80,45 @@ public class HiggsClassPathCache {
             }
         }
         return null;
+    }
+
+    /**
+     * Checks, whether the child directory is a subdirectory of the base
+     * directory.
+     * java2s.com/Tutorial/Java/0180__File/Checkswhetherthechilddirectoryisasubdirectoryofthebasedirectory.htm
+     *
+     * @param base  the base directory.
+     * @param child the suspected child directory.
+     * @return true, if the child is a subdirectory of the base directory.
+     * @throws IOException if an IOError occured during the test.
+     */
+    public boolean isSubDirectory(File base, File child) {
+        try {
+            base = base.getCanonicalFile();
+            child = child.getCanonicalFile();
+            File parentFile = child;
+            while (parentFile != null) {
+                if (base.equals(parentFile)) {
+                    return true;
+                }
+                parentFile = parentFile.getParentFile();
+            }
+        } catch (IOException e) {
+            log.debug("", e);
+        }
+        return false;
+    }
+
+    public static File getFile(String path) {
+        try {
+            URL url = Thread.currentThread().getContextClassLoader().getResource(path);
+            if (url == null) {
+                return null;
+            }
+            return new File(url.toURI());
+        } catch (URISyntaxException e) {
+            return null;
+        }
     }
 
     public byte[] load(String klass) {
@@ -125,33 +152,6 @@ public class HiggsClassPathCache {
             }
         }
         return null;
-    }
-
-    /**
-     * Checks, whether the child directory is a subdirectory of the base
-     * directory.
-     * java2s.com/Tutorial/Java/0180__File/Checkswhetherthechilddirectoryisasubdirectoryofthebasedirectory.htm
-     *
-     * @param base  the base directory.
-     * @param child the suspected child directory.
-     * @return true, if the child is a subdirectory of the base directory.
-     * @throws IOException if an IOError occured during the test.
-     */
-    public boolean isSubDirectory(File base, File child) {
-        try {
-            base = base.getCanonicalFile();
-            child = child.getCanonicalFile();
-            File parentFile = child;
-            while (parentFile != null) {
-                if (base.equals(parentFile)) {
-                    return true;
-                }
-                parentFile = parentFile.getParentFile();
-            }
-        } catch (IOException e) {
-            log.debug("", e);
-        }
-        return false;
     }
 
     /**

@@ -53,67 +53,54 @@ public class BosonWriterTest {
 
     @Test
     public void testSerialize() throws Exception {
-
     }
 
     @Test
     public void testWriteByte() throws Exception {
-
     }
 
     @Test
     public void testWriteNull() throws Exception {
-
     }
 
     @Test
     public void testWriteShort() throws Exception {
-
     }
 
     @Test
     public void testWriteInt() throws Exception {
-
     }
 
     @Test
     public void testWriteLong() throws Exception {
-
     }
 
     @Test
     public void testWriteFloat() throws Exception {
-
     }
 
     @Test
     public void testWriteDouble() throws Exception {
-
     }
 
     @Test
     public void testWriteBoolean() throws Exception {
-
     }
 
     @Test
     public void testWriteChar() throws Exception {
-
     }
 
     @Test
     public void testWriteString() throws Exception {
-
     }
 
     @Test
     public void testWriteList() throws Exception {
-
     }
 
     @Test
     public void testWriteArray() throws Exception {
-
     }
 
     @Test
@@ -187,12 +174,10 @@ public class BosonWriterTest {
 
     @Test
     public void testWritePolo() throws Exception {
-
     }
 
     @Test
     public void testGetArrayComponent() throws Exception {
-
     }
 
     @Test
@@ -217,6 +202,10 @@ public class BosonWriterTest {
         assertEquals(obj.type.value, in.type.value);
     }
 
+    enum SomeType {
+        A, B, C
+    }
+
     public static class EnumEnclosingType {
         private SomeType value;
 
@@ -230,9 +219,5 @@ public class BosonWriterTest {
 
     public static class OuterEnclosingType {
         private EnumEnclosingType type = new EnumEnclosingType(SomeType.C);
-    }
-
-    enum SomeType {
-        A, B, C
     }
 }

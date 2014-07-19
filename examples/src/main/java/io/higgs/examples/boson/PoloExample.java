@@ -5,22 +5,22 @@ import io.higgs.boson.serialization.BosonProperty;
 import java.lang.reflect.Field;
 
 public class PoloExample {
+    public static boolean dont = true;
+    public static boolean stillDont;
+    @BosonProperty
+    int i;
+    String name = "Test non-annotated field";
+    @BosonProperty(ignore = true)
+    String ignored;
+    Nested nested = new Nested();
+    private String str = "Test private non-annotated field";
+
     public PoloExample() {
     }
 
     public PoloExample(int j) {
         i = j;
     }
-
-    public static boolean dont = true;
-    public static boolean stillDont;
-    @BosonProperty
-    int i;
-    String name = "Test non-annotated field";
-    private String str = "Test private non-annotated field";
-    @BosonProperty(ignore = true)
-    String ignored;
-    Nested nested = new Nested();
 
     public String toString() {
         StringBuilder buf = new StringBuilder();

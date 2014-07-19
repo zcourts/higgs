@@ -10,15 +10,15 @@ import io.netty.handler.codec.http.HttpVersion;
  * @author Courtney Robinson <courtney@crlog.info>
  */
 public class Response {
+    protected final Request request;
+    protected boolean failed;
+    protected Throwable cause;
+    protected Reader reader;
     private boolean chunked;
     private HttpVersion protocolVersion;
     private HttpResponseStatus status;
     private HttpHeaders headers;
     private boolean completed;
-    protected boolean failed;
-    protected Throwable cause;
-    protected Reader reader;
-    protected final Request request;
 
     public Response(Request request, Reader reader) {
         this.reader = reader;
@@ -26,12 +26,16 @@ public class Response {
         reader.response(this);
     }
 
+    public boolean isChunked() {
+        return chunked;
+    }
+
     public void setChunked(boolean chunked) {
         this.chunked = chunked;
     }
 
-    public boolean isChunked() {
-        return chunked;
+    public HttpVersion getProtocolVersion() {
+        return protocolVersion;
     }
 
     public void setProtocolVersion(HttpVersion protocolVersion) {
@@ -39,8 +43,8 @@ public class Response {
         reader.onProtocolVersion(protocolVersion);
     }
 
-    public HttpVersion getProtocolVersion() {
-        return protocolVersion;
+    public HttpResponseStatus getStatus() {
+        return status;
     }
 
     public void setStatus(HttpResponseStatus status) {
@@ -48,8 +52,8 @@ public class Response {
         reader.onStatus(status);
     }
 
-    public HttpResponseStatus getStatus() {
-        return status;
+    public HttpHeaders getHeaders() {
+        return headers;
     }
 
     public void setHeaders(HttpHeaders headers) {
@@ -57,19 +61,10 @@ public class Response {
         reader.onHeaders(headers);
     }
 
-    public HttpHeaders getHeaders() {
-        return headers;
-    }
-
     public void write(ByteBuf content) {
         if (content != null) {
             reader.data(content);
         }
-    }
-
-    public void setCompleted(boolean completed) {
-        this.completed = completed;
-        reader.setCompleted(completed);
     }
 
     /**
@@ -101,6 +96,11 @@ public class Response {
 
     public boolean isCompleted() {
         return completed;
+    }
+
+    public void setCompleted(boolean completed) {
+        this.completed = completed;
+        reader.setCompleted(completed);
     }
 
     @Override

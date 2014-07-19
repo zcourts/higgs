@@ -75,7 +75,7 @@ public @interface template {
      * </pre>
      *
      * @return The path to a template that the resource's response is mapped to.
-     *         The response can be any collection, POJO, array or primitive (inc strings).
+     * The response can be any collection, POJO, array or primitive (inc strings).
      */
     String value();
 

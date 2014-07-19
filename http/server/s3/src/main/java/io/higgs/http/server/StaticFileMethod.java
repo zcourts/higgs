@@ -29,12 +29,11 @@ import java.util.regex.Pattern;
 public class StaticFileMethod extends HttpMethod {
 
     private static final Pattern INSECURE_URI = Pattern.compile(".*[<>&\"].*");
-    private final HttpProtocolConfiguration config;
-    private Path base;
-    private static Logger log = LoggerFactory.getLogger(StaticFileMethod.class);
     private static final Method METHOD;
-
+    private static Logger log = LoggerFactory.getLogger(StaticFileMethod.class);
+    private final HttpProtocolConfiguration config;
     protected ResolvedFile resolvedFile;
+    private Path base;
 
     public StaticFileMethod(Queue<ObjectFactory> factories, HttpProtocolConfiguration protocolConfig) {
         super(factories, StaticFileMethod.class, METHOD);
@@ -107,12 +106,6 @@ public class StaticFileMethod extends HttpMethod {
         return resolvedFile.exists();
     }
 
-    public Object invoke(ChannelHandlerContext ctx, String path, Object msg, Object[] params,
-                         DependencyProvider provider)
-            throws InvocationTargetException, IllegalAccessException, InstantiationException {
-        return classMethod.invoke(this, params);
-    }
-
     private String normalizeURI(HttpRequest request) {
         String uri = request.getUri();
         //remove query string from path
@@ -150,5 +143,11 @@ public class StaticFileMethod extends HttpMethod {
             return null;
         }
         return uri;
+    }
+
+    public Object invoke(ChannelHandlerContext ctx, String path, Object msg, Object[] params,
+                         DependencyProvider provider)
+            throws InvocationTargetException, IllegalAccessException, InstantiationException {
+        return classMethod.invoke(this, params);
     }
 }

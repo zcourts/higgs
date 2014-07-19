@@ -17,11 +17,6 @@ import java.util.Set;
 public class HttpCookie extends DefaultCookie {
     protected Logger log = LoggerFactory.getLogger(getClass());
 
-    public HttpCookie(String name, String value) {
-        super(name, value);
-        setPath("/");
-    }
-
     public HttpCookie(Cookie cookie) {
         this(cookie.getName(), cookie.getValue());
         Set<Field> fields = ReflectionUtil.getAllFields(new HashSet<Field>(), DefaultCookie.class, 1);
@@ -35,5 +30,10 @@ public class HttpCookie extends DefaultCookie {
                 log.warn("Error copying cookie field", t);
             }
         }
+    }
+
+    public HttpCookie(String name, String value) {
+        super(name, value);
+        setPath("/");
     }
 }

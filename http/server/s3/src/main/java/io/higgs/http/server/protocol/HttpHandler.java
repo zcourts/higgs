@@ -74,19 +74,6 @@ public class HttpHandler extends MessageHandler<HttpConfig, Object> {
         mediaTypeDecoders.addAll(config.getMediaTypeDecoders());
     }
 
-    public <M extends InvokableMethod> M findMethod(String path, ChannelHandlerContext ctx,
-                                                    Object msg, Class<M> methodClass) {
-        M m = super.findMethod(path, ctx, msg, methodClass);
-        if (m == null && config.add_static_resource_filter) {
-            StaticFileMethod fileMethod = new StaticFileMethod(protocolConfig.getServer().getFactories(),
-                    protocolConfig);
-            if (fileMethod.matches(path, ctx, msg)) {
-                return (M) fileMethod;
-            }
-        }
-        return m;
-    }
-
     public void channelRead0(ChannelHandlerContext ctx, Object msg) throws Exception {
         if (msg instanceof LastHttpContent && !(msg instanceof FullHttpRequest) && replied) {
             return;  //can happen if exception was thrown before last http content received
@@ -154,6 +141,19 @@ public class HttpHandler extends MessageHandler<HttpConfig, Object> {
                 }
             }
         }
+    }
+
+    public <M extends InvokableMethod> M findMethod(String path, ChannelHandlerContext ctx,
+                                                    Object msg, Class<M> methodClass) {
+        M m = super.findMethod(path, ctx, msg, methodClass);
+        if (m == null && config.add_static_resource_filter) {
+            StaticFileMethod fileMethod = new StaticFileMethod(protocolConfig.getServer().getFactories(),
+                    protocolConfig);
+            if (fileMethod.matches(path, ctx, msg)) {
+                return (M) fileMethod;
+            }
+        }
+        return m;
     }
 
     /**
