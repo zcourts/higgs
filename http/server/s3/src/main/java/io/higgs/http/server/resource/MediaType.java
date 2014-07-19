@@ -164,7 +164,7 @@ public class MediaType {
         this.type = type == null ? MEDIA_TYPE_WILDCARD : type;
         this.subtype = subtype == null ? MEDIA_TYPE_WILDCARD : subtype;
         if (parameters == null) {
-            this.parameters = emptyMap;
+            this.parameters = emptyMap == null ? Collections.unmodifiableMap(new HashMap<String, String>()) : emptyMap;
         } else {
             Map<String, String> map = new TreeMap<String, String>(new Comparator<String>() {
                 public int compare(String o1, String o2) {
