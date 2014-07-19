@@ -92,6 +92,12 @@ public class HandlebarsTransformer extends BaseTransformer {
     }
 
     @Override
+    public boolean canTransform(Object response, HttpRequest request, MediaType mediaType,
+                                HttpMethod method, ChannelHandlerContext ctx) {
+        return method.hasTemplate() && super.canTransform(response, request, mediaType, method, ctx);
+    }
+
+    @Override
     public void transform(Object response, HttpRequest request, HttpResponse res, MediaType mediaType,
                           HttpMethod method, ChannelHandlerContext ctx) {
         if (isError(response)) {

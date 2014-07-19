@@ -55,6 +55,12 @@ public class ThymeleafTransformer extends BaseTransformer {
         return new ThymeleafTransformer();
     }
 
+    @Override
+    public boolean canTransform(Object response, HttpRequest request, MediaType mediaType,
+                                HttpMethod method, ChannelHandlerContext ctx) {
+        return method.hasTemplate() && super.canTransform(response, request, mediaType, method, ctx);
+    }
+
     public void transform(Object response, HttpRequest request, HttpResponse res, MediaType mediaType,
                           HttpMethod method, ChannelHandlerContext ctx) {
         WebContext webContext = new WebContext();

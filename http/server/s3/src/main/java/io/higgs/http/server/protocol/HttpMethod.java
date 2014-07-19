@@ -138,6 +138,30 @@ public class HttpMethod extends InvokableMethod {
         return false;
     }
 
+    public LinkedList<MediaType> getProducesMediaTypes() {
+        return producesMediaTypes;
+    }
+
+    public LinkedList<MediaType> getConsumesMediaTypes() {
+        return consumesMediaTypes;
+    }
+
+    public boolean produces(MediaType... mediaTypes) {
+        for (MediaType mt : producesMediaTypes) {
+            for (MediaType mt2 : mediaTypes) {
+                if (mt.isCompatible(mt2)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    public boolean hasProduces() {
+        return getProducesMediaTypes().size() > 0;
+    }
+
+
     @Override
     protected Object[] injectParameters(ChannelHandlerContext ctx, Object msg, Object[] params, Object instance,
                                         DependencyProvider deps) {
