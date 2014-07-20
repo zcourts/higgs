@@ -233,13 +233,13 @@ public class ResourcePath {
             return pattern;
         }
 
-        public void setPattern(final boolean pattern) {
-            isPattern = pattern;
-        }
-
         public void setPattern(final String pattern) {
             this.pattern = Pattern.compile(pattern, Pattern.CASE_INSENSITIVE | Pattern.DOTALL);
             setPattern(true);
+        }
+
+        public void setPattern(final boolean pattern) {
+            isPattern = pattern;
         }
 
         /**

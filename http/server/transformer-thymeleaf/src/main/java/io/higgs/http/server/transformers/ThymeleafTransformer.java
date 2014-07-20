@@ -5,7 +5,6 @@ import io.higgs.core.reflect.ReflectionUtil;
 import io.higgs.http.server.HttpRequest;
 import io.higgs.http.server.HttpResponse;
 import io.higgs.http.server.HttpStatus;
-import javax.ws.rs.WebApplicationException;
 import io.higgs.http.server.config.TemplateConfig;
 import io.higgs.http.server.protocol.HttpMethod;
 import io.higgs.http.server.resource.MediaType;

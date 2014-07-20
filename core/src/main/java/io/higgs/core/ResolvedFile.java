@@ -24,6 +24,33 @@ public class ResolvedFile {
     protected List<Path> dirFiles = new ArrayList<>();
     private long lastModifiedCache;
 
+    /**
+     * Gets the size of the underlying path, if the path is a file
+     * if the path is a directory -1 is returned, if an error occurs while
+     * attempting to get the file size -2 is returned
+     *
+     * @return the size of the underlying file
+     */
+    public int size() {
+        try {
+            return hasStream() ? stream.available() : -1;
+        } catch (IOException e) {
+            return knownSize;
+        }
+    }
+
+    public InputStream getStream() {
+        return stream;
+    }
+
+    public List<Path> getDirectoryIterator() {
+        return dirFiles;
+    }
+
+    public Path getPath() {
+        return path;
+    }
+
     public void setPath(Path path) {
         setPath(path, null);
     }
@@ -62,27 +89,8 @@ public class ResolvedFile {
         }
     }
 
-    /**
-     * Gets the size of the underlying path, if the path is a file
-     * if the path is a directory -1 is returned, if an error occurs while
-     * attempting to get the file size -2 is returned
-     *
-     * @return the size of the underlying file
-     */
-    public int size() {
-        try {
-            return hasStream() ? stream.available() : -1;
-        } catch (IOException e) {
-            return knownSize;
-        }
-    }
-
-    public InputStream getStream() {
-        return stream;
-    }
-
-    public List<Path> getDirectoryIterator() {
-        return dirFiles;
+    public boolean exists() {
+        return Files.exists(path) || (isFromClassPath() && hasStream());
     }
 
     /**
@@ -96,16 +104,8 @@ public class ResolvedFile {
         return Files.isDirectory(path);
     }
 
-    public boolean exists() {
-        return Files.exists(path) || (isFromClassPath() && hasStream());
-    }
-
     public boolean isFromClassPath() {
         return fromClassPath;
-    }
-
-    public Path getPath() {
-        return path;
     }
 
     public boolean hasStream() {

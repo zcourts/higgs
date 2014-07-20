@@ -8,7 +8,6 @@ import io.higgs.http.server.HttpRequest;
 import io.higgs.http.server.HttpResponse;
 import io.higgs.http.server.HttpStatus;
 import io.higgs.http.server.MessagePusher;
-import javax.ws.rs.WebApplicationException;
 import io.higgs.http.server.auth.HiggsSession;
 import io.higgs.http.server.params.FormFiles;
 import io.higgs.http.server.params.FormParams;
@@ -37,6 +36,7 @@ import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
+import javax.ws.rs.WebApplicationException;
 import java.util.HashMap;
 import java.util.Map;
 

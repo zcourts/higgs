@@ -1,7 +1,8 @@
 package io.higgs.http.server.transformers;
 
-import javax.ws.rs.WebApplicationException;
 import io.netty.handler.codec.http.HttpResponseStatus;
+
+import javax.ws.rs.WebApplicationException;
 
 /**
  * @author Courtney Robinson <courtney@crlog.info>

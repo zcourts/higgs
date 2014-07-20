@@ -216,12 +216,12 @@ public class HttpMethod extends InvokableMethod {
         return template;
     }
 
-    public void setTemplate(String template) {
-        this.template = template;
-    }
-
     public void setTemplate(String[] fragments) {
         this.fragments = fragments;
+    }
+
+    public void setTemplate(String template) {
+        this.template = template;
     }
 
     public String[] getFragments() {
