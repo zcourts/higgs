@@ -7,8 +7,6 @@ import io.higgs.core.reflect.dependency.DependencyProvider;
 import io.higgs.core.reflect.dependency.Injector;
 import io.higgs.http.server.HttpRequest;
 import io.higgs.http.server.HttpResponse;
-import io.higgs.http.server.StaticFileMethod;
-import io.higgs.http.server.WebApplicationException;
 import io.higgs.http.server.config.HttpConfig;
 import io.higgs.http.server.protocol.HttpMethod;
 import io.higgs.http.server.resource.MediaType;
@@ -20,6 +18,7 @@ import io.netty.handler.codec.http.multipart.DiskAttribute;
 import io.netty.handler.codec.http.multipart.DiskFileUpload;
 import org.kohsuke.MetaInfServices;
 
+import javax.ws.rs.WebApplicationException;
 import java.io.File;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -73,10 +72,7 @@ public class StaticFileTransformer extends BaseTransformer {
     @Override
     public boolean canTransform(Object response, HttpRequest request, MediaType mediaType, HttpMethod method,
                                 ChannelHandlerContext ctx) {
-        return isStaticFileResponse(response) ||
-                //handle web application exceptions thrown by the static file method
-                (response instanceof WebApplicationException &&
-                        ((WebApplicationException) response).getSource() instanceof StaticFileMethod);
+        return isStaticFileResponse(response);
     }
 
     @Override
@@ -90,7 +86,7 @@ public class StaticFileTransformer extends BaseTransformer {
                 response = FileUtil.resolve(base, (Path) response);
             } else if (response instanceof WebApplicationException) {
                 WebApplicationException ex = (WebApplicationException) response;
-                res.setStatus(ex.getStatus());
+                res.setStatus(HttpResponseStatus.valueOf(ex.getResponse().getStatus()));
                 if (ex.getMessage() != null && !ex.getMessage().isEmpty()) {
                     byte[] msg = ex.getMessage().getBytes();
                     ByteBuf buf = ctx.alloc().heapBuffer(msg.length);

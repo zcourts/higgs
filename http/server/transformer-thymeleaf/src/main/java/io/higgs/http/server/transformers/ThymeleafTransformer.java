@@ -5,7 +5,7 @@ import io.higgs.core.reflect.ReflectionUtil;
 import io.higgs.http.server.HttpRequest;
 import io.higgs.http.server.HttpResponse;
 import io.higgs.http.server.HttpStatus;
-import io.higgs.http.server.WebApplicationException;
+import javax.ws.rs.WebApplicationException;
 import io.higgs.http.server.config.TemplateConfig;
 import io.higgs.http.server.protocol.HttpMethod;
 import io.higgs.http.server.resource.MediaType;
@@ -140,12 +140,7 @@ public class ThymeleafTransformer extends BaseTransformer {
     protected String determineErrorTemplate(HttpResponse res, Object response) {
         Throwable err = response instanceof Throwable ? (Throwable) response : null;
         determineErrorStatus(res, err);
-        String tpl = "error/default";
-        if (response instanceof WebApplicationException) {
-            WebApplicationException e = (WebApplicationException) response;
-            tpl = e.getTemplate() == null || e.getTemplate().isEmpty() ? tpl : e.getTemplate();
-        }
-        return tpl;
+        return "error/default";
     }
 
     public TemplateConfig getConfig() {

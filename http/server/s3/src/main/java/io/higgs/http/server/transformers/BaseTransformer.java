@@ -3,7 +3,6 @@ package io.higgs.http.server.transformers;
 import io.higgs.core.ResolvedFile;
 import io.higgs.http.server.HttpRequest;
 import io.higgs.http.server.HttpResponse;
-import io.higgs.http.server.WebApplicationException;
 import io.higgs.http.server.protocol.HttpMethod;
 import io.higgs.http.server.resource.MediaType;
 import io.netty.channel.ChannelHandlerContext;
@@ -12,6 +11,7 @@ import io.netty.handler.codec.http.HttpResponseStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.ws.rs.WebApplicationException;
 import java.io.File;
 import java.io.InputStream;
 import java.nio.file.Path;
@@ -39,8 +39,7 @@ public abstract class BaseTransformer implements ResponseTransformer {
         if (response == null) {
             status = HttpResponseStatus.NO_CONTENT;
         } else if (response instanceof WebApplicationException) {
-            WebApplicationException wae = (WebApplicationException) response;
-            status = wae.getStatus() == null ? HttpResponseStatus.INTERNAL_SERVER_ERROR : wae.getStatus();
+            status = HttpResponseStatus.valueOf(((WebApplicationException) response).getResponse().getStatus());
         }
         res.setStatus(status);
     }

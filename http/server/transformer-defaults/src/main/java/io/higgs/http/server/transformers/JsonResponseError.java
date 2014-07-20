@@ -1,6 +1,6 @@
 package io.higgs.http.server.transformers;
 
-import io.higgs.http.server.WebApplicationException;
+import javax.ws.rs.WebApplicationException;
 import io.netty.handler.codec.http.HttpResponseStatus;
 
 /**
@@ -11,7 +11,7 @@ public class JsonResponseError extends WebApplicationException {
     protected Object content;
 
     public JsonResponseError(HttpResponseStatus status, Object content) {
-        super(status);
+        super(status.code());
         this.content = content == null ? EMPTY_JSON_OBJECT : content;
     }
 

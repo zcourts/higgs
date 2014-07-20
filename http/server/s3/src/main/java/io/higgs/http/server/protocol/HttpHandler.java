@@ -12,7 +12,6 @@ import io.higgs.http.server.HttpStatus;
 import io.higgs.http.server.MessagePusher;
 import io.higgs.http.server.ParamInjector;
 import io.higgs.http.server.StaticFileMethod;
-import io.higgs.http.server.WebApplicationException;
 import io.higgs.http.server.WrappedResponse;
 import io.higgs.http.server.config.HttpConfig;
 import io.higgs.http.server.protocol.mediaTypeDecoders.FormUrlEncodedDecoder;
@@ -31,6 +30,7 @@ import io.netty.handler.codec.http.LastHttpContent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.ws.rs.WebApplicationException;
 import java.net.SocketAddress;
 import java.util.List;
 import java.util.Queue;
@@ -95,7 +95,7 @@ public class HttpHandler extends MessageHandler<HttpConfig, Object> {
             method = findMethod(request.getUri(), ctx, request, methodClass);
             if (method == null) {
                 //404
-                throw new WebApplicationException(HttpStatus.NOT_FOUND, request);
+                throw new WebApplicationException(HttpStatus.NOT_FOUND.code());
             }
             if (isEntityRequest()) {
                 if (httpConfig.add_form_url_decoder) {
@@ -109,7 +109,7 @@ public class HttpHandler extends MessageHandler<HttpConfig, Object> {
         if (request == null || method == null) {
             log.warn(String.format("Method or request is null \n method \n%s \n request \n%s",
                     method, request));
-            throw new WebApplicationException(HttpStatus.INTERNAL_SERVER_ERROR, request);
+            throw new WebApplicationException(HttpStatus.INTERNAL_SERVER_ERROR.code());
         }
         //we have a request and it matches a registered method
         if (!isEntityRequest()) {
@@ -126,7 +126,7 @@ public class HttpHandler extends MessageHandler<HttpConfig, Object> {
                     }
                 }
                 if (decoder == null) {
-                    throw new WebApplicationException(HttpResponseStatus.NOT_ACCEPTABLE);
+                    throw new WebApplicationException(HttpResponseStatus.NOT_ACCEPTABLE.code());
                 }
             }
             //decoder is created if it doesn't exist, can decode all if entire message received
@@ -201,12 +201,14 @@ public class HttpHandler extends MessageHandler<HttpConfig, Object> {
         try {
             Object response = method.invoke(ctx, request.getUri(), method, params, provider);
             pusher.push(response);
+        } catch (WebApplicationException wae) {
+            throw wae; //just re-throw for it to be handled in exceptionCaught handler
         } catch (Throwable t) {
             if (t.getCause() instanceof WebApplicationException) {
                 throw (WebApplicationException) t.getCause();
             } else {
                 logDetailedFailMessage(true, params, t, method.method());
-                throw new WebApplicationException(HttpStatus.INTERNAL_SERVER_ERROR, request, t);
+                throw new WebApplicationException(HttpStatus.INTERNAL_SERVER_ERROR.code());
             }
         }
     }
@@ -295,7 +297,7 @@ public class HttpHandler extends MessageHandler<HttpConfig, Object> {
                 writeResponse(ctx, cause, protocolConfig.getTransformers());
             } else {
                 log.warn(String.format("Error while processing request %s", request), cause);
-                writeResponse(ctx, new WebApplicationException(HttpStatus.INTERNAL_SERVER_ERROR, request, cause),
+                writeResponse(ctx, new WebApplicationException(HttpStatus.INTERNAL_SERVER_ERROR.code()),
                         protocolConfig.getTransformers());
             }
         } catch (Throwable t) {

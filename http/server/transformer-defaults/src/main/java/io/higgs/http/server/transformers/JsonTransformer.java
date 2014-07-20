@@ -10,6 +10,7 @@ import io.higgs.http.server.protocol.mediaTypeDecoders.JsonDecoder;
 import io.higgs.http.server.resource.MediaType;
 import io.higgs.http.server.transformers.conf.JsonConfig;
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.handler.codec.http.HttpResponseStatus;
 import org.kohsuke.MetaInfServices;
 
 import static io.higgs.http.server.resource.MediaType.APPLICATION_JSON_TYPE;
@@ -54,7 +55,7 @@ public class JsonTransformer extends BaseTransformer {
         determineErrorStatus(res, response);
         if (response instanceof JsonResponseError) {
             JsonResponseError je = (JsonResponseError) response;
-            res.setStatus(je.getStatus());
+            res.setStatus(HttpResponseStatus.valueOf(je.getResponse().getStatus()));
             return je.getContent();
         }
         log.warn("Unable to convert exception to response", response);

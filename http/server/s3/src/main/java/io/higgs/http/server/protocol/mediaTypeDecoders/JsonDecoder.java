@@ -9,7 +9,6 @@ import com.fasterxml.jackson.databind.introspect.VisibilityChecker;
 import com.fasterxml.jackson.datatype.joda.JodaModule;
 import io.higgs.core.reflect.dependency.DependencyProvider;
 import io.higgs.http.server.HttpRequest;
-import io.higgs.http.server.WebApplicationException;
 import io.higgs.http.server.protocol.MediaTypeDecoder;
 import io.higgs.http.server.resource.JsonData;
 import io.higgs.http.server.resource.MediaType;
@@ -19,6 +18,7 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.HttpContent;
 import io.netty.handler.codec.http.HttpResponseStatus;
 
+import javax.ws.rs.WebApplicationException;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.util.List;
@@ -74,7 +74,7 @@ public class JsonDecoder implements MediaTypeDecoder {
         try {
             node = mapper.readValue(json, JsonNode.class);
         } catch (IOException e) {
-            throw new WebApplicationException(HttpResponseStatus.BAD_REQUEST, request, e);
+            throw new WebApplicationException(HttpResponseStatus.BAD_REQUEST.code());
         }
         provider.add(new JsonData(json, node));
     }

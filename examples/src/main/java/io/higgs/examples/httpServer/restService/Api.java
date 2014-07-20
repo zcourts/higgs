@@ -8,7 +8,7 @@ import io.higgs.http.server.HttpRequest;
 import io.higgs.http.server.HttpResponse;
 import io.higgs.http.server.HttpStatus;
 import io.higgs.http.server.MessagePusher;
-import io.higgs.http.server.WebApplicationException;
+import javax.ws.rs.WebApplicationException;
 import io.higgs.http.server.auth.HiggsSession;
 import io.higgs.http.server.params.FormFiles;
 import io.higgs.http.server.params.FormParams;
@@ -155,7 +155,7 @@ public class Api {
     public Object boom2() {
         //you can, and SHOULD return WebApplicationException
         //if a wae is returned wae.setRequest() is automatically called
-        return new WebApplicationException(HttpStatus.NOT_IMPLEMENTED, "error/default");
+        return new WebApplicationException(HttpStatus.NOT_IMPLEMENTED.code());
     }
 
     @Path("manual")

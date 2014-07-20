@@ -6,7 +6,6 @@ import io.higgs.core.ConfigUtil;
 import io.higgs.core.reflect.ReflectionUtil;
 import io.higgs.http.server.HttpRequest;
 import io.higgs.http.server.HttpResponse;
-import io.higgs.http.server.WebApplicationException;
 import io.higgs.http.server.config.MustacheConfig;
 import io.higgs.http.server.protocol.HttpMethod;
 import io.higgs.http.server.resource.MediaType;
@@ -17,6 +16,7 @@ import io.netty.buffer.ByteBufOutputStream;
 import io.netty.channel.ChannelHandlerContext;
 import org.kohsuke.MetaInfServices;
 
+import javax.ws.rs.WebApplicationException;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
@@ -67,13 +67,11 @@ public class MustacheTransformer extends BaseTransformer {
         }
         if (method == null) {
             //should only ever happen if isError is true which means we should never get here
-            throw new WebApplicationException(EXPECTATION_FAILED, request);
+            throw new WebApplicationException(EXPECTATION_FAILED.code());
         }
         if (!method.hasTemplate()) {
-            WebApplicationException e = new WebApplicationException(FAILED_DEPENDENCY, request, method);
-            e.setMessage("MustacheTransformer only supports a template value, " +
-                    "to use fragments use mustacheTransformer's inheritance");
-            throw e;
+            throw new WebApplicationException("MustacheTransformer only supports a template " +
+                    "value,  to use fragments use mustacheTransformer's inheritance", FAILED_DEPENDENCY.code());
         }
         ByteBuf buf = ctx.alloc().heapBuffer();
         OutputStream in = new ByteBufOutputStream(buf);

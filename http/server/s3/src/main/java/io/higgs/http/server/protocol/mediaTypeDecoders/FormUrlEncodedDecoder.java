@@ -3,7 +3,6 @@ package io.higgs.http.server.protocol.mediaTypeDecoders;
 import io.higgs.core.reflect.dependency.DependencyProvider;
 import io.higgs.http.server.HttpRequest;
 import io.higgs.http.server.HttpStatus;
-import io.higgs.http.server.WebApplicationException;
 import io.higgs.http.server.params.HttpFile;
 import io.higgs.http.server.protocol.MediaTypeDecoder;
 import io.higgs.http.server.resource.MediaType;
@@ -17,6 +16,7 @@ import io.netty.handler.codec.http.multipart.InterfaceHttpData;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.ws.rs.WebApplicationException;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
@@ -36,10 +36,10 @@ public class FormUrlEncodedDecoder implements MediaTypeDecoder {
             decoder = new HttpPostRequestDecoder(factory, request);
         } catch (HttpPostRequestDecoder.ErrorDataDecoderException e1) {
             log.warn("Unable to decode data", e1);
-            throw new WebApplicationException(HttpStatus.BAD_REQUEST, request);
+            throw new WebApplicationException(HttpStatus.BAD_REQUEST.code());
         } catch (HttpPostRequestDecoder.IncompatibleDataDecoderException e) {
             log.warn("Incompatible request type", e);
-            throw new WebApplicationException(HttpStatus.BAD_REQUEST, request);
+            throw new WebApplicationException(HttpStatus.BAD_REQUEST.code());
         }
         request.setMultipart(decoder.isMultipart());
     }
@@ -64,7 +64,7 @@ public class FormUrlEncodedDecoder implements MediaTypeDecoder {
             decoder.offer(chunk);
         } catch (HttpPostRequestDecoder.ErrorDataDecoderException e1) {
             log.warn("Unable to decode HTTP chunk", e1);
-            throw new WebApplicationException(HttpStatus.BAD_REQUEST, request);
+            throw new WebApplicationException(HttpStatus.BAD_REQUEST.code());
         }
         try {
             while (decoder.hasNext()) {
@@ -120,7 +120,7 @@ public class FormUrlEncodedDecoder implements MediaTypeDecoder {
             data = decoder.getBodyHttpDatas();
         } catch (HttpPostRequestDecoder.NotEnoughDataDecoderException e1) {
             log.warn("Not enough data to decode", e1);
-            throw new WebApplicationException(HttpStatus.BAD_REQUEST, request);
+            throw new WebApplicationException(HttpStatus.BAD_REQUEST.code());
         }
         //called when all data is received, go over request data and separate form fields from files
         for (InterfaceHttpData httpData : data) {

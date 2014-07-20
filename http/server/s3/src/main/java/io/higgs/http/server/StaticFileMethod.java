@@ -12,6 +12,7 @@ import io.netty.handler.codec.http.HttpResponseStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.ws.rs.WebApplicationException;
 import java.io.File;
 import java.io.UnsupportedEncodingException;
 import java.lang.reflect.InvocationTargetException;
@@ -99,9 +100,8 @@ public class StaticFileMethod extends HttpMethod {
         if (!resolvedFile.exists()) {
             //static file method is a last resort and called after all other methods failed to match
             //if the file is found to be a static file then raise a 404
-            WebApplicationException e = new WebApplicationException(HttpResponseStatus.NOT_FOUND, request, this);
-            e.setMessage(resolvedFile.getName() + " not found");
-            throw e;
+            throw new WebApplicationException(resolvedFile.getName() + " not found",
+                    HttpResponseStatus.NOT_FOUND.code());
         }
         return resolvedFile.exists();
     }
