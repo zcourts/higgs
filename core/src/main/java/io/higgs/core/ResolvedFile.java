@@ -39,6 +39,10 @@ public class ResolvedFile {
         }
     }
 
+    public boolean hasStream() {
+        return stream != null;
+    }
+
     public InputStream getStream() {
         return stream;
     }
@@ -106,10 +110,6 @@ public class ResolvedFile {
 
     public boolean isFromClassPath() {
         return fromClassPath;
-    }
-
-    public boolean hasStream() {
-        return stream != null;
     }
 
     public String getName() {

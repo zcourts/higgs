@@ -94,30 +94,36 @@ public class HandlebarsTransformer extends BaseTransformer {
     @Override
     public boolean canTransform(Object response, HttpRequest request, MediaType mediaType,
                                 HttpMethod method, ChannelHandlerContext ctx) {
-        return method.hasTemplate() && super.canTransform(response, request, mediaType, method, ctx);
+        return method == null ? super.canTransform(response, request, mediaType, method, ctx) :
+                method.hasTemplate() && super.canTransform(response, request, mediaType, method, ctx);
     }
 
     @Override
     public void transform(Object response, HttpRequest request, HttpResponse res, MediaType mediaType,
                           HttpMethod method, ChannelHandlerContext ctx) {
+        String tpl = "error/default";
         if (isError(response)) {
             determineErrorStatus(res, (Throwable) response);
-            return;
-        }
-        if (method == null) {
-            //should only ever happen if isError is true which means we should never get here
-            throw new WebApplicationException(EXPECTATION_FAILED.code());
-        }
-        if (!method.hasTemplate()) {
-            throw new WebApplicationException("HandlebarsTransformer only supports a template " +
-                    "value, to use fragments use mustacheTransformer's inheritance", FAILED_DEPENDENCY.code());
+            if (!(response instanceof WebApplicationException)) {
+                response = new WebApplicationException((Throwable) response, 500);
+            }
+        } else {
+            if (method == null) {
+                //should only ever happen if isError is true which means we should never get here
+                throw new WebApplicationException(EXPECTATION_FAILED.code());
+            }
+            if (!method.hasTemplate()) {
+                throw new WebApplicationException("HandlebarsTransformer only supports a template " +
+                        "value, to use fragments use mustacheTransformer's inheritance", FAILED_DEPENDENCY.code());
+            }
+            tpl = method.getTemplate();
         }
         ByteBuf buf = ctx.alloc().heapBuffer();
         OutputStream in = new ByteBufOutputStream(buf);
         Writer writer = new OutputStreamWriter(in);
 
         try {
-            Template template = handlebars.compile(method.getTemplate());
+            Template template = handlebars.compile(tpl);
             template.apply(scopes(response, request, method), writer);
             //flush data to byte buf
             writer.flush();

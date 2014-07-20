@@ -55,7 +55,8 @@ public class MustacheTransformer extends BaseTransformer {
     @Override
     public boolean canTransform(Object response, HttpRequest request, MediaType mediaType,
                                 HttpMethod method, ChannelHandlerContext ctx) {
-        return method.hasTemplate() && super.canTransform(response, request, mediaType, method, ctx);
+        return method == null ? super.canTransform(response, request, mediaType, method, ctx) :
+                method.hasTemplate() && super.canTransform(response, request, mediaType, method, ctx);
     }
 
     @Override

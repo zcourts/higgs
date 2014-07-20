@@ -64,7 +64,7 @@ public abstract class BaseTransformer implements ResponseTransformer {
     @Override
     public boolean canTransform(Object response, HttpRequest request, MediaType mediaType,
                                 HttpMethod method, ChannelHandlerContext ctx) {
-        if (method.hasProduces()) {
+        if (method != null && method.hasProduces()) {
             return method.produces(supportedTypes.toArray(new MediaType[supportedTypes.size()]));
         } else {
             //if is error we need to handle converting the error to an output or if the response isn't a static file
