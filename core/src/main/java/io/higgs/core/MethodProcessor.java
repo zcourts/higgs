@@ -6,7 +6,7 @@ import java.util.Queue;
 /**
  * @author Courtney Robinson <courtney@crlog.info>
  */
-public interface MethodProcessor {
+public interface MethodProcessor<T extends InvokableMethod> {
     /**
      * Given the set of parameters, construct an {@link InvokableMethod}
      *
@@ -15,5 +15,11 @@ public interface MethodProcessor {
      * @param factories a factories, which are registered with the server
      * @return an invokable method
      */
-    InvokableMethod process(Method method, Class<?> klass, Queue<ObjectFactory> factories);
+    T process(Method method, Class<?> klass, Queue<ObjectFactory> factories);
+
+    /**
+     * Used to create new instances of the {@link io.higgs.core.InvokableMethod} this process handles
+     */
+    T newMethod(Method method, Class<?> klass, Queue<ObjectFactory> factories);
+
 }

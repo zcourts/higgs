@@ -143,8 +143,8 @@ public class HttpHandler extends MessageHandler<HttpConfig, Object> {
         }
     }
 
-    public <M extends InvokableMethod> M findMethod(String path, ChannelHandlerContext ctx,
-                                                    Object msg, Class<M> methodClass) {
+    public <M extends InvokableMethod> M findMethod(String path, ChannelHandlerContext ctx, Object msg,
+                                                    Class<M> methodClass) {
         M m = super.findMethod(path, ctx, msg, methodClass);
         if (m == null && config.add_static_resource_filter) {
             StaticFileMethod fileMethod = new StaticFileMethod(protocolConfig.getServer().getFactories(),

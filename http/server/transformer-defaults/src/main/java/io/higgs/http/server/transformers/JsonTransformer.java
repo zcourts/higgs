@@ -13,6 +13,9 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import org.kohsuke.MetaInfServices;
 
+import java.net.URI;
+import java.net.URISyntaxException;
+
 import static io.higgs.http.server.resource.MediaType.APPLICATION_JSON_TYPE;
 import static io.higgs.http.server.transformers.JsonResponseError.EMPTY_JSON_OBJECT;
 
@@ -28,6 +31,31 @@ public class JsonTransformer extends BaseTransformer {
         conf = ConfigUtil.loadYaml("json_config.yml", JsonConfig.class);
         setPriority(conf.priority);
         addSupportedTypes(APPLICATION_JSON_TYPE);
+    }
+
+    @Override
+    public boolean canTransform(Object response, HttpRequest request, MediaType mediaType,
+                                HttpMethod method, ChannelHandlerContext ctx) {
+        return method != null && pathIsJson(request.getUri())
+                || super.canTransform(response, request, mediaType, method, ctx);
+    }
+
+    private boolean pathIsJson(String uri) {
+        if (uri == null || uri.isEmpty()) {
+            return false;
+        }
+        try {
+            String path = new URI(uri).getPath();
+            if (path == null || path.isEmpty()) {
+                return false;
+            }
+            if (path.endsWith(".json")) {
+                return true;
+            }
+        } catch (URISyntaxException e) {
+            return false;
+        }
+        return false;
     }
 
     @Override

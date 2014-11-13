@@ -210,7 +210,7 @@ public class HiggsClassPathCache {
         } catch (IOException ioe) {
             log.warn("IO Exception", ioe);
         }
-        return null;
+        return retval;
     }
 
     public List<String> getResourcesFromDirectory(File directory, Pattern pattern) {

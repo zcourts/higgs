@@ -9,11 +9,9 @@ import io.higgs.http.server.MethodParam;
 import io.higgs.http.server.params.ValidationResult;
 import io.higgs.http.server.resource.MediaType;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.handler.codec.http.HttpResponseStatus;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.Produces;
-import javax.ws.rs.WebApplicationException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.LinkedList;
@@ -155,10 +153,11 @@ public class HttpMethod extends InvokableMethod {
                             }
                         }
                     }
+                    //there may be other matching methods we can't say it's unacceptable here anymore
                     //path matched but media type didn't
-                    log.debug(String.format("template %s matched %s but no compatible media types found",
-                            requestPath, resourcePath.getUri()));
-                    throw new WebApplicationException(HttpResponseStatus.NOT_ACCEPTABLE.code());
+                    //log.debug(String.format("template %s matched %s but no compatible media types found",
+                    //        requestPath, resourcePath.getUri()));
+                    //throw new WebApplicationException(HttpResponseStatus.NOT_ACCEPTABLE.code());
                 } else {
                     return true;
                 }

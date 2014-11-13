@@ -29,7 +29,7 @@ import java.util.Queue;
 /**
  * @author Courtney Robinson <courtney@crlog.info>
  */
-public class HttpMethodProcessor implements MethodProcessor {
+public class HttpMethodProcessor implements MethodProcessor<HttpMethod> {
     private final HttpProtocolConfiguration config;
     private Logger log = LoggerFactory.getLogger(getClass());
 
@@ -40,7 +40,7 @@ public class HttpMethodProcessor implements MethodProcessor {
     @Override
     public HttpMethod process(Method method, Class<?> klass, Queue<ObjectFactory> factories) {
 
-        HttpMethod im = new HttpMethod(factories, klass, method);
+        HttpMethod im = newMethod(method, klass, factories);
 
         determineTemplate(method, klass, im);
         processVerbs(im, method);
@@ -128,6 +128,10 @@ public class HttpMethodProcessor implements MethodProcessor {
             }
         }
         return im;
+    }
+
+    public HttpMethod newMethod(Method method, Class<?> klass, Queue<ObjectFactory> factories) {
+        return new HttpMethod(factories, klass, method);
     }
 
     private void determineTemplate(Method method, Class<?> klass, HttpMethod im) {

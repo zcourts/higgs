@@ -1,7 +1,9 @@
 package io.higgs.core.reflect;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Set;
 
 public final class ReflectionUtil {
@@ -22,6 +24,24 @@ public final class ReflectionUtil {
         //now add all "local" fields
         Collections.addAll(fields, type.getDeclaredFields());
         return fields;
+    }
+
+    public static Method[] getAllMethods(Class<?> klass) {
+        HashSet<Method> methods = new HashSet<>();
+        getAllMethods(methods, klass);
+        return methods.toArray(new Method[methods.size()]);
+    }
+
+    public static Set<Method> getAllMethods(Set<Method> methods, Class<?> type) {
+        return getAllMethods(methods, type, 0);
+    }
+
+    public static Set<Method> getAllMethods(Set<Method> methods, Class<?> type, int depth) {
+        if (type.getSuperclass() != null && depth <= MAX_RECURSION_DEPTH) {
+            getAllMethods(methods, type.getSuperclass(), ++depth);
+        }
+        Collections.addAll(methods, type.getDeclaredMethods());
+        return methods;
     }
 
     /**
