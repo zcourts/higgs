@@ -1,5 +1,6 @@
 package io.higgs.core;
 
+import io.higgs.core.reflect.ReflectionUtil;
 import io.higgs.core.reflect.classpath.HiggsClassLoader;
 import io.higgs.core.reflect.classpath.PackageScanner;
 import io.higgs.core.reflect.dependency.DependencyProvider;
@@ -206,11 +207,12 @@ public class HiggsServer {
         }
         //is the annotation applied to the whole class or not?
         boolean registerAllMethods = !klass.isAnnotationPresent(methodClass);
-        Method[] m = klass.getMethods();
+        Method[] m = ReflectionUtil.getAllMethods(klass);
         for (Method method : m) {
             if (onlyRegisterAnnotatedMethods && !method.isAnnotationPresent(methodClass)) {
                 continue;
             }
+            method.setAccessible(true);
             InvokableMethod im = null;
             for (MethodProcessor mp : methodProcessors) {
                 im = mp.process(method, klass, factories);
