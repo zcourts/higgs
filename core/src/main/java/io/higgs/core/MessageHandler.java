@@ -37,12 +37,12 @@ public abstract class MessageHandler<C extends ServerConfig, T> extends SimpleCh
      * @param methodClass the concrete implementation of {@link InvokableMethod} which must also match
      * @return the first method which matches or null if none
      */
-    public <M extends InvokableMethod> M findMethod(String path, ChannelHandlerContext ctx,
-                                                    Object msg, Class<M> methodClass) {
+    public <M extends InvokableMethod> M findMethod(String path, ChannelHandlerContext ctx, Object msg,
+                                                    Class<M> methodClass) {
         List<InvokableMethod> sortedMethods = new FixedSortedList<>(methods);
         for (InvokableMethod method : sortedMethods) {
             if (method.matches(path, ctx, msg)) {
-                if (method.getClass().isAssignableFrom(methodClass)) {
+                if (methodClass.isAssignableFrom(method.getClass())) {
                     return (M) method;
                 } else {
                     log.debug(String.format("%s matches %s but types are incompatible." +
