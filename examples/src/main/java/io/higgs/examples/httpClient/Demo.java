@@ -19,6 +19,7 @@ import java.io.File;
 import java.io.FileWriter;
 import java.net.URI;
 import java.nio.file.Files;
+import java.util.ArrayList;
 
 /**
  * @author Courtney Robinson <courtney@crlog.info>
@@ -39,6 +40,26 @@ public final class Demo {
     }
 
     public static void main(String[] args) throws Exception {
+        HttpRequestBuilder.instance().postJSON(new URI("http://httpbin.org/post"),
+                new PageReader(new Function2<String, Response>() {
+                    @Override
+                    public void apply(String s, Response response) {
+                        System.out.println(s);
+                        HttpRequestBuilder.shutdown();
+                    }
+                }))
+                .header(HttpHeaders.Names.AUTHORIZATION, "user:api-key")
+                .header(HttpHeaders.Names.CONTENT_TYPE, "application/json")
+                .addField("hash", "4cba32634b32ccd10528e4597913d5b2")
+                .addField("parameters", new ArrayList<>())
+                .addField("filter", "f")
+                .addField("start", (System.currentTimeMillis() / 1000) - 86400)
+                .addField("end", System.currentTimeMillis() / 1000)
+                        //if you don't want to build the JSON payload and have and object then use
+                        //setData and  addField cannot be combined, an exception will be thrown if you try to use both
+                        //.setData(object)
+                .execute();
+
         Thread.setDefaultUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
             @Override
             public void uncaughtException(Thread t, Throwable e) {
@@ -55,7 +76,7 @@ public final class Demo {
                 })
         )
                 //SSLv3, TLSv1, TLSv1.1, TLSv1.2 are typical
-                .withSSLProtocols(new String[]{ "SSLv3", "TLSv1" });
+                .withSSLProtocols(new String[]{"SSLv3", "TLSv1"});
         //can always check what options are supported with
         HttpRequestBuilder.getSupportedSSLProtocols();
         //check if a specific version is supported

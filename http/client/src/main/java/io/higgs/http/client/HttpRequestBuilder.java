@@ -191,6 +191,35 @@ public class HttpRequestBuilder {
      * @param reader the reader to use to process the response
      * @return the request
      */
+    public JSONRequest postJSON(URI uri, Reader reader) {
+        return postJSON(uri, HttpVersion.HTTP_1_1, reader);
+    }
+
+    public JSONRequest postJSON(URI uri, HttpVersion version, Reader reader) {
+        checkGroup();
+        return new JSONRequest(this, group, uri, version, reader, HttpMethod.POST);
+    }
+
+    public JSONRequest putJSON(URI uri, Reader reader) {
+        return putJSON(uri, HttpVersion.HTTP_1_1, reader);
+    }
+
+    public JSONRequest putJSON(URI uri, HttpVersion version, Reader reader) {
+        checkGroup();
+        return new JSONRequest(this, group, uri, version, reader, HttpMethod.PUT);
+    }
+
+    /**
+     * See {@link Reader} for handling incoming data and the default implementations
+     * {@link io.higgs.http.client.readers.PageReader} which reads an entire page
+     * {@link io.higgs.http.client.readers.LineReader} which reads a response line by line
+     * or
+     * {@link io.higgs.http.client.readers.FileReader} which reads a response and saves it to a file
+     *
+     * @param uri    the URI to make the request to
+     * @param reader the reader to use to process the response
+     * @return the request
+     */
     public Request DELETE(URI uri, Reader reader) {
         return DELETE(uri, HttpVersion.HTTP_1_1, reader);
     }

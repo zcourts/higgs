@@ -3,6 +3,8 @@ package io.higgs.http.client;
 import io.higgs.core.StaticUtil;
 import io.higgs.http.client.readers.Reader;
 import io.netty.bootstrap.Bootstrap;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandler;
@@ -37,7 +39,7 @@ import static javax.xml.bind.DatatypeConverter.printBase64Binary;
 /**
  * @author Courtney Robinson <courtney@crlog.info>
  */
-public class Request {
+public class Request<T extends Request<T>> {
     public static final Charset UTF8 = Charset.forName("UTF-8");
     protected final Response response;
     protected final Map<String, Object> queryParams = new HashMap<>();
@@ -59,7 +61,9 @@ public class Request {
     protected ChannelFuture connectFuture;
     protected boolean useSSL;
     protected boolean tunneling;
-    private String[] sslProtocols;
+    protected String[] sslProtocols;
+    protected final ByteBuf contents = Unpooled.buffer();
+    protected T _this = (T) this;
 
     public Request(HttpRequestBuilder builder, EventLoopGroup group, URI uri, HttpMethod method, HttpVersion version,
                    Reader responseReader) {
@@ -103,7 +107,7 @@ public class Request {
     }
 
     protected void newNettyRequest(URI uri, HttpMethod method, HttpVersion version) {
-        request = new DefaultFullHttpRequest(version, method, uri.getRawPath());
+        request = new DefaultFullHttpRequest(version, method, uri.getRawPath(), contents);
         headers().set(HttpHeaders.Names.REFERER, originalUri == null ? uri.toString() : originalUri.toString());
     }
 
@@ -111,13 +115,13 @@ public class Request {
      * Automatically follow redirect responses for the given status codes
      *
      * @param codes the status codes to treat as redirects
-     * @return this
+     * @return _this
      */
-    public Request redirectOn(int... codes) {
+    public T redirectOn(int... codes) {
         for (int code : codes) {
             redirectStatusCodes.add(code);
         }
-        return this;
+        return _this;
     }
 
     public HttpHeaders headers() {
@@ -309,7 +313,7 @@ public class Request {
         return channel;
     }
 
-    public Request proxy(String host, int port) {
+    public T proxy(String host, int port) {
         return proxy(host, port, null, null);
     }
 
@@ -321,51 +325,51 @@ public class Request {
      * @param port     the proxy port
      * @param username username for the proxy
      * @param password password for the proxy
-     * @return this
+     * @return _this
      */
-    public Request proxy(String host, int port, String username, String password) {
+    public T proxy(String host, int port, String username, String password) {
         proxyHost = host;
         proxyPort = port;
         proxyUser = username;
         proxyPass = password;
-        return this;
+        return _this;
     }
 
-    public Request userAgent(String agent) {
+    public T userAgent(String agent) {
         if (agent != null) {
             userAgent = agent;
         }
-        return this;
+        return _this;
     }
 
     /**
      * Set a header on this request
      *
-     * @return this
+     * @return _this
      */
-    public Request header(String name, Object value) {
+    public T header(String name, Object value) {
         headers().set(name, value);
-        return this;
+        return _this;
     }
 
     /**
      * Set a header on this request
      *
-     * @return this
+     * @return _this
      */
-    public Request header(String name, Iterable<?> value) {
+    public T header(String name, Iterable<?> value) {
         headers().set(name, value);
-        return this;
+        return _this;
     }
 
     /**
      * Set a header on this request
      *
-     * @return this
+     * @return _this
      */
-    public Request header(String name, String value) {
+    public T header(String name, String value) {
         headers().set(name, value);
-        return this;
+        return _this;
     }
 
     /**
@@ -373,24 +377,24 @@ public class Request {
      *
      * @param name  the name of the query string
      * @param value the value
-     * @return this
+     * @return _this
      */
-    public Request query(String name, Object value) {
+    public T query(String name, Object value) {
         queryParams.put(name, value);
-        return this;
+        return _this;
     }
 
     /**
      * Adds a cookie to this request
      *
      * @param cookie the cookie to add
-     * @return this
+     * @return _this
      */
-    public Request cookie(Cookie cookie) {
+    public T cookie(Cookie cookie) {
         if (cookie != null) {
             cookies.add(cookie);
         }
-        return this;
+        return _this;
     }
 
     /**
@@ -398,14 +402,14 @@ public class Request {
      *
      * @param name  the name
      * @param value the value
-     * @return this
+     * @return _this
      */
-    public Request cookie(String name, Object value) {
+    public T cookie(String name, Object value) {
         if (name != null) {
             Cookie cookie = new DefaultCookie(name, value == null ? null : value.toString());
             cookies.add(cookie);
         }
-        return this;
+        return _this;
     }
 
     /**
@@ -437,7 +441,7 @@ public class Request {
         return uri;
     }
 
-    public Request url(String url) throws URISyntaxException {
+    public T url(String url) throws URISyntaxException {
         if (url == null) {
             throw new IllegalArgumentException("NULL url provided");
         }
@@ -448,18 +452,18 @@ public class Request {
             this.uri = uri.resolve(url);
         }
         newNettyRequest(uri, method, version);
-        return this;
+        return _this;
     }
 
     public HttpRequest nettyRequest() {
         return request;
     }
 
-    public Request withSSLProtocols(String[] protocols) {
+    public T withSSLProtocols(String[] protocols) {
         if (protocols == null || protocols.length == 0) {
             throw new IllegalArgumentException("At least one SSL protocol must be enabled");
         }
         this.sslProtocols = protocols;
-        return this;
+        return _this;
     }
 }
