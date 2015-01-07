@@ -2,7 +2,9 @@ package io.higgs.http.client;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.higgs.core.func.Function1;
 import io.higgs.http.client.readers.Reader;
+import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.EventLoopGroup;
 import io.netty.handler.codec.http.HttpHeaders;
@@ -23,7 +25,6 @@ public class JSONRequest extends Request<JSONRequest> {
     public JSONRequest(HttpRequestBuilder builder, EventLoopGroup group, URI uri, HttpVersion version, Reader f,
                        HttpMethod method) {
         super(builder, group, uri, method, version, f);
-        request.headers().set(HttpHeaders.Names.CONTENT_TYPE, "application/json");
     }
 
     /**
@@ -31,7 +32,7 @@ public class JSONRequest extends Request<JSONRequest> {
      * @throws java.lang.IllegalStateException if Jackson is unable to serialize the data added using
      *                                         {@link #addField(String, Object)}
      */
-    public FutureResponse execute() {
+    public FutureResponse execute(Function1<Bootstrap> conf) {
         if (!request.headers().contains(HttpHeaders.Names.CONTENT_TYPE)) {
             request.headers().set(HttpHeaders.Names.CONTENT_TYPE, "application/json");
         }
@@ -43,7 +44,7 @@ public class JSONRequest extends Request<JSONRequest> {
             }
         }
         request.headers().set(HttpHeaders.Names.CONTENT_LENGTH, contents.readableBytes());
-        return super.execute();
+        return super.execute(conf);
     }
 
     /**

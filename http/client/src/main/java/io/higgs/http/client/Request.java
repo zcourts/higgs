@@ -1,6 +1,7 @@
 package io.higgs.http.client;
 
 import io.higgs.core.StaticUtil;
+import io.higgs.core.func.Function1;
 import io.higgs.http.client.readers.Reader;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.ByteBuf;
@@ -64,6 +65,7 @@ public class Request<T extends Request<T>> {
     protected String[] sslProtocols;
     protected final ByteBuf contents = Unpooled.buffer();
     protected T _this = (T) this;
+    protected Function1<Bootstrap> conf;
 
     public Request(HttpRequestBuilder builder, EventLoopGroup group, URI uri, HttpMethod method, HttpVersion version,
                    Reader responseReader) {
@@ -135,13 +137,17 @@ public class Request<T extends Request<T>> {
         return redirectStatusCodes;
     }
 
+    public FutureResponse execute() {
+        return execute(conf);
+    }
+
     /**
      * Makes the request to the server
      *
      * @return A Future which is notified when the response is acknowledged by the server.
      * It doesn't mean the entire contents of the response has been received, just that it's started.
      */
-    public FutureResponse execute() {
+    public FutureResponse execute(Function1<Bootstrap> conf) {
         String scheme = getScheme();
         String host = getHost();
         int port = uri.getPort();
@@ -174,6 +180,10 @@ public class Request<T extends Request<T>> {
                 }
             }
             Bootstrap bootstrap = new Bootstrap();
+            if (conf != null) {
+                this.conf = conf;
+                conf.apply(bootstrap);
+            }
             bootstrap
                     .group(group)
                     .channel(NioSocketChannel.class)

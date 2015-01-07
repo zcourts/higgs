@@ -38,6 +38,7 @@ package io.higgs.ws.client;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.higgs.core.StaticUtil;
+import io.higgs.core.func.Function1;
 import io.higgs.http.client.ClientIntializer;
 import io.higgs.http.client.ConnectHandler;
 import io.higgs.http.client.FutureResponse;
@@ -55,6 +56,7 @@ import io.netty.handler.codec.http.HttpVersion;
 import io.netty.handler.codec.http.websocketx.WebSocketClientHandshaker;
 import io.netty.handler.codec.http.websocketx.WebSocketClientHandshakerFactory;
 import io.netty.handler.codec.http.websocketx.WebSocketVersion;
+import io.netty.bootstrap.Bootstrap;
 import org.cliffc.high_scale_lib.NonBlockingHashSet;
 
 import java.net.URI;
@@ -102,6 +104,10 @@ public class WebSocketClient extends Request {
                 HttpRequestBuilder.getSupportedSSLProtocols() : sslProtocols;
     }
 
+    public static WebSocketStream connect(URI uri, boolean autoPong, String[] sslProtocols) {
+      return connect(uri, autoPong, sslProtocols, null);
+    }
+
     /**
      * Connect to the given URI
      *
@@ -110,8 +116,8 @@ public class WebSocketClient extends Request {
      * @param sslProtocols a list of SSL protocols to support or null to use all available options on this JVM
      * @return a channel future which will be notified when the connection has completed
      */
-    public static WebSocketStream connect(URI uri, boolean autoPong, String[] sslProtocols) {
-        return connect(uri, new HashMap<String, Object>(), autoPong, sslProtocols);
+    public static WebSocketStream connect(URI uri, boolean autoPong, String[] sslProtocols, Function1<Bootstrap> conf) {
+        return connect(uri, new HashMap<String, Object>(), autoPong, sslProtocols, conf);
     }
 
     /**
@@ -124,9 +130,9 @@ public class WebSocketClient extends Request {
      * @return a channel future which will be notified when the connection has completed
      */
     public static WebSocketStream connect(URI uri, Map<String, Object> customHeaders, boolean autoPong,
-                                          String[] sslProtocols) {
+                                          String[] sslProtocols, Function1<Bootstrap> conf) {
         WebSocketClient client = new WebSocketClient(uri, customHeaders, autoPong, sslProtocols);
-        client.execute();
+        client.execute(conf);
         return client.stream();
     }
 
