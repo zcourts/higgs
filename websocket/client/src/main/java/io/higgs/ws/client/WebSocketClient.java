@@ -136,8 +136,14 @@ public class WebSocketClient extends Request {
         return client.stream();
     }
 
+    @Override
     public FutureResponse execute() {
-        FutureResponse res = super.execute();
+        return execute(null);
+    }
+
+    @Override
+    public FutureResponse execute(Function1 conf) {
+        FutureResponse res = super.execute(conf);
         this.stream = new WebSocketStream(uri, connectFuture, listeners);
         return res;
     }
