@@ -24,6 +24,18 @@ public class JSONRequestTest {
         uri = new URI("http://httpbin.org");
     }
 
+    @Test
+    public void setContentUsingSetDataStr() {
+        HttpRequestBuilder.instance().postJSON(uri, reader)
+                .setData("{}");
+    }
+
+    @Test
+    public void setContentUsingSetDataObj() throws JsonProcessingException {
+        HttpRequestBuilder.instance().postJSON(uri, reader)
+                .setData(map);
+    }
+
     @Test(expected = IllegalStateException.class)
     public void throwIllegalStateIfAddFieldCalledAfterSetDataStr() throws JsonProcessingException {
         HttpRequestBuilder.instance().postJSON(uri, reader)

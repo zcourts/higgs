@@ -73,7 +73,7 @@ public class JSONRequest extends Request<JSONRequest> {
      * @throws java.lang.IllegalStateException if {@link #addField(String, Object)} has been used to add any fields
      */
     public JSONRequest setData(String data) {
-        if (dataMap != null) {
+        if (!dataMap.isEmpty()) {
             throw new IllegalStateException("You cannot use setData in combination with addField");
         }
         if (data == null) {
@@ -92,7 +92,7 @@ public class JSONRequest extends Request<JSONRequest> {
      * @throws java.lang.IllegalStateException if {@link #addField(String, Object)} has been used to add any fields
      */
     public JSONRequest setData(Object data) throws JsonProcessingException {
-        if (dataMap != null) {
+        if (!dataMap.isEmpty()) {
             throw new IllegalStateException("You cannot use setData in combination with addField");
         }
         if (data == null) {
