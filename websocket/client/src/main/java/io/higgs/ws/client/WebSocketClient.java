@@ -198,7 +198,7 @@ public class WebSocketClient extends Request {
         return null;
     }
 
-    protected SimpleChannelInboundHandler<Object> newInboundHandler() {
+    protected ChannelHandler newHandler() {
         return handler;
     }
 }

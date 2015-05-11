@@ -180,6 +180,11 @@ public class HttpRequestBuilder {
         return new POST(this, group, uri, version, reader);
     }
 
+    public HTTPStreamingRequest streamJSON(URI uri, Reader reader) {
+        checkGroup();
+        return new HTTPStreamingRequest(this, group, uri, HttpVersion.HTTP_1_1, reader, HttpMethod.POST);
+    }
+
     /**
      * See {@link Reader} for handling incoming data and the default implementations
      * {@link io.higgs.http.client.readers.PageReader} which reads an entire page

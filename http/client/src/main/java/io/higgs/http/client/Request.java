@@ -290,10 +290,10 @@ public class Request<T extends Request<T>> {
                 return new ClientIntializer(ssl, handler, h, sslProtocols);
             }
         };
-        return new ClientIntializer(useSSL, newInboundHandler(),
+        return new ClientIntializer(useSSL, newHandler(),
                 //if proxy request exists then initializer should add it instead of the normal handler
                 isProxyEnabled() && proxyRequest != null ?
-                        new ConnectHandler(tunneling, request, newInboundHandler(), factory) : null, sslProtocols);
+                        new ConnectHandler(tunneling, request, (SimpleChannelInboundHandler<Object>) newHandler(), factory) : null, sslProtocols);
     }
 
     protected ChannelFuture connect(String host, int port, Bootstrap bootstrap) {
@@ -315,7 +315,7 @@ public class Request<T extends Request<T>> {
         return getScheme() + "://" + uri.getHost() + request.getUri();
     }
 
-    protected SimpleChannelInboundHandler<Object> newInboundHandler() {
+    protected ChannelHandler newHandler() {
         return new ClientHandler(response, future);
     }
 

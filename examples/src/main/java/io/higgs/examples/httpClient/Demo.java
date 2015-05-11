@@ -1,6 +1,7 @@
 package io.higgs.examples.httpClient;
 
 import io.higgs.core.func.Function2;
+import io.higgs.http.client.HTTPStreamingRequest;
 import io.higgs.http.client.HttpFile;
 import io.higgs.http.client.HttpRequestBuilder;
 import io.higgs.http.client.Request;
@@ -19,7 +20,6 @@ import java.io.File;
 import java.io.FileWriter;
 import java.net.URI;
 import java.nio.file.Files;
-import java.util.ArrayList;
 
 /**
  * @author Courtney Robinson <courtney@crlog.info>
@@ -40,25 +40,23 @@ public final class Demo {
     }
 
     public static void main(String[] args) throws Exception {
-        HttpRequestBuilder.instance().postJSON(new URI("http://httpbin.org/post"),
+        HTTPStreamingRequest str = HttpRequestBuilder.instance().streamJSON(new URI("https://in.stagingdatasift.com/9cd91707b3f34e249d7837cd77e3a465"),
                 new PageReader(new Function2<String, Response>() {
-                    @Override
                     public void apply(String s, Response response) {
                         System.out.println(s);
-                        HttpRequestBuilder.shutdown();
                     }
-                }))
-                .header(HttpHeaders.Names.AUTHORIZATION, "user:api-key")
-                .header(HttpHeaders.Names.CONTENT_TYPE, "application/json")
-                .addField("hash", "4cba32634b32ccd10528e4597913d5b2")
-                .addField("parameters", new ArrayList<>())
-                .addField("filter", "f")
-                .addField("start", (System.currentTimeMillis() / 1000) - 86400)
-                .addField("end", System.currentTimeMillis() / 1000)
-                        //if you don't want to build the JSON payload and have and object then use
-                        //setData and  addField cannot be combined, an exception will be thrown if you try to use both
-                        //.setData(object)
-                .execute();
+                })).header("Auth","zcourts:f7af87eb5fc66fd4f7352529c950bcfc");
+        //start the connection
+        str.execute();
+        boolean opt = true;
+        while (opt) {
+            try {
+                str.send("abc");
+            } catch (Exception e) {
+                System.out.println("Boom");
+            }
+            Thread.sleep(1000);
+        }
 
         Thread.setDefaultUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
             @Override
