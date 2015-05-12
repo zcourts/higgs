@@ -1,5 +1,6 @@
 package io.higgs.examples.httpClient;
 
+import io.higgs.core.func.Function1;
 import io.higgs.core.func.Function2;
 import io.higgs.http.client.HTTPStreamingRequest;
 import io.higgs.http.client.HttpFile;
@@ -46,19 +47,29 @@ public final class Demo {
                         System.out.println(s);
                     }
                 }));
-        str.header("Auth","zcourts:f7af87eb5fc66fd4f7352529c950bcfc");
+        str.header("Auth", "zcourts:f7af87eb5fc66fd4f7352529c950bcfc");
         //start the connection
         str.execute();
-        boolean opt = true;
-        while (opt) {
-            try {
-                str.send("{}\n");
-            } catch (Exception e) {
-                System.out.println("Boom");
-            }
-            Thread.sleep(1000);
-        }
+        str.onReady(new Function1<HTTPStreamingRequest.StreamSender>() {
+            @Override
+            public void apply(HTTPStreamingRequest.StreamSender sender) {
+                while (true) {
+                    try {
+                        sender.send("{}\n");
+                    } catch (Exception e) {
+                        System.out.println("Boom");
+                    }
+                    try {
+                        Thread.sleep(1000);
+                    } catch (InterruptedException ignored) {
 
+                    }
+                }
+            }
+        });
+        boolean opt = true;
+        if (opt)
+            return;
         Thread.setDefaultUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
             @Override
             public void uncaughtException(Thread t, Throwable e) {
