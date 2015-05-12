@@ -182,7 +182,7 @@ public class HttpRequestBuilder {
 
     public HTTPStreamingRequest streamJSON(URI uri, Reader reader) {
         checkGroup();
-        return new HTTPStreamingRequest(this, group, uri, HttpVersion.HTTP_1_1, reader, HttpMethod.POST);
+        return new HTTPStreamingRequest(this, group, uri, reader);
     }
 
     /**

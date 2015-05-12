@@ -40,18 +40,19 @@ public final class Demo {
     }
 
     public static void main(String[] args) throws Exception {
-        HTTPStreamingRequest str = HttpRequestBuilder.instance().streamJSON(new URI("https://in.stagingdatasift.com/9cd91707b3f34e249d7837cd77e3a465"),
+        HTTPStreamingRequest str = HttpRequestBuilder.instance().streamJSON(new URI("http://127.0.0.1:9012/9cd91707b3f34e249d7837cd77e3a465"),
                 new PageReader(new Function2<String, Response>() {
                     public void apply(String s, Response response) {
                         System.out.println(s);
                     }
-                })).header("Auth","zcourts:f7af87eb5fc66fd4f7352529c950bcfc");
+                }));
+        str.header("Auth","zcourts:f7af87eb5fc66fd4f7352529c950bcfc");
         //start the connection
         str.execute();
         boolean opt = true;
         while (opt) {
             try {
-                str.send("abc");
+                str.send("{}\n");
             } catch (Exception e) {
                 System.out.println("Boom");
             }
