@@ -2,11 +2,13 @@ package io.higgs.examples.httpClient;
 
 import io.higgs.core.func.Function1;
 import io.higgs.core.func.Function2;
+import io.higgs.http.client.FutureResponse;
 import io.higgs.http.client.HTTPStreamingRequest;
 import io.higgs.http.client.HttpFile;
 import io.higgs.http.client.HttpRequestBuilder;
 import io.higgs.http.client.Request;
 import io.higgs.http.client.Response;
+import io.higgs.http.client.RetryPolicy;
 import io.higgs.http.client.readers.FileReader;
 import io.higgs.http.client.readers.LineReader;
 import io.higgs.http.client.readers.PageReader;
@@ -41,13 +43,57 @@ public final class Demo {
     }
 
     public static void main(String[] args) throws Exception {
-        HTTPStreamingRequest str = HttpRequestBuilder.instance().streamJSON(new URI("http://127.0.0.1:9012/9cd91707b3f34e249d7837cd77e3a465"),
+        HTTPStreamingRequest str = HttpRequestBuilder.instance().streamJSON(
+                new URI("http://127.0.0.1:9012/9cd91707b3f34e249d7837cd77e3a465"),
                 new PageReader(new Function2<String, Response>() {
                     public void apply(String s, Response response) {
                         System.out.println(s);
                     }
                 }));
-        str.header("Auth", "zcourts:f7af87eb5fc66fd4f7352529c950bcfc");
+        str.header("Auth", "zcourts:f7af87eb5fc66fd4f7352529c950bcfc")
+                .policy(new RetryPolicy() {
+                    int connectBackOff, connectMax = 10000, backOff = 1000, backOffMax = 10000,
+                            retries, maxRetries = 10;
+
+                    @Override
+                    public void activate(FutureResponse future, Throwable cause,
+                                         boolean connectFailure, Response response) {
+                        if (retries >= maxRetries) {
+                            response.markFailed(cause);
+                            future.setFailure(cause);
+                            return;
+                        }
+                        retries++;
+                        if (connectFailure) { //linear back off for connection failure
+                            try {
+                                response.request().retry();
+                                Thread.sleep(connectBackOff);
+                            } catch (InterruptedException ignored) {
+                                System.out.println("Retry wait interrupted");
+                            } finally {
+                                if (connectBackOff <= connectMax) {
+                                    connectBackOff += 1000;
+                                } else {
+                                    connectBackOff = 0;
+                                }
+                            }
+                        } else {
+                            response.request().retry();
+                            try {
+                                //exponential back off in all other cases
+                                Thread.sleep(backOff);
+                            } catch (InterruptedException ignored) {
+                                System.out.println("Retry wait interrupted");
+                            } finally {
+                                if (backOff <= backOffMax) {
+                                    backOff *= 2;
+                                } else {
+                                    backOff = 0;
+                                }
+                            }
+                        }
+                    }
+                });
         //start the connection
         str.execute();
         str.onReady(new Function1<HTTPStreamingRequest.StreamSender>() {
@@ -62,14 +108,15 @@ public final class Demo {
                     try {
                         Thread.sleep(1000);
                     } catch (InterruptedException ignored) {
-
+                        ignored.printStackTrace();
                     }
                 }
             }
         });
         boolean opt = true;
-        if (opt)
+        if (opt) {
             return;
+        }
         Thread.setDefaultUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
             @Override
             public void uncaughtException(Thread t, Throwable e) {

@@ -66,6 +66,8 @@ public class Request<T extends Request<T>> {
     protected final ByteBuf contents = Unpooled.buffer();
     protected T _this = (T) this;
     protected Function1<Bootstrap> conf;
+    protected RetryPolicy policy;
+    private Set<Integer> retryOptions = new HashSet<>();
 
     public Request(HttpRequestBuilder builder, EventLoopGroup group, URI uri, HttpMethod method, HttpVersion version,
                    Reader responseReader) {
@@ -196,14 +198,49 @@ public class Request<T extends Request<T>> {
                     if (f.isSuccess()) {
                         makeTheRequest();
                     } else {
-                        future.setFailure(f.cause());
+                        retryOrFail(f.cause(), true);
                     }
                 }
             });
         } catch (Throwable e) {
-            future.setFailure(e);
+            retryOrFail(e, false);
         }
         return future;
+    }
+
+    public void retry() {
+        execute();
+    }
+
+    protected void retryOrFail(Throwable cause, boolean connectFailure) {
+        if (policy == null) {
+            future.setFailure(cause);
+        } else {
+            policy.activate(future, cause, connectFailure, response);
+        }
+    }
+
+    /**
+     * Set the retry policy that will be used to retry a request if it fails.
+     * No retries are done by default.
+     */
+    public T policy(RetryPolicy policy) {
+        this.policy = policy;
+        return _this;
+    }
+
+    public Set<Integer> retryOn() {
+        return retryOptions;
+    }
+
+    /**
+     * Automatically retry the connection using the configured retry policy
+     */
+    public T retryOn(int... statusCodes) {
+        for (int code : statusCodes) {
+            retryOptions.add(code);
+        }
+        return _this;
     }
 
     protected String getScheme() {
@@ -293,7 +330,7 @@ public class Request<T extends Request<T>> {
         return new ClientIntializer(useSSL, newHandler(),
                 //if proxy request exists then initializer should add it instead of the normal handler
                 isProxyEnabled() && proxyRequest != null ?
-                        new ConnectHandler(tunneling, request, (SimpleChannelInboundHandler<Object>) newHandler(), factory) : null, sslProtocols);
+                        new ConnectHandler(tunneling, request, newHandler(), factory) : null, sslProtocols);
     }
 
     protected ChannelFuture connect(String host, int port, Bootstrap bootstrap) {
@@ -315,8 +352,8 @@ public class Request<T extends Request<T>> {
         return getScheme() + "://" + uri.getHost() + request.getUri();
     }
 
-    protected ChannelHandler newHandler() {
-        return new ClientHandler(response, future);
+    protected SimpleChannelInboundHandler<Object> newHandler() {
+        return new ClientHandler(response, future, policy);
     }
 
     public Channel getChannel() {

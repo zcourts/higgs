@@ -115,7 +115,6 @@ public class HTTPStreamingRequest extends Request<HTTPStreamingRequest> {
             return send(Unpooled.wrappedBuffer(MAPPER.writeValueAsBytes(content)));
         }
 
-
         public StreamSender send(final String content) {
             return send(Unpooled.wrappedBuffer(content.getBytes()));
         }

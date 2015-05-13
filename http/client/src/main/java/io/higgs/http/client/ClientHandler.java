@@ -14,10 +14,12 @@ public class ClientHandler extends SimpleChannelInboundHandler<Object> {
     private final Response response;
     private final FutureResponse future;
     private boolean redirecting;
+    protected RetryPolicy policy;
 
-    public ClientHandler(Response response, FutureResponse future) {
+    public ClientHandler(Response response, FutureResponse future, RetryPolicy policy) {
         this.future = future;
         this.response = response;
+        this.policy = policy;
     }
 
     @Override
@@ -49,6 +51,11 @@ public class ClientHandler extends SimpleChannelInboundHandler<Object> {
             if (HttpHeaders.isTransferEncodingChunked(res)) {
                 response.setChunked(true);
             }
+            //retry logic after setting headers etc
+            if (policy != null && response.request().retryOn().contains(res.getStatus().code())) {
+                policy.activate(future, null, false, response);
+                return;
+            }
         }
         if (!redirecting && msg instanceof HttpContent) {
             HttpContent chunk = (HttpContent) msg;
@@ -65,7 +72,11 @@ public class ClientHandler extends SimpleChannelInboundHandler<Object> {
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
-        future.setFailure(cause);
-        ctx.channel().close();
+        if (policy != null) {
+            policy.activate(future, cause, false, response);
+        } else {
+            future.setFailure(cause);
+            ctx.channel().close();
+        }
     }
 }
