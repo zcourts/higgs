@@ -12,7 +12,6 @@ import io.netty.channel.ChannelHandler;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.socket.nio.NioSocketChannel;
-import io.netty.handler.codec.http.ClientCookieEncoder;
 import io.netty.handler.codec.http.Cookie;
 import io.netty.handler.codec.http.DefaultCookie;
 import io.netty.handler.codec.http.DefaultFullHttpRequest;
@@ -22,6 +21,7 @@ import io.netty.handler.codec.http.HttpRequest;
 import io.netty.handler.codec.http.HttpVersion;
 import io.netty.handler.codec.http.QueryStringDecoder;
 import io.netty.handler.codec.http.QueryStringEncoder;
+import io.netty.handler.codec.http.cookie.ClientCookieEncoder;
 import io.netty.handler.codec.http.multipart.DiskFileUpload;
 import io.netty.util.concurrent.GenericFutureListener;
 
@@ -263,7 +263,10 @@ public class Request<T extends Request<T>> {
     }
 
     protected void configure() throws Exception {
-        headers().set(HttpHeaders.Names.COOKIE, ClientCookieEncoder.encode(cookies));
+        String cookiesStr = ClientCookieEncoder.LAX.encode(cookies);
+        if (cookiesStr != null) {
+            headers().set(HttpHeaders.Names.COOKIE, cookiesStr);
+        }
         QueryStringEncoder encoder = new QueryStringEncoder(uri.getRawPath());
         QueryStringDecoder decoder = new QueryStringDecoder(uri);
         //add url params first
