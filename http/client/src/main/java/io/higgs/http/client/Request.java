@@ -12,7 +12,6 @@ import io.netty.channel.ChannelHandler;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.socket.nio.NioSocketChannel;
-import io.netty.handler.codec.http.ClientCookieEncoder;
 import io.netty.handler.codec.http.Cookie;
 import io.netty.handler.codec.http.DefaultCookie;
 import io.netty.handler.codec.http.DefaultFullHttpRequest;
@@ -22,6 +21,7 @@ import io.netty.handler.codec.http.HttpRequest;
 import io.netty.handler.codec.http.HttpVersion;
 import io.netty.handler.codec.http.QueryStringDecoder;
 import io.netty.handler.codec.http.QueryStringEncoder;
+import io.netty.handler.codec.http.cookie.ClientCookieEncoder;
 import io.netty.handler.codec.http.multipart.DiskFileUpload;
 import io.netty.util.concurrent.GenericFutureListener;
 
@@ -66,6 +66,8 @@ public class Request<T extends Request<T>> {
     protected final ByteBuf contents = Unpooled.buffer();
     protected T _this = (T) this;
     protected Function1<Bootstrap> conf;
+    protected RetryPolicy policy;
+    private Set<Integer> retryOptions = new HashSet<>();
 
     public Request(HttpRequestBuilder builder, EventLoopGroup group, URI uri, HttpMethod method, HttpVersion version,
                    Reader responseReader) {
@@ -196,14 +198,49 @@ public class Request<T extends Request<T>> {
                     if (f.isSuccess()) {
                         makeTheRequest();
                     } else {
-                        future.setFailure(f.cause());
+                        retryOrFail(f.cause(), true);
                     }
                 }
             });
         } catch (Throwable e) {
-            future.setFailure(e);
+            retryOrFail(e, false);
         }
         return future;
+    }
+
+    public void retry() {
+        execute();
+    }
+
+    protected void retryOrFail(Throwable cause, boolean connectFailure) {
+        if (policy == null) {
+            future.setFailure(cause);
+        } else {
+            policy.activate(future, cause, connectFailure, response);
+        }
+    }
+
+    /**
+     * Set the retry policy that will be used to retry a request if it fails.
+     * No retries are done by default.
+     */
+    public T policy(RetryPolicy policy) {
+        this.policy = policy;
+        return _this;
+    }
+
+    public Set<Integer> retryOn() {
+        return retryOptions;
+    }
+
+    /**
+     * Automatically retry the connection using the configured retry policy
+     */
+    public T retryOn(int... statusCodes) {
+        for (int code : statusCodes) {
+            retryOptions.add(code);
+        }
+        return _this;
     }
 
     protected String getScheme() {
@@ -226,7 +263,10 @@ public class Request<T extends Request<T>> {
     }
 
     protected void configure() throws Exception {
-        headers().set(HttpHeaders.Names.COOKIE, ClientCookieEncoder.encode(cookies));
+        String cookiesStr = ClientCookieEncoder.LAX.encode(cookies);
+        if (cookiesStr != null) {
+            headers().set(HttpHeaders.Names.COOKIE, cookiesStr);
+        }
         QueryStringEncoder encoder = new QueryStringEncoder(uri.getRawPath());
         QueryStringDecoder decoder = new QueryStringDecoder(uri);
         //add url params first
@@ -290,10 +330,10 @@ public class Request<T extends Request<T>> {
                 return new ClientIntializer(ssl, handler, h, sslProtocols);
             }
         };
-        return new ClientIntializer(useSSL, newInboundHandler(),
+        return new ClientIntializer(useSSL, newHandler(),
                 //if proxy request exists then initializer should add it instead of the normal handler
                 isProxyEnabled() && proxyRequest != null ?
-                        new ConnectHandler(tunneling, request, newInboundHandler(), factory) : null, sslProtocols);
+                        new ConnectHandler(tunneling, request, newHandler(), factory) : null, sslProtocols);
     }
 
     protected ChannelFuture connect(String host, int port, Bootstrap bootstrap) {
@@ -315,8 +355,8 @@ public class Request<T extends Request<T>> {
         return getScheme() + "://" + uri.getHost() + request.getUri();
     }
 
-    protected SimpleChannelInboundHandler<Object> newInboundHandler() {
-        return new ClientHandler(response, future);
+    protected SimpleChannelInboundHandler<Object> newHandler() {
+        return new ClientHandler(response, future, policy);
     }
 
     public Channel getChannel() {

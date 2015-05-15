@@ -45,6 +45,7 @@ import io.higgs.http.client.FutureResponse;
 import io.higgs.http.client.HttpRequestBuilder;
 import io.higgs.http.client.Request;
 import io.higgs.http.client.readers.PageReader;
+import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
@@ -56,7 +57,6 @@ import io.netty.handler.codec.http.HttpVersion;
 import io.netty.handler.codec.http.websocketx.WebSocketClientHandshaker;
 import io.netty.handler.codec.http.websocketx.WebSocketClientHandshakerFactory;
 import io.netty.handler.codec.http.websocketx.WebSocketVersion;
-import io.netty.bootstrap.Bootstrap;
 import org.cliffc.high_scale_lib.NonBlockingHashSet;
 
 import java.net.URI;
@@ -105,7 +105,7 @@ public class WebSocketClient extends Request {
     }
 
     public static WebSocketStream connect(URI uri, boolean autoPong, String[] sslProtocols) {
-      return connect(uri, autoPong, sslProtocols, null);
+        return connect(uri, autoPong, sslProtocols, null);
     }
 
     /**
@@ -198,7 +198,7 @@ public class WebSocketClient extends Request {
         return null;
     }
 
-    protected SimpleChannelInboundHandler<Object> newInboundHandler() {
+    protected SimpleChannelInboundHandler<Object> newHandler() {
         return handler;
     }
 }

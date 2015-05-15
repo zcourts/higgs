@@ -1,10 +1,14 @@
 package io.higgs.examples.httpClient;
 
+import io.higgs.core.func.Function1;
 import io.higgs.core.func.Function2;
+import io.higgs.http.client.FutureResponse;
+import io.higgs.http.client.HTTPStreamingRequest;
 import io.higgs.http.client.HttpFile;
 import io.higgs.http.client.HttpRequestBuilder;
 import io.higgs.http.client.Request;
 import io.higgs.http.client.Response;
+import io.higgs.http.client.RetryPolicy;
 import io.higgs.http.client.readers.FileReader;
 import io.higgs.http.client.readers.LineReader;
 import io.higgs.http.client.readers.PageReader;
@@ -19,7 +23,6 @@ import java.io.File;
 import java.io.FileWriter;
 import java.net.URI;
 import java.nio.file.Files;
-import java.util.ArrayList;
 
 /**
  * @author Courtney Robinson <courtney@crlog.info>
@@ -40,26 +43,80 @@ public final class Demo {
     }
 
     public static void main(String[] args) throws Exception {
-        HttpRequestBuilder.instance().postJSON(new URI("http://httpbin.org/post"),
+        HTTPStreamingRequest str = HttpRequestBuilder.instance().streamJSON(
+                new URI("http://127.0.0.1:9012/9cd91707b3f34e249d7837cd77e3a465"),
                 new PageReader(new Function2<String, Response>() {
-                    @Override
                     public void apply(String s, Response response) {
                         System.out.println(s);
-                        HttpRequestBuilder.shutdown();
                     }
-                }))
-                .header(HttpHeaders.Names.AUTHORIZATION, "user:api-key")
-                .header(HttpHeaders.Names.CONTENT_TYPE, "application/json")
-                .addField("hash", "4cba32634b32ccd10528e4597913d5b2")
-                .addField("parameters", new ArrayList<>())
-                .addField("filter", "f")
-                .addField("start", (System.currentTimeMillis() / 1000) - 86400)
-                .addField("end", System.currentTimeMillis() / 1000)
-                        //if you don't want to build the JSON payload and have and object then use
-                        //setData and  addField cannot be combined, an exception will be thrown if you try to use both
-                        //.setData(object)
-                .execute();
+                }));
+        str.header("Auth", "zcourts:f7af87eb5fc66fd4f7352529c950bcfc")
+                .policy(new RetryPolicy() {
+                    int connectBackOff, connectMax = 10000, backOff = 1000, backOffMax = 10000,
+                            retries, maxRetries = 10;
 
+                    @Override
+                    public void activate(FutureResponse future, Throwable cause,
+                                         boolean connectFailure, Response response) {
+                        if (retries >= maxRetries) {
+                            response.markFailed(cause);
+                            future.setFailure(cause);
+                            return;
+                        }
+                        retries++;
+                        if (connectFailure) { //linear back off for connection failure
+                            try {
+                                response.request().retry();
+                                Thread.sleep(connectBackOff);
+                            } catch (InterruptedException ignored) {
+                                System.out.println("Retry wait interrupted");
+                            } finally {
+                                if (connectBackOff <= connectMax) {
+                                    connectBackOff += 1000;
+                                } else {
+                                    connectBackOff = 0;
+                                }
+                            }
+                        } else {
+                            response.request().retry();
+                            try {
+                                //exponential back off in all other cases
+                                Thread.sleep(backOff);
+                            } catch (InterruptedException ignored) {
+                                System.out.println("Retry wait interrupted");
+                            } finally {
+                                if (backOff <= backOffMax) {
+                                    backOff *= 2;
+                                } else {
+                                    backOff = 0;
+                                }
+                            }
+                        }
+                    }
+                });
+        //start the connection
+        str.execute();
+        str.onReady(new Function1<HTTPStreamingRequest.StreamSender>() {
+            @Override
+            public void apply(HTTPStreamingRequest.StreamSender sender) {
+                while (true) {
+                    try {
+                        sender.send("{}\n");
+                    } catch (Exception e) {
+                        System.out.println("Boom");
+                    }
+                    try {
+                        Thread.sleep(1000);
+                    } catch (InterruptedException ignored) {
+                        ignored.printStackTrace();
+                    }
+                }
+            }
+        });
+        boolean opt = true;
+        if (opt) {
+            return;
+        }
         Thread.setDefaultUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
             @Override
             public void uncaughtException(Thread t, Throwable e) {

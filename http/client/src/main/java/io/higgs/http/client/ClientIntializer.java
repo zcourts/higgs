@@ -17,9 +17,9 @@ package io.higgs.http.client;
 
 import io.higgs.core.ssl.SSLConfigFactory;
 import io.higgs.core.ssl.SSLContextFactory;
+import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
-import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.handler.codec.http.HttpClientCodec;
 import io.netty.handler.codec.http.HttpContentDecompressor;
@@ -31,10 +31,10 @@ import javax.net.ssl.SSLEngine;
 public class ClientIntializer extends ChannelInitializer<SocketChannel> {
     protected final boolean ssl;
     protected final ConnectHandler connectHandler;
-    protected final SimpleChannelInboundHandler<Object> handler;
+    protected final ChannelHandler handler;
     protected final String[] sslProtocols;
 
-    public ClientIntializer(boolean ssl, SimpleChannelInboundHandler<Object> handler, ConnectHandler connectHandler,
+    public ClientIntializer(boolean ssl, ChannelHandler handler, ConnectHandler connectHandler,
                             String[] sslProtocols) {
         this.ssl = ssl;
         this.handler = handler;
