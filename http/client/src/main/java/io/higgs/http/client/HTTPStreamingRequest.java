@@ -17,8 +17,10 @@ import io.netty.handler.codec.http.HttpChunkedInput;
 import io.netty.handler.codec.http.HttpHeaders;
 import io.netty.handler.codec.http.HttpMethod;
 import io.netty.handler.codec.http.HttpVersion;
+import io.netty.handler.ssl.SslHandler;
 import io.netty.handler.stream.ChunkedInput;
 import io.netty.handler.stream.ChunkedWriteHandler;
+import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.GenericFutureListener;
 
 import java.net.URI;
@@ -47,6 +49,7 @@ public class HTTPStreamingRequest extends Request<HTTPStreamingRequest> {
             request.headers().remove(HttpHeaders.Names.CONTENT_LENGTH);
         }
         request.headers().set(HttpHeaders.Names.TRANSFER_ENCODING, HttpHeaders.Values.CHUNKED);
+        request.headers().set(HttpHeaders.Names.EXPECT, HttpHeaders.Values.CONTINUE);
         return super.execute(conf);
     }
 
@@ -57,19 +60,42 @@ public class HTTPStreamingRequest extends Request<HTTPStreamingRequest> {
         connectFuture.addListener(new GenericFutureListener<ChannelFuture>() {
             public void operationComplete(ChannelFuture future) throws Exception {
                 if (future.isSuccess()) {
-                    StreamSender sender = new StreamSender(channel);
-                    for (String name : channel.pipeline().names()) {
-                        ChannelHandler handler = channel.pipeline().get(name);
-                        if (handler instanceof ChunkedWriteHandler) {
-                            sender.setWriteHandler((ChunkedWriteHandler) handler);
-                            break;
-                        }
+                    SslHandler sslHandler = channel.pipeline().get("ssl") instanceof SslHandler ?
+                            (SslHandler) channel.pipeline().get("ssl") : null;
+                    if (sslHandler == null && useSSL) {
+                        throw new IllegalStateException("SSL request but 'ssl' handler in the " +
+                                "pipeline is not an SslHandler instance");
                     }
-                    if (!sender.hasChunkedHandler()) {
-                        throw new IllegalStateException("A chunked write handler must be in the pipeline");
+                    if (sslHandler != null) {
+                        sslHandler.handshakeFuture().addListener(new GenericFutureListener<Future<? super Channel>>() {
+                            @Override
+                            public void operationComplete(Future<? super Channel> future) throws Exception {
+                                if (future.isSuccess()) {
+                                    connected();
+                                } else {
+                                    response.markFailed(future.cause());
+                                }
+                            }
+                        });
+                    } else {
+                        connected();
                     }
-                    listener.apply(sender);
                 }
+            }
+
+            private void connected() {
+                StreamSender sender = new StreamSender(channel);
+                for (String name : channel.pipeline().names()) {
+                    ChannelHandler handler = channel.pipeline().get(name);
+                    if (handler instanceof ChunkedWriteHandler) {
+                        sender.setWriteHandler((ChunkedWriteHandler) handler);
+                        break;
+                    }
+                }
+                if (!sender.hasChunkedHandler()) {
+                    throw new IllegalStateException("A chunked write handler must be in the pipeline");
+                }
+                listener.apply(sender);
             }
         });
     }
@@ -111,24 +137,24 @@ public class HTTPStreamingRequest extends Request<HTTPStreamingRequest> {
             this.channel = channel;
         }
 
-        public StreamSender send(Object content) throws JsonProcessingException {
+        public ChannelFuture send(Object content) throws JsonProcessingException {
             return send(Unpooled.wrappedBuffer(MAPPER.writeValueAsBytes(content)));
         }
 
-        public StreamSender send(final String content) {
+        public ChannelFuture send(final String content) {
             return send(Unpooled.wrappedBuffer(content.getBytes()));
         }
 
-        public synchronized StreamSender send(final ByteBuf content) {
+        public synchronized ChannelFuture send(final ByteBuf content) {
             if (chunkedHandler == null) {
                 throw new IllegalStateException("ChunkedWriteHandler must be present in the pipeline");
             }
             queue.add(content);
-            channel.pipeline().writeAndFlush(new HttpChunkedInput(input));
+            ChannelFuture writeFuture = channel.writeAndFlush(new HttpChunkedInput(input));
             if (needToResume) {
                 chunkedHandler.resumeTransfer();
             }
-            return this;
+            return writeFuture;
         }
 
         public void setWriteHandler(ChunkedWriteHandler writeHandler) {
