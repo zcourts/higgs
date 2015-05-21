@@ -111,7 +111,7 @@ public class HTTPStreamingRequest extends Request<HTTPStreamingRequest> {
 
             @Override
             public boolean isEndOfInput() throws Exception {
-                return stopped;
+                return true;
             }
 
             @Override
