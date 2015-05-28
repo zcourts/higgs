@@ -11,6 +11,7 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelOption;
 import io.netty.channel.EventLoopGroup;
 import io.netty.handler.codec.http.DefaultHttpRequest;
 import io.netty.handler.codec.http.HttpChunkedInput;
@@ -50,7 +51,10 @@ public class HTTPStreamingRequest extends Request<HTTPStreamingRequest> {
         }
         request.headers().set(HttpHeaders.Names.TRANSFER_ENCODING, HttpHeaders.Values.CHUNKED);
         request.headers().set(HttpHeaders.Names.EXPECT, HttpHeaders.Values.CONTINUE);
-        return super.execute(conf);
+        FutureResponse res = super.execute(conf);
+        channel.config().setOption(ChannelOption.ALLOW_HALF_CLOSURE, false);
+        channel.config().setOption(ChannelOption.AUTO_CLOSE, true);
+        return res;
     }
 
     public void onReady(final Function1<StreamSender> listener) {
@@ -111,7 +115,7 @@ public class HTTPStreamingRequest extends Request<HTTPStreamingRequest> {
 
             @Override
             public boolean isEndOfInput() throws Exception {
-                return true;
+                return false;
             }
 
             @Override
