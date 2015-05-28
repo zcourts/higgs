@@ -111,17 +111,7 @@ public final class Demo {
             public void apply(HTTPStreamingRequest.StreamSender sender) {
                 while (str.getChannel().isWritable()) {
                     try {
-                        sender.send("{\"id_str\":\"164768123994640385\",\"place\":null,\"text\":\"@penpen_mne \\u304b\\u308c\\u3053\\u308c10\\u56de\\u76ee\\u3067\\u3059\",\"created_at\":\"Wed Feb 01 17:52:36 +0000 2012\",\"in_reply_to_user_id_str\":\"252032529\",\"coordinates\":null,\"contributors\":null,\"geo\":null,\"source\":\"\\u003Ca href=\\\"http:\\/\\/www.echofon.com\\/\\\" rel=\\\"nofollow\\\"\\u003EEchofon\\u003C\\/a\\u003E\",\"retweet_count\":0,\"favorited\":false,\"in_reply_to_screen_name\":\"penpen_mne\",\"in_reply_to_user_id\":252032529,\"in_reply_to_status_id\":164755622917713920,\"user\":{\"id_str\":\"446266509\",\"default_profile\":true,\"created_at\":\"Sun Dec 25 14:08:50 +0000 2011\",\"contributors_enabled\":false,\"profile_use_background_image\":true,\"following\":null,\"profile_text_color\":\"333333\",\"profile_background_image_url\":\"http:\\/\\/a0.twimg.com\\/images\\/themes\\/theme1\\/bg.png\",\"followers_count\":110,\"url\":null,\"profile_image_url\":\"http:\\/\\/a2.twimg.com\\/profile_images\\/1758888780\\/PILE_RiS_normal.jpg\",\"description\":\"My name is...P!!!\\nfrom SENDAI\\nRING in SOUND\\nCAUTION TAPE\\nCLUB SHAFT\",\"default_profile_image\":false,\"show_all_inline_media\":false,\"profile_link_color\":\"0084B4\",\"favourites_count\":0,\"screen_name\":\"PILE_RiS\",\"time_zone\":null,\"profile_background_color\":\"C0DEED\",\"location\":\"\",\"geo_enabled\":false,\"profile_background_tile\":false,\"protected\":false,\"statuses_count\":65,\"verified\":false,\"profile_background_image_url_https\":\"https:\\/\\/si0.twimg.com\\/images\\/themes\\/theme1\\/bg.png\",\"profile_sidebar_fill_color\":\"DDEEF6\",\"name\":\"PILE of the DEAD\",\"listed_count\":0,\"notifications\":null,\"profile_image_url_https\":\"https:\\/\\/si0.twimg.com\\/profile_images\\/1758888780\\/PILE_RiS_normal.jpg\",\"id\":446266509,\"is_translator\":false,\"follow_request_sent\":null,\"lang\":\"ja\",\"utc_offset\":null,\"friends_count\":131,\"profile_sidebar_border_color\":\"C0DEED\"},\"retweeted\":false,\"truncated\":false,\"id\":164768123994640385,\"in_reply_to_status_id_str\":\"164755622917713920\",\"entities\":{\"hashtags\":[],\"user_mentions\":[{\"id_str\":\"252032529\",\"indices\":[0,11],\"screen_name\":\"penpen_mne\",\"name\":\"\\u307a\\u3093\\u307a\\u3093\",\"id\":252032529}],\"urls\":[]}}\n");
-//                        System.out.println("Complete : " + future.isSuccess());
-//                        System.out.println("Progressed : " + future.isSuccess() + " : current = " + progress + " : total = " + total);
-
-//                        sender.send("\n").addListener(new GenericFutureListener<ChannelFuture>() {
-//                            @Override
-//                            public void operationComplete(ChannelFuture future) throws Exception {
-////                                System.out.println("Progressed : " + future.isSuccess() + " : current = " + progress + " : total = " + total);
-//                                System.out.println("Complete : " + future.isSuccess());
-//                            }
-//                        });
+                        sender.send("\n");
                         System.out.println("Sent a new interaction");
                     } catch (Exception e) {
                         System.out.println("Boom");
