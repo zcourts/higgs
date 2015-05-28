@@ -11,7 +11,7 @@
         <groupId>io.higgs</groupId>
         <artifactId>http-server</artifactId>
         <relativePath>../pom.xml</relativePath>
-        <version>0.0.15-SNAPSHOT</version>
+        <version>0.0.15</version>
     </parent>
     <dependencies>
         <dependency>
