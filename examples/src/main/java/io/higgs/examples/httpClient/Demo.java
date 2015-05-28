@@ -118,7 +118,7 @@ public final class Demo {
                         e.printStackTrace();
                     }
                     try {
-                        Thread.sleep((args.length >= 1 ? Integer.parseInt(args[1]) : 1000));
+                        Thread.sleep(args.length >= 1 ? Integer.parseInt(args[1]) : 1000);
                     } catch (InterruptedException ignored) {
                         ignored.printStackTrace();
                     }
