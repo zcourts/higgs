@@ -130,7 +130,7 @@
         <dependency>
             <groupId>com.boundary</groupId>
             <artifactId>high-scale-lib</artifactId>
-            <version>1.0.3</version>
+            <version>1.0.6</version>
         </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.datatype</groupId>
@@ -228,14 +228,6 @@
         </plugins>
     </build>
     <repositories>
-        <repository>
-            <snapshots>
-                <enabled>false</enabled>
-            </snapshots>
-            <id>central</id>
-            <name>bintray</name>
-            <url>http://jcenter.bintray.com</url>
-        </repository>
         <repository>
             <id>Codehaus Snapshots</id>
             <url>http://nexus.codehaus.org/snapshots/</url>
