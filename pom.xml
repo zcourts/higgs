@@ -7,7 +7,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>io.higgs</groupId>
     <artifactId>higgs</artifactId>
-    <version>0.0.16-SNAPSHOT</version>
+    <version>0.0.16</version>
     <name>${project.artifactId}</name>
     <description>Message oritented networking library</description>
     <inceptionYear>2012</inceptionYear>
@@ -148,6 +148,14 @@
 
     <build>
         <plugins>
+            <!-- Java 8 is now strict when parsing JavaDocs, a lot of things will fail, TODO - fix Javadocs-->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <configuration>
+                    <failOnError>false</failOnError>
+                </configuration>
+            </plugin>
             <!--attach sources before install, i.e. during verify stage-->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
