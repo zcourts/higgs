@@ -229,8 +229,12 @@
     </build>
     <repositories>
         <repository>
-            <id>boundary-site</id>
-            <url>http://maven.boundary.com/artifactory/repo</url>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+            <id>central</id>
+            <name>bintray</name>
+            <url>http://jcenter.bintray.com</url>
         </repository>
         <repository>
             <id>Codehaus Snapshots</id>
