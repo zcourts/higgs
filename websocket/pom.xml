@@ -9,7 +9,7 @@
         <groupId>io.higgs</groupId>
         <artifactId>higgs</artifactId>
         <relativePath>../pom.xml</relativePath>
-        <version>0.0.17</version>
+        <version>0.0.18-SNAPSHOT</version>
     </parent>
     <modules>
         <module>server</module>
