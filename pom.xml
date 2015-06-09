@@ -148,14 +148,6 @@
 
     <build>
         <plugins>
-            <!-- Java 8 is now strict when parsing JavaDocs, a lot of things will fail, TODO - fix Javadocs-->
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-javadoc-plugin</artifactId>
-                <configuration>
-                    <failOnError>false</failOnError>
-                </configuration>
-            </plugin>
             <!--attach sources before install, i.e. during verify stage-->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
