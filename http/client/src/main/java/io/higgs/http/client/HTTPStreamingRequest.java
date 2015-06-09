@@ -9,24 +9,19 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.EventLoopGroup;
+import io.netty.handler.codec.MessageToByteEncoder;
 import io.netty.handler.codec.http.DefaultHttpRequest;
-import io.netty.handler.codec.http.HttpChunkedInput;
 import io.netty.handler.codec.http.HttpHeaders;
 import io.netty.handler.codec.http.HttpMethod;
 import io.netty.handler.codec.http.HttpVersion;
 import io.netty.handler.ssl.SslHandler;
-import io.netty.handler.stream.ChunkedInput;
-import io.netty.handler.stream.ChunkedWriteHandler;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.GenericFutureListener;
 
 import java.net.URI;
-import java.util.LinkedList;
-import java.util.Queue;
 
 /**
  * @author Courtney Robinson <courtney@crlog.info>
@@ -53,7 +48,6 @@ public class HTTPStreamingRequest extends Request<HTTPStreamingRequest> {
         request.headers().set(HttpHeaders.Names.EXPECT, HttpHeaders.Values.CONTINUE);
         FutureResponse res = super.execute(conf);
         channel.config().setOption(ChannelOption.ALLOW_HALF_CLOSURE, false);
-        channel.config().setOption(ChannelOption.AUTO_CLOSE, true);
         return res;
     }
 
@@ -89,16 +83,12 @@ public class HTTPStreamingRequest extends Request<HTTPStreamingRequest> {
 
             private void connected() {
                 StreamSender sender = new StreamSender(channel);
-                for (String name : channel.pipeline().names()) {
-                    ChannelHandler handler = channel.pipeline().get(name);
-                    if (handler instanceof ChunkedWriteHandler) {
-                        sender.setWriteHandler((ChunkedWriteHandler) handler);
-                        break;
+                channel.pipeline().addFirst("raw-content-encoder", new MessageToByteEncoder<ByteBuf>() {
+                    @Override
+                    protected void encode(ChannelHandlerContext ctx, ByteBuf msg, ByteBuf out) throws Exception {
+                        out.writeBytes(msg);
                     }
-                }
-                if (!sender.hasChunkedHandler()) {
-                    throw new IllegalStateException("A chunked write handler must be in the pipeline");
-                }
+                });
                 listener.apply(sender);
             }
         });
@@ -107,32 +97,6 @@ public class HTTPStreamingRequest extends Request<HTTPStreamingRequest> {
     public static class StreamSender {
         protected final ObjectMapper MAPPER = new ObjectMapper();
         private final Channel channel;
-        protected boolean stopped;
-        protected ChunkedWriteHandler chunkedHandler;
-        protected Queue<ByteBuf> queue = new LinkedList<>();
-        protected boolean needToResume;
-        protected ChunkedInput<ByteBuf> input = new ChunkedInput<ByteBuf>() {
-
-            @Override
-            public boolean isEndOfInput() throws Exception {
-                return false;
-            }
-
-            @Override
-            public void close() throws Exception {
-            }
-
-            @Override
-            public ByteBuf readChunk(ChannelHandlerContext ctx) throws Exception {
-                if (stopped || queue.size() == 0) {
-                    needToResume = true;
-                    return null;
-                } else {
-                    needToResume = false;
-                    return queue.poll();
-                }
-            }
-        };
 
         public StreamSender(Channel channel) {
             if (channel == null) {
@@ -150,23 +114,7 @@ public class HTTPStreamingRequest extends Request<HTTPStreamingRequest> {
         }
 
         public synchronized ChannelFuture send(final ByteBuf content) {
-            if (chunkedHandler == null) {
-                throw new IllegalStateException("ChunkedWriteHandler must be present in the pipeline");
-            }
-            queue.add(content);
-            ChannelFuture writeFuture = channel.writeAndFlush(new HttpChunkedInput(input));
-            if (needToResume) {
-                chunkedHandler.resumeTransfer();
-            }
-            return writeFuture;
-        }
-
-        public void setWriteHandler(ChunkedWriteHandler writeHandler) {
-            this.chunkedHandler = writeHandler;
-        }
-
-        public boolean hasChunkedHandler() {
-            return chunkedHandler != null;
+            return channel.writeAndFlush(content);
         }
     }
 }
