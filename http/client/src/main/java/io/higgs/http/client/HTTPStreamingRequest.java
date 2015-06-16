@@ -9,6 +9,7 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.EventLoopGroup;
@@ -22,11 +23,17 @@ import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.GenericFutureListener;
 
 import java.net.URI;
+import java.util.List;
+
+import static io.netty.handler.codec.http.HttpConstants.CR;
+import static io.netty.handler.codec.http.HttpConstants.LF;
 
 /**
  * @author Courtney Robinson <courtney@crlog.info>
  */
 public class HTTPStreamingRequest extends Request<HTTPStreamingRequest> {
+    private static final byte[] CRLF = {CR, LF};
+
     public HTTPStreamingRequest(HttpRequestBuilder builder, EventLoopGroup group, URI uri, Reader f) {
         super(builder, group, uri, HttpMethod.POST, HttpVersion.HTTP_1_1, f);
     }
@@ -43,6 +50,9 @@ public class HTTPStreamingRequest extends Request<HTTPStreamingRequest> {
         }
         if (!request.headers().contains(HttpHeaders.Names.CONTENT_LENGTH)) {
             request.headers().remove(HttpHeaders.Names.CONTENT_LENGTH);
+        }
+        if (!request.headers().contains(HttpHeaders.Names.CONNECTION)) {
+            request.headers().remove(HttpHeaders.Names.CONNECTION);
         }
         request.headers().set(HttpHeaders.Names.TRANSFER_ENCODING, HttpHeaders.Values.CHUNKED);
         request.headers().set(HttpHeaders.Names.EXPECT, HttpHeaders.Values.CONTINUE);
@@ -83,10 +93,22 @@ public class HTTPStreamingRequest extends Request<HTTPStreamingRequest> {
 
             private void connected() {
                 StreamSender sender = new StreamSender(channel);
-                channel.pipeline().addFirst("raw-content-encoder", new MessageToByteEncoder<ByteBuf>() {
+                List<String> names = channel.pipeline().names();
+                for (String name : names) {
+                    ChannelHandler handler = channel.pipeline().get(name);
+                    if (!(handler instanceof SslHandler) && handler != null) {
+                        channel.pipeline().remove(name);
+                    }
+                }
+                //add last, after SSL handler, if present
+                channel.pipeline().addLast("raw-content-encoder", new MessageToByteEncoder<ByteBuf>() {
                     @Override
                     protected void encode(ChannelHandlerContext ctx, ByteBuf msg, ByteBuf out) throws Exception {
+                        //since we removed all other handlers, we have to write the HTTP chunk size ourselves
+                        out.writeBytes(Integer.toHexString(msg.readableBytes()).getBytes());
+                        out.writeBytes(CRLF);
                         out.writeBytes(msg);
+                        out.writeBytes(CRLF);
                     }
                 });
                 listener.apply(sender);
@@ -106,7 +128,7 @@ public class HTTPStreamingRequest extends Request<HTTPStreamingRequest> {
         }
 
         public ChannelFuture send(Object content) throws JsonProcessingException {
-            return send(Unpooled.wrappedBuffer(MAPPER.writeValueAsBytes(content)));
+            return send(channel.alloc().ioBuffer().writeBytes(MAPPER.writeValueAsBytes(content)));
         }
 
         public ChannelFuture send(final String content) {
