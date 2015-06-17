@@ -12,6 +12,7 @@ import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelOption;
+import io.netty.channel.DefaultChannelPromise;
 import io.netty.channel.EventLoopGroup;
 import io.netty.handler.codec.MessageToByteEncoder;
 import io.netty.handler.codec.http.DefaultHttpRequest;
@@ -101,19 +102,30 @@ public class HTTPStreamingRequest extends Request<HTTPStreamingRequest> {
                     }
                 }
                 //add last, after SSL handler, if present
-                channel.pipeline().addLast("raw-content-encoder", new MessageToByteEncoder<ByteBuf>() {
+                channel.pipeline().addLast("raw-content-encoder", new MessageToByteEncoder<Chunk>() {
                     @Override
-                    protected void encode(ChannelHandlerContext ctx, ByteBuf msg, ByteBuf out) throws Exception {
+                    protected void encode(ChannelHandlerContext ctx, Chunk msg, ByteBuf out) throws Exception {
                         //since we removed all other handlers, we have to write the HTTP chunk size ourselves
-                        out.writeBytes(Integer.toHexString(msg.readableBytes()).getBytes());
+                        out.writeBytes(Integer.toHexString(msg.data.readableBytes()).getBytes());
                         out.writeBytes(CRLF);
-                        out.writeBytes(msg);
+                        out.writeBytes(msg.data);
                         out.writeBytes(CRLF);
+                        msg.future.setSuccess();
                     }
                 });
                 listener.apply(sender);
             }
         });
+    }
+
+    public static class Chunk {
+        public final DefaultChannelPromise future;
+        public final ByteBuf data;
+
+        public Chunk(DefaultChannelPromise future, ByteBuf data) {
+            this.future = future;
+            this.data = data;
+        }
     }
 
     public static class StreamSender {
@@ -136,7 +148,13 @@ public class HTTPStreamingRequest extends Request<HTTPStreamingRequest> {
         }
 
         public synchronized ChannelFuture send(final ByteBuf content) {
-            return channel.writeAndFlush(content);
+            DefaultChannelPromise promise = new DefaultChannelPromise(channel);
+            try {
+                channel.writeAndFlush(new Chunk(promise, content));
+            } catch (Exception e) {
+                promise.setFailure(e);
+            }
+            return promise;
         }
     }
 }
