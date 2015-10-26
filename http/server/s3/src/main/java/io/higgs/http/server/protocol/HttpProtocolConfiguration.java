@@ -30,6 +30,7 @@ public class HttpProtocolConfiguration implements ProtocolConfiguration {
     protected ParamInjector injector = new DefaultParamInjector();
     protected Transcriber transcriber = new Transcriber();
     protected Logger log = LoggerFactory.getLogger(getClass());
+    protected boolean enableSessions = true;
 
     public Transcriber getTranscriber() {
         return transcriber;
@@ -40,6 +41,14 @@ public class HttpProtocolConfiguration implements ProtocolConfiguration {
             throw new IllegalArgumentException("Null transcriber");
         }
         this.transcriber = transcriber;
+    }
+
+    public boolean isEnableSessions() {
+        return enableSessions;
+    }
+
+    public void enableSessions(boolean enableSessions) {
+        this.enableSessions = enableSessions;
     }
 
     public HiggsServer getServer() {

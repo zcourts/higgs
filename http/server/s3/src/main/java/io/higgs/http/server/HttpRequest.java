@@ -60,7 +60,6 @@ public class HttpRequest extends DefaultHttpRequest {
     protected boolean newSession;
     protected String sessionId;
     protected MediaType matchedMediaType = MediaType.WILDCARD_TYPE;
-    protected HttpProtocolConfiguration config;
     protected boolean multipart;
     protected boolean chunked;
     protected ByteBuf content = Unpooled.buffer(0);
@@ -68,9 +67,10 @@ public class HttpRequest extends DefaultHttpRequest {
     protected List<MediaType> contentType;
     protected Session session;
     protected Subject subject;
+    protected final HttpProtocolConfiguration config;
 
-    public HttpRequest(FullHttpRequest msg) {
-        this(msg.getProtocolVersion(), msg.getMethod(), msg.getUri());
+    public HttpRequest(FullHttpRequest msg, HttpProtocolConfiguration config) {
+        this(msg.getProtocolVersion(), msg.getMethod(), msg.getUri(), config);
         headers().add(msg.headers());
         content = Unpooled.copiedBuffer(msg.content());
         setDecoderResult(msg.getDecoderResult());
@@ -83,8 +83,9 @@ public class HttpRequest extends DefaultHttpRequest {
      * @param method      the HTTP method of the request
      * @param uri         the URI or path of the request
      */
-    public HttpRequest(HttpVersion httpVersion, HttpMethod method, String uri) {
+    public HttpRequest(HttpVersion httpVersion, HttpMethod method, String uri, HttpProtocolConfiguration config) {
         super(httpVersion, method, uri);
+        this.config = config;
     }
 
     /**
@@ -107,7 +108,9 @@ public class HttpRequest extends DefaultHttpRequest {
         }
         QueryStringDecoder decoderQuery = new QueryStringDecoder(getUri());
         queryParams.putAll(decoderQuery.parameters());
-        initSession(ctx);
+        if (config.isEnableSessions()) {
+            initSession(ctx);
+        }
     }
 
     public void initSession(ChannelHandlerContext ctx) {
@@ -317,14 +320,6 @@ public class HttpRequest extends DefaultHttpRequest {
 
     public void setMatchedMediaType(MediaType matchedMediaType) {
         this.matchedMediaType = matchedMediaType;
-    }
-
-    public HttpProtocolConfiguration getConfig() {
-        return config;
-    }
-
-    public void setConfig(HttpProtocolConfiguration config) {
-        this.config = config;
     }
 
     public boolean isMultipart() {

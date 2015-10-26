@@ -83,13 +83,11 @@ public class HttpHandler extends MessageHandler<HttpConfig, Object> {
             if (msg instanceof HttpRequest) {
                 request = (HttpRequest) msg;
             } else {
-                request = new HttpRequest((FullHttpRequest) msg);
+                request = new HttpRequest((FullHttpRequest) msg, protocolConfig);
             }
             res = new HttpResponse(Unpooled.buffer());
             //apply transcriptions
             protocolConfig.getTranscriber().transcribe(request);
-            //must always set protocol config before anything uses the request
-            request.setConfig(protocolConfig);
             //initialize request, setting cookies, media types etc
             request.init(ctx);
             method = findMethod(request.getUri(), ctx, request, methodClass);

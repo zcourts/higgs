@@ -15,20 +15,28 @@
  */
 package io.higgs.http.server;
 
+import io.higgs.http.server.protocol.HttpProtocolConfiguration;
 import io.netty.handler.codec.http.HttpMessage;
 import io.netty.handler.codec.http.HttpMethod;
 import io.netty.handler.codec.http.HttpVersion;
 
 public class HttpRequestDecoder extends io.netty.handler.codec.http.HttpRequestDecoder {
+    protected final HttpProtocolConfiguration config;
+
+    public HttpRequestDecoder(HttpProtocolConfiguration config) {
+        this.config = config;
+    }
 
     @Override
     protected HttpMessage createMessage(String[] initialLine) throws Exception {
-        return new HttpRequest(
-                HttpVersion.valueOf(initialLine[2]), HttpMethod.valueOf(initialLine[0]), initialLine[1]);
+        return new HttpRequest(HttpVersion.valueOf(initialLine[2])
+                , HttpMethod.valueOf(initialLine[0])
+                , initialLine[1]
+                , config);
     }
 
     @Override
     protected HttpMessage createInvalidMessage() {
-        return new HttpRequest(HttpVersion.HTTP_1_0, HttpMethod.GET, "/bad-request");
+        return new HttpRequest(HttpVersion.HTTP_1_0, HttpMethod.GET, "/bad-request", config);
     }
 }

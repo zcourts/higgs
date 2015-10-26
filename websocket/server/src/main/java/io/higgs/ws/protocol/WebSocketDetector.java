@@ -33,7 +33,7 @@ public class WebSocketDetector extends HttpDetector {
     public WebSocketHandler setupPipeline(ChannelPipeline p, ChannelHandlerContext ctx) {
         //WebSocketHandler is stateful so must do an instance per request/channel
         WebSocketHandler h = new WebSocketHandler(config);
-        p.addLast("ws-decoder", new HttpRequestDecoder());
+        p.addLast("ws-decoder", new HttpRequestDecoder(config));
         p.addLast("ws-aggregator", new HttpObjectAggregator(65536));
         p.addLast("ws-encoder", new HttpResponseEncoder());
         p.addLast("ws-chunkedWriter", new ChunkedWriteHandler());

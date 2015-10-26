@@ -38,7 +38,7 @@ public class HttpDetector implements ProtocolDetector {
     public HttpHandler setupPipeline(ChannelPipeline p, ChannelHandlerContext ctx) {
         //HttpHandler is stateful so must do an instance per request/channel
         HttpHandler h = new HttpHandler(config);
-        p.addLast("decoder", new HttpRequestDecoder());
+        p.addLast("decoder", new HttpRequestDecoder(config));
         p.addLast("encoder", new HttpResponseEncoder());
         p.addLast("chunkedWriter", new ChunkedWriteHandler());
         //ByteBufToHttpContent must come before compressor and after chunked writer to support
