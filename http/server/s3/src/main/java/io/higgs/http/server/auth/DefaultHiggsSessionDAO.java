@@ -7,14 +7,14 @@ import org.apache.shiro.session.mgt.eis.SessionDAO;
 
 import java.io.Serializable;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * @author Courtney Robinson <courtney@crlog.info>
  */
 public class DefaultHiggsSessionDAO extends MemorySessionDAO implements SessionDAO {
-    protected Map<Serializable, Session> sessions = new HashMap<>();
+    protected Map<Serializable, Session> sessions = new ConcurrentHashMap<>();
 
     public DefaultHiggsSessionDAO(String sessionDirName) {
     }
