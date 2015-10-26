@@ -27,6 +27,7 @@ import io.netty.handler.codec.http.HttpHeaders;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.handler.codec.http.HttpVersion;
 import io.netty.handler.codec.http.LastHttpContent;
+import org.apache.shiro.subject.Subject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -188,10 +189,13 @@ public class HttpHandler extends MessageHandler<HttpConfig, Object> {
         //take all objects in the global provider
         provider.take(DependencyProvider.global());
 
+        Subject subject = request.getSubject();
+        if (subject != null) {
+            provider.add(subject, subject.getSession());
+        }
         provider.add(ctx, ctx.channel(), ctx.executor(), request, res,
-                request.getFormFiles(), request.getFormParam(), request.getCookies(), request.getSubject(),
-                request.getSubject().getSession(), protocolConfig.getSecurityManager(), request.getQueryParams(),
-                pusher, request.getPath());
+                request.getFormFiles(), request.getFormParam(), request.getCookies(),
+                protocolConfig.getSecurityManager(), request.getQueryParams(), pusher, request.getPath());
 
         Object[] params = Injector.inject(method.method().getParameterTypes(), new Object[0], provider);
         //inject request specific provider

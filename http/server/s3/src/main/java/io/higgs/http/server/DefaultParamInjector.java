@@ -117,7 +117,7 @@ public class DefaultParamInjector implements ParamInjector {
         } else if (QueryParams.class.isAssignableFrom(param.getParameterType())) {
             return request.getQueryParams();
         } else if (Session.class.isAssignableFrom(param.getParameterType())) {
-            return request.getSubject().getSession();
+            return request.getSubject() == null ? null : request.getSubject().getSession();
         } else if (Subject.class.isAssignableFrom(param.getParameterType())) {
             return request.getSubject();
         } else if (ResourcePath.class.isAssignableFrom(param.getParameterType())) {
