@@ -61,6 +61,7 @@ public class ClientHandler extends SimpleChannelInboundHandler<Object> {
             HttpContent chunk = (HttpContent) msg;
             response.write(chunk.content());
             if (chunk instanceof LastHttpContent) {
+                ctx.channel().close(); //received everything so close the connection
                 response.setCompleted(true);
                 //make sure it's not already marked as finished
                 if (!future.isDone()) {
