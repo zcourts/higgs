@@ -1,7 +1,7 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <artifactId>boson</artifactId>
-    <version>0.0.21</version>
+    <version>0.0.22-SNAPSHOT</version>
     <name>${project.artifactId}</name>
     <packaging>jar</packaging>
     <description>Higgs' Boson protocol implementation</description>
@@ -9,14 +9,14 @@
     <parent>
         <groupId>io.higgs</groupId>
         <artifactId>higgs</artifactId>
-        <version>0.0.21</version>
+        <version>0.0.22-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
     <dependencies>
         <dependency>
             <groupId>io.higgs</groupId>
             <artifactId>core</artifactId>
-            <version>0.0.21</version>
+            <version>0.0.22-SNAPSHOT</version>
         </dependency>
     </dependencies>
 
