@@ -14,13 +14,15 @@ import java.net.URI;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class HttpRequestBuilder {
 
     private static final HttpRequestBuilder instance = new HttpRequestBuilder();
     protected static String proxyHost, proxyUsername, proxyPassword;
     protected static int proxyPort = 80;
-    private static EventLoopGroup group = new NioEventLoopGroup();
+    private static EventLoopGroup group;
     protected String userAgent = "Mozilla/5.0 (compatible; HiggsBoson/0.0.1; +https://github.com/zcourts/higgs)";
     protected String charSet = "ISO-8859-1,utf-8;q=0.7,*;q=0.7";
     protected String acceptedLanguages = "en";
@@ -28,6 +30,8 @@ public class HttpRequestBuilder {
     protected Set<Integer> redirectStatusCodes = new HashSet<>();
     protected String acceptedEncodings = HttpHeaders.Values.GZIP + ',' + HttpHeaders.Values.DEFLATE;
     protected String connectionHeader = HttpHeaders.Values.CLOSE;
+    protected static final String thPrefix = "higgs-http-client-";
+    protected static AtomicInteger thNum = new AtomicInteger();
 
     public HttpRequestBuilder(HttpRequestBuilder that) {
         this();
@@ -58,10 +62,21 @@ public class HttpRequestBuilder {
 
     public static void restart() {
         shutdown();
-        group = new NioEventLoopGroup();
+        // new DefaultThreadFactory(MultithreadEventExecutorGroup.class, true)
+        group = new NioEventLoopGroup(Runtime.getRuntime().availableProcessors() * 2, new ThreadFactory() {
+            @Override
+            public Thread newThread(Runnable r) {
+                Thread th = new Thread(r, thPrefix + thNum.incrementAndGet());
+                th.setDaemon(true);
+                return th;
+            }
+        });
     }
 
     public static void shutdown() {
+        if (group == null) {
+            return;
+        }
         group.shutdownGracefully();
     }
 
@@ -155,8 +170,8 @@ public class HttpRequestBuilder {
     }
 
     private void checkGroup() {
-        if (group.isShuttingDown() || group.isShutdown()) {
-            group = new NioEventLoopGroup();
+        if (group == null || group.isShuttingDown() || group.isShutdown()) {
+            restart();
         }
     }
 
