@@ -6,10 +6,22 @@ import io.higgs.http.client.readers.Reader;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
-import io.netty.channel.*;
+import io.netty.channel.Channel;
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelHandler;
+import io.netty.channel.EventLoopGroup;
+import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.socket.nio.NioSocketChannel;
-import io.netty.handler.codec.http.*;
+import io.netty.handler.codec.http.DefaultCookie;
+import io.netty.handler.codec.http.DefaultFullHttpRequest;
+import io.netty.handler.codec.http.HttpHeaders;
+import io.netty.handler.codec.http.HttpMethod;
+import io.netty.handler.codec.http.HttpRequest;
+import io.netty.handler.codec.http.HttpVersion;
+import io.netty.handler.codec.http.QueryStringDecoder;
+import io.netty.handler.codec.http.QueryStringEncoder;
 import io.netty.handler.codec.http.cookie.ClientCookieEncoder;
+import io.netty.handler.codec.http.cookie.Cookie;
 import io.netty.handler.codec.http.multipart.DiskFileUpload;
 import io.netty.util.concurrent.GenericFutureListener;
 import io.netty.util.concurrent.ScheduledFuture;
@@ -17,7 +29,12 @@ import io.netty.util.concurrent.ScheduledFuture;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.Charset;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import static javax.xml.bind.DatatypeConverter.printBase64Binary;
@@ -168,8 +185,8 @@ public class Request<T extends Request<T>> {
                     useSSL = false;
                 }
             }
-            final ScheduledFuture<?> conShed[] = new ScheduledFuture<?>[1];
-            final ScheduledFuture<?> resShed[] = new ScheduledFuture<?>[1];
+            final ScheduledFuture<?>[] conShed = new ScheduledFuture<?>[1];
+            final ScheduledFuture<?>[] resShed = new ScheduledFuture<?>[1];
             Bootstrap bootstrap = new Bootstrap();
             if (conf != null) {
                 this.conf = conf;
