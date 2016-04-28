@@ -98,4 +98,11 @@ public abstract class Reader<T> {
     public void response(Response response) {
         this.response = response;
     }
+
+    @Override
+    public String toString() {
+        return "Reader{" +
+                "buffer=" + buffer.toString(utf8) +
+                '}';
+    }
 }
