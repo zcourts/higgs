@@ -32,6 +32,7 @@ public class HttpRequestBuilder {
     protected String connectionHeader = HttpHeaders.Values.CLOSE;
     protected static final String thPrefix = "higgs-http-client-";
     protected static AtomicInteger thNum = new AtomicInteger();
+    protected static final SSLContextFactory sslCtx = new SSLContextFactory();
 
     public HttpRequestBuilder(HttpRequestBuilder that) {
         this();
@@ -105,7 +106,7 @@ public class HttpRequestBuilder {
      * @return e.g. [SSLv2Hello, SSLv3, TLSv1, TLSv1.1, TLSv1.2]
      */
     public static String[] getSupportedSSLProtocols() {
-        SSLEngine engine = SSLContextFactory.getSSLSocket(SSLConfigFactory.sslConfiguration).createSSLEngine();
+        SSLEngine engine = sslCtx.getSSLSocket(SSLConfigFactory.sslConfiguration).createSSLEngine();
         engine.setUseClientMode(true);
         return engine.getSupportedProtocols();
     }

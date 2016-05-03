@@ -1,5 +1,6 @@
 package io.higgs.http.client;
 
+import io.higgs.core.ssl.SSLContextFactory;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.SimpleChannelInboundHandler;
@@ -15,6 +16,7 @@ public class ConnectHandler extends SimpleChannelInboundHandler<Object> {
     protected final boolean tunneling;
     protected final SimpleChannelInboundHandler<Object> handler;
     private final InitFactory factory;
+    protected final SSLContextFactory sslCtx = new SSLContextFactory();
 
     public ConnectHandler(boolean ssl, HttpRequest request, SimpleChannelInboundHandler<Object> handler,
                           InitFactory factory) {
@@ -33,7 +35,7 @@ public class ConnectHandler extends SimpleChannelInboundHandler<Object> {
             if (code > 199 && code < 300) {
                 if (tunneling) {
                     //add an SSL handler to the front of the pipeline
-                    ClientIntializer.addSSL(ctx.pipeline(), true, null);
+                    sslCtx.addSSL(ctx.pipeline(), true, null);
                 }
             } else {
                 throw new ProxyConnectionException("Proxy server indicated it was unable to establish a secure " +
