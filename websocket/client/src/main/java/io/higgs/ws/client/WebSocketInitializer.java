@@ -1,5 +1,6 @@
 package io.higgs.ws.client;
 
+import io.higgs.core.ssl.SSLContextFactory;
 import io.higgs.http.client.ClientIntializer;
 import io.higgs.http.client.ConnectHandler;
 import io.netty.buffer.ByteBuf;
@@ -17,6 +18,7 @@ import io.netty.handler.codec.http.HttpResponseDecoder;
 public class WebSocketInitializer extends ClientIntializer {
     protected final int maxContentLength;
     private final String fullUrl;
+    protected final SSLContextFactory sslCtx = new SSLContextFactory();
 
     public WebSocketInitializer(int maxContentLength, boolean ssl, SimpleChannelInboundHandler<Object> handler,
                                 ConnectHandler connHandler, String fullUrl, String[] sslProtocols) {
@@ -31,7 +33,7 @@ public class WebSocketInitializer extends ClientIntializer {
             super.configurePipeline(pipeline);
         } else {
             if (ssl) {
-                addSSL(pipeline, false, sslProtocols);
+                sslCtx.addSSL(pipeline, false, sslProtocols);
             }
             if (pipeline.get("codec") != null) {
                 pipeline.remove("codec");
