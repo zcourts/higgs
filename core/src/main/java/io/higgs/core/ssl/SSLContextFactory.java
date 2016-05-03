@@ -1,17 +1,19 @@
 package io.higgs.core.ssl;
 
+import io.netty.channel.ChannelPipeline;
+import io.netty.handler.ssl.SslHandler;
+
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLEngine;
 import javax.net.ssl.TrustManagerFactory;
 import java.io.FileInputStream;
 import java.security.KeyStore;
 import java.security.SecureRandom;
 
 public class SSLContextFactory {
-    protected SSLContextFactory() {
-    }
 
-    public static SSLContext getSSLSocket(SSLConfiguration sslConfiguration) {
+    public SSLContext getSSLSocket(SSLConfiguration sslConfiguration) {
 
         boolean useTrustStore = false;
         TrustManagerFactory tmf = null;
@@ -62,5 +64,25 @@ public class SSLContextFactory {
             System.out.println("Unable to create SSL Context. Reason : " + e.getMessage());
         }
         return null;
+    }
+
+    /**
+     * Adds an SSL engine to the given pipeline.
+     *
+     * @param pipeline     the pipeline to add SSL support to
+     * @param forceToFront if true then the SSL handler is added to the front of the pipeline otherwise it is added
+     *                     at the end
+     */
+    public void addSSL(ChannelPipeline pipeline, boolean forceToFront, String[] sslProtocols) {
+        SSLEngine engine = getSSLSocket(SSLConfigFactory.sslConfiguration).createSSLEngine();
+        engine.setUseClientMode(true);
+        if (sslProtocols != null && sslProtocols.length > 0) {
+            engine.setEnabledProtocols(sslProtocols);
+        }
+        if (forceToFront) {
+            pipeline.addFirst("ssl", new SslHandler(engine));
+        } else {
+            pipeline.addLast("ssl", new SslHandler(engine));
+        }
     }
 }

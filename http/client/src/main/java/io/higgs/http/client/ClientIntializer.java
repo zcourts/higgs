@@ -15,7 +15,6 @@
  */
 package io.higgs.http.client;
 
-import io.higgs.core.ssl.SSLConfigFactory;
 import io.higgs.core.ssl.SSLContextFactory;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelInitializer;
@@ -23,16 +22,14 @@ import io.netty.channel.ChannelPipeline;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.handler.codec.http.HttpClientCodec;
 import io.netty.handler.codec.http.HttpContentDecompressor;
-import io.netty.handler.ssl.SslHandler;
 import io.netty.handler.stream.ChunkedWriteHandler;
-
-import javax.net.ssl.SSLEngine;
 
 public class ClientIntializer extends ChannelInitializer<SocketChannel> {
     protected final boolean ssl;
     protected final ConnectHandler connectHandler;
     protected final ChannelHandler handler;
     protected final String[] sslProtocols;
+    protected final SSLContextFactory sslCtx = new SSLContextFactory();
 
     public ClientIntializer(boolean ssl, ChannelHandler handler, ConnectHandler connectHandler,
                             String[] sslProtocols) {
@@ -51,7 +48,7 @@ public class ClientIntializer extends ChannelInitializer<SocketChannel> {
 
     public void configurePipeline(ChannelPipeline pipeline) {
         if (ssl) {
-            addSSL(pipeline, false, sslProtocols);
+            sslCtx.addSSL(pipeline, false, sslProtocols);
         }
 
         if (pipeline.get("codec") == null) {
@@ -74,26 +71,6 @@ public class ClientIntializer extends ChannelInitializer<SocketChannel> {
             pipeline.addLast("handler", connectHandler == null ? handler : connectHandler);
         } else {
             pipeline.replace("handler", "handler", connectHandler == null ? handler : connectHandler);
-        }
-    }
-
-    /**
-     * Adds an SSL engine to the given pipeline.
-     *
-     * @param pipeline     the pipeline to add SSL support to
-     * @param forceToFront if true then the SSL handler is added to the front of the pipeline otherwise it is added
-     *                     at the end
-     */
-    public static void addSSL(ChannelPipeline pipeline, boolean forceToFront, String[] sslProtocols) {
-        SSLEngine engine = SSLContextFactory.getSSLSocket(SSLConfigFactory.sslConfiguration).createSSLEngine();
-        engine.setUseClientMode(true);
-        if (sslProtocols != null && sslProtocols.length > 0) {
-            engine.setEnabledProtocols(sslProtocols);
-        }
-        if (forceToFront) {
-            pipeline.addFirst("ssl", new SslHandler(engine));
-        } else {
-            pipeline.addLast("ssl", new SslHandler(engine));
         }
     }
 }
