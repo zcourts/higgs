@@ -1,6 +1,5 @@
 package io.higgs.core;
 
-import io.higgs.core.ssl.SSLConfigFactory;
 import io.higgs.core.ssl.SSLContextFactory;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.EmptyByteBuf;
@@ -13,7 +12,6 @@ import io.netty.handler.ssl.SslHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.net.ssl.SSLEngine;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Queue;
@@ -28,6 +26,7 @@ public class Transducer extends ByteToMessageDecoder {
     private Logger log = LoggerFactory.getLogger(getClass());
     private boolean detectSsl;
     private boolean detectGzip;
+    private final SSLContextFactory sslCtx = new SSLContextFactory();
 
     public Transducer(boolean detectSsl, boolean detectGzip, Queue<ProtocolDetectorFactory> f,
                       Queue<InvokableMethod> methods) {
@@ -84,11 +83,7 @@ public class Transducer extends ByteToMessageDecoder {
 
     private void enableSsl(ChannelHandlerContext ctx) {
         ChannelPipeline p = ctx.pipeline();
-
-        SSLEngine engine = SSLContextFactory.getSSLSocket(SSLConfigFactory.sslConfiguration).createSSLEngine();
-        engine.setUseClientMode(false);
-
-        p.addLast("ssl", new SslHandler(engine));
+        sslCtx.addSSL(p, false, null);
         p.addLast("unificationA", new Transducer(false, detectGzip, factories, methods));
         p.remove(this);
     }
