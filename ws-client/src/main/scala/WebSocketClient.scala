@@ -7,24 +7,27 @@ class WebSocketClient {
 
 }
 
-case class pipeline() {
+case class Pipeline(p: Seq[(_) => _] = Nil) {
+  def >>[A, B](f: (A) => B) = Seq(f)
+}
 
-  protected case class Def[A, B](f: (A) => B, prev: Option[Def[_, _]]) {
-    def >>[I, O](f: (I) => O): Def[I, O] = Def(f, Some(this))
+object Pipeline {
 
-    def compose[X, Y] = compose1[X, Y](this.asInstanceOf[Def[X, Y]])
-  }
+  protected case class Def[A, B](s: Seq[(A) => B])
 
-  def >>[I, O](f: (I) => O): Def[I, O] = Def(f, None)
+  implicit def seq2pipeline[A, B](s: Seq[(A) => B]): Pipeline = Pipeline(s.asInstanceOf[Seq[(_) => _]])
 
-  def compose1[A, B](d: Def[A, B]): (A) => B = {
-    d.prev match {
-      case None => d.f
-      case Some(o) => compose2(o)
-    }
-  }
+  implicit def seq2composition[A, B](s: Seq[(_) => _]): (A) => B = ???
 
-  def compose2[A, B](d: Def[_, _]): (A) => B = compose1(d.asInstanceOf[Def[A, B]])
+  //  protected case class Def[A,B](p: Seq[(A) => B]) {
+  //    def >>[I, O](f: (I) => O) = Def[I,O]((p ++ Seq(f)).asInstanceOf[Def[A,B]])
+  //
+  //    def compose[X, Y] = (in:X) => {
+  //
+  //    }
+  //  }
+  //
+  //  def >>[I, O](f: (I) => O): Def = Def(Seq(f))
 
   //def |(atom: A)
 }
