@@ -1,11 +1,13 @@
 package io.higgs.ws.client
 
-import java.util.concurrent.{ArrayBlockingQueue, TimeUnit}
 import java.util.concurrent.atomic.AtomicReference
+import java.util.concurrent.{ArrayBlockingQueue, TimeUnit}
 
 import io.higgs.core.EventLoopGroups
+import io.netty.buffer.Unpooled
 import io.netty.channel.EventLoopGroup
 import io.netty.channel.socket.nio.NioSocketChannel
+import io.netty.handler.codec.http.websocketx.{BinaryWebSocketFrame, TextWebSocketFrame}
 
 import scala.collection.mutable.ListBuffer
 import scala.concurrent.duration._
@@ -62,8 +64,8 @@ trait WebSocketClientProcessor extends WebSocketConnector with WebSocketConnecto
           item = q.poll(10, TimeUnit.SECONDS)
           item != null
         }) {
-          item.text.map(ch.write)
-          item.binary.map(ch.write)
+          item.text.map(m => new TextWebSocketFrame(m)).map(ch.write)
+          item.binary.map(m => new BinaryWebSocketFrame(Unpooled.wrappedBuffer(m))).map(ch.write)
         }
       } finally {
         ch.flush()
@@ -91,9 +93,7 @@ trait WebSocketClientProcessor extends WebSocketConnector with WebSocketConnecto
 
   override def onBinary(data: Array[Byte]): Unit = listeners.foreach(_ onBinary data)
 
-  override def onMessage(msg: String): Unit = {
-
-  }
+  override def onMessage(msg: String): Unit = listeners.foreach(_ onMessage msg)
 
   override def onError(e: Throwable): Unit = listeners.foreach(_ onError e)
 

@@ -89,8 +89,9 @@ trait WebSocketConnector {
         )
       }
     })
-    //    val ch: Channel = b.connect(uri.getHost, port).sync.channel
-    //    handler.handshakeFuture.sync
+    //    val chan = b.connect(uri.getHost, port).sync().channel()
+    //    handler.future.sync()
+    //    chan.writeAndFlush(new TextWebSocketFrame("test"))
     val connectFuture = b.connect(uri.getHost, port)
     connectFuture.addListener(new GenericFutureListener[ChannelFuture] {
       override def operationComplete(future: ChannelFuture): Unit = {

@@ -15,7 +15,7 @@ class WebSocketClientHandler(handShaker: WebSocketClientHandshaker,
   val log = LoggerFactory.getLogger(getClass)
   private var handshakeFuture: ChannelPromise = null
 
-  def sync = handshakeFuture.sync()
+  def future = handshakeFuture
 
   override def handlerAdded(ctx: ChannelHandlerContext) {
     handshakeFuture = ctx.newPromise
@@ -47,7 +47,7 @@ class WebSocketClientHandler(handShaker: WebSocketClientHandshaker,
             log.debug("WebSocket Client received message: " + textFrame.text)
             processor.onMessage(textFrame.text())
           case binary: BinaryWebSocketFrame =>
-            log.debug("WebSocket Client received message")
+            log.debug("WebSocket Client received binary message")
             val obj = binary.content()
             val data = new Array[Byte](obj.readableBytes())
             obj.readBytes(data)
