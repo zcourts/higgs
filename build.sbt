@@ -20,7 +20,7 @@ lazy val sharedSettings = Seq(
   publishArtifact in Test := false,
   pomIncludeRepository := { _ => false },
   libraryDependencies ++= Seq(
-    "io.netty" % "netty-all" % "4.1.5.Final",
+    "io.netty" % "netty-all" % "4.0.33.Final",
     "org.slf4j" % "slf4j-api" % "1.7.21",
     "ch.qos.logback" % "logback-classic" % "1.1.7" % "test",
     "org.scalatest" %% "scalatest" % "3.0.0" % "test"

@@ -18,7 +18,7 @@ trait WebSocketConnectorEventProcessor {
     * @param response the response the server returned
     */
   def invalidResponse(response: FullHttpResponse): Unit = {
-    log.warn(s"Unexpected FullHttpResponse (getStatus=${response.status}, content=${response.content.toString(CharsetUtil.UTF_8)})")
+    log.warn(s"Unexpected FullHttpResponse (getStatus=${response.getStatus}, content=${response.content.toString(CharsetUtil.UTF_8)})")
   }
 
   def onMessage(msg: String): Unit

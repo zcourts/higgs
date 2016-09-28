@@ -8,7 +8,6 @@ import io.netty.bootstrap.Bootstrap
 import io.netty.channel._
 import io.netty.channel.socket.SocketChannel
 import io.netty.channel.socket.nio.NioSocketChannel
-import io.netty.handler.codec.http.websocketx.extensions.compression.WebSocketClientCompressionHandler
 import io.netty.handler.codec.http.websocketx.{WebSocketClientHandshakerFactory, WebSocketVersion}
 import io.netty.handler.codec.http.{DefaultHttpHeaders, HttpClientCodec, HttpHeaders, HttpObjectAggregator}
 import io.netty.handler.ssl.util.InsecureTrustManagerFactory
@@ -64,7 +63,7 @@ trait WebSocketConnector {
   protected def connect(
                          reconnectTimeout: Int = 1,
                          subProtocol: String = null,
-                         allowExtensions: Boolean = true,
+                         allowExtensions: Boolean = false,
                          headers: HttpHeaders = new DefaultHttpHeaders,
                          maxFramePayloadLength: Int = 65536,
                          maxContentLength: Int = 8192,
@@ -73,8 +72,7 @@ trait WebSocketConnector {
                          version: WebSocketVersion = WebSocketVersion.V13): Unit = {
 
     val handler = new WebSocketClientHandler(WebSocketClientHandshakerFactory
-      .newHandshaker(uri, version, subProtocol, allowExtensions, headers,
-        maxFramePayloadLength, performMasking, allowMaskingMismatch), this, processor)
+      .newHandshaker(uri, version, subProtocol, allowExtensions, headers, maxFramePayloadLength), this, processor)
 
     val b: Bootstrap = new Bootstrap
     b.group(group).channel(channelClass).handler(new ChannelInitializer[SocketChannel]() {
@@ -84,7 +82,7 @@ trait WebSocketConnector {
         p.addLast(
           new HttpClientCodec,
           new HttpObjectAggregator(maxContentLength),
-          WebSocketClientCompressionHandler.INSTANCE,
+          //WebSocketClientCompressionHandler.INSTANCE,
           handler
         )
       }
