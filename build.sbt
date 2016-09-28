@@ -15,6 +15,10 @@ val customResolvers = Seq(
 
 lazy val sharedSettings = Seq(
   scalaVersion := "2.11.7",
+  organization := "io.higgs",
+  publishMavenStyle := true,
+  publishArtifact in Test := false,
+  pomIncludeRepository := { _ => false },
   libraryDependencies ++= Seq(
     "io.netty" % "netty-all" % "4.1.5.Final",
     "org.slf4j" % "slf4j-api" % "1.7.21",
@@ -28,14 +32,14 @@ val coreDeps = Seq()
 val wsClientDeps = Seq(
 )
 
-lazy val `higgs-core` = project.in(file("core"))
+lazy val core = project.in(file("core"))
   .settings(sharedSettings)
   .settings(libraryDependencies ++= coreDeps)
 
-lazy val `higgs-ws-client` = project.in(file("ws-client"))
+lazy val `ws-client` = project.in(file("ws-client"))
   .settings(libraryDependencies ++= wsClientDeps)
   .settings(sharedSettings)
-  .dependsOn(`higgs-core`)
+  .dependsOn(core)
 
 
 lazy val higgs = project.in(file("."))
@@ -44,4 +48,4 @@ lazy val higgs = project.in(file("."))
     publishLocal := {},
     publish := {}
   )
-  .aggregate(`higgs-core`, `higgs-ws-client`)
+  .aggregate(core, `ws-client`)
