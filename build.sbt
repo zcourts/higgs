@@ -16,6 +16,9 @@ val customResolvers = Seq(
 lazy val sharedSettings = Seq(
   scalaVersion := "2.11.7",
   libraryDependencies ++= Seq(
+    "io.netty" % "netty-all" % "4.1.5.Final",
+    "org.slf4j" % "slf4j-api" % "1.7.21",
+    "ch.qos.logback" % "logback-classic" % "1.1.7" % "test",
     "org.scalatest" %% "scalatest" % "3.0.0" % "test"
   )
 )
