@@ -253,7 +253,7 @@
     <repositories>
         <repository>
             <id>Codehaus Snapshots</id>
-            <url>http://nexus.codehaus.org/snapshots/</url>
+            <url>https://nexus.codehaus.org/snapshots/</url>
             <snapshots>
                 <enabled>true</enabled>
             </snapshots>
@@ -265,7 +265,7 @@
     <pluginRepositories>
         <pluginRepository>
             <id>Codehaus Snapshots</id>
-            <url>http://nexus.codehaus.org/snapshots/</url>
+            <url>https://nexus.codehaus.org/snapshots/</url>
             <snapshots>
                 <enabled>true</enabled>
             </snapshots>
